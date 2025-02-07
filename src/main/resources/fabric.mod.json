@@ -1,0 +1,50 @@
+{
+	"schemaVersion": 1,
+	"id": "fminecraftmod",
+	"version": "0.0.1",
+	"name": "F Minecraft Mod",
+	"description": "A Minecraft Mod for Management.",
+	"authors": [
+		"ykn",
+		"Xenapte"
+	],
+	"contact": {
+		"homepage": "https://github.com/yknBugs",
+		"sources": "https://github.com/yknBugs/FMinecraftMod"
+	},
+	"license": "MIT",
+	"icon": "assets/fmod/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.ykn.fmod.server.FMod"
+		],
+		"client": [
+			"com.ykn.fmod.client.FMod"
+		],
+		"modmenu": [
+			"com.ykn.fmod.client.ModMenuImpl"
+		]
+	},
+	"mixins": [
+		"fmod.server.mixins.json",
+		{
+			"config": "fmod.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.14.22",
+		"minecraft": "~1.20.1",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	},
+	"custom": {
+		"modmenu": {
+			"update_checker": false
+		}
+	}
+}

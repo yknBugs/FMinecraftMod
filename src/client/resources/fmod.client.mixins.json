@@ -1,0 +1,11 @@
+{
+	"required": false,
+	"package": "com.ykn.fmod.client.mixin",
+	"compatibilityLevel": "JAVA_17",
+	"client": [
+		"FModClientMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
