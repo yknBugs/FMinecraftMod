@@ -29,7 +29,14 @@ Please modify the Path to your JDK17 JAVA_HOME.
 
 You will find the mod file located in your `./build/libs` folder, copy the mod file to your Minecraft Mod directory and launch the game.
 
-## Features
+## Features & Changelog
+
+### Version 0.0.2
+
+Hint: This mod is used on Minecraft 1.20.1 Fabric
+
+- Allow change options by using command /f options.
+- Send the death message to chat when a boss or named entity died.
 
 ### Version 0.0.1
 

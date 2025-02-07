@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.tooltip.Tooltip;
 import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.client.gui.widget.ElementListWidget;
+import net.minecraft.client.gui.widget.SliderWidget;
 import net.minecraft.client.gui.widget.TextFieldWidget;
 import net.minecraft.client.gui.widget.TextWidget;
 import net.minecraft.screen.ScreenTexts;
@@ -85,9 +86,47 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.entdeathmsg"),
                 Text.translatable("fmod.options.hint.entdeathmsg")
             ));
+            // Boss Death Message
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isBcBossDeathMsg()), button -> {
+                    Util.serverConfig.setBcBossDeathMsg(!Util.serverConfig.isBcBossDeathMsg());
+                    button.setMessage(getBoolStateText(Util.serverConfig.isBcBossDeathMsg()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.bcbossdeath"),
+                Text.translatable("fmod.options.hint.bcbossdeath")
+            ));
+            // Named Entity Death Message
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isNamedMobDeathMsg()), button -> {
+                    Util.serverConfig.setNamedMobDeathMsg(!Util.serverConfig.isNamedMobDeathMsg());
+                    button.setMessage(getBoolStateText(Util.serverConfig.isNamedMobDeathMsg()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.nameddeath"),
+                Text.translatable("fmod.options.hint.nameddeath")
+            ));
+            // Boss Max Health Threshold
+            SliderWidget bossMaxHealthSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.1f", Util.serverConfig.getBossMaxHpThreshold())),
+                Util.serverConfig.getBossMaxHpThreshold() / 10000.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.1f", this.value * 10000.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setBossMaxHpThreshold(this.value * 10000.0);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                bossMaxHealthSlider,
+                Text.translatable("fmod.options.bossmaxhp"),
+                Text.translatable("fmod.options.hint.bossmaxhp")
+            ));
             // GPT Server
             TextFieldWidget gptUrlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
-            gptUrlTxtWgt.setMaxLength(127);
+            gptUrlTxtWgt.setMaxLength(1024);
             gptUrlTxtWgt.setEditable(true);
             gptUrlTxtWgt.setText(Util.serverConfig.getGptUrl());
             gptUrlTxtWgt.setChangedListener(s -> Util.serverConfig.setGptUrl(s));
@@ -98,7 +137,7 @@ public class OptionScreen extends Screen {
             ));
             // GPT Tokens
             TextFieldWidget gptTknTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
-            gptTknTxtWgt.setMaxLength(127);
+            gptTknTxtWgt.setMaxLength(1024);
             gptTknTxtWgt.setEditable(true);
             gptTknTxtWgt.setText(Util.serverConfig.getGptAccessTokens());
             gptTknTxtWgt.setChangedListener(s -> Util.serverConfig.setGptAccessTokens(s));
@@ -208,6 +247,38 @@ public class OptionScreen extends Screen {
             @Override
             public List<? extends Element> children() {
                 return List.of(textField, textWidget);
+            }
+        }
+
+        private class NumberConfigEntry extends Entry {
+            private final TextWidget textWidget;
+            private final SliderWidget sliderWidget;
+
+            NumberConfigEntry(SliderWidget sliderWidget, Text text, Text hint) {
+                this.sliderWidget = sliderWidget;
+                this.textWidget = new TextWidget(0, 0, 200, 20, text, client.textRenderer);
+                this.textWidget.alignLeft();
+                this.textWidget.setTooltip(Tooltip.of(hint));
+            }
+
+            @Override
+            public void render(DrawContext context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+                textWidget.setX(x);
+                textWidget.setY(y);
+                textWidget.render(context, mouseX, mouseY, tickDelta);
+                sliderWidget.setX(x + entryWidth - sliderWidget.getWidth());
+                sliderWidget.setY(y);
+                sliderWidget.render(context, mouseX, mouseY, tickDelta);
+            }
+
+            @Override
+            public List<? extends Selectable> selectableChildren() {
+                return List.of(sliderWidget, textWidget);
+            }
+
+            @Override
+            public List<? extends Element> children() {
+                return List.of(sliderWidget, textWidget);
             }
         }
     }

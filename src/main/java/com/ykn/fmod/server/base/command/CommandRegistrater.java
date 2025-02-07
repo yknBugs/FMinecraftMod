@@ -1,8 +1,12 @@
 package com.ykn.fmod.server.base.command;
 
+import java.net.URI;
+
 import org.slf4j.Logger;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.arguments.BoolArgumentType;
+import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -75,37 +79,7 @@ public class CommandRegistrater {
         this.logger = logger;
     }
 
-    public boolean registerCommand() {
-        try {
-            CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-                final LiteralCommandNode<ServerCommandSource> fModCommandNode = dispatcher.register(CommandManager.literal("fminecraftmod")
-                    .requires(source -> source.hasPermissionLevel(0))
-                    .executes(context -> {return runFModCommand(context);})
-                    .then(CommandManager.literal("dev")
-                        .requires(source -> source.hasPermissionLevel(4))
-                        .executes(context -> {return runDevCommand(context);})
-                    )
-                    .then(CommandManager.literal("gpt")
-                        .requires(source -> source.hasPermissionLevel(3))
-                        .then(CommandManager.argument("text", StringArgumentType.string())
-                            .executes(context -> {return runGptCommand(StringArgumentType.getString(context, "text"), context);})
-                        )
-                    )
-                    .then(CommandManager.literal("reload")
-                        .requires(source -> source.hasPermissionLevel(4))
-                        .executes(context -> {return runReloadCommand(context);})
-                    )  
-                );
-                dispatcher.register(CommandManager.literal("f").redirect(fModCommandNode));
-            });
-
-            return true;
-        } catch (Exception e) {
-            logger.error("FMinectaftMod: Unable to register command.", e);
-            return false;
-        }
-    }
-
+    
     private int runFModCommand(CommandContext<ServerCommandSource> context) {
         try {
             MutableText commandFeedback = Util.parseTranslateableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
@@ -156,6 +130,159 @@ public class CommandRegistrater {
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), false);
         } catch (Exception e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.reload.error"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    public boolean registerCommand() {
+        try {
+            CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+                final LiteralCommandNode<ServerCommandSource> fModCommandNode = dispatcher.register(CommandManager.literal("fminecraftmod")
+                    .requires(source -> source.hasPermissionLevel(0))
+                    .executes(context -> {return runFModCommand(context);})
+                    .then(CommandManager.literal("dev")
+                        .requires(source -> source.hasPermissionLevel(4))
+                        .executes(context -> {return runDevCommand(context);})
+                    )
+                    .then(CommandManager.literal("gpt")
+                        .requires(source -> source.hasPermissionLevel(3))
+                        .then(CommandManager.argument("text", StringArgumentType.string())
+                            .executes(context -> {return runGptCommand(StringArgumentType.getString(context, "text"), context);})
+                        )
+                    )
+                    .then(CommandManager.literal("reload")
+                        .requires(source -> source.hasPermissionLevel(4))
+                        .executes(context -> {return runReloadCommand(context);})
+                    )
+                    .then(CommandManager.literal("options")
+                        .requires(source -> source.hasPermissionLevel(4))
+                        .then(CommandManager.literal("serverTranslation")
+                            .then(CommandManager.argument("value", BoolArgumentType.bool())
+                                .executes(context -> {return runOptionsCommand("serverTranslation", BoolArgumentType.getBool(context, "value"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("serverTranslation", null, context);})
+                        )
+                        .then(CommandManager.literal("entityDeathMessage")
+                            .then(CommandManager.argument("value", BoolArgumentType.bool())
+                                .executes(context -> {return runOptionsCommand("entityDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("entityDeathMessage", null, context);})
+                        )
+                        .then(CommandManager.literal("bossDeathMessage")
+                            .then(CommandManager.argument("value", BoolArgumentType.bool())
+                                .executes(context -> {return runOptionsCommand("bossDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("bossDeathMessage", null, context);})
+                        )
+                        .then(CommandManager.literal("namedMobDeathMessage")
+                            .then(CommandManager.argument("value", BoolArgumentType.bool())
+                                .executes(context -> {return runOptionsCommand("namedMobDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("namedMobDeathMessage", null, context);})
+                        )
+                        .then(CommandManager.literal("bossMaxHealthThreshold")
+                            .then(CommandManager.argument("value", DoubleArgumentType.doubleArg())
+                                .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", DoubleArgumentType.getDouble(context, "value"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", null, context);})
+                        )
+                        .then(CommandManager.literal("gptUrl")
+                            .then(CommandManager.argument("url", StringArgumentType.string())
+                                .executes(context -> {return runOptionsCommand("gptUrl", StringArgumentType.getString(context, "url"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("gptUrl", null, context);})
+                        )
+                        .then(CommandManager.literal("gptAccessTokens")
+                            .then(CommandManager.argument("tokens", StringArgumentType.string())
+                                .executes(context -> {return runOptionsCommand("gptAccessTokens", StringArgumentType.getString(context, "tokens"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("gptAccessTokens", null, context);})
+                        )
+                    )
+                );
+                dispatcher.register(CommandManager.literal("f").redirect(fModCommandNode));
+            });
+
+            return true;
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Unable to register command.", e);
+            return false;
+        }
+    }
+
+    private int runOptionsCommand(String options, Object value, CommandContext<ServerCommandSource> context) {
+        try {
+            switch (options) {
+                case "serverTranslation":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", Util.serverConfig.isEnableServerTranslation()), false);
+                    } else {
+                        Util.serverConfig.setEnableServerTranslation((boolean) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), false);
+                    }
+                    break;
+                case "entityDeathMessage":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", Util.serverConfig.isEnableEntityDeathMsg()), false);
+                    } else {
+                        Util.serverConfig.setEnableEntityDeathMsg((boolean) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", value), false);
+                    }
+                    break;
+                case "bossDeathMessage":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", Util.serverConfig.isBcBossDeathMsg()), false);
+                    } else {
+                        Util.serverConfig.setBcBossDeathMsg((boolean) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", value), false);
+                    }
+                    break;
+                case "namedMobDeathMessage":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", Util.serverConfig.isNamedMobDeathMsg()), false);
+                    } else {
+                        Util.serverConfig.setNamedMobDeathMsg((boolean) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", value), false);
+                    }
+                    break;
+                case "bossMaxHealthThreshold":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
+                    } else {
+                        if (((double) value) < 0) {
+                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativemaxhp", value));
+                        }
+                        Util.serverConfig.setBossMaxHpThreshold((double) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), false);
+                    }
+                    break;
+                case "gptUrl":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpturl", Util.serverConfig.getGptUrl()), false);
+                    } else {
+                        try {
+                            new URI((String) value).toURL();
+                        } catch (Exception e) {
+                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.invalidurl", value));
+                        }
+                        Util.serverConfig.setGptUrl((String) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpturl", value), false);
+                    }
+                    break;
+                case "gptAccessTokens":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptkey", Util.serverConfig.getGptAccessTokens()), false);
+                    } else {
+                        Util.serverConfig.setGptAccessTokens((String) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", value), false);
+                    }
+                    break;
+                default:
+                    throw new CommandException(Util.parseTranslateableText("fmod.command.options.unknownoption", options));
+            }
+            Util.saveServerConfig();
+        } catch (ClassCastException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.options.classcast", value, options, e.getMessage()));
         }
         return Command.SINGLE_SUCCESS;
     }

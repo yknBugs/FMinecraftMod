@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"id": "fminecraftmod",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"name": "F Minecraft Mod",
 	"description": "A Minecraft Mod for Management.",
 	"authors": [
@@ -10,7 +10,8 @@
 	],
 	"contact": {
 		"homepage": "https://github.com/yknBugs",
-		"sources": "https://github.com/yknBugs/FMinecraftMod"
+		"sources": "https://github.com/yknBugs/FMinecraftMod",
+		"issues": "https://github.com/yknBugs/FMinecraftMod/issues"
 	},
 	"license": "MIT",
 	"icon": "assets/fmod/icon.png",

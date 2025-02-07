@@ -22,6 +22,24 @@ public class ServerConfig extends ConfigReader {
     protected boolean enableEntityDeathMsg;
 
     /**
+     * If enabled, the server will send a text message to the client when a boss dies.
+     * Default: false
+     */
+    protected boolean bcBossDeathMsg;
+
+    /**
+     * If enabled, the server will send a text message to the client when a mob with custom name dies.
+     * Default: false
+     */
+    protected boolean namedMobDeathMsg;
+
+    /**
+     * If an entity has a health greater than this value, it will be considered as a boss.
+     * Default: 150
+     */
+    protected double bossMaxHpThreshold;
+
+    /**
      * The URL of the target GPT server.
      * This mod will use the OpenAI API.
      * So if you want to deploy a local LLM, you must make sure it is compatible with the OpenAI API.
@@ -40,6 +58,9 @@ public class ServerConfig extends ConfigReader {
         super("server.json");
         this.enableServerTranslation = false;
         this.enableEntityDeathMsg = false;
+        this.bcBossDeathMsg = false;
+        this.namedMobDeathMsg = false;
+        this.bossMaxHpThreshold = 150;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
     }
@@ -75,6 +96,60 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.enableEntityDeathMsg = enableEntityDeathMsg;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public boolean isBcBossDeathMsg() {
+        lock.readLock().lock();
+        try {
+            return bcBossDeathMsg;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBcBossDeathMsg(boolean bcBossDeathMsg) {
+        lock.writeLock().lock();
+        try {
+            this.bcBossDeathMsg = bcBossDeathMsg;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public boolean isNamedMobDeathMsg() {
+        lock.readLock().lock();
+        try {
+            return namedMobDeathMsg;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setNamedMobDeathMsg(boolean namedMobDeathMsg) {
+        lock.writeLock().lock();
+        try {
+            this.namedMobDeathMsg = namedMobDeathMsg;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getBossMaxHpThreshold() {
+        lock.readLock().lock();
+        try {
+            return bossMaxHpThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBossMaxHpThreshold(double bossMaxHpThreshold) {
+        lock.writeLock().lock();
+        try {
+            this.bossMaxHpThreshold = bossMaxHpThreshold;
         } finally {
             lock.writeLock().unlock();
         }
