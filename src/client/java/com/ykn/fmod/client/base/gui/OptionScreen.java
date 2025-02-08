@@ -135,16 +135,27 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.gpturl"),
                 Text.translatable("fmod.options.hint.gpturl")
             ));
-            // GPT Tokens
+            // GPT Tokens (For security reasons, this field is not editable)
             TextFieldWidget gptTknTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
             gptTknTxtWgt.setMaxLength(1024);
-            gptTknTxtWgt.setEditable(true);
-            gptTknTxtWgt.setText(Util.serverConfig.getGptAccessTokens());
-            gptTknTxtWgt.setChangedListener(s -> Util.serverConfig.setGptAccessTokens(s));
+            gptTknTxtWgt.setEditable(false);
+            gptTknTxtWgt.setText(Util.serverConfig.getSecureGptAccessTokens());
+            gptTknTxtWgt.setTooltip(Tooltip.of(Text.translatable("fmod.options.gptkey.noedit")));
             this.addEntry(new StringConfigEntry(
                 gptTknTxtWgt,
                 Text.translatable("fmod.options.gptkey"),
                 Text.translatable("fmod.options.hint.gptkey")
+            ));
+            // GPT Models
+            TextFieldWidget gptMdlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
+            gptMdlTxtWgt.setMaxLength(1024);
+            gptMdlTxtWgt.setEditable(true);
+            gptMdlTxtWgt.setText(Util.serverConfig.getGptModel());
+            gptMdlTxtWgt.setChangedListener(s -> Util.serverConfig.setGptModel(s));
+            this.addEntry(new StringConfigEntry(
+                gptMdlTxtWgt,
+                Text.translatable("fmod.options.gptmodel"),
+                Text.translatable("fmod.options.hint.gptmodel")
             ));
         };
 

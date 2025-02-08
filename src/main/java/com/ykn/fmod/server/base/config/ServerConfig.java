@@ -54,6 +54,12 @@ public class ServerConfig extends ConfigReader {
      */
     protected String gptAccessTokens;
 
+    /**
+     * The model of the GPT server.
+     * Default: ""
+     */
+    protected String gptModel;
+
     public ServerConfig() {
         super("server.json");
         this.enableServerTranslation = false;
@@ -63,6 +69,7 @@ public class ServerConfig extends ConfigReader {
         this.bossMaxHpThreshold = 150;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
+        this.gptModel = "";
     }
 
     public boolean isEnableServerTranslation() {
@@ -182,10 +189,47 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
+    public String getSecureGptAccessTokens() {
+        String token = "";
+        lock.readLock().lock();
+        try {
+            token = gptAccessTokens;
+        } finally {
+            lock.readLock().unlock();
+        }
+        String secureToken = "";
+        if (token.length() > 20) {
+            secureToken = token.substring(0, 5) + String.valueOf("*".repeat(token.length() - 10)) + token.substring(token.length() - 5);
+        } else if (token.length() > 0) {
+            secureToken = String.valueOf("*".repeat(token.length()));
+        } else {
+            secureToken = "null";
+        }
+        return secureToken;
+    }
+
     public void setGptAccessTokens(String gptAccessTokens) {
         lock.writeLock().lock();
         try {
             this.gptAccessTokens = gptAccessTokens;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public String getGptModel() {
+        lock.readLock().lock();
+        try {
+            return gptModel;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setGptModel(String gptModel) {
+        lock.writeLock().lock();
+        try {
+            this.gptModel = gptModel;
         } finally {
             lock.writeLock().unlock();
         }

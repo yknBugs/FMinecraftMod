@@ -69,7 +69,7 @@ public class GptHelper implements Runnable {
                 }
             } else {
                 context.getSource().getServer().execute(() -> {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror"), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode), false);
                 });
                 LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response code: " + responseCode);
             }
@@ -85,12 +85,13 @@ public class GptHelper implements Runnable {
     private static class ChatRequest {
         private final ChatMessage[] messages;
         private final double temperature = 0.8;
-        private final int top_k = 40;
-        private final double top_p = 0.95;
-        private final double min_p = 0.05;
-        private final int max_tokens = -1;
-        private final double frequency_penalty = 0.0;
-        private final double presence_penalty = 0.0;
+        // private final int top_k = 40;
+        // private final double top_p = 0.95;
+        // private final double min_p = 0.05;
+        // private final int max_tokens = 4096;
+        // private final double frequency_penalty = 0.0;
+        // private final double presence_penalty = 0.0;
+        private final String model = Util.serverConfig.getGptModel();
 
         public ChatRequest(String content) {
             this.messages = new ChatMessage[]{new ChatMessage("user", content)};

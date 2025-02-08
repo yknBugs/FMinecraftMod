@@ -31,6 +31,13 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 
 ## Features & Changelog
 
+### Version 0.0.3
+
+Security Update:
+
+- Disable access tokens directly prints to the game and console.
+- Fix issues when connecting to the ChatGPT server.
+
 ### Version 0.0.2
 
 Hint: This mod is used on Minecraft 1.20.1 Fabric

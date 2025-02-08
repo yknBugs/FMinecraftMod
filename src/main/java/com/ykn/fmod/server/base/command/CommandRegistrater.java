@@ -29,47 +29,19 @@ public class CommandRegistrater {
         // This function is used for development purposes. Execute command /f dev to run this function.
         // This function should be removed in the final release.
 
-        String markdownTest = "```java\n" +
-                "public class HelloWorld {\n" +
-                "    public static void main(String[] args) {\n" +
-                "        System.out.println(\"```Hello!```\");\n" +
-                "    }\n" +
-                "}\n" +
-                "```\n" +
-                "另一段代码\n" +
-                "```python\n" +
-                "print('Hello from Python!')\n" +
-                "```\n" +
-                "无语言标记的代码块\n" +
-                "`````\n" +
-                "```\n" +
-                "echo 'Hello Shell'\n" +
-                "````\n" +
-                "````````\n"+
-                "最后一段代码\n" +
-                "```cpp\n" +
-                "#include <iostream>\n" +
-                "int main() {\n" +
-                "    std::cout << \"Hello, World!\" << std::endl;\n" +
-                "    return 0;\n" +
-                "}\n" +
-                "```\n" + 
-                "以上是测试用的`Markdown`文本，包含多个代码块。\n" + 
-                "公式测试 $\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}$ \n" + 
-                "## 标题测试\n" +
-                "加粗**粗文本**测试\n" +
-                "斜体*斜文本*测试，还有_另一种_写法\n" +
-                "~~删除线~~测试\n" +
-                "超链接[链接](https://127.0.0.1)\n" +
-                "强调`重要文字`测试\n" +
-                "- 枚举列表测试\n" +
-                "- 这是列表的第二行\n" +
-                "转义\\*字符\\*测试\n" + 
-                "转义\\**字符(这里是斜体)\\**测试2\n" + 
-                "转义\\~~字符\\~~测试3\n" +
-                "转义\\`字符\\`测试4\n" + 
-                "转义\\[字符\\]\\(字符\\)测试5\n" +
-                "转义\\$字符\\$测试6";
+        String markdownTest = "C++ Syntax Highlight Test\n" + 
+        "```cpp\n" +
+        "#include <string>\n" +
+        "#include <vector>\n" +
+        "#include <algorithm>\n\n" +
+        "int main() {\n" +
+        "    std::vector<std::string> s;\n" + 
+        "    std::sort(s.begin(), s.end(), [&s](auto& a, auto& b) {\n" + 
+        "        a = s;\n" +
+        "    });\n" +
+        "}\n" +
+        "```\n" +
+        "End of Test";
 
         context.getSource().sendFeedback(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
         return null;
@@ -119,7 +91,7 @@ public class CommandRegistrater {
                 logger.info(text);
             }
         } catch (Exception e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.error"));
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -198,6 +170,12 @@ public class CommandRegistrater {
                             )
                             .executes(context -> {return runOptionsCommand("gptAccessTokens", null, context);})
                         )
+                        .then(CommandManager.literal("gptModel")
+                            .then(CommandManager.argument("model", StringArgumentType.string())
+                                .executes(context -> {return runOptionsCommand("gptModel", StringArgumentType.getString(context, "model"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("gptModel", null, context);})
+                        )
                     )
                 );
                 dispatcher.register(CommandManager.literal("f").redirect(fModCommandNode));
@@ -271,10 +249,22 @@ public class CommandRegistrater {
                     break;
                 case "gptAccessTokens":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptkey", Util.serverConfig.getGptAccessTokens()), false);
+                        final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptkey", secureTokens), false);
                     } else {
-                        Util.serverConfig.setGptAccessTokens((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", value), false);
+                        String token = (String) value;
+                        Util.serverConfig.setGptAccessTokens(token);
+                        // For security reasons, we don't want to show the full token in the log, only show the first 5 and the last 5 characters
+                        final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), false);
+                    }
+                    break;
+                case "gptModel":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
+                    } else {
+                        Util.serverConfig.setGptModel((String) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), false);
                     }
                     break;
                 default:
