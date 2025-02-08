@@ -3,7 +3,8 @@
 	"package": "com.ykn.fmod.server.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"EntityDeathMixin"
+		"EntityDeathMixin",
+		"PlayerDeathMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

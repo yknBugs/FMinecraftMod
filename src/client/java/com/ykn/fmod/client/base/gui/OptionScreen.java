@@ -104,6 +104,15 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.nameddeath"),
                 Text.translatable("fmod.options.hint.nameddeath")
             ));
+            // Killer Entity Death Message
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isKillerEntityDeathMsg()), button -> {
+                    Util.serverConfig.setKillerEntityDeathMsg(!Util.serverConfig.isKillerEntityDeathMsg());
+                    button.setMessage(getBoolStateText(Util.serverConfig.isKillerEntityDeathMsg()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.bckillerdeath"),
+                Text.translatable("fmod.options.hint.bckillerdeath")
+            ));
             // Boss Max Health Threshold
             SliderWidget bossMaxHealthSlider = new SliderWidget(0, 0, 400, 20, 
                 Text.literal(String.format("%.1f", Util.serverConfig.getBossMaxHpThreshold())),
@@ -123,6 +132,15 @@ public class OptionScreen extends Screen {
                 bossMaxHealthSlider,
                 Text.translatable("fmod.options.bossmaxhp"),
                 Text.translatable("fmod.options.hint.bossmaxhp")
+            ));
+            // Player Death Coord
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isBcPlayerDeathCoord()), button -> {
+                    Util.serverConfig.setBcPlayerDeathCoord(!Util.serverConfig.isBcPlayerDeathCoord());
+                    button.setMessage(getBoolStateText(Util.serverConfig.isBcPlayerDeathCoord()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.bcdeathcoord"),
+                Text.translatable("fmod.options.hint.bcdeathcoord")
             ));
             // GPT Server
             TextFieldWidget gptUrlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());

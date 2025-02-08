@@ -34,10 +34,22 @@ public class ServerConfig extends ConfigReader {
     protected boolean namedMobDeathMsg;
 
     /**
+     * If enabled, the server will send a text message to the client when a mob - the mod that has once killed a player before - dies.
+     * Default: false
+     */
+    protected boolean killerEntityDeathMsg;
+
+    /**
      * If an entity has a health greater than this value, it will be considered as a boss.
      * Default: 150
      */
     protected double bossMaxHpThreshold;
+
+    /**
+     * If enabled, the server will send the coordinates when a player dies.
+     * Default: false
+     */
+    protected boolean bcPlayerDeathCoord;
 
     /**
      * The URL of the target GPT server.
@@ -78,7 +90,9 @@ public class ServerConfig extends ConfigReader {
         this.enableEntityDeathMsg = false;
         this.bcBossDeathMsg = false;
         this.namedMobDeathMsg = false;
+        this.killerEntityDeathMsg = false;
         this.bossMaxHpThreshold = 150;
+        this.bcPlayerDeathCoord = false;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -158,6 +172,24 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
+    public boolean isKillerEntityDeathMsg() {
+        lock.readLock().lock();
+        try {
+            return killerEntityDeathMsg;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setKillerEntityDeathMsg(boolean killerEntityDeathMsg) {
+        lock.writeLock().lock();
+        try {
+            this.killerEntityDeathMsg = killerEntityDeathMsg;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public double getBossMaxHpThreshold() {
         lock.readLock().lock();
         try {
@@ -171,6 +203,24 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.bossMaxHpThreshold = bossMaxHpThreshold;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public boolean isBcPlayerDeathCoord() {
+        lock.readLock().lock();
+        try {
+            return bcPlayerDeathCoord;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBcPlayerDeathCoord(boolean bcPlayerDeathCoord) {
+        lock.writeLock().lock();
+        try {
+            this.bcPlayerDeathCoord = bcPlayerDeathCoord;
         } finally {
             lock.writeLock().unlock();
         }

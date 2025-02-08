@@ -1,10 +1,15 @@
 package com.ykn.fmod.server;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.command.CommandRegistrater;
+import com.ykn.fmod.server.base.event.NewLevel;
+import com.ykn.fmod.server.base.event.WorldTick;
 import com.ykn.fmod.server.base.util.Util;
 
 public class FMod implements ModInitializer {
@@ -17,6 +22,17 @@ public class FMod implements ModInitializer {
 		// However, some things (like resources) may still be uninitialized.
 		CommandRegistrater commandRegistrater = new CommandRegistrater(LOGGER);
 		commandRegistrater.registerCommand();
+
+		// Register events
+		ServerWorldEvents.LOAD.register((server, world) -> {
+			NewLevel newLevel = new NewLevel(server, world);
+			newLevel.onNewLevel();
+		});
+
+		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			WorldTick worldTick = new WorldTick(server);
+			worldTick.onWorldTick();
+		});
 
 		Util.loadServerConfig();
 		LOGGER.info("FMinecraftMod: Server side initialized successfully.");

@@ -100,7 +100,7 @@ public class CommandRegistrater {
     private int runReloadCommand(CommandContext<ServerCommandSource> context) {
         try {
             Util.loadServerConfig();
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), false);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), true);
         } catch (Exception e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.reload.error"));
         }
@@ -153,11 +153,23 @@ public class CommandRegistrater {
                             )
                             .executes(context -> {return runOptionsCommand("namedMobDeathMessage", null, context);})
                         )
+                        .then(CommandManager.literal("killerDeathMessage")
+                            .then(CommandManager.argument("value", BoolArgumentType.bool())
+                                .executes(context -> {return runOptionsCommand("killerDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("killerDeathMessage", null, context);})
+                        )
                         .then(CommandManager.literal("bossMaxHealthThreshold")
                             .then(CommandManager.argument("value", DoubleArgumentType.doubleArg())
                                 .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", DoubleArgumentType.getDouble(context, "value"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", null, context);})
+                        )
+                        .then(CommandManager.literal("playerDeathCoord")
+                            .then(CommandManager.argument("value", BoolArgumentType.bool())
+                                .executes(context -> {return runOptionsCommand("playerDeathCoord", BoolArgumentType.getBool(context, "value"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("playerDeathCoord", null, context);})
                         )
                         .then(CommandManager.literal("gptUrl")
                             .then(CommandManager.argument("url", StringArgumentType.string())
@@ -209,7 +221,7 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", Util.serverConfig.isEnableServerTranslation()), false);
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), true);
                     }
                     break;
                 case "entityDeathMessage":
@@ -217,7 +229,7 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", Util.serverConfig.isEnableEntityDeathMsg()), false);
                     } else {
                         Util.serverConfig.setEnableEntityDeathMsg((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", value), true);
                     }
                     break;
                 case "bossDeathMessage":
@@ -225,7 +237,7 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", Util.serverConfig.isBcBossDeathMsg()), false);
                     } else {
                         Util.serverConfig.setBcBossDeathMsg((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", value), true);
                     }
                     break;
                 case "namedMobDeathMessage":
@@ -233,7 +245,15 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", Util.serverConfig.isNamedMobDeathMsg()), false);
                     } else {
                         Util.serverConfig.setNamedMobDeathMsg((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", value), true);
+                    }
+                    break;
+                case "killerDeathMessage":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", Util.serverConfig.isKillerEntityDeathMsg()), false);
+                    } else {
+                        Util.serverConfig.setKillerEntityDeathMsg((boolean) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bckillerdeath", value), true);
                     }
                     break;
                 case "bossMaxHealthThreshold":
@@ -244,7 +264,15 @@ public class CommandRegistrater {
                             throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativemaxhp", value));
                         }
                         Util.serverConfig.setBossMaxHpThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
+                    }
+                    break;
+                case "playerDeathCoord":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", Util.serverConfig.isBcPlayerDeathCoord()), false);
+                    } else {
+                        Util.serverConfig.setBcPlayerDeathCoord((boolean) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", value), true);
                     }
                     break;
                 case "gptUrl":
@@ -257,7 +285,7 @@ public class CommandRegistrater {
                             throw new CommandException(Util.parseTranslateableText("fmod.command.options.invalidurl", value));
                         }
                         Util.serverConfig.setGptUrl((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpturl", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpturl", value), true);
                     }
                     break;
                 case "gptAccessTokens":
@@ -269,7 +297,7 @@ public class CommandRegistrater {
                         Util.serverConfig.setGptAccessTokens(token);
                         // For security reasons, we don't want to show the full token in the log, only show the first 5 and the last 5 characters
                         final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), true);
                     }
                     break;
                 case "gptModel":
@@ -277,7 +305,7 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
                     } else {
                         Util.serverConfig.setGptModel((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), true);
                     }
                     break;
                 case "gptTemperature":
@@ -292,7 +320,7 @@ public class CommandRegistrater {
                             throw new CommandException(Util.parseTranslateableText("fmod.command.options.largetemperature", value));
                         }
                         Util.serverConfig.setGptTemperature(temperature);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), true);
                     }
                     break;
                 case "gptTimeout":
@@ -304,7 +332,7 @@ public class CommandRegistrater {
                             throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativetimeout", value));
                         }
                         Util.serverConfig.setGptServerTimeout(timeout * 1000);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), true);
                     }
                     break;
                 default:

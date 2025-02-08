@@ -25,7 +25,7 @@ public class EntityDeathMixin {
 	private void onDeath(final DamageSource damageSource, CallbackInfo info) {
 		try {
 			LivingEntity entity = (LivingEntity) (Object) this;
-			if (entity.isRemoved() == false) {
+			if (entity.isRemoved() == false && entity.isPlayer() == false) {
 				EntityDeath entityDeath = new EntityDeath(entity, damageSource);
 				entityDeath.onEntityDeath();
 			}

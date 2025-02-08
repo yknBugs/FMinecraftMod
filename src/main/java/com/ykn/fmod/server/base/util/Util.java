@@ -2,6 +2,7 @@ package com.ykn.fmod.server.base.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -11,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.config.ConfigReader;
 import com.ykn.fmod.server.base.config.ServerConfig;
+import com.ykn.fmod.server.base.data.ServerData;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.Person;
@@ -29,6 +31,7 @@ public class Util {
     public static final String MODID = "fminecraftmod";
 
     public static ServerConfig serverConfig = new ServerConfig();
+    public static HashMap<MinecraftServer, ServerData> worldData = new HashMap<>();
 
     public static String getModVersion() {
         return FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getMetadata().getVersion().toString();
@@ -120,5 +123,25 @@ public class Util {
             utilLock.writeLock().unlock();
         }
         LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Server config saved.");
+    }
+
+    @NotNull
+    public static ServerData getServerData(@NotNull MinecraftServer server) {
+        ServerData data = worldData.get(server);
+        if (data == null) {
+            data = new ServerData();
+            worldData.put(server, data);
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: A new instance of ServerData was created.");
+        }
+        return data;
+    }
+
+    public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
+        worldData.put(server, data);
+    }
+
+    public static void resetServerData(@NotNull MinecraftServer server) {
+        ServerData data = new ServerData();
+        worldData.put(server, data);
     }
 }

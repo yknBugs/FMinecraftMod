@@ -31,6 +31,11 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 
 ## Features & Changelog
 
+### Version 0.0.4
+
+- Broadcast coordinates when a player died.
+- Send the death message to chat when a killer entity died.
+
 ### Version 0.0.3
 
 Security Update:

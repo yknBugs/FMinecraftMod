@@ -36,8 +36,12 @@ public class EntityDeath {
             Util.broadcastTextMessage(livingEntity.getServer(), livingEntity.getDamageTracker().getDeathMessage());
         } else if (Util.serverConfig.isBcBossDeathMsg() && this.livingEntity.getMaxHealth() > Util.serverConfig.getBossMaxHpThreshold()) {
             Util.broadcastTextMessage(livingEntity.getServer(), livingEntity.getDamageTracker().getDeathMessage());
+        } else if (Util.serverConfig.isKillerEntityDeathMsg() && Util.getServerData(livingEntity.getServer()).isKillerEntity(livingEntity)) {
+            Util.broadcastTextMessage(livingEntity.getServer(), livingEntity.getDamageTracker().getDeathMessage());    
         } else if (Util.serverConfig.isEnableEntityDeathMsg()) {
             Util.broadcastActionBarMessage(livingEntity.getServer(), livingEntity.getDamageTracker().getDeathMessage());
         }
+
+        Util.getServerData(livingEntity.getServer()).removeKillerEntity(livingEntity);
     }
 }
