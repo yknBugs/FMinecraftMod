@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
@@ -176,6 +177,18 @@ public class CommandRegistrater {
                             )
                             .executes(context -> {return runOptionsCommand("gptModel", null, context);})
                         )
+                        .then(CommandManager.literal("gptTemperature")
+                            .then(CommandManager.argument("temperature", DoubleArgumentType.doubleArg())
+                                .executes(context -> {return runOptionsCommand("gptTemperature", DoubleArgumentType.getDouble(context, "temperature"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("gptTemperature", null, context);})
+                        )
+                        .then(CommandManager.literal("gptTimeout")
+                            .then(CommandManager.argument("timeout", IntegerArgumentType.integer())
+                                .executes(context -> {return runOptionsCommand("gptTimeout", IntegerArgumentType.getInteger(context, "timeout"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("gptTimeout", null, context);})
+                        )
                     )
                 );
                 dispatcher.register(CommandManager.literal("f").redirect(fModCommandNode));
@@ -267,10 +280,39 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), false);
                     }
                     break;
+                case "gptTemperature":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
+                    } else {
+                        double temperature = (double) value;
+                        if (temperature < 0) {
+                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativetemperature", value));
+                        }
+                        if (temperature > 1) {
+                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.largetemperature", value));
+                        }
+                        Util.serverConfig.setGptTemperature(temperature);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), false);
+                    }
+                    break;
+                case "gptTimeout":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
+                    } else {
+                        int timeout = (int) value;
+                        if (timeout < 0) {
+                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativetimeout", value));
+                        }
+                        Util.serverConfig.setGptServerTimeout(timeout * 1000);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), false);
+                    }
+                    break;
                 default:
                     throw new CommandException(Util.parseTranslateableText("fmod.command.options.unknownoption", options));
             }
-            Util.saveServerConfig();
+            if (value != null) {
+                Util.saveServerConfig();
+            }
         } catch (ClassCastException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.options.classcast", value, options, e.getMessage()));
         }

@@ -107,16 +107,16 @@ public class OptionScreen extends Screen {
             // Boss Max Health Threshold
             SliderWidget bossMaxHealthSlider = new SliderWidget(0, 0, 400, 20, 
                 Text.literal(String.format("%.1f", Util.serverConfig.getBossMaxHpThreshold())),
-                Util.serverConfig.getBossMaxHpThreshold() / 10000.0
+                Util.serverConfig.getBossMaxHpThreshold() / 1000.0
             ) {
                 @Override
                 protected void updateMessage() {
-                    this.setMessage(Text.literal(String.format("%.1f", this.value * 10000.0)));
+                    this.setMessage(Text.literal(String.format("%.1f", this.value * 1000.0)));
                 }
                 
                 @Override
                 protected void applyValue() {
-                    Util.serverConfig.setBossMaxHpThreshold(this.value * 10000.0);
+                    Util.serverConfig.setBossMaxHpThreshold(this.value * 1000.0);
                 }
             };
             this.addEntry(new NumberConfigEntry(
@@ -156,6 +156,46 @@ public class OptionScreen extends Screen {
                 gptMdlTxtWgt,
                 Text.translatable("fmod.options.gptmodel"),
                 Text.translatable("fmod.options.hint.gptmodel")
+            ));
+            // GPT Temperature
+            SliderWidget gptTempSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.2f", Util.serverConfig.getGptTemperature())),
+                Util.serverConfig.getGptTemperature()
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setGptTemperature(this.value);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                gptTempSlider,
+                Text.translatable("fmod.options.gpttemperature"),
+                Text.translatable("fmod.options.hint.gpttemperature")
+            ));
+            // GPT Server Timeout
+            SliderWidget gptTimeoutSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.3f", Util.serverConfig.getGptServerTimeout() / 1000.0)),
+                Util.serverConfig.getGptServerTimeout() / 1000.0 / 60.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.3f", this.value * 60.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setGptServerTimeout((int) (this.value * 60.0 * 1000.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                gptTimeoutSlider,
+                Text.translatable("fmod.options.gpttimeout"),
+                Text.translatable("fmod.options.hint.gpttimeout")
             ));
         };
 

@@ -60,6 +60,18 @@ public class ServerConfig extends ConfigReader {
      */
     protected String gptModel;
 
+    /**
+     * The temperature parameter of generating the response.
+     * Default: 0.8
+     */
+    protected double gptTemperature;
+
+    /**
+     * The timeout of the GPT server in milliseconds.
+     * Default: 60000 (60 seconds)
+     */
+    protected int gptServerTimeout;
+
     public ServerConfig() {
         super("server.json");
         this.enableServerTranslation = false;
@@ -70,6 +82,8 @@ public class ServerConfig extends ConfigReader {
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
+        this.gptTemperature = 0.8;
+        this.gptServerTimeout = 60000;
     }
 
     public boolean isEnableServerTranslation() {
@@ -189,6 +203,16 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
+    /**
+     * Retrieves a secure version of the GPT access token.
+     * The secure token masks the middle part of the original token with asterisks for security purposes.
+     * 
+     * @return A string representing the secure version of the GPT access token. 
+     *         If the token length is greater than 20, the first 5 and last 5 characters are visible, 
+     *         with the middle characters replaced by asterisks. 
+     *         If the token length is between 1 and 20, the entire token is replaced by asterisks. 
+     *         If the token is empty, "null" is returned.
+     */
     public String getSecureGptAccessTokens() {
         String token = "";
         lock.readLock().lock();
@@ -230,6 +254,42 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.gptModel = gptModel;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getGptTemperature() {
+        lock.readLock().lock();
+        try {
+            return gptTemperature;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setGptTemperature(double gptTemprature) {
+        lock.writeLock().lock();
+        try {
+            this.gptTemperature = gptTemprature;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getGptServerTimeout() {
+        lock.readLock().lock();
+        try {
+            return gptServerTimeout;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setGptServerTimeout(int gptServerTimeout) {
+        lock.writeLock().lock();
+        try {
+            this.gptServerTimeout = gptServerTimeout;
         } finally {
             lock.writeLock().unlock();
         }

@@ -38,6 +38,7 @@ public class GptHelper implements Runnable {
     public void run() {
         try {
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setConnectTimeout(Util.serverConfig.getGptServerTimeout());
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Accept", "application/json");
@@ -84,7 +85,7 @@ public class GptHelper implements Runnable {
     @SuppressWarnings("unused")
     private static class ChatRequest {
         private final ChatMessage[] messages;
-        private final double temperature = 0.8;
+        private final double temperature = Util.serverConfig.getGptTemperature();
         // private final int top_k = 40;
         // private final double top_p = 0.95;
         // private final double min_p = 0.05;

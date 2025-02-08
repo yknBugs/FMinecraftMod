@@ -1,7 +1,7 @@
 {
 	"schemaVersion": 1,
 	"id": "fminecraftmod",
-	"version": "0.0.3",
+	"version": "0.0.4+b3",
 	"name": "F Minecraft Mod",
 	"description": "A Minecraft Mod for Management.",
 	"authors": [
