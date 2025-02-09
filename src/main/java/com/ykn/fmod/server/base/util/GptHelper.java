@@ -4,55 +4,49 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
-import java.net.URI;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.mojang.brigadier.context.CommandContext;
+import com.ykn.fmod.server.base.data.GptData;
+
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 
 public class GptHelper implements Runnable {
 
-    private String text;
-    private URL url;
-    private String response;
+    private GptData gptData;
     private CommandContext<ServerCommandSource> context;
 
-    public GptHelper(String text, CommandContext<ServerCommandSource> context) {
-        this.text = text;
+    public GptHelper(GptData gptData, CommandContext<ServerCommandSource> context) {
+        this.gptData = gptData;
         this.context = context;
     }
 
-    public String getResponse() {
-        return response;
-    }
-
-    public void setURL(String url) throws Exception {
-        this.url = new URI(url).toURL();
+    public GptData getGptData() {
+        return gptData;
     }
 
     @Override
     public void run() {
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) url.openConnection();
+            connection = (HttpURLConnection) gptData.getCachedRequestUrl().openConnection();
             connection.setConnectTimeout(Util.serverConfig.getGptServerTimeout());
             connection.setReadTimeout(Util.serverConfig.getGptServerTimeout());
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Accept", "application/json");
-            String accessTokens = Util.serverConfig.getGptAccessTokens();
+            final String accessTokens = Util.serverConfig.getGptAccessTokens();
             if (!accessTokens.isEmpty()) {
                 connection.setRequestProperty("Authorization", "Bearer " + accessTokens);
             }
             connection.setDoOutput(true);
 
             Gson gson = new Gson();
-            String jsonRequest = gson.toJson(new ChatRequest(text));
+            final String jsonRequest = gptData.getPostMessageJson();
             connection.getOutputStream().write(jsonRequest.getBytes(StandardCharsets.UTF_8));
             
             int responseCode = connection.getResponseCode();
@@ -63,15 +57,19 @@ public class GptHelper implements Runnable {
                 while ((line = reader.readLine()) != null) {
                     responseBuilder.append(line);
                 }
-                response = gson.fromJson(responseBuilder.toString(), ChatResponse.class).getMessageContent();
-                Text formattedText = MarkdownToTextConverter.parseMarkdownToText(response);
+                final String responseJson = responseBuilder.toString();
+                final String response = gson.fromJson(responseJson, ChatResponse.class).getMessageContent().trim();
+                final String responseModel = gptData.getCachedGptModel();
+                final Text formattedText = MarkdownToTextConverter.parseMarkdownToText(response);
+                gptData.receiveMessage(response, formattedText, responseJson);
                 context.getSource().getServer().execute(() -> {
-                    context.getSource().sendFeedback(() -> formattedText, false);
+                    context.getSource().sendFeedback(() -> Text.literal("<").append(responseModel.isBlank() ? "GPT" : responseModel).append("> ").append(formattedText), false);
+                    if (context.getSource().getPlayer() != null) {
+                        LoggerFactory.getLogger(Util.LOGGERNAME).info("<" + (responseModel.isBlank() ? "GPT" : responseModel) + "> " + response);
+                    }
                 });
-                if (context.getSource().getPlayer() != null) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).info(response);
-                }
             } else {
+                gptData.receiveMessage("", Text.literal(""), "{\"code\":" + responseCode + "}");
                 context.getSource().getServer().execute(() -> {
                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode), false);
                 });
@@ -85,11 +83,13 @@ public class GptHelper implements Runnable {
                 // LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response: " + responseBuilder.toString());
             }
         } catch (SocketTimeoutException e) {
+            gptData.receiveMessage("", Text.literal(""), "{}");
             context.getSource().getServer().execute(() -> {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.timeout"), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Connect to the GPT server timeout", e);
         } catch (Exception e) {
+            gptData.receiveMessage("", Text.literal(""), "{}");
             context.getSource().getServer().execute(() -> {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.error"), false);
             });
@@ -98,23 +98,6 @@ public class GptHelper implements Runnable {
             if (connection != null) {
                 connection.disconnect();
             }
-        }
-    }
-
-    @SuppressWarnings("unused")
-    private static class ChatRequest {
-        private final ChatMessage[] messages;
-        private final double temperature = Util.serverConfig.getGptTemperature();
-        // private final int top_k = 40;
-        // private final double top_p = 0.95;
-        // private final double min_p = 0.05;
-        // private final int max_tokens = 4096;
-        // private final double frequency_penalty = 0.0;
-        // private final double presence_penalty = 0.0;
-        private final String model = Util.serverConfig.getGptModel();
-
-        public ChatRequest(String content) {
-            this.messages = new ChatMessage[]{new ChatMessage("user", content)};
         }
     }
 

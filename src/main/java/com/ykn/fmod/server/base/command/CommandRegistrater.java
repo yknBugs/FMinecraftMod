@@ -1,6 +1,9 @@
 package com.ykn.fmod.server.base.command;
 
+import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 import org.slf4j.Logger;
 
@@ -11,6 +14,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.ykn.fmod.server.base.data.GptData;
 import com.ykn.fmod.server.base.util.EnumI18n;
 import com.ykn.fmod.server.base.util.GptHelper;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
@@ -82,20 +86,158 @@ public class CommandRegistrater {
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGptCommand(String text, CommandContext<ServerCommandSource> context) {
+    private int runGptNewCommand(String text, CommandContext<ServerCommandSource> context) {
         try {
-            context.getSource().sendFeedback(() -> Text.of(text), false);
-            GptHelper gptHelper = new GptHelper(text, context);
-            gptHelper.setURL(Util.serverConfig.getGptUrl());
+            String urlString = Util.serverConfig.getGptUrl();
+            URL url = new URI(urlString).toURL();
+            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            GptHelper gptHelper = new GptHelper(gptData, context);
+            boolean postResult = gptData.newConversation(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
+            if (postResult == false) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+            }
             Thread thread = new Thread(gptHelper);
             thread.setDaemon(true);
+            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             thread.start();
-            if (context.getSource().getPlayer() != null) {
-                // Other source would have already logged the message
-                logger.info(text);
-            }
-        } catch (Exception e) {
+            // if (context.getSource().getPlayer() != null) {
+            //     // Other source would have already logged the message
+            //     logger.info("<{}> {}", context.getSource().getDisplayName().getString(), text);
+            // }
+        } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (MalformedURLException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (IllegalArgumentException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt new", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        } catch (NullPointerException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt new", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runGptReplyCommand(String text, CommandContext<ServerCommandSource> context) {
+        try {
+            String urlString = Util.serverConfig.getGptUrl();
+            URL url = new URI(urlString).toURL();
+            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            GptHelper gptHelper = new GptHelper(gptData, context);
+            boolean postResult = gptData.reply(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
+            if (postResult == false) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+            }
+            Thread thread = new Thread(gptHelper);
+            thread.setDaemon(true);
+            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            thread.start();
+        } catch (URISyntaxException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (MalformedURLException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (IllegalArgumentException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt reply", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        } catch (NullPointerException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt reply", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runGptRegenerateCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            String urlString = Util.serverConfig.getGptUrl();
+            URL url = new URI(urlString).toURL();
+            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            int gptDataLength = gptData.getHistorySize();
+            if (gptDataLength == 0) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+            }
+            String text = gptData.getPostMessages(gptDataLength - 1);
+            GptHelper gptHelper = new GptHelper(gptData, context);
+            boolean postResult = gptData.regenerate(url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
+            if (postResult == false) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+            }
+            Thread thread = new Thread(gptHelper);
+            thread.setDaemon(true);
+            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            thread.start();
+        } catch (URISyntaxException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (MalformedURLException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (IllegalArgumentException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt regenerate", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        } catch (NullPointerException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt regenerate", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runGptEditCommand(int index, String text, CommandContext<ServerCommandSource> context) {
+        try {
+            String urlString = Util.serverConfig.getGptUrl();
+            URL url = new URI(urlString).toURL();
+            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            int gptDataLength = gptData.getHistorySize();
+            if (gptDataLength == 0) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+            }
+            // The Command argument index begins from 1, the source code index begins from 0
+            if (index <= 0 || index > gptDataLength) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
+            }
+            GptHelper gptHelper = new GptHelper(gptData, context);
+            boolean postResult = gptData.editHistory(index - 1, text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
+            if (postResult == false) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+            }
+            Thread thread = new Thread(gptHelper);
+            thread.setDaemon(true);
+            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            thread.start();
+        } catch (URISyntaxException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (MalformedURLException e) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (IllegalArgumentException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt edit " + index, e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        } catch (NullPointerException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt edit " + index, e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runGptShowCommand(int index, CommandContext<ServerCommandSource> context) {
+        try {
+            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            final int gptDataLength = gptData.getHistorySize();
+            if (gptDataLength == 0) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+            }
+            if (index == 0) {
+                index = gptDataLength;
+            }
+            if (index < 0 || index > gptDataLength) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
+            }
+            final int finalIndex = index;
+            final String postMessage = gptData.getPostMessages(index - 1);
+            final String model = gptData.getGptModels(index - 1);
+            final Text receivedMessage = gptData.getResponseTexts(index - 1);
+            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(postMessage)), false);
+            context.getSource().sendFeedback(() -> Text.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
+        } catch (NullPointerException e) {
+            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt show " + index, e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -122,8 +264,27 @@ public class CommandRegistrater {
                     )
                     .then(CommandManager.literal("gpt")
                         .requires(source -> source.hasPermissionLevel(3))
-                        .then(CommandManager.argument("text", StringArgumentType.greedyString())
-                            .executes(context -> {return runGptCommand(StringArgumentType.getString(context, "text"), context);})
+                        .then(CommandManager.literal("new")
+                            .then(CommandManager.argument("message", StringArgumentType.greedyString())
+                                .executes(context -> {return runGptNewCommand(StringArgumentType.getString(context, "message"), context);})
+                            ))
+                        .then(CommandManager.literal("reply")
+                            .then(CommandManager.argument("message", StringArgumentType.greedyString())
+                                .executes(context -> {return runGptReplyCommand(StringArgumentType.getString(context, "message"), context);})
+                            ))
+                        .then(CommandManager.literal("regenerate").executes(context -> {return runGptRegenerateCommand(context);}))
+                        .then(CommandManager.literal("edit")
+                            .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                .then(CommandManager.argument("message", StringArgumentType.greedyString())
+                                    .executes(context -> {return runGptEditCommand(IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "message"), context);})
+                                )
+                            )
+                        )
+                        .then(CommandManager.literal("show")
+                            .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                .executes(context -> {return runGptShowCommand(IntegerArgumentType.getInteger(context, "index"), context);})
+                            )
+                            .executes(context -> {return runGptShowCommand(0, context);})
                         )
                     )
                     .then(CommandManager.literal("reload")
@@ -195,6 +356,12 @@ public class CommandRegistrater {
                                 .executes(context -> {return runOptionsCommand("gptModel", StringArgumentType.getString(context, "model"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("gptModel", null, context);})
+                        )
+                        .then(CommandManager.literal("gptSystemPrompt")
+                            .then(CommandManager.argument("prompt", StringArgumentType.greedyString())
+                                .executes(context -> {return runOptionsCommand("gptSystemPrompt", StringArgumentType.getString(context, "prompt"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("gptSystemPrompt", null, context);})
                         )
                         .then(CommandManager.literal("gptTemperature")
                             .then(CommandManager.argument("temperature", DoubleArgumentType.doubleArg(0, 1))
@@ -324,6 +491,14 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setGptModel((String) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), true);
+                    }
+                    break;
+                case "gptSystemPrompt":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptsysprompt", Util.serverConfig.getGptSystemPrompt()), false);
+                    } else {
+                        Util.serverConfig.setGptSystemPrompt((String) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptsysprompt", value), true);
                     }
                     break;
                 case "gptTemperature":

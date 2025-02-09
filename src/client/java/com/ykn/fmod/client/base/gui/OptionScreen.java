@@ -194,6 +194,17 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.gptmodel"),
                 Text.translatable("fmod.options.hint.gptmodel")
             ));
+            // GPT System Prompt
+            TextFieldWidget gptSysPrmptTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
+            gptSysPrmptTxtWgt.setMaxLength(1024);
+            gptSysPrmptTxtWgt.setEditable(true);
+            gptSysPrmptTxtWgt.setText(Util.serverConfig.getGptSystemPrompt());
+            gptSysPrmptTxtWgt.setChangedListener(s -> Util.serverConfig.setGptSystemPrompt(s));
+            this.addEntry(new StringConfigEntry(
+                gptSysPrmptTxtWgt,
+                Text.translatable("fmod.options.gptsysprompt"),
+                Text.translatable("fmod.options.hint.gptsysprompt")
+            ));
             // GPT Temperature
             SliderWidget gptTempSlider = new SliderWidget(0, 0, 400, 20, 
                 Text.literal(String.format("%.2f", Util.serverConfig.getGptTemperature())),

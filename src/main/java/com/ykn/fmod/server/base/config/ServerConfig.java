@@ -76,6 +76,12 @@ public class ServerConfig extends ConfigReader {
     protected String gptModel;
 
     /**
+     * The system prompt of generating the response.
+     * Default: ""
+     */
+    protected String gptSystemPrompt;
+
+    /**
      * The temperature parameter of generating the response.
      * Default: 0.8
      */
@@ -99,6 +105,7 @@ public class ServerConfig extends ConfigReader {
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
+        this.gptSystemPrompt = "";
         this.gptTemperature = 0.8;
         this.gptServerTimeout = 60000;
     }
@@ -314,6 +321,24 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.gptModel = gptModel;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public String getGptSystemPrompt() {
+        lock.readLock().lock();
+        try {
+            return gptSystemPrompt;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setGptSystemPrompt(String gptSystemPrompt) {
+        lock.writeLock().lock();
+        try {
+            this.gptSystemPrompt = gptSystemPrompt;
         } finally {
             lock.writeLock().unlock();
         }

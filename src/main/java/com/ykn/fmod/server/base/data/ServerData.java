@@ -10,15 +10,20 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+/**
+ * WARNING: This class is not thread-safe.
+ */
 public class ServerData {
 
     public HashMap<ServerPlayerEntity, PlayerData> playerData;
 
     public Collection<LivingEntity> killerEntities;
+    public HashMap<String, GptData> gptRequestStatus;
 
     public ServerData() {
         playerData = new HashMap<>();
         killerEntities = new HashSet<>();
+        gptRequestStatus = new HashMap<>();
     }
 
     /**
@@ -58,5 +63,23 @@ public class ServerData {
             return false;
         }
         return killerEntities.remove(entity);
+    }
+
+    /**
+     * Retrieves the GptData associated with the given ServerCommandSource.
+     * If no GptData is found for the provided source, a new GptData instance
+     * is created, stored, and then returned.
+     *
+     * @param source the name of the CommandSource for which to retrieve the GptData
+     * @return the GptData associated with the given ServerCommandSource
+     */
+    @NotNull
+    public GptData getGptData(@NotNull String source) {
+        GptData data = gptRequestStatus.get(source);
+        if (data == null) {
+            data = new GptData();
+            gptRequestStatus.put(source, data);
+        }
+        return data;
     }
 }

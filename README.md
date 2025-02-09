@@ -36,6 +36,7 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 The config file of this version is not compatible with the old version.
 
 - You can choose where to show the entity death message.
+- GPT command supports conversation history and system prompt.
 - I18n file enhancement.
 
 ### Version 0.0.4
