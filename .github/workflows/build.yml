@@ -23,4 +23,5 @@ jobs:
     - name: Build with Gradle
       run: |
         sed -i 's/^org.gradle.java.home.*$//g' gradle.properties
+        chmod +x gradlew
         ./gradlew build
