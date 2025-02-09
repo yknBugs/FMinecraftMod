@@ -65,11 +65,11 @@ public class Util {
         return copy;
     }
 
-    public static void sendActionBarMessage(@NotNull ServerPlayerEntity player, Text message) {
+    public static void sendActionBarMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
         player.networkHandler.sendPacket(new OverlayMessageS2CPacket(message));
     }
 
-    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, Text message) {
+    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @NotNull Text message) {
         if (server == null) {
             return;
         }
@@ -79,11 +79,11 @@ public class Util {
         }
     }
 
-    public static void sendTextMessage(@NotNull ServerPlayerEntity player, Text message) {
+    public static void sendTextMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
         player.sendMessage(message, false);
     }
 
-    public static void broadcastTextMessage(@Nullable MinecraftServer server, Text message) {
+    public static void broadcastTextMessage(@Nullable MinecraftServer server, @NotNull Text message) {
         if (server == null) {
             return;
         }
@@ -93,6 +93,38 @@ public class Util {
         }
         // Also broadcast the message to the server console.
         LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
+    }
+
+    public static void sendMessage(@NotNull ServerPlayerEntity player, @NotNull MessageType type, @NotNull Text message) {
+        switch (type) {
+            case NONE:
+                break;
+            case CHAT:
+                sendTextMessage(player, message);
+                break;
+            case ACTIONBAR:
+                sendActionBarMessage(player, message);
+                break;
+            default:
+                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type.");
+                break;
+        }
+    }
+
+    public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageType type, @NotNull Text message) {
+        switch (type) {
+            case NONE:
+                break;
+            case CHAT:
+                broadcastTextMessage(server, message);
+                break;
+            case ACTIONBAR:
+                broadcastActionBarMessage(server, message);
+                break;
+            default:
+                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type.");
+                break;
+        }
     }
 
     @NotNull

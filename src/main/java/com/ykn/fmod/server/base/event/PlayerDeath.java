@@ -10,7 +10,6 @@ import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.world.biome.Biome;
 
 public class PlayerDeath {
 
@@ -43,7 +42,7 @@ public class PlayerDeath {
         if (killer != null && killer.isPlayer() == false) {
             Util.getServerData(killer.getServer()).addKillerEntity(killer);
         }
-        if (Util.serverConfig.isBcPlayerDeathCoord()) {
+        if (Util.serverConfig.isBroadcastPlayerDeathCoord()) {
             Text playerName = player.getDisplayName();
             double x = player.getX();
             double y = player.getY();

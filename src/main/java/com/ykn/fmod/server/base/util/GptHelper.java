@@ -76,13 +76,13 @@ public class GptHelper implements Runnable {
                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode), false);
                 });
                 LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response code: " + responseCode);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-                StringBuilder responseBuilder = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    responseBuilder.append(line);
-                }
-                LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response: " + responseBuilder.toString());
+                // BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+                // StringBuilder responseBuilder = new StringBuilder();
+                // String line;
+                // while ((line = reader.readLine()) != null) {
+                //     responseBuilder.append(line);
+                // }
+                // LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response: " + responseBuilder.toString());
             }
         } catch (SocketTimeoutException e) {
             context.getSource().getServer().execute(() -> {

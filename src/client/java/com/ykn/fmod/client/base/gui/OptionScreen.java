@@ -1,7 +1,10 @@
 package com.ykn.fmod.client.base.gui;
 
+import java.util.Arrays;
 import java.util.List;
 
+import com.ykn.fmod.server.base.util.EnumI18n;
+import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.client.MinecraftClient;
@@ -79,36 +82,48 @@ public class OptionScreen extends Screen {
             ));
             // Entity Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isEnableEntityDeathMsg()), button -> {
-                    Util.serverConfig.setEnableEntityDeathMsg(!Util.serverConfig.isEnableEntityDeathMsg());
-                    button.setMessage(getBoolStateText(Util.serverConfig.isEnableEntityDeathMsg()));
+                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getEntityDeathMessageType()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getEntityDeathMessageType());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setEntityDeathMessageType((MessageType) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getEntityDeathMessageType()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.entdeathmsg"),
                 Text.translatable("fmod.options.hint.entdeathmsg")
             ));
             // Boss Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isBcBossDeathMsg()), button -> {
-                    Util.serverConfig.setBcBossDeathMsg(!Util.serverConfig.isBcBossDeathMsg());
-                    button.setMessage(getBoolStateText(Util.serverConfig.isBcBossDeathMsg()));
+                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getBossDeathMessageType()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getBossDeathMessageType());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setBossDeathMessageType((MessageType) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getBossDeathMessageType()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bcbossdeath"),
                 Text.translatable("fmod.options.hint.bcbossdeath")
             ));
             // Named Entity Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isNamedMobDeathMsg()), button -> {
-                    Util.serverConfig.setNamedMobDeathMsg(!Util.serverConfig.isNamedMobDeathMsg());
-                    button.setMessage(getBoolStateText(Util.serverConfig.isNamedMobDeathMsg()));
+                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getNamedEntityDeathMessageType()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getNamedEntityDeathMessageType());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setNamedEntityDeathMessageType((MessageType) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getNamedEntityDeathMessageType()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.nameddeath"),
                 Text.translatable("fmod.options.hint.nameddeath")
             ));
             // Killer Entity Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isKillerEntityDeathMsg()), button -> {
-                    Util.serverConfig.setKillerEntityDeathMsg(!Util.serverConfig.isKillerEntityDeathMsg());
-                    button.setMessage(getBoolStateText(Util.serverConfig.isKillerEntityDeathMsg()));
+                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getKillerEntityDeathMessageType()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getKillerEntityDeathMessageType());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setKillerEntityDeathMessageType((MessageType) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getKillerEntityDeathMessageType()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bckillerdeath"),
                 Text.translatable("fmod.options.hint.bckillerdeath")
@@ -135,9 +150,9 @@ public class OptionScreen extends Screen {
             ));
             // Player Death Coord
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isBcPlayerDeathCoord()), button -> {
-                    Util.serverConfig.setBcPlayerDeathCoord(!Util.serverConfig.isBcPlayerDeathCoord());
-                    button.setMessage(getBoolStateText(Util.serverConfig.isBcPlayerDeathCoord()));
+                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isBroadcastPlayerDeathCoord()), button -> {
+                    Util.serverConfig.setBroadcastPlayerDeathCoord(!Util.serverConfig.isBroadcastPlayerDeathCoord());
+                    button.setMessage(getBoolStateText(Util.serverConfig.isBroadcastPlayerDeathCoord()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bcdeathcoord"),
                 Text.translatable("fmod.options.hint.bcdeathcoord")

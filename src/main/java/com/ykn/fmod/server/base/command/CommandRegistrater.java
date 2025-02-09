@@ -11,8 +11,10 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.ykn.fmod.server.base.util.EnumI18n;
 import com.ykn.fmod.server.base.util.GptHelper;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
+import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -119,7 +121,7 @@ public class CommandRegistrater {
                     )
                     .then(CommandManager.literal("gpt")
                         .requires(source -> source.hasPermissionLevel(3))
-                        .then(CommandManager.argument("text", StringArgumentType.string())
+                        .then(CommandManager.argument("text", StringArgumentType.greedyString())
                             .executes(context -> {return runGptCommand(StringArgumentType.getString(context, "text"), context);})
                         )
                     )
@@ -136,31 +138,31 @@ public class CommandRegistrater {
                             .executes(context -> {return runOptionsCommand("serverTranslation", null, context);})
                         )
                         .then(CommandManager.literal("entityDeathMessage")
-                            .then(CommandManager.argument("value", BoolArgumentType.bool())
-                                .executes(context -> {return runOptionsCommand("entityDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
-                            )
+                            .then(CommandManager.literal("false").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageType.NONE, context);}))
+                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageType.CHAT, context);}))
+                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageType.ACTIONBAR, context);}))
                             .executes(context -> {return runOptionsCommand("entityDeathMessage", null, context);})
                         )
                         .then(CommandManager.literal("bossDeathMessage")
-                            .then(CommandManager.argument("value", BoolArgumentType.bool())
-                                .executes(context -> {return runOptionsCommand("bossDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
-                            )
+                            .then(CommandManager.literal("false").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageType.NONE, context);}))
+                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageType.CHAT, context);}))
+                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageType.ACTIONBAR, context);}))
                             .executes(context -> {return runOptionsCommand("bossDeathMessage", null, context);})
                         )
                         .then(CommandManager.literal("namedMobDeathMessage")
-                            .then(CommandManager.argument("value", BoolArgumentType.bool())
-                                .executes(context -> {return runOptionsCommand("namedMobDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
-                            )
+                            .then(CommandManager.literal("false").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageType.NONE, context);}))
+                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageType.CHAT, context);}))
+                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageType.ACTIONBAR, context);}))
                             .executes(context -> {return runOptionsCommand("namedMobDeathMessage", null, context);})
                         )
                         .then(CommandManager.literal("killerDeathMessage")
-                            .then(CommandManager.argument("value", BoolArgumentType.bool())
-                                .executes(context -> {return runOptionsCommand("killerDeathMessage", BoolArgumentType.getBool(context, "value"), context);})
-                            )
+                            .then(CommandManager.literal("false").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageType.NONE, context);}))
+                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageType.CHAT, context);}))
+                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageType.ACTIONBAR, context);}))
                             .executes(context -> {return runOptionsCommand("killerDeathMessage", null, context);})
                         )
                         .then(CommandManager.literal("bossMaxHealthThreshold")
-                            .then(CommandManager.argument("value", DoubleArgumentType.doubleArg())
+                            .then(CommandManager.argument("value", DoubleArgumentType.doubleArg(0))
                                 .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", DoubleArgumentType.getDouble(context, "value"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", null, context);})
@@ -172,38 +174,42 @@ public class CommandRegistrater {
                             .executes(context -> {return runOptionsCommand("playerDeathCoord", null, context);})
                         )
                         .then(CommandManager.literal("gptUrl")
-                            .then(CommandManager.argument("url", StringArgumentType.string())
+                            .then(CommandManager.argument("url", StringArgumentType.greedyString())
                                 .executes(context -> {return runOptionsCommand("gptUrl", StringArgumentType.getString(context, "url"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("gptUrl", null, context);})
                         )
                         .then(CommandManager.literal("gptAccessTokens")
-                            .then(CommandManager.argument("tokens", StringArgumentType.string())
+                            .then(CommandManager.argument("tokens", StringArgumentType.greedyString())
                                 .executes(context -> {return runOptionsCommand("gptAccessTokens", StringArgumentType.getString(context, "tokens"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("gptAccessTokens", null, context);})
                         )
                         .then(CommandManager.literal("gptModel")
-                            .then(CommandManager.argument("model", StringArgumentType.string())
+                            .then(CommandManager.argument("model", StringArgumentType.greedyString())
                                 .executes(context -> {return runOptionsCommand("gptModel", StringArgumentType.getString(context, "model"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("gptModel", null, context);})
                         )
                         .then(CommandManager.literal("gptTemperature")
-                            .then(CommandManager.argument("temperature", DoubleArgumentType.doubleArg())
+                            .then(CommandManager.argument("temperature", DoubleArgumentType.doubleArg(0, 1))
                                 .executes(context -> {return runOptionsCommand("gptTemperature", DoubleArgumentType.getDouble(context, "temperature"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("gptTemperature", null, context);})
                         )
                         .then(CommandManager.literal("gptTimeout")
-                            .then(CommandManager.argument("timeout", IntegerArgumentType.integer())
+                            .then(CommandManager.argument("timeout", IntegerArgumentType.integer(0))
                                 .executes(context -> {return runOptionsCommand("gptTimeout", IntegerArgumentType.getInteger(context, "timeout"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("gptTimeout", null, context);})
                         )
                     )
                 );
-                dispatcher.register(CommandManager.literal("f").redirect(fModCommandNode));
+                dispatcher.register(CommandManager.literal("f")
+                    .requires(source -> source.hasPermissionLevel(0))
+                    .executes(context -> {return runFModCommand(context);})
+                    .redirect(fModCommandNode)
+                );
             });
 
             return true;
@@ -226,52 +232,57 @@ public class CommandRegistrater {
                     break;
                 case "entityDeathMessage":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", Util.serverConfig.isEnableEntityDeathMsg()), false);
+                        final MutableText text = EnumI18n.getMessageTypeI18n(Util.serverConfig.getEntityDeathMessageType());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", text), false);
                     } else {
-                        Util.serverConfig.setEnableEntityDeathMsg((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", value), true);
+                        Util.serverConfig.setEntityDeathMessageType((MessageType) value);
+                        final MutableText text = EnumI18n.getMessageTypeI18n((MessageType) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", text), true);
                     }
                     break;
                 case "bossDeathMessage":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", Util.serverConfig.isBcBossDeathMsg()), false);
+                        final MutableText text = EnumI18n.getMessageTypeI18n(Util.serverConfig.getBossDeathMessageType());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", text), false);
                     } else {
-                        Util.serverConfig.setBcBossDeathMsg((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", value), true);
+                        Util.serverConfig.setBossDeathMessageType((MessageType) value);
+                        final MutableText text = EnumI18n.getMessageTypeI18n((MessageType) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", text), true);
                     }
                     break;
                 case "namedMobDeathMessage":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", Util.serverConfig.isNamedMobDeathMsg()), false);
+                        final MutableText text = EnumI18n.getMessageTypeI18n(Util.serverConfig.getNamedEntityDeathMessageType());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", text), false);
                     } else {
-                        Util.serverConfig.setNamedMobDeathMsg((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", value), true);
+                        Util.serverConfig.setNamedEntityDeathMessageType((MessageType) value);
+                        final MutableText text = EnumI18n.getMessageTypeI18n((MessageType) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", text), true);
                     }
                     break;
                 case "killerDeathMessage":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", Util.serverConfig.isKillerEntityDeathMsg()), false);
+                        final MutableText text = EnumI18n.getMessageTypeI18n(Util.serverConfig.getKillerEntityDeathMessageType());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", text), false);
                     } else {
-                        Util.serverConfig.setKillerEntityDeathMsg((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bckillerdeath", value), true);
+                        Util.serverConfig.setKillerEntityDeathMessageType((MessageType) value);
+                        final MutableText text = EnumI18n.getMessageTypeI18n((MessageType) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bckillerdeath", text), true);
                     }
                     break;
                 case "bossMaxHealthThreshold":
                     if (value == null) {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
                     } else {
-                        if (((double) value) < 0) {
-                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativemaxhp", value));
-                        }
                         Util.serverConfig.setBossMaxHpThreshold((double) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
                     }
                     break;
                 case "playerDeathCoord":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", Util.serverConfig.isBcPlayerDeathCoord()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", Util.serverConfig.isBroadcastPlayerDeathCoord()), false);
                     } else {
-                        Util.serverConfig.setBcPlayerDeathCoord((boolean) value);
+                        Util.serverConfig.setBroadcastPlayerDeathCoord((boolean) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", value), true);
                     }
                     break;
@@ -313,12 +324,6 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
                     } else {
                         double temperature = (double) value;
-                        if (temperature < 0) {
-                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativetemperature", value));
-                        }
-                        if (temperature > 1) {
-                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.largetemperature", value));
-                        }
                         Util.serverConfig.setGptTemperature(temperature);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), true);
                     }
@@ -328,9 +333,6 @@ public class CommandRegistrater {
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
                     } else {
                         int timeout = (int) value;
-                        if (timeout < 0) {
-                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.negativetimeout", value));
-                        }
                         Util.serverConfig.setGptServerTimeout(timeout * 1000);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), true);
                     }

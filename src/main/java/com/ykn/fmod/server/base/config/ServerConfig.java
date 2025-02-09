@@ -2,6 +2,8 @@ package com.ykn.fmod.server.base.config;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.ykn.fmod.server.base.util.MessageType;
+
 public class ServerConfig extends ConfigReader {
 
     // Multiple threads may access the config class at the same time, the getters and setters in this class must be locked to ensure thread safety.
@@ -13,31 +15,31 @@ public class ServerConfig extends ConfigReader {
      * But if enabled, the message will not follow the client's language setting.
      * Default: false
      */
-    protected boolean enableServerTranslation;
+    protected boolean serverTranslation;
 
     /**
-     * If enabled, the server will send an actionbar message to the client when an entity dies.
-     * Default: false
+     * The message sent to the client when an entity dies.
+     * Default: NONE
      */
-    protected boolean enableEntityDeathMsg;
+    protected MessageType entityDeathMessage;
 
     /**
-     * If enabled, the server will send a text message to the client when a boss dies.
-     * Default: false
+     * The message sent to the client when a boss dies.
+     * Default: NONE
      */
-    protected boolean bcBossDeathMsg;
+    protected MessageType bossDeathMessage;
 
     /**
-     * If enabled, the server will send a text message to the client when a mob with custom name dies.
-     * Default: false
+     * The message sent to the client when a mob with custom name dies.
+     * Default: NONE
      */
-    protected boolean namedMobDeathMsg;
+    protected MessageType namedEntityDeathMessage;
 
     /**
-     * If enabled, the server will send a text message to the client when a mob - the mod that has once killed a player before - dies.
-     * Default: false
+     * The message sent to the client when a mob - the mod that has once killed a player before - dies.
+     * Default: NONE
      */
-    protected boolean killerEntityDeathMsg;
+    protected MessageType killerDeathMessage;
 
     /**
      * If an entity has a health greater than this value, it will be considered as a boss.
@@ -49,7 +51,7 @@ public class ServerConfig extends ConfigReader {
      * If enabled, the server will send the coordinates when a player dies.
      * Default: false
      */
-    protected boolean bcPlayerDeathCoord;
+    protected boolean playerDeathCoord;
 
     /**
      * The URL of the target GPT server.
@@ -86,13 +88,13 @@ public class ServerConfig extends ConfigReader {
 
     public ServerConfig() {
         super("server.json");
-        this.enableServerTranslation = false;
-        this.enableEntityDeathMsg = false;
-        this.bcBossDeathMsg = false;
-        this.namedMobDeathMsg = false;
-        this.killerEntityDeathMsg = false;
+        this.serverTranslation = false;
+        this.entityDeathMessage = MessageType.NONE;
+        this.bossDeathMessage = MessageType.NONE;
+        this.namedEntityDeathMessage = MessageType.NONE;
+        this.killerDeathMessage = MessageType.NONE;
         this.bossMaxHpThreshold = 150;
-        this.bcPlayerDeathCoord = false;
+        this.playerDeathCoord = false;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -103,88 +105,88 @@ public class ServerConfig extends ConfigReader {
     public boolean isEnableServerTranslation() {
         lock.readLock().lock();
         try {
-            return enableServerTranslation;
+            return serverTranslation;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setEnableServerTranslation(boolean enableServerTranslation) {
+    public void setEnableServerTranslation(boolean serverTranslation) {
         lock.writeLock().lock();
         try {
-            this.enableServerTranslation = enableServerTranslation;
+            this.serverTranslation = serverTranslation;
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean isEnableEntityDeathMsg() {
+    public MessageType getEntityDeathMessageType() {
         lock.readLock().lock();
         try {
-            return enableEntityDeathMsg;
+            return entityDeathMessage;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setEnableEntityDeathMsg(boolean enableEntityDeathMsg) {
+    public void setEntityDeathMessageType(MessageType entityDeathMessage) {
         lock.writeLock().lock();
         try {
-            this.enableEntityDeathMsg = enableEntityDeathMsg;
+            this.entityDeathMessage = entityDeathMessage;
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean isBcBossDeathMsg() {
+    public MessageType getBossDeathMessageType() {
         lock.readLock().lock();
         try {
-            return bcBossDeathMsg;
+            return bossDeathMessage;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setBcBossDeathMsg(boolean bcBossDeathMsg) {
+    public void setBossDeathMessageType(MessageType bossDeathMessage) {
         lock.writeLock().lock();
         try {
-            this.bcBossDeathMsg = bcBossDeathMsg;
+            this.bossDeathMessage = bossDeathMessage;
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean isNamedMobDeathMsg() {
+    public MessageType getNamedEntityDeathMessageType() {
         lock.readLock().lock();
         try {
-            return namedMobDeathMsg;
+            return namedEntityDeathMessage;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setNamedMobDeathMsg(boolean namedMobDeathMsg) {
+    public void setNamedEntityDeathMessageType(MessageType namedEntityDeathMessage) {
         lock.writeLock().lock();
         try {
-            this.namedMobDeathMsg = namedMobDeathMsg;
+            this.namedEntityDeathMessage = namedEntityDeathMessage;
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean isKillerEntityDeathMsg() {
+    public MessageType getKillerEntityDeathMessageType() {
         lock.readLock().lock();
         try {
-            return killerEntityDeathMsg;
+            return killerDeathMessage;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setKillerEntityDeathMsg(boolean killerEntityDeathMsg) {
+    public void setKillerEntityDeathMessageType(MessageType killerDeathMessage) {
         lock.writeLock().lock();
         try {
-            this.killerEntityDeathMsg = killerEntityDeathMsg;
+            this.killerDeathMessage = killerDeathMessage;
         } finally {
             lock.writeLock().unlock();
         }
@@ -193,6 +195,9 @@ public class ServerConfig extends ConfigReader {
     public double getBossMaxHpThreshold() {
         lock.readLock().lock();
         try {
+            if (bossMaxHpThreshold < 0) {
+                return 0;
+            }
             return bossMaxHpThreshold;
         } finally {
             lock.readLock().unlock();
@@ -202,25 +207,29 @@ public class ServerConfig extends ConfigReader {
     public void setBossMaxHpThreshold(double bossMaxHpThreshold) {
         lock.writeLock().lock();
         try {
-            this.bossMaxHpThreshold = bossMaxHpThreshold;
+            if (bossMaxHpThreshold < 0) {
+                this.bossMaxHpThreshold = 0;
+            } else {
+                this.bossMaxHpThreshold = bossMaxHpThreshold;
+            }
         } finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean isBcPlayerDeathCoord() {
+    public boolean isBroadcastPlayerDeathCoord() {
         lock.readLock().lock();
         try {
-            return bcPlayerDeathCoord;
+            return playerDeathCoord;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setBcPlayerDeathCoord(boolean bcPlayerDeathCoord) {
+    public void setBroadcastPlayerDeathCoord(boolean playerDeathCoord) {
         lock.writeLock().lock();
         try {
-            this.bcPlayerDeathCoord = bcPlayerDeathCoord;
+            this.playerDeathCoord = playerDeathCoord;
         } finally {
             lock.writeLock().unlock();
         }
@@ -312,6 +321,12 @@ public class ServerConfig extends ConfigReader {
     public double getGptTemperature() {
         lock.readLock().lock();
         try {
+            if (gptTemperature < 0) {
+                return 0;
+            }
+            if (gptTemperature > 1) {
+                return 1;
+            }
             return gptTemperature;
         } finally {
             lock.readLock().unlock();
@@ -321,7 +336,13 @@ public class ServerConfig extends ConfigReader {
     public void setGptTemperature(double gptTemprature) {
         lock.writeLock().lock();
         try {
-            this.gptTemperature = gptTemprature;
+            if (gptTemprature < 0) {
+                this.gptTemperature = 0;
+            } else if (gptTemprature > 1) {
+                this.gptTemperature = 1;
+            } else {
+                this.gptTemperature = gptTemprature;
+            }
         } finally {
             lock.writeLock().unlock();
         }
@@ -330,6 +351,9 @@ public class ServerConfig extends ConfigReader {
     public int getGptServerTimeout() {
         lock.readLock().lock();
         try {
+            if (gptServerTimeout < 0) {
+                return 0;
+            }
             return gptServerTimeout;
         } finally {
             lock.readLock().unlock();
@@ -339,7 +363,11 @@ public class ServerConfig extends ConfigReader {
     public void setGptServerTimeout(int gptServerTimeout) {
         lock.writeLock().lock();
         try {
-            this.gptServerTimeout = gptServerTimeout;
+            if (gptServerTimeout < 0) {
+                this.gptServerTimeout = 0;
+            } else {
+                this.gptServerTimeout = gptServerTimeout;
+            }
         } finally {
             lock.writeLock().unlock();
         }
