@@ -18,4 +18,25 @@ public class EnumI18n {
         }
     }
 
+    public static MutableText getMessageMethodI18n(MessageMethod method) {
+        switch (method) {
+            case ALL:
+                return Util.parseTranslateableText("fmod.message.type.toall");
+            case OP:
+                return Util.parseTranslateableText("fmod.message.type.toop");
+            case SELFOP:
+                return Util.parseTranslateableText("fmod.message.type.toselfop");
+            case TEAMOP:
+                return Util.parseTranslateableText("fmod.message.type.toteamop");
+            case TEAM:
+                return Util.parseTranslateableText("fmod.message.type.toteam");
+            case SELF:
+                return Util.parseTranslateableText("fmod.message.type.toself");
+            case NONE:
+                return Util.parseTranslateableText("fmod.message.type.none");
+            default:
+                return Text.literal(method.toString());
+        }
+    }
+
 }

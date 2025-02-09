@@ -1,5 +1,6 @@
 package com.ykn.fmod.server.base.event;
 
+import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.LivingEntity;
@@ -42,29 +43,28 @@ public class PlayerDeath {
         if (killer != null && killer.isPlayer() == false) {
             Util.getServerData(killer.getServer()).addKillerEntity(killer);
         }
-        if (Util.serverConfig.isBroadcastPlayerDeathCoord()) {
-            Text playerName = player.getDisplayName();
-            double x = player.getX();
-            double y = player.getY();
-            double z = player.getZ();
-            String strX = String.format("%.2f", x);
-            String strY = String.format("%.2f", y);
-            String strZ = String.format("%.2f", z);
-            Identifier biomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
-            MutableText biomeText = null;
-            if (biomeId == null) {
-                biomeText = Util.parseTranslateableText("fmod.misc.unknown");
-            } else {
-                // Vanilla should contain this translation key.
-                biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
-            }
-            MutableText text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
-                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
-            ).withHoverEvent(
-                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
-            ));
-            Util.broadcastTextMessage(player.getServer(), text);
+
+        Text playerName = player.getDisplayName();
+        double x = player.getX();
+        double y = player.getY();
+        double z = player.getZ();
+        String strX = String.format("%.2f", x);
+        String strY = String.format("%.2f", y);
+        String strZ = String.format("%.2f", z);
+        Identifier biomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        MutableText biomeText = null;
+        if (biomeId == null) {
+            biomeText = Util.parseTranslateableText("fmod.misc.unknown");
+        } else {
+            // Vanilla should contain this translation key.
+            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
         }
+        MutableText text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
+            new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+        ).withHoverEvent(
+            new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
+        ));
+        Util.postMessage(player, Util.serverConfig.getPlayerDeathCoordMethod(), MessageType.CHAT, text);
     }
 
 }

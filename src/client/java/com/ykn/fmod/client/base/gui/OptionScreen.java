@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.EnumI18n;
+import com.ykn.fmod.server.base.util.MessageMethod;
 import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 
@@ -150,9 +151,12 @@ public class OptionScreen extends Screen {
             ));
             // Player Death Coord
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(getBoolStateText(Util.serverConfig.isBroadcastPlayerDeathCoord()), button -> {
-                    Util.serverConfig.setBroadcastPlayerDeathCoord(!Util.serverConfig.isBroadcastPlayerDeathCoord());
-                    button.setMessage(getBoolStateText(Util.serverConfig.isBroadcastPlayerDeathCoord()));
+                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getPlayerDeathCoordMethod()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getPlayerDeathCoordMethod());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setPlayerDeathCoordMethod((MessageMethod) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getPlayerDeathCoordMethod()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bcdeathcoord"),
                 Text.translatable("fmod.options.hint.bcdeathcoord")

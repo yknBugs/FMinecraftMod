@@ -127,6 +127,66 @@ public class Util {
         }
     }
 
+    public static void postMessage(@NotNull ServerPlayerEntity player, @NotNull MessageMethod method, @NotNull MessageType type, @NotNull Text message) {
+        switch (method) {
+            case ALL:
+                {
+                    broadcastMessage(player.getServer(), type, message);
+                    break;
+                }
+            case OP:
+                {
+                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayerEntity p : players) {
+                        if (p.hasPermissionLevel(2)) {
+                            sendMessage(p, type, message);
+                        }
+                    }
+                    break;
+                }
+            case SELFOP:
+                {
+                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayerEntity p : players) {
+                        if (p.hasPermissionLevel(2) || p == player) {
+                            sendMessage(p, type, message);
+                        }
+                    }
+                    break;
+                }
+            case TEAM:
+                {
+                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayerEntity p : players) {
+                        if (p.isTeammate(player) || p == player) {
+                            sendMessage(p, type, message);
+                        }
+                    }
+                    break;
+                }
+            case TEAMOP:
+                {
+                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayerEntity p : players) {
+                        if (p.hasPermissionLevel(2) || p.isTeammate(player) || p == player) {
+                            sendMessage(p, type, message);
+                        }
+                    }
+                    break;
+                }
+            case SELF:
+                {
+                    sendMessage(player, type, message);
+                    break;
+                }
+            case NONE:
+                break;
+            default:
+                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message method.");
+                break;
+        }
+    }
+
     @NotNull
     public static MutableText parseTranslateableText(@NotNull String key, Object... args) {
         if (serverConfig.isEnableServerTranslation()) {

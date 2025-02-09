@@ -14,6 +14,7 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.ykn.fmod.server.base.util.EnumI18n;
 import com.ykn.fmod.server.base.util.GptHelper;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
+import com.ykn.fmod.server.base.util.MessageMethod;
 import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 
@@ -168,9 +169,13 @@ public class CommandRegistrater {
                             .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", null, context);})
                         )
                         .then(CommandManager.literal("playerDeathCoord")
-                            .then(CommandManager.argument("value", BoolArgumentType.bool())
-                                .executes(context -> {return runOptionsCommand("playerDeathCoord", BoolArgumentType.getBool(context, "value"), context);})
-                            )
+                            .then(CommandManager.literal("false").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.NONE, context);}))
+                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.ALL, context);}))
+                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.OP, context);}))
+                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.SELFOP, context);}))
+                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.TEAMOP, context);}))
+                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.TEAM, context);}))
+                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.SELF, context);}))
                             .executes(context -> {return runOptionsCommand("playerDeathCoord", null, context);})
                         )
                         .then(CommandManager.literal("gptUrl")
@@ -280,10 +285,12 @@ public class CommandRegistrater {
                     break;
                 case "playerDeathCoord":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", Util.serverConfig.isBroadcastPlayerDeathCoord()), false);
+                        final MutableText text = EnumI18n.getMessageMethodI18n(Util.serverConfig.getPlayerDeathCoordMethod());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", text), false);
                     } else {
-                        Util.serverConfig.setBroadcastPlayerDeathCoord((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", value), true);
+                        Util.serverConfig.setPlayerDeathCoordMethod((MessageMethod) value);
+                        final MutableText text = EnumI18n.getMessageMethodI18n((MessageMethod) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", text), true);
                     }
                     break;
                 case "gptUrl":

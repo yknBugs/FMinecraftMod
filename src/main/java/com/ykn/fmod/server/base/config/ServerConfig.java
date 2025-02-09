@@ -2,6 +2,7 @@ package com.ykn.fmod.server.base.config;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.ykn.fmod.server.base.util.MessageMethod;
 import com.ykn.fmod.server.base.util.MessageType;
 
 public class ServerConfig extends ConfigReader {
@@ -48,10 +49,10 @@ public class ServerConfig extends ConfigReader {
     protected double bossMaxHpThreshold;
 
     /**
-     * If enabled, the server will send the coordinates when a player dies.
-     * Default: false
+     * Controls who can receive the coordinates when a player dies.
+     * Default: NONE
      */
-    protected boolean playerDeathCoord;
+    protected MessageMethod playerDeathCoord;
 
     /**
      * The URL of the target GPT server.
@@ -94,7 +95,7 @@ public class ServerConfig extends ConfigReader {
         this.namedEntityDeathMessage = MessageType.NONE;
         this.killerDeathMessage = MessageType.NONE;
         this.bossMaxHpThreshold = 150;
-        this.playerDeathCoord = false;
+        this.playerDeathCoord = MessageMethod.NONE;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -217,7 +218,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public boolean isBroadcastPlayerDeathCoord() {
+    public MessageMethod getPlayerDeathCoordMethod() {
         lock.readLock().lock();
         try {
             return playerDeathCoord;
@@ -226,7 +227,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setBroadcastPlayerDeathCoord(boolean playerDeathCoord) {
+    public void setPlayerDeathCoordMethod(MessageMethod playerDeathCoord) {
         lock.writeLock().lock();
         try {
             this.playerDeathCoord = playerDeathCoord;
