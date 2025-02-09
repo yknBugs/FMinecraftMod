@@ -20,19 +20,18 @@ jobs:
         distribution: 'zulu'
         java-version: 17
 
-    - name: Setup Misc Environment
+    - name: Setup CI Environment
       run: |
-        echo "mod_ver=$(grep 'mod_version' gradle.properties | head -n 1 | awk -F '=' '{print $NF}')" >> "$GITHUB_ENV"
+        echo "mod_ver=$(grep -F 'mod_version' gradle.properties | head -n 1 | awk -F '=' '{print $NF}')" >> "$GITHUB_ENV"
         echo "sha_short=$(git rev-parse --short ${{github.sha}})" >> "$GITHUB_ENV"
-        sed -i 's/^org.gradle.java.home.*$//g' gradle.properties
+        sed -i '/org.gradle.java.home/d' gradle.properties
         chmod +x gradlew
 
     - name: Build with Gradle
       run: ./gradlew build
-    
 
     - name: Release artifact
       uses: actions/upload-artifact@v4
       with:
         name: fmod-${{env.mod_ver}}-${{env.sha_short}}
-        path: build/libs/fminecraftmod-${{env.mod_ver}}.jar
+        path: build/libs/fminecraftmod*.jar
