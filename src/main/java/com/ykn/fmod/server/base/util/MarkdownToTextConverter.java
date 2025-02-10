@@ -528,6 +528,7 @@ public class MarkdownToTextConverter {
         Pattern punctuationPattern = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
         Pattern classPattern = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,]*\\s*>|(?<=\\b(class|extends|implements|interface|instanceof|enum|throws)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,]*\\s*>)?\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,]*\\s*>)?(\\s*\\[\\s*[0-9]*\\s*\\])?\\s+[A-Za-z_$]\\w*\\b)|(?<=\\b(package|import|exports|module|requires|provides|with)\\s+)(\\w+\\s*\\.\\s*)*\\w+|(?<=(?<![A-Za-z0-9_$]\\s*)@\\s*)[A-Za-z_$]\\w*\\b");
         Pattern functionPattern = Pattern.compile("\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,]*\\s*>)?\\s*\\()");
+        // May not be able to handle ? symbol in generics, such as List<? extends Number>, and class name with full package path
         
         ArrayList<Pattern> patterns = new ArrayList<>();
         patterns.add(commentPattern);

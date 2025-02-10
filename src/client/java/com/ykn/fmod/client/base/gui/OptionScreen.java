@@ -161,6 +161,30 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.bcdeathcoord"),
                 Text.translatable("fmod.options.hint.bcdeathcoord")
             ));
+            // Projectile Hits Entity
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileHitOthersMethod()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getProjectileHitOthersMethod());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setProjectileHitOthersMethod((MessageMethod) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileHitOthersMethod()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.projhitting"),
+                Text.translatable("fmod.options.hint.projhitting")
+            ));
+            // Projectile Being Hit
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileBeingHitMethod()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getProjectileBeingHitMethod());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setProjectileBeingHitMethod((MessageMethod) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileBeingHitMethod()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.projbeinghit"),
+                Text.translatable("fmod.options.hint.projbeinghit")
+            ));
             // GPT Server
             TextFieldWidget gptUrlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
             gptUrlTxtWgt.setMaxLength(1024);

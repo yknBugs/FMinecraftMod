@@ -17,6 +17,7 @@ import com.ykn.fmod.server.base.data.ServerData;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.Person;
 import net.minecraft.SharedConstants;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -226,6 +227,17 @@ public class Util {
             LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: A new instance of ServerData was created.");
         }
         return data;
+    }
+
+    public static double getHealth(@Nullable Object entity) {
+        if (entity == null) {
+            return 0.0;
+        }
+        if (entity instanceof LivingEntity) {
+            LivingEntity livingEntity = (LivingEntity) entity;
+            return livingEntity.getHealth();
+        }
+        return 0.0;
     }
 
     public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {

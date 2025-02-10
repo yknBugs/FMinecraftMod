@@ -55,6 +55,18 @@ public class ServerConfig extends ConfigReader {
     protected MessageMethod playerDeathCoord;
 
     /**
+     * Controls who can receive the message when a projectile thrown by a player hits another entity.
+     * Default: NONE
+     */
+    protected MessageMethod projectileHitOthers;
+
+    /**
+     * Controls who can receive the message when a projectile thrown by another entity hits the player.
+     * Default: NONE
+     */
+    protected MessageMethod projectileBeingHit;
+
+    /**
      * The URL of the target GPT server.
      * This mod will use the OpenAI API.
      * So if you want to deploy a local LLM, you must make sure it is compatible with the OpenAI API.
@@ -102,6 +114,8 @@ public class ServerConfig extends ConfigReader {
         this.killerDeathMessage = MessageType.NONE;
         this.bossMaxHpThreshold = 150;
         this.playerDeathCoord = MessageMethod.NONE;
+        this.projectileHitOthers = MessageMethod.NONE;
+        this.projectileBeingHit = MessageMethod.NONE;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -238,6 +252,42 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.playerDeathCoord = playerDeathCoord;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageMethod getProjectileHitOthersMethod() {
+        lock.readLock().lock();
+        try {
+            return projectileHitOthers;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setProjectileHitOthersMethod(MessageMethod projectileHitOthers) {
+        lock.writeLock().lock();
+        try {
+            this.projectileHitOthers = projectileHitOthers;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageMethod getProjectileBeingHitMethod() {
+        lock.readLock().lock();
+        try {
+            return projectileBeingHit;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setProjectileBeingHitMethod(MessageMethod projectileBeingHit) {
+        lock.writeLock().lock();
+        try {
+            this.projectileBeingHit = projectileBeingHit;
         } finally {
             lock.writeLock().unlock();
         }

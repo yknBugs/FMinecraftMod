@@ -339,6 +339,26 @@ public class CommandRegistrater {
                             .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageMethod.SELF, context);}))
                             .executes(context -> {return runOptionsCommand("playerDeathCoord", null, context);})
                         )
+                        .then(CommandManager.literal("projectileHitsEntity")
+                            .then(CommandManager.literal("false").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageMethod.NONE, context);}))
+                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageMethod.ALL, context);}))
+                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageMethod.OP, context);}))
+                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageMethod.SELFOP, context);}))
+                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageMethod.TEAMOP, context);}))
+                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageMethod.TEAM, context);}))
+                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageMethod.SELF, context);}))
+                            .executes(context -> {return runOptionsCommand("projectileHitsEntity", null, context);})
+                        )
+                        .then(CommandManager.literal("projectileBeingHit")
+                            .then(CommandManager.literal("false").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageMethod.NONE, context);}))
+                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageMethod.ALL, context);}))
+                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageMethod.OP, context);}))
+                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageMethod.SELFOP, context);}))
+                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageMethod.TEAMOP, context);}))
+                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageMethod.TEAM, context);}))
+                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageMethod.SELF, context);}))
+                            .executes(context -> {return runOptionsCommand("projectileBeingHit", null, context);})
+                        )
                         .then(CommandManager.literal("gptUrl")
                             .then(CommandManager.argument("url", StringArgumentType.greedyString())
                                 .executes(context -> {return runOptionsCommand("gptUrl", StringArgumentType.getString(context, "url"), context);})
@@ -458,6 +478,26 @@ public class CommandRegistrater {
                         Util.serverConfig.setPlayerDeathCoordMethod((MessageMethod) value);
                         final MutableText text = EnumI18n.getMessageMethodI18n((MessageMethod) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", text), true);
+                    }
+                    break;
+                case "projectileHitsEntity":
+                    if (value == null) {
+                        final MutableText text = EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileHitOthersMethod());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projhitting", text), false);
+                    } else {
+                        Util.serverConfig.setProjectileHitOthersMethod((MessageMethod) value);
+                        final MutableText text = EnumI18n.getMessageMethodI18n((MessageMethod) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projhitting", text), true);
+                    }
+                    break;
+                case "projectileBeingHit":
+                    if (value == null) {
+                        final MutableText text = EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileBeingHitMethod());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projbeinghit", text), false);
+                    } else {
+                        Util.serverConfig.setProjectileBeingHitMethod((MessageMethod) value);
+                        final MutableText text = EnumI18n.getMessageMethodI18n((MessageMethod) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projbeinghit", text), true);
                     }
                     break;
                 case "gptUrl":
