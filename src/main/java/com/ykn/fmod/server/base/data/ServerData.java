@@ -1,11 +1,14 @@
 package com.ykn.fmod.server.base.data;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.ykn.fmod.server.base.schedule.ScheduledTask;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -17,11 +20,13 @@ public class ServerData {
 
     public HashMap<ServerPlayerEntity, PlayerData> playerData;
 
+    public ArrayList<ScheduledTask> scheduledTasks;
     public Collection<LivingEntity> killerEntities;
     public HashMap<String, GptData> gptRequestStatus;
 
     public ServerData() {
         playerData = new HashMap<>();
+        scheduledTasks = new ArrayList<>();
         killerEntities = new HashSet<>();
         gptRequestStatus = new HashMap<>();
     }
@@ -42,6 +47,18 @@ public class ServerData {
             playerData.put(player, data);
         }
         return data;
+    }
+
+    @NotNull
+    public ArrayList<ScheduledTask> getScheduledTasks() {
+        return scheduledTasks;
+    }
+
+    public void submitScheduledTask(@NotNull ScheduledTask task) {
+        if (scheduledTasks.contains(task)) {
+            return;
+        }
+        scheduledTasks.add(task);
     }
 
     public void addKillerEntity(@Nullable LivingEntity entity) {

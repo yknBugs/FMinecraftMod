@@ -235,6 +235,9 @@ public class Util {
         }
         if (entity instanceof LivingEntity) {
             LivingEntity livingEntity = (LivingEntity) entity;
+            if (livingEntity.isRemoved()) {
+                return 0.0;
+            }
             return livingEntity.getHealth();
         }
         return 0.0;

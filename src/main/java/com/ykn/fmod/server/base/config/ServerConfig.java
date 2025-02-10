@@ -67,6 +67,52 @@ public class ServerConfig extends ConfigReader {
     protected MessageMethod projectileBeingHit;
 
     /**
+     * Controls who can receive the message when a player is suspected of being AFK.
+     * This message will show in the action bar, it will not disappear until the player comes back.
+     * Default: NONE
+     */
+    protected MessageMethod informAfking;
+
+    /**
+     * The threshold of the time in ticks that a player is suspected of being AFK.
+     * Default: 1200 Ticks (1 minute)
+     */
+    protected int informAfkingThreshold;
+
+    /**
+     * Controls who can receive the message when a player is confirmed to be AFK.
+     * This message will show in the chat, it will be sent only once.
+     * Default: NONE
+     */
+    protected MessageMethod broadcastAfking;
+
+    /**
+     * The threshold of the time in ticks that a player is confirmed to be AFK.
+     * Default: 6000 Ticks (5 minutes)
+     */
+    protected int broadcastAfkingThreshold;
+
+    /**
+     * Controls who can receive the message when a player is back from AFK.
+     * This message will show in the chat, it will be sent only once.
+     * Default: NONE
+     */
+    protected MessageMethod stopAfking;
+
+    /**
+     * Controls who can receive the message when a player changes the biome.
+     * Default: NONE
+     */
+    protected MessageMethod changeBiome;
+
+    /**
+     * The delay in ticks before sending the message when a player changes the biome.
+     * This is designed to avoid spamming when a player frequently crosses the boundary of two biomes.
+     * Default: 200 Ticks (10 seconds)
+     */
+    protected int changeBiomeDelay;
+
+    /**
      * The URL of the target GPT server.
      * This mod will use the OpenAI API.
      * So if you want to deploy a local LLM, you must make sure it is compatible with the OpenAI API.
@@ -116,6 +162,13 @@ public class ServerConfig extends ConfigReader {
         this.playerDeathCoord = MessageMethod.NONE;
         this.projectileHitOthers = MessageMethod.NONE;
         this.projectileBeingHit = MessageMethod.NONE;
+        this.informAfking = MessageMethod.NONE;
+        this.informAfkingThreshold = 1200;
+        this.broadcastAfking = MessageMethod.NONE;
+        this.broadcastAfkingThreshold = 6000;
+        this.stopAfking = MessageMethod.NONE;
+        this.changeBiome = MessageMethod.NONE;
+        this.changeBiomeDelay = 200;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -288,6 +341,153 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.projectileBeingHit = projectileBeingHit;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageMethod getInformAfkingMethod() {
+        lock.readLock().lock();
+        try {
+            return informAfking;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setInformAfkingMethod(MessageMethod informAfking) {
+        lock.writeLock().lock();
+        try {
+            this.informAfking = informAfking;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getInformAfkingThreshold() {
+        lock.readLock().lock();
+        try {
+            if (informAfkingThreshold < 0) {
+                return 0;
+            }
+            return informAfkingThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setInformAfkingThreshold(int informAfkingThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (informAfkingThreshold < 0) {
+                this.informAfkingThreshold = 0;
+            } else {
+                this.informAfkingThreshold = informAfkingThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageMethod getBroadcastAfkingMethod() {
+        lock.readLock().lock();
+        try {
+            return broadcastAfking;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBroadcastAfkingMethod(MessageMethod broadcastAfking) {
+        lock.writeLock().lock();
+        try {
+            this.broadcastAfking = broadcastAfking;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getBroadcastAfkingThreshold() {
+        lock.readLock().lock();
+        try {
+            if (broadcastAfkingThreshold < 0) {
+                return 0;
+            }
+            return broadcastAfkingThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBroadcastAfkingThreshold(int broadcastAfkingThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (broadcastAfkingThreshold < 0) {
+                this.broadcastAfkingThreshold = 0;
+            } else {
+                this.broadcastAfkingThreshold = broadcastAfkingThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageMethod getStopAfkingMethod() {
+        lock.readLock().lock();
+        try {
+            return stopAfking;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setStopAfkingMethod(MessageMethod stopAfking) {
+        lock.writeLock().lock();
+        try {
+            this.stopAfking = stopAfking;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageMethod getChangeBiomeMethod() {
+        lock.readLock().lock();
+        try {
+            return changeBiome;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setChangeBiomeMethod(MessageMethod changeBiome) {
+        lock.writeLock().lock();
+        try {
+            this.changeBiome = changeBiome;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getChangeBiomeDelay() {
+        lock.readLock().lock();
+        try {
+            if (changeBiomeDelay < 0) {
+                return 0;
+            }
+            return changeBiomeDelay;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setChangeBiomeDelay(int changeBiomeDelay) {
+        lock.writeLock().lock();
+        try {
+            if (changeBiomeDelay < 0) {
+                this.changeBiomeDelay = 0;
+            } else {
+                this.changeBiomeDelay = changeBiomeDelay;
+            }
         } finally {
             lock.writeLock().unlock();
         }
