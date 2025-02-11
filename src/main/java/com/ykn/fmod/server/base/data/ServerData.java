@@ -19,7 +19,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
  */
 public class ServerData {
 
-    public HashMap<ServerPlayerEntity, PlayerData> playerData;
+    public HashMap<UUID, PlayerData> playerData;
 
     public ArrayList<ScheduledTask> scheduledTasks;
     public Collection<UUID> killerEntities;
@@ -42,10 +42,10 @@ public class ServerData {
      */
     @NotNull
     public PlayerData getPlayerData(@NotNull ServerPlayerEntity player) {
-        PlayerData data = playerData.get(player);
+        PlayerData data = playerData.get(player.getUuid());
         if (data == null) {
             data = new PlayerData();
-            playerData.put(player, data);
+            playerData.put(player.getUuid(), data);
         }
         return data;
     }

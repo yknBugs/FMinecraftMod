@@ -4,9 +4,13 @@ A Minecraft Mod for Management
 
 ## Features
 
-Talk to GPT in game.
+- Talk to GPT in game.
 
-Show death message and death coordinates.
+- Show death message and death coordinates.
+
+- Detect AFKing players.
+
+- Get informed if you successfully shoot an entity with your bow, and know its HP.
 
 ## Setup
 
@@ -37,11 +41,15 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 
 ## Known Issues
 
-Killer Entity death message not working when target chunk unload and load again.
-
 Java Syntax Highlight may not work properly with full package path and ? symbol in generics.
 
 ## Changelog
+
+### Version 0.0.6
+
+- Detect AFKing players.
+- Add projectile hit entity messages.
+- Add change biome messages.
 
 ### Version 0.0.5
 
