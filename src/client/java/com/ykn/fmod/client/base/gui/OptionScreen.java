@@ -185,6 +185,114 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.projbeinghit"),
                 Text.translatable("fmod.options.hint.projbeinghit")
             ));
+            // Inform AFK
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getInformAfkingMethod()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getInformAfkingMethod());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setInformAfkingMethod((MessageMethod) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getInformAfkingMethod()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.informafk"),
+                Text.translatable("fmod.options.hint.informafk")
+            ));
+            // Inform AFK Threshold
+            SliderWidget afkThresholdSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.2f", (double) Util.serverConfig.getInformAfkingThreshold() / 20.0)),
+                Util.serverConfig.getInformAfkingThreshold() / 20.0 / 1800.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value * 1800.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setInformAfkingThreshold((int) (this.value * 1800.0 * 20.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                afkThresholdSlider,
+                Text.translatable("fmod.options.informafkthres"),
+                Text.translatable("fmod.options.hint.informafkthres")
+            ));
+            // Broadcast AFK
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getBroadcastAfkingMethod()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getBroadcastAfkingMethod());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setBroadcastAfkingMethod((MessageMethod) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getBroadcastAfkingMethod()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.bcafk"),
+                Text.translatable("fmod.options.hint.bcafk")
+            ));
+            // Broadcast AFK Threshold
+            SliderWidget bcastAfkThresholdSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.2f", (double) Util.serverConfig.getBroadcastAfkingThreshold() / 20.0)),
+                Util.serverConfig.getBroadcastAfkingThreshold() / 20.0 / 1800.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value * 1800.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setBroadcastAfkingThreshold((int) (this.value * 1800.0 * 20.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                bcastAfkThresholdSlider,
+                Text.translatable("fmod.options.bcafkthres"),
+                Text.translatable("fmod.options.hint.bcafkthres")
+            ));
+            // Back From AFK
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getStopAfkingMethod()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getStopAfkingMethod());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setStopAfkingMethod((MessageMethod) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getStopAfkingMethod()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.stopafk"),
+                Text.translatable("fmod.options.hint.stopafk")
+            ));
+            // Change Biome
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getChangeBiomeMethod()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getChangeBiomeMethod());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setChangeBiomeMethod((MessageMethod) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getChangeBiomeMethod()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.changebiome"),
+                Text.translatable("fmod.options.hint.changebiome")
+            ));
+            // Change Biome Delay
+            SliderWidget changeBiomeDelaySlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.2f", (double) Util.serverConfig.getChangeBiomeDelay() / 20.0)),
+                Util.serverConfig.getChangeBiomeDelay() / 20.0 / 60.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value * 60.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setChangeBiomeDelay((int) (this.value * 60.0 * 20.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                changeBiomeDelaySlider,
+                Text.translatable("fmod.options.biomedelay"),
+                Text.translatable("fmod.options.hint.biomedelay")
+            ));
             // GPT Server
             TextFieldWidget gptUrlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
             gptUrlTxtWgt.setMaxLength(1024);

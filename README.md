@@ -2,6 +2,12 @@
 
 A Minecraft Mod for Management
 
+## Features
+
+Talk to GPT in game.
+
+Show death message and death coordinates.
+
 ## Setup
 
 ### Step 1: Clone this repository
@@ -29,7 +35,13 @@ Please modify the Path to your JDK17 JAVA_HOME.
 
 You will find the mod file located in your `./build/libs` folder, copy the mod file to your Minecraft Mod directory and launch the game.
 
-## Features & Changelog
+## Known Issues
+
+Killer Entity death message not working when target chunk unload and load again.
+
+Java Syntax Highlight may not work properly with full package path and ? symbol in generics.
+
+## Changelog
 
 ### Version 0.0.5
 

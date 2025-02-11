@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.UUID;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +22,7 @@ public class ServerData {
     public HashMap<ServerPlayerEntity, PlayerData> playerData;
 
     public ArrayList<ScheduledTask> scheduledTasks;
-    public Collection<LivingEntity> killerEntities;
+    public Collection<UUID> killerEntities;
     public HashMap<String, GptData> gptRequestStatus;
 
     public ServerData() {
@@ -65,21 +66,21 @@ public class ServerData {
         if (entity == null) {
             return;
         }
-        killerEntities.add(entity);
+        killerEntities.add(entity.getUuid());
     }
 
     public boolean isKillerEntity(@Nullable LivingEntity entity) {
         if (entity == null) {
             return false;
         }
-        return killerEntities.contains(entity);
+        return killerEntities.contains(entity.getUuid());
     }
 
     public boolean removeKillerEntity(@Nullable LivingEntity entity) {
         if (entity == null) {
             return false;
         }
-        return killerEntities.remove(entity);
+        return killerEntities.remove(entity.getUuid());
     }
 
     /**
