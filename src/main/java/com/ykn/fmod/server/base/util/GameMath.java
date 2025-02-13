@@ -1,6 +1,7 @@
 package com.ykn.fmod.server.base.util;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
 public class GameMath {
@@ -168,5 +169,145 @@ public class GameMath {
             return Double.NaN;
         }
         return Math.abs(ya - yb);
+    }
+
+    /**
+     * Calculates the minimum distance from a point to an axis-aligned bounding box.
+     *
+     * @param xa The x-coordinate of the first corner of the bounding box.
+     * @param ya The y-coordinate of the first corner of the bounding box.
+     * @param za The z-coordinate of the first corner of the bounding box.
+     * @param xb The x-coordinate of the opposite corner of the bounding box.
+     * @param yb The y-coordinate of the opposite corner of the bounding box.
+     * @param zb The z-coordinate of the opposite corner of the bounding box.
+     * @param x The x-coordinate of the point.
+     * @param y The y-coordinate of the point.
+     * @param z The z-coordinate of the point.
+     * @return The minimum distance from the point to the bounding box.
+     */
+    public static double getMinimumDistanceToBox(double xa, double ya, double za, double xb, double yb, double zb, double x, double y, double z) {
+        double xmin = Math.min(xa, xb);
+        double xmax = Math.max(xa, xb);
+        double ymin = Math.min(ya, yb);
+        double ymax = Math.max(ya, yb);
+        double zmin = Math.min(za, zb);
+        double zmax = Math.max(za, zb);
+        double xclamp = Math.max(xmin, Math.min(x, xmax));
+        double yclamp = Math.max(ymin, Math.min(y, ymax));
+        double zclamp = Math.max(zmin, Math.min(z, zmax));
+        double dx = x - xclamp;
+        double dy = y - yclamp;
+        double dz = z - zclamp;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /**
+     * Calculates the unit direction vector based on the given pitch and yaw angles.
+     *
+     * @param pitch the pitch angle in degrees
+     * @param yaw the yaw angle in degrees
+     * @return a Vec3d representing the unit direction vector
+     */
+    public static Vec3d getUnitDirectionVector(double pitch, double yaw) {
+        double pitchRadians = Math.toRadians(pitch);
+        double yawRadians = Math.toRadians(yaw);
+        double cosPitch = Math.cos(pitchRadians);
+        double sinPitch = Math.sin(pitchRadians);
+        double cosYaw = Math.cos(yawRadians);
+        double sinYaw = Math.sin(yawRadians);
+        double x = -sinYaw * cosPitch;
+        double y = sinPitch;
+        double z = -cosYaw * cosPitch;
+        return new Vec3d(x, y, z);
+    }
+
+    /**
+     * Calculates the first intersection point of a ray with an axis-aligned bounding box (AABB).
+     *
+     * @param xa The x-coordinate of the first corner of the AABB.
+     * @param ya The y-coordinate of the first corner of the AABB.
+     * @param za The z-coordinate of the first corner of the AABB.
+     * @param xb The x-coordinate of the opposite corner of the AABB.
+     * @param yb The y-coordinate of the opposite corner of the AABB.
+     * @param zb The z-coordinate of the opposite corner of the AABB.
+     * @param x The x-coordinate of the ray's origin.
+     * @param y The y-coordinate of the ray's origin.
+     * @param z The z-coordinate of the ray's origin.
+     * @param pitch The pitch angle of the ray's direction.
+     * @param yaw The yaw angle of the ray's direction.
+     * @return A Vec3d representing the intersection point, or a Vec3d with NaN values if there is no intersection.
+     */
+    public static Vec3d getRaytraceFirstIntersection(double xa, double ya, double za, double xb, double yb, double zb, double x, double y, double z, double pitch, double yaw) {
+        double xmin = Math.min(xa, xb);
+        double xmax = Math.max(xa, xb);
+        double ymin = Math.min(ya, yb);
+        double ymax = Math.max(ya, yb);
+        double zmin = Math.min(za, zb);
+        double zmax = Math.max(za, zb);
+        Vec3d dir = getUnitDirectionVector(pitch, yaw);
+        double dx = dir.getX();
+        double dy = dir.getY();
+        double dz = dir.getZ();
+        double txa = 0.0;
+        double txb = 0.0;
+        double tya = 0.0;
+        double tyb = 0.0;
+        double tza = 0.0;
+        double tzb = 0.0;
+        if (dx == 0) {
+            if (x < xmin || x > xmax) {
+                return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+            } else {
+                txa = -Double.POSITIVE_INFINITY;
+                txb = Double.POSITIVE_INFINITY;
+            }
+        } else {
+            txa = (xmin - x) / dx;
+            txb = (xmax - x) / dx;
+            if (dx < 0.0) {
+                double temp = txa;
+                txa = txb;
+                txb = temp;
+            }
+        }
+        if (dy == 0) {
+            if (y < ymin || y > ymax) {
+                return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+            } else {
+                tya = -Double.POSITIVE_INFINITY;
+                tyb = Double.POSITIVE_INFINITY;
+            }
+        } else {
+            tya = (ymin - y) / dy;
+            tyb = (ymax - y) / dy;
+            if (dy < 0.0) {
+                double temp = tya;
+                tya = tyb;
+                tyb = temp;
+            }
+        }
+        if (dz == 0) {
+            if (z < zmin || z > zmax) {
+                return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+            } else {
+                tza = -Double.POSITIVE_INFINITY;
+                tzb = Double.POSITIVE_INFINITY;
+            }
+        } else {
+            tza = (zmin - z) / dz;
+            tzb = (zmax - z) / dz;
+            if (dz < 0.0) {
+                double temp = tza;
+                tza = tzb;
+                tzb = temp;
+            }
+        }
+        double tenter = Math.max(Math.max(txa, tya), tza);
+        double texit = Math.min(Math.min(txb, tyb), tzb);
+        if (tenter <= texit && tenter >= 0.0) {
+            return new Vec3d(x + tenter * dx, y + tenter * dy, z + tenter * dz);
+        } else {
+            return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+        }
     }
 }

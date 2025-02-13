@@ -1,6 +1,6 @@
 package com.ykn.fmod.server.base.schedule;
 
-import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.Entity;
@@ -31,11 +31,11 @@ public class ProjectileMessage extends ScheduledTask {
         MutableText text = Util.parseTranslateableText("fmod.message.projectile.onhit", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
         if (victim.isPlayer() && victim instanceof ServerPlayerEntity) {
             ServerPlayerEntity playerVictim = (ServerPlayerEntity) victim;
-            Util.postMessage(playerVictim, Util.serverConfig.getProjectileBeingHitMethod(), MessageType.ACTIONBAR, text);
+            Util.postMessage(playerVictim, Util.serverConfig.getProjectileBeingHit(), MessageLocation.ACTIONBAR, text);
         }
         if (shooter.isPlayer() && shooter instanceof ServerPlayerEntity) {
             ServerPlayerEntity playerShooter = (ServerPlayerEntity) shooter;
-            Util.postMessage(playerShooter, Util.serverConfig.getProjectileHitOthersMethod(), MessageType.ACTIONBAR, text);
+            Util.postMessage(playerShooter, Util.serverConfig.getProjectileHitOthers(), MessageLocation.ACTIONBAR, text);
         }
     }
 

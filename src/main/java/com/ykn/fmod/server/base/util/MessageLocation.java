@@ -1,6 +1,6 @@
 package com.ykn.fmod.server.base.util;
 
-public enum MessageType {
+public enum MessageLocation {
 
     NONE,
 

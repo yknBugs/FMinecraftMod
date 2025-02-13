@@ -2,7 +2,7 @@ package com.ykn.fmod.server.base.event;
 
 import java.util.HashMap;
 
-import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.LivingEntity;
@@ -36,32 +36,32 @@ public class EntityDeath {
         }
 
         // Broadcast death message, each type of message can be broadcasted only once
-        HashMap<MessageType, Boolean> isAlreadyBroadcasted = new HashMap<>();
-        for (MessageType type : MessageType.values()) {
+        HashMap<MessageLocation, Boolean> isAlreadyBroadcasted = new HashMap<>();
+        for (MessageLocation type : MessageLocation.values()) {
             isAlreadyBroadcasted.put(type, false);
         }
 
         if (this.livingEntity.hasCustomName()) {
-            MessageType type = Util.serverConfig.getNamedEntityDeathMessageType();
+            MessageLocation type = Util.serverConfig.getNamedEntityDeathMessage();
             Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
             isAlreadyBroadcasted.put(type, true);
         }
         if (this.livingEntity.getMaxHealth() > Util.serverConfig.getBossMaxHpThreshold()) {
-            MessageType type = Util.serverConfig.getBossDeathMessageType();
+            MessageLocation type = Util.serverConfig.getBossDeathMessage();
             if (!isAlreadyBroadcasted.get(type)) {
                 Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
                 isAlreadyBroadcasted.put(type, true);
             }
         }
         if (Util.getServerData(livingEntity.getServer()).isKillerEntity(livingEntity)) {
-            MessageType type = Util.serverConfig.getKillerEntityDeathMessageType();
+            MessageLocation type = Util.serverConfig.getKillerEntityDeathMessage();
             if (!isAlreadyBroadcasted.get(type)) {
                 Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
                 isAlreadyBroadcasted.put(type, true);
             }
             Util.getServerData(livingEntity.getServer()).removeKillerEntity(livingEntity);
         }
-        MessageType type = Util.serverConfig.getEntityDeathMessageType();
+        MessageLocation type = Util.serverConfig.getEntityDeathMessage();
         if (!isAlreadyBroadcasted.get(type)) {
             Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
             isAlreadyBroadcasted.put(type, true);

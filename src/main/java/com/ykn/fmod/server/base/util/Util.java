@@ -96,7 +96,7 @@ public class Util {
         LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
     }
 
-    public static void sendMessage(@NotNull ServerPlayerEntity player, @NotNull MessageType type, @NotNull Text message) {
+    public static void sendMessage(@NotNull ServerPlayerEntity player, @NotNull MessageLocation type, @NotNull Text message) {
         switch (type) {
             case NONE:
                 break;
@@ -112,7 +112,7 @@ public class Util {
         }
     }
 
-    public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageType type, @NotNull Text message) {
+    public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageLocation type, @NotNull Text message) {
         switch (type) {
             case NONE:
                 break;
@@ -128,7 +128,7 @@ public class Util {
         }
     }
 
-    public static void postMessage(@NotNull ServerPlayerEntity player, @NotNull MessageMethod method, @NotNull MessageType type, @NotNull Text message) {
+    public static void postMessage(@NotNull ServerPlayerEntity player, @NotNull MessageReceiver method, @NotNull MessageLocation type, @NotNull Text message) {
         switch (method) {
             case ALL:
                 {

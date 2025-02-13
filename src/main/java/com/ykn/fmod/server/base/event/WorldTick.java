@@ -5,7 +5,7 @@ import java.util.List;
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.schedule.BiomeMessage;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
-import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.server.MinecraftServer;
@@ -56,7 +56,7 @@ public class WorldTick {
 
     private void postMessageToAfkingPlayer(ServerPlayerEntity player, PlayerData playerData) {
         if (playerData.afkTicks > Util.serverConfig.getInformAfkingThreshold() && playerData.afkTicks % 20 == 0) {
-            Util.postMessage(player, Util.serverConfig.getInformAfkingMethod(), MessageType.ACTIONBAR, Util.parseTranslateableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+            Util.postMessage(player, Util.serverConfig.getInformAfking(), MessageLocation.ACTIONBAR, Util.parseTranslateableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
         if (playerData.afkTicks == Util.serverConfig.getBroadcastAfkingThreshold()) {
             Text playerName = player.getDisplayName();
@@ -78,13 +78,13 @@ public class WorldTick {
             ).withHoverEvent(
                 new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
             ));
-            Util.postMessage(player, Util.serverConfig.getBroadcastAfkingMethod(), MessageType.CHAT, text);
+            Util.postMessage(player, Util.serverConfig.getBroadcastAfking(), MessageLocation.CHAT, text);
         }
     }
 
     private void postMessageToBackPlayer(ServerPlayerEntity player, PlayerData playerData) {
         if (playerData.afkTicks >= Util.serverConfig.getBroadcastAfkingThreshold()) {
-            Util.postMessage(player, Util.serverConfig.getStopAfkingMethod(), MessageType.CHAT, Util.parseTranslateableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+            Util.postMessage(player, Util.serverConfig.getStopAfking(), MessageLocation.CHAT, Util.parseTranslateableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
     }
 

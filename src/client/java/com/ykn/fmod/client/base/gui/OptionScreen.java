@@ -4,8 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.EnumI18n;
-import com.ykn.fmod.server.base.util.MessageMethod;
-import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.MessageReceiver;
+import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.client.MinecraftClient;
@@ -71,7 +71,10 @@ public class OptionScreen extends Screen {
             // 630 234 40 274
             super(client, width, height, top, bottom, 24);
             // Copyright Info
-            this.addEntry(new TextHintEntry(Text.translatable("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors())));
+            this.addEntry(new TextHintEntry(
+                Text.translatable("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors()),
+                Text.translatable("fmod.options.tip")
+            ));
             // Server Translation
             this.addEntry(new ButtonConfigEntry(
                 ButtonWidget.builder(getBoolStateText(Util.serverConfig.isEnableServerTranslation()), button -> {
@@ -83,48 +86,48 @@ public class OptionScreen extends Screen {
             ));
             // Entity Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getEntityDeathMessageType()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getEntityDeathMessageType());
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getEntityDeathMessage());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setEntityDeathMessageType((MessageType) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getEntityDeathMessageType()));
+                    Util.serverConfig.setEntityDeathMessage((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.entdeathmsg"),
                 Text.translatable("fmod.options.hint.entdeathmsg")
             ));
             // Boss Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getBossDeathMessageType()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getBossDeathMessageType());
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossDeathMessage()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getBossDeathMessage());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setBossDeathMessageType((MessageType) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getBossDeathMessageType()));
+                    Util.serverConfig.setBossDeathMessage((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossDeathMessage()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bcbossdeath"),
                 Text.translatable("fmod.options.hint.bcbossdeath")
             ));
             // Named Entity Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getNamedEntityDeathMessageType()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getNamedEntityDeathMessageType());
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getNamedEntityDeathMessage()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getNamedEntityDeathMessage());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setNamedEntityDeathMessageType((MessageType) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getNamedEntityDeathMessageType()));
+                    Util.serverConfig.setNamedEntityDeathMessage((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getNamedEntityDeathMessage()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.nameddeath"),
                 Text.translatable("fmod.options.hint.nameddeath")
             ));
             // Killer Entity Death Message
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageTypeI18n(Util.serverConfig.getKillerEntityDeathMessageType()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageType.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getKillerEntityDeathMessageType());
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getKillerEntityDeathMessage()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getKillerEntityDeathMessage());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setKillerEntityDeathMessageType((MessageType) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageTypeI18n(Util.serverConfig.getKillerEntityDeathMessageType()));
+                    Util.serverConfig.setKillerEntityDeathMessage((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getKillerEntityDeathMessage()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bckillerdeath"),
                 Text.translatable("fmod.options.hint.bckillerdeath")
@@ -151,48 +154,48 @@ public class OptionScreen extends Screen {
             ));
             // Player Death Coord
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getPlayerDeathCoordMethod()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getPlayerDeathCoordMethod());
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getPlayerDeathCoord());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setPlayerDeathCoordMethod((MessageMethod) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getPlayerDeathCoordMethod()));
+                    Util.serverConfig.setPlayerDeathCoord((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bcdeathcoord"),
                 Text.translatable("fmod.options.hint.bcdeathcoord")
             ));
             // Projectile Hits Entity
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileHitOthersMethod()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getProjectileHitOthersMethod());
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthers()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getProjectileHitOthers());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setProjectileHitOthersMethod((MessageMethod) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileHitOthersMethod()));
+                    Util.serverConfig.setProjectileHitOthers((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthers()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.projhitting"),
                 Text.translatable("fmod.options.hint.projhitting")
             ));
             // Projectile Being Hit
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileBeingHitMethod()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getProjectileBeingHitMethod());
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHit()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getProjectileBeingHit());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setProjectileBeingHitMethod((MessageMethod) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getProjectileBeingHitMethod()));
+                    Util.serverConfig.setProjectileBeingHit((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHit()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.projbeinghit"),
                 Text.translatable("fmod.options.hint.projbeinghit")
             ));
             // Inform AFK
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getInformAfkingMethod()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getInformAfkingMethod());
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfking()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getInformAfking());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setInformAfkingMethod((MessageMethod) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getInformAfkingMethod()));
+                    Util.serverConfig.setInformAfking((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfking()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.informafk"),
                 Text.translatable("fmod.options.hint.informafk")
@@ -219,12 +222,12 @@ public class OptionScreen extends Screen {
             ));
             // Broadcast AFK
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getBroadcastAfkingMethod()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getBroadcastAfkingMethod());
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfking()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getBroadcastAfking());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setBroadcastAfkingMethod((MessageMethod) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getBroadcastAfkingMethod()));
+                    Util.serverConfig.setBroadcastAfking((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfking()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.bcafk"),
                 Text.translatable("fmod.options.hint.bcafk")
@@ -251,24 +254,24 @@ public class OptionScreen extends Screen {
             ));
             // Back From AFK
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getStopAfkingMethod()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getStopAfkingMethod());
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfking()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getStopAfking());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setStopAfkingMethod((MessageMethod) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getStopAfkingMethod()));
+                    Util.serverConfig.setStopAfking((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfking()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.stopafk"),
                 Text.translatable("fmod.options.hint.stopafk")
             ));
             // Change Biome
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageMethodI18n(Util.serverConfig.getChangeBiomeMethod()), button -> {
-                    final List<Enum<?>> values = Arrays.asList(MessageMethod.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getChangeBiomeMethod());
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiome()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getChangeBiome());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setChangeBiomeMethod((MessageMethod) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageMethodI18n(Util.serverConfig.getChangeBiomeMethod()));
+                    Util.serverConfig.setChangeBiome((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiome()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.changebiome"),
                 Text.translatable("fmod.options.hint.changebiome")
@@ -292,6 +295,218 @@ public class OptionScreen extends Screen {
                 changeBiomeDelaySlider,
                 Text.translatable("fmod.options.biomedelay"),
                 Text.translatable("fmod.options.hint.biomedelay")
+            ));
+            // Boss Fight Message Location
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossFightMessageLocation()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getBossFightMessageLocation());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setBossFightMessageLocation((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossFightMessageLocation()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.bossfightloc"),
+                Text.translatable("fmod.options.hint.bossfightloc")
+            ));
+            // Boss Fight Message Receiver
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBossFightMessageReceiver()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getBossFightMessageReceiver());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setBossFightMessageReceiver((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBossFightMessageReceiver()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.bossfightreceiver"),
+                Text.translatable("fmod.options.hint.bossfightreceiver")
+            ));
+            // Boss Fight Message Interval
+            SliderWidget bossFightMsgIntervalSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.2f", (double) Util.serverConfig.getBossFightInterval() / 20.0)),
+                Util.serverConfig.getBossFightInterval() / 20.0 / 180.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value * 180.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setBossFightInterval((int) (this.value * 180.0 * 20.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                bossFightMsgIntervalSlider,
+                Text.translatable("fmod.options.bossfightinterval"),
+                Text.translatable("fmod.options.hint.bossfightinterval")
+            ));
+            // Monster Surrounded Message Location
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getMonsterSurroundMessageLocation()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getMonsterSurroundMessageLocation());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setMonsterSurroundMessageLocation((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getMonsterSurroundMessageLocation()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.monsterloc"),
+                Text.translatable("fmod.options.hint.monsterloc")
+            ));
+            // Monster Surrounded Message Receiver
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getMonsterSurroundMessageReceiver()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getMonsterSurroundMessageReceiver());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setMonsterSurroundMessageReceiver((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getMonsterSurroundMessageReceiver()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.monsterreceiver"),
+                Text.translatable("fmod.options.hint.monsterreceiver")
+            ));
+            // Monster Surrounded Message Interval
+            SliderWidget monsterSurroundMsgIntervalSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.2f", (double) Util.serverConfig.getMonsterSurroundInterval() / 20.0)),
+                Util.serverConfig.getMonsterSurroundInterval() / 20.0 / 180.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value * 180.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setMonsterSurroundInterval((int) (this.value * 180.0 * 20.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                monsterSurroundMsgIntervalSlider,
+                Text.translatable("fmod.options.monsterinterval"),
+                Text.translatable("fmod.options.hint.monsterinterval")
+            ));
+            // Monster Number
+            SliderWidget monsterNumSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getMonsterNumberThreshold())),
+                (double) Util.serverConfig.getMonsterNumberThreshold() / 100.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 100.0))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setMonsterNumberThreshold((int) (this.value * 100.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                monsterNumSlider,
+                Text.translatable("fmod.options.monsternumber"),
+                Text.translatable("fmod.options.hint.monsternumber")
+            ));
+            // Monster Distance
+            SliderWidget monsterDistanceSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.2f", Util.serverConfig.getMonsterDistanceThreshold())),
+                Util.serverConfig.getMonsterDistanceThreshold() / 128.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value * 128.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setMonsterDistanceThreshold(this.value * 128.0);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                monsterDistanceSlider,
+                Text.translatable("fmod.options.monsterdistance"),
+                Text.translatable("fmod.options.hint.monsterdistance")
+            ));
+            // Entity Warning
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityNumberWarning()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getEntityNumberWarning());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setEntityNumberWarning((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityNumberWarning()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.entitywarning"),
+                Text.translatable("fmod.options.hint.entitywarning")
+            ));
+            // Entity Number
+            SliderWidget entityNumSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getEntityNumberThreshold())),
+                (double) Util.serverConfig.getEntityNumberThreshold() / 10000.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 10000.0))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setEntityNumberThreshold((int) (this.value * 10000.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                entityNumSlider,
+                Text.translatable("fmod.options.entitynumber"),
+                Text.translatable("fmod.options.hint.entitynumber")
+            ));
+            // Entity Interval (Range: 1 ~ 100 Ticks, show in Ticks)
+            SliderWidget entityIntervalSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getEntityNumberInterval())),
+                ((double) Util.serverConfig.getEntityNumberInterval() - 1.0) / 99.0 
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 99.0 + 1.0))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setEntityNumberInterval((int) (this.value * 99.0 + 1.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                entityIntervalSlider,
+                Text.translatable("fmod.options.entityinterval"),
+                Text.translatable("fmod.options.hint.entityinterval")
+            ));
+            // Player Seriously Hurt
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurt()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getPlayerSeriousHurt());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setPlayerSeriousHurt((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurt()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.playerhurt"),
+                Text.translatable("fmod.options.hint.playerhurt")
+            ));
+            // Damage Threshold
+            SliderWidget damageThresholdSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(String.format("%.1f", Util.serverConfig.getPlayerHurtThreshold() * 100.0) + "%"),
+                Util.serverConfig.getPlayerHurtThreshold()
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.1f", this.value * 100.0) + "%"));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setPlayerHurtThreshold(this.value);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                damageThresholdSlider,
+                Text.translatable("fmod.options.damagethres"),
+                Text.translatable("fmod.options.hint.damagethres")
             ));
             // GPT Server
             TextFieldWidget gptUrlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
@@ -394,9 +609,10 @@ public class OptionScreen extends Screen {
         private class TextHintEntry extends Entry {
             private final TextWidget textWidget;
     
-            public TextHintEntry(Text text) {
+            public TextHintEntry(Text text, Text tips) {
                 this.textWidget = new TextWidget(0, 0, 200, 20, text, client.textRenderer);
                 this.textWidget.alignLeft();
+                this.textWidget.setTooltip(Tooltip.of(tips));
             }
 
             @Override

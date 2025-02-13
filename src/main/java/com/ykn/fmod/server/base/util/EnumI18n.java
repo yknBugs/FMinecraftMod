@@ -5,7 +5,7 @@ import net.minecraft.text.Text;
 
 public class EnumI18n {
 
-    public static MutableText getMessageTypeI18n(MessageType type) {
+    public static MutableText getMessageLocationI18n(MessageLocation type) {
         switch (type) {
             case NONE:
                 return Util.parseTranslateableText("fmod.message.type.none");
@@ -18,7 +18,7 @@ public class EnumI18n {
         }
     }
 
-    public static MutableText getMessageMethodI18n(MessageMethod method) {
+    public static MutableText getMessageReceiverI18n(MessageReceiver method) {
         switch (method) {
             case ALL:
                 return Util.parseTranslateableText("fmod.message.type.toall");

@@ -1,6 +1,6 @@
 package com.ykn.fmod.server.base.event;
 
-import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.LivingEntity;
@@ -64,7 +64,7 @@ public class PlayerDeath {
         ).withHoverEvent(
             new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
         ));
-        Util.postMessage(player, Util.serverConfig.getPlayerDeathCoordMethod(), MessageType.CHAT, text);
+        Util.postMessage(player, Util.serverConfig.getPlayerDeathCoord(), MessageLocation.CHAT, text);
     }
 
 }

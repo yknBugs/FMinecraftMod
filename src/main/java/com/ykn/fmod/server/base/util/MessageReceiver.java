@@ -1,6 +1,6 @@
 package com.ykn.fmod.server.base.util;
 
-public enum MessageMethod {
+public enum MessageReceiver {
 
     ALL,
 

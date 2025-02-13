@@ -2,8 +2,8 @@ package com.ykn.fmod.server.base.config;
 
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.ykn.fmod.server.base.util.MessageMethod;
-import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.MessageReceiver;
+import com.ykn.fmod.server.base.util.MessageLocation;
 
 public class ServerConfig extends ConfigReader {
 
@@ -22,25 +22,25 @@ public class ServerConfig extends ConfigReader {
      * The message sent to the client when an entity dies.
      * Default: NONE
      */
-    protected MessageType entityDeathMessage;
+    protected MessageLocation entityDeathMessage;
 
     /**
      * The message sent to the client when a boss dies.
      * Default: NONE
      */
-    protected MessageType bossDeathMessage;
+    protected MessageLocation bossDeathMessage;
 
     /**
      * The message sent to the client when a mob with custom name dies.
      * Default: NONE
      */
-    protected MessageType namedEntityDeathMessage;
+    protected MessageLocation namedEntityDeathMessage;
 
     /**
      * The message sent to the client when a mob - the mod that has once killed a player before - dies.
      * Default: NONE
      */
-    protected MessageType killerDeathMessage;
+    protected MessageLocation killerDeathMessage;
 
     /**
      * If an entity has a health greater than this value, it will be considered as a boss.
@@ -52,26 +52,26 @@ public class ServerConfig extends ConfigReader {
      * Controls who can receive the coordinates when a player dies.
      * Default: NONE
      */
-    protected MessageMethod playerDeathCoord;
+    protected MessageReceiver playerDeathCoord;
 
     /**
      * Controls who can receive the message when a projectile thrown by a player hits another entity.
      * Default: NONE
      */
-    protected MessageMethod projectileHitOthers;
+    protected MessageReceiver projectileHitOthers;
 
     /**
      * Controls who can receive the message when a projectile thrown by another entity hits the player.
      * Default: NONE
      */
-    protected MessageMethod projectileBeingHit;
+    protected MessageReceiver projectileBeingHit;
 
     /**
      * Controls who can receive the message when a player is suspected of being AFK.
      * This message will show in the action bar, it will not disappear until the player comes back.
      * Default: NONE
      */
-    protected MessageMethod informAfking;
+    protected MessageReceiver informAfking;
 
     /**
      * The threshold of the time in ticks that a player is suspected of being AFK.
@@ -84,7 +84,7 @@ public class ServerConfig extends ConfigReader {
      * This message will show in the chat, it will be sent only once.
      * Default: NONE
      */
-    protected MessageMethod broadcastAfking;
+    protected MessageReceiver broadcastAfking;
 
     /**
      * The threshold of the time in ticks that a player is confirmed to be AFK.
@@ -97,13 +97,13 @@ public class ServerConfig extends ConfigReader {
      * This message will show in the chat, it will be sent only once.
      * Default: NONE
      */
-    protected MessageMethod stopAfking;
+    protected MessageReceiver stopAfking;
 
     /**
      * Controls who can receive the message when a player changes the biome.
      * Default: NONE
      */
-    protected MessageMethod changeBiome;
+    protected MessageReceiver changeBiome;
 
     /**
      * The delay in ticks before sending the message when a player changes the biome.
@@ -111,6 +111,88 @@ public class ServerConfig extends ConfigReader {
      * Default: 200 Ticks (10 seconds)
      */
     protected int changeBiomeDelay;
+
+    /**
+     * Controls where to show the message when a player attack a boss.
+     * Default: NONE
+     */
+    protected MessageLocation bossFightLoc;
+
+    /**
+     * Controls who can receive the message when a player attack a boss.
+     * Default: NONE
+     */
+    protected MessageReceiver bossFightReceiver;
+
+    /**
+     * The interval in ticks before sending the message when a player attack a boss.
+     * This is designed to avoid spamming messages
+     * Default: 1200 Ticks (60 seconds)
+     */
+    protected int bossFightInterval;
+
+    /**
+     * Controls where to show the message when a player is surrounded by monsters.
+     * Default: NONE
+     */
+    protected MessageLocation monsterSurroundLoc;
+
+    /**
+     * Controls who can receive the message when a player is surrounded by monsters.
+     * Default: NONE
+     */
+    protected MessageReceiver monsterSurroundReceiver;
+
+    /**
+     * The interval in ticks before sending the message when a player is surrounded by monsters.
+     * This is designed to avoid spamming messages
+     * Default: 1200 Ticks (60 seconds)
+     */
+    protected int monsterSurroundInterval;
+
+    /**
+     * If the number of the monsters near a player is larger than this value, the player will be considered as surrounded by monsters.
+     * Default: 8
+     */
+    protected int monsterNumberThreshold;
+
+    /**
+     * If the distance between a player and a monster is less than this value, the monster will be considered as near the player.
+     * Default: 12
+     */
+    protected double monsterDistanceThreshold;
+
+    /**
+     * Controls where to show the message when the number of entities in the server is larger than the threshold.
+     * Default: NONE
+     */
+    protected MessageLocation entityNumberWarning;
+
+    /**
+     * If the number of the entities in the server is larger than this value, the warning message will be sent.
+     * This is designed to avoid too many entities lagging the server.
+     * Default: 3000
+     */
+    protected int entityNumberThreshold;
+
+    /**
+     * The interval in ticks to check how many entities are there in the server.
+     * Frequently checking the number of entities may cause lag.
+     * Default: 20 (1 second)
+     */
+    protected int entityNumberInterval;
+
+    /**
+     * Controls who can receive the message when a player is seriously hurt.
+     * Default: NONE
+     */
+    protected MessageReceiver playerSeriousHurt;
+
+    /**
+     * If a player receives a damage larger than this percentage of his max health, he will be considered as seriously hurt.
+     * Default: 0.8 (80%)
+     */
+    protected double playerHurtThreshold;
 
     /**
      * The URL of the target GPT server.
@@ -154,21 +236,34 @@ public class ServerConfig extends ConfigReader {
     public ServerConfig() {
         super("server.json");
         this.serverTranslation = false;
-        this.entityDeathMessage = MessageType.NONE;
-        this.bossDeathMessage = MessageType.NONE;
-        this.namedEntityDeathMessage = MessageType.NONE;
-        this.killerDeathMessage = MessageType.NONE;
+        this.entityDeathMessage = MessageLocation.NONE;
+        this.bossDeathMessage = MessageLocation.NONE;
+        this.namedEntityDeathMessage = MessageLocation.NONE;
+        this.killerDeathMessage = MessageLocation.NONE;
         this.bossMaxHpThreshold = 150;
-        this.playerDeathCoord = MessageMethod.NONE;
-        this.projectileHitOthers = MessageMethod.NONE;
-        this.projectileBeingHit = MessageMethod.NONE;
-        this.informAfking = MessageMethod.NONE;
+        this.playerDeathCoord = MessageReceiver.NONE;
+        this.projectileHitOthers = MessageReceiver.NONE;
+        this.projectileBeingHit = MessageReceiver.NONE;
+        this.informAfking = MessageReceiver.NONE;
         this.informAfkingThreshold = 1200;
-        this.broadcastAfking = MessageMethod.NONE;
+        this.broadcastAfking = MessageReceiver.NONE;
         this.broadcastAfkingThreshold = 6000;
-        this.stopAfking = MessageMethod.NONE;
-        this.changeBiome = MessageMethod.NONE;
+        this.stopAfking = MessageReceiver.NONE;
+        this.changeBiome = MessageReceiver.NONE;
         this.changeBiomeDelay = 200;
+        this.bossFightLoc = MessageLocation.NONE;
+        this.bossFightReceiver = MessageReceiver.NONE;
+        this.bossFightInterval = 1200;
+        this.monsterSurroundLoc = MessageLocation.NONE;
+        this.monsterSurroundReceiver = MessageReceiver.NONE;
+        this.monsterSurroundInterval = 1200;
+        this.monsterNumberThreshold = 8;
+        this.monsterDistanceThreshold = 12.0;
+        this.entityNumberWarning = MessageLocation.NONE;
+        this.entityNumberThreshold = 3000;
+        this.entityNumberInterval = 20;
+        this.playerSeriousHurt = MessageReceiver.NONE;
+        this.playerHurtThreshold = 0.8;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -195,7 +290,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageType getEntityDeathMessageType() {
+    public MessageLocation getEntityDeathMessage() {
         lock.readLock().lock();
         try {
             return entityDeathMessage;
@@ -204,7 +299,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setEntityDeathMessageType(MessageType entityDeathMessage) {
+    public void setEntityDeathMessage(MessageLocation entityDeathMessage) {
         lock.writeLock().lock();
         try {
             this.entityDeathMessage = entityDeathMessage;
@@ -213,7 +308,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageType getBossDeathMessageType() {
+    public MessageLocation getBossDeathMessage() {
         lock.readLock().lock();
         try {
             return bossDeathMessage;
@@ -222,7 +317,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setBossDeathMessageType(MessageType bossDeathMessage) {
+    public void setBossDeathMessage(MessageLocation bossDeathMessage) {
         lock.writeLock().lock();
         try {
             this.bossDeathMessage = bossDeathMessage;
@@ -231,7 +326,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageType getNamedEntityDeathMessageType() {
+    public MessageLocation getNamedEntityDeathMessage() {
         lock.readLock().lock();
         try {
             return namedEntityDeathMessage;
@@ -240,7 +335,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setNamedEntityDeathMessageType(MessageType namedEntityDeathMessage) {
+    public void setNamedEntityDeathMessage(MessageLocation namedEntityDeathMessage) {
         lock.writeLock().lock();
         try {
             this.namedEntityDeathMessage = namedEntityDeathMessage;
@@ -249,7 +344,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageType getKillerEntityDeathMessageType() {
+    public MessageLocation getKillerEntityDeathMessage() {
         lock.readLock().lock();
         try {
             return killerDeathMessage;
@@ -258,7 +353,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setKillerEntityDeathMessageType(MessageType killerDeathMessage) {
+    public void setKillerEntityDeathMessage(MessageLocation killerDeathMessage) {
         lock.writeLock().lock();
         try {
             this.killerDeathMessage = killerDeathMessage;
@@ -292,7 +387,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageMethod getPlayerDeathCoordMethod() {
+    public MessageReceiver getPlayerDeathCoord() {
         lock.readLock().lock();
         try {
             return playerDeathCoord;
@@ -301,7 +396,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setPlayerDeathCoordMethod(MessageMethod playerDeathCoord) {
+    public void setPlayerDeathCoord(MessageReceiver playerDeathCoord) {
         lock.writeLock().lock();
         try {
             this.playerDeathCoord = playerDeathCoord;
@@ -310,7 +405,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageMethod getProjectileHitOthersMethod() {
+    public MessageReceiver getProjectileHitOthers() {
         lock.readLock().lock();
         try {
             return projectileHitOthers;
@@ -319,7 +414,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setProjectileHitOthersMethod(MessageMethod projectileHitOthers) {
+    public void setProjectileHitOthers(MessageReceiver projectileHitOthers) {
         lock.writeLock().lock();
         try {
             this.projectileHitOthers = projectileHitOthers;
@@ -328,7 +423,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageMethod getProjectileBeingHitMethod() {
+    public MessageReceiver getProjectileBeingHit() {
         lock.readLock().lock();
         try {
             return projectileBeingHit;
@@ -337,7 +432,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setProjectileBeingHitMethod(MessageMethod projectileBeingHit) {
+    public void setProjectileBeingHit(MessageReceiver projectileBeingHit) {
         lock.writeLock().lock();
         try {
             this.projectileBeingHit = projectileBeingHit;
@@ -346,7 +441,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageMethod getInformAfkingMethod() {
+    public MessageReceiver getInformAfking() {
         lock.readLock().lock();
         try {
             return informAfking;
@@ -355,7 +450,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setInformAfkingMethod(MessageMethod informAfking) {
+    public void setInformAfking(MessageReceiver informAfking) {
         lock.writeLock().lock();
         try {
             this.informAfking = informAfking;
@@ -389,7 +484,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageMethod getBroadcastAfkingMethod() {
+    public MessageReceiver getBroadcastAfking() {
         lock.readLock().lock();
         try {
             return broadcastAfking;
@@ -398,7 +493,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setBroadcastAfkingMethod(MessageMethod broadcastAfking) {
+    public void setBroadcastAfking(MessageReceiver broadcastAfking) {
         lock.writeLock().lock();
         try {
             this.broadcastAfking = broadcastAfking;
@@ -432,7 +527,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageMethod getStopAfkingMethod() {
+    public MessageReceiver getStopAfking() {
         lock.readLock().lock();
         try {
             return stopAfking;
@@ -441,7 +536,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setStopAfkingMethod(MessageMethod stopAfking) {
+    public void setStopAfking(MessageReceiver stopAfking) {
         lock.writeLock().lock();
         try {
             this.stopAfking = stopAfking;
@@ -450,7 +545,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageMethod getChangeBiomeMethod() {
+    public MessageReceiver getChangeBiome() {
         lock.readLock().lock();
         try {
             return changeBiome;
@@ -459,7 +554,7 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public void setChangeBiomeMethod(MessageMethod changeBiome) {
+    public void setChangeBiome(MessageReceiver changeBiome) {
         lock.writeLock().lock();
         try {
             this.changeBiome = changeBiome;
@@ -487,6 +582,294 @@ public class ServerConfig extends ConfigReader {
                 this.changeBiomeDelay = 0;
             } else {
                 this.changeBiomeDelay = changeBiomeDelay;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getBossFightMessageLocation() {
+        lock.readLock().lock();
+        try {
+            return bossFightLoc;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBossFightMessageLocation(MessageLocation bossFightType) {
+        lock.writeLock().lock();
+        try {
+            this.bossFightLoc = bossFightType;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageReceiver getBossFightMessageReceiver() {
+        lock.readLock().lock();
+        try {
+            return bossFightReceiver;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBossFightMessageReceiver(MessageReceiver bossFightMethod) {
+        lock.writeLock().lock();
+        try {
+            this.bossFightReceiver = bossFightMethod;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getBossFightInterval() {
+        lock.readLock().lock();
+        try {
+            if (bossFightInterval < 0) {
+                return 0;
+            }
+            return bossFightInterval;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setBossFightInterval(int bossFightInterval) {
+        lock.writeLock().lock();
+        try {
+            if (bossFightInterval < 0) {
+                this.bossFightInterval = 0;
+            } else {
+                this.bossFightInterval = bossFightInterval;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getMonsterSurroundMessageLocation() {
+        lock.readLock().lock();
+        try {
+            return monsterSurroundLoc;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setMonsterSurroundMessageLocation(MessageLocation monsterSurroundType) {
+        lock.writeLock().lock();
+        try {
+            this.monsterSurroundLoc = monsterSurroundType;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageReceiver getMonsterSurroundMessageReceiver() {
+        lock.readLock().lock();
+        try {
+            return monsterSurroundReceiver;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setMonsterSurroundMessageReceiver(MessageReceiver monsterSurroundMethod) {
+        lock.writeLock().lock();
+        try {
+            this.monsterSurroundReceiver = monsterSurroundMethod;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getMonsterSurroundInterval() {
+        lock.readLock().lock();
+        try {
+            if (monsterSurroundInterval < 0) {
+                return 0;
+            }
+            return monsterSurroundInterval;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setMonsterSurroundInterval(int monsterSurroundInterval) {
+        lock.writeLock().lock();
+        try {
+            if (monsterSurroundInterval < 0) {
+                this.monsterSurroundInterval = 0;
+            } else {
+                this.monsterSurroundInterval = monsterSurroundInterval;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getMonsterNumberThreshold() {
+        lock.readLock().lock();
+        try {
+            if (monsterNumberThreshold < 0) {
+                return 0;
+            }
+            return monsterNumberThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setMonsterNumberThreshold(int monsterNumberThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (monsterNumberThreshold < 0) {
+                this.monsterNumberThreshold = 0;
+            } else {
+                this.monsterNumberThreshold = monsterNumberThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getMonsterDistanceThreshold() {
+        lock.readLock().lock();
+        try {
+            if (monsterDistanceThreshold < 0) {
+                return 0.0;
+            }
+            return monsterDistanceThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setMonsterDistanceThreshold(double monsterDistanceThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (monsterDistanceThreshold < 0) {
+                this.monsterDistanceThreshold = 0;
+            } else {
+                this.monsterDistanceThreshold = monsterDistanceThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getEntityNumberWarning() {
+        lock.readLock().lock();
+        try {
+            return entityNumberWarning;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityNumberWarning(MessageLocation entityNumberWarning) {
+        lock.writeLock().lock();
+        try {
+            this.entityNumberWarning = entityNumberWarning;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getEntityNumberThreshold() {
+        lock.readLock().lock();
+        try {
+            if (entityNumberThreshold < 0) {
+                return 0;
+            }
+            return entityNumberThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityNumberThreshold(int entityNumberThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (entityNumberThreshold < 0) {
+                this.entityNumberThreshold = 0;
+            } else {
+                this.entityNumberThreshold = entityNumberThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getEntityNumberInterval() {
+        lock.readLock().lock();
+        try {
+            if (entityNumberInterval <= 0) {
+                return 1;
+            }
+            return entityNumberInterval;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityNumberInterval(int entityNumberInterval) {
+        lock.writeLock().lock();
+        try {
+            if (entityNumberInterval <= 0) {
+                this.entityNumberInterval = 1;
+            } else {
+                this.entityNumberInterval = entityNumberInterval;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageReceiver getPlayerSeriousHurt() {
+        lock.readLock().lock();
+        try {
+            return playerSeriousHurt;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setPlayerSeriousHurt(MessageReceiver playerSeriousHurt) {
+        lock.writeLock().lock();
+        try {
+            this.playerSeriousHurt = playerSeriousHurt;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getPlayerHurtThreshold() {
+        lock.readLock().lock();
+        try {
+            if (playerHurtThreshold < 0) {
+                return 0;
+            }
+            if (playerHurtThreshold > 1) {
+                return 1;
+            }
+            return playerHurtThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setPlayerHurtThreshold(double playerHurtThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (playerHurtThreshold < 0) {
+                this.playerHurtThreshold = 0;
+            } else if (playerHurtThreshold > 1) {
+                this.playerHurtThreshold = 1;
+            } else {
+                this.playerHurtThreshold = playerHurtThreshold;
             }
         } finally {
             lock.writeLock().unlock();
