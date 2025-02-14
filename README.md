@@ -4,6 +4,8 @@ A Minecraft Mod for Management
 
 ## Features
 
+This is a server side mod, and it can work even the client does not have this mod installed.
+
 - Talk to GPT in game.
 
 - Show death message and death coordinates.
@@ -11,6 +13,12 @@ A Minecraft Mod for Management
 - Detect AFKing players.
 
 - Get informed if you successfully shoot an entity with your bow, and know its HP.
+
+- Monitor the number of entities
+
+- and more.
+
+By default, this mod will not enable any features, you need to manually enable the feature you want to use.
 
 ## Setup
 
@@ -44,6 +52,13 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 Java Syntax Highlight may not work properly with full package path and ? symbol in generics.
 
 ## Changelog
+
+### Version 0.1
+
+First release of the mod
+
+- Monitor the number of the entities in the world.
+- Add more player combat related messages.
 
 ### Version 0.0.6
 

@@ -8,8 +8,10 @@ import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
@@ -28,6 +30,10 @@ public class WorldTick {
      * This method is called every tick.
      */
     public void onWorldTick() {
+        if (Util.getServerData(server).getServerTick() % Util.serverConfig.getEntityNumberInterval() == 0) {
+            checkEntityNumber();
+        }   
+
         List<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
         for (ServerPlayerEntity player : players) {
             PlayerData playerData = Util.getServerData(server).getPlayerData(player);
@@ -38,6 +44,19 @@ public class WorldTick {
         List<ScheduledTask> scheduledTasks = Util.getServerData(server).getScheduledTasks();
         scheduledTasks.forEach(ScheduledTask::tick);
         scheduledTasks.removeIf(ScheduledTask::isFinished);
+
+        Util.getServerData(server).tick();
+    }
+
+    private void checkEntityNumber() {
+        int entityNumber = 0;
+        for (ServerWorld world : server.getWorlds()) {
+            List<Entity> entities = Util.getAllEntities(world);
+            entityNumber += entities.size();
+        }
+        if (entityNumber >= Util.serverConfig.getEntityNumberThreshold()) {
+            Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslateableText("fmod.message.entitywarning", entityNumber));
+        }
     }
 
     private void handleAfkPlayers(ServerPlayerEntity player, PlayerData playerData) {

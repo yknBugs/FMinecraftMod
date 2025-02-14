@@ -25,11 +25,19 @@ public class ServerData {
     public Collection<UUID> killerEntities;
     public HashMap<String, GptData> gptRequestStatus;
 
+    private int serverTick;
+
     public ServerData() {
         playerData = new HashMap<>();
         scheduledTasks = new ArrayList<>();
         killerEntities = new HashSet<>();
         gptRequestStatus = new HashMap<>();
+
+        serverTick = 0;
+    }
+
+    public void tick() {
+        serverTick++;
     }
 
     /**
@@ -99,5 +107,13 @@ public class ServerData {
             gptRequestStatus.put(source, data);
         }
         return data;
+    }
+
+    public int getServerTick() {
+        return serverTick;
+    }
+
+    public int getTickPassed(int tick) {
+        return serverTick - tick;
     }
 }

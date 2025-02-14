@@ -15,8 +15,7 @@ import net.minecraft.util.hit.EntityHitResult;
 public class ProjectileHitEntityMixin {
 
     @Inject(method = "onEntityHit(Lnet/minecraft/util/hit/EntityHitResult;)V", at = @At("HEAD"))
-    private void onEntityHit(final EntityHitResult entityHitResult, CallbackInfo info)
-    {
+    private void onEntityHit(final EntityHitResult entityHitResult, CallbackInfo info) {
         try {
             ProjectileEntity projectile = (ProjectileEntity) (Object) this;
             ProjectileHitEntity projectileHitEntity = new ProjectileHitEntity(projectile, entityHitResult);

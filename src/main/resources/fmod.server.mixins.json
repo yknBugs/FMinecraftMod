@@ -5,7 +5,8 @@
 	"mixins": [
 		"EntityDeathMixin",
 		"PlayerDeathMixin",
-		"ProjectileHitEntityMixin"
+		"ProjectileHitEntityMixin",
+		"LivingEntityDamageMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

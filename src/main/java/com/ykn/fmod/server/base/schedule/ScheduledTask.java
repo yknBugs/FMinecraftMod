@@ -34,6 +34,7 @@ public class ScheduledTask {
     public void cancel() {
         delay = 0;
         duration = 0;
+        onCancel();
     }
 
     public void onTick() {
@@ -45,6 +46,10 @@ public class ScheduledTask {
     }
 
     public void onFinish() {
+        // Override by the subclass
+    }
+
+    public void onCancel() {
         // Override by the subclass
     }
 

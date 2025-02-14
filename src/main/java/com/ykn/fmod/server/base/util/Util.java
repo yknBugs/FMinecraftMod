@@ -17,12 +17,15 @@ import com.ykn.fmod.server.base.data.ServerData;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.Person;
 import net.minecraft.SharedConstants;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.TypeFilter;
 
 public class Util {
 
@@ -30,6 +33,17 @@ public class Util {
 
     public static final String LOGGERNAME = "FMinecraftMod";
     public static final String MODID = "fminecraftmod";
+
+    public static final TypeFilter<Entity, Entity> PASSTHROUGH_FILTER = new TypeFilter<Entity, Entity>(){
+        @Override
+        public Entity downcast(Entity entity) {
+            return entity;
+        }
+        @Override
+        public Class<? extends Entity> getBaseClass() {
+            return Entity.class;
+        }
+    };
 
     public static ServerConfig serverConfig = new ServerConfig();
     public static HashMap<MinecraftServer, ServerData> worldData = new HashMap<>();
@@ -241,6 +255,12 @@ public class Util {
             return livingEntity.getHealth();
         }
         return 0.0;
+    }
+
+    public static List<Entity> getAllEntities(ServerWorld world) {
+        List<Entity> entities = new ArrayList<>();
+        world.collectEntitiesByType(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
+        return entities;
     }
 
     public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
