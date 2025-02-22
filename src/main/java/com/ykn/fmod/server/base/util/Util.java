@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.config.ConfigReader;
 import com.ykn.fmod.server.base.config.ServerConfig;
+import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
 
 import net.fabricmc.loader.api.FabricLoader;
@@ -241,6 +242,11 @@ public class Util {
             LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: A new instance of ServerData was created.");
         }
         return data;
+    }
+
+    @NotNull
+    public static PlayerData getPlayerData(@NotNull ServerPlayerEntity player) {
+        return getServerData(player.getServer()).getPlayerData(player);
     }
 
     public static double getHealth(@Nullable Object entity) {

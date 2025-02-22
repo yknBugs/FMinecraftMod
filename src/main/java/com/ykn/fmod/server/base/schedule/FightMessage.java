@@ -29,7 +29,7 @@ public class FightMessage extends ScheduledTask {
 
     @Override
     public void onCancel() {
-        Util.getServerData(player.getServer()).getPlayerData(player).lastBossFightTick = 0;
+        Util.getPlayerData(player).lastBossFightTick = 0;
     }
 
     @Override

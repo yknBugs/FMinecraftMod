@@ -51,6 +51,10 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 
 Java Syntax Highlight may not work properly with full package path and ? symbol in generics.
 
+Cpp Syntax Hightlight forgets keyword delete
+
+GPT history may contains empty reply if the server refused to response.
+
 ## Changelog
 
 ### Version 0.1

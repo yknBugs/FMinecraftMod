@@ -29,6 +29,10 @@ public class LivingEntityDamage {
         this.amount = amount;
     }
 
+    /**
+     * This method is called when a living entity is damaged.
+     * @see com.ykn.fmod.mixin.LivingEntityDamageMixin
+     */
     public void onDamage() {
         if (entity.getServer() == null) {
             return;

@@ -92,12 +92,12 @@ public class ServerData {
     }
 
     /**
-     * Retrieves the GptData associated with the given ServerCommandSource.
+     * Retrieves the GptData associated with the given source.
      * If no GptData is found for the provided source, a new GptData instance
      * is created, stored, and then returned.
      *
-     * @param source the name of the CommandSource for which to retrieve the GptData
-     * @return the GptData associated with the given ServerCommandSource
+     * @param source the name of the source for which to retrieve the GptData
+     * @return the GptData associated with the given source
      */
     @NotNull
     public GptData getGptData(@NotNull String source) {

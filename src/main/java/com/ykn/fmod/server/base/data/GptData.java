@@ -77,6 +77,30 @@ public class GptData {
     }
 
     /**
+     * Attempts to cancel the current operation if a response has not been received yet.
+     * 
+     * This method acquires a write lock to ensure thread safety. If the response has not 
+     * been received (`hasReceivedResponse` is false), it sets `hasReceivedResponse` to true 
+     * and returns true, indicating that the operation was successfully canceled. If the 
+     * response has already been received, it returns false.
+     * 
+     * @return true if the operation was successfully canceled, false otherwise.
+     */
+    public boolean cancel() {
+        boolean result = false;
+        this.lock.writeLock().lock();
+        try {
+            if (this.hasReceivedResponse == false) {
+                this.hasReceivedResponse = true;
+                result = true;
+            }
+        } finally {
+            this.lock.writeLock().unlock();
+        }
+        return result;
+    }
+
+    /**
      * Converts the current instance of ChatRequest to a JSON string.
      *
      * @return A JSON representation of the ChatRequest object.

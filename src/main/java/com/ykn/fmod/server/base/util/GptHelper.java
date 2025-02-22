@@ -69,7 +69,7 @@ public class GptHelper implements Runnable {
                     }
                 });
             } else {
-                gptData.receiveMessage("", Text.literal(""), "{\"code\":" + responseCode + "}");
+                gptData.cancel();
                 context.getSource().getServer().execute(() -> {
                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode), false);
                 });
@@ -83,13 +83,13 @@ public class GptHelper implements Runnable {
                 // LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response: " + responseBuilder.toString());
             }
         } catch (SocketTimeoutException e) {
-            gptData.receiveMessage("", Text.literal(""), "{}");
+            gptData.cancel();
             context.getSource().getServer().execute(() -> {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.timeout"), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Connect to the GPT server timeout", e);
         } catch (Exception e) {
-            gptData.receiveMessage("", Text.literal(""), "{}");
+            gptData.cancel();
             context.getSource().getServer().execute(() -> {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.error"), false);
             });
