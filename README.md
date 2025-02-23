@@ -6,7 +6,9 @@ A Minecraft Mod for Management
 
 This is a server side mod, and it can work even the client does not have this mod installed.
 
-- Talk to GPT in game.
+- Talk to GPT in game with simple Markdown syntax highlight.
+
+- Use command to get information (such as inventory information) of other players.
 
 - Show death message and death coordinates.
 
@@ -56,6 +58,13 @@ Cpp Syntax Hightlight forgets keyword delete
 GPT history may contains empty reply if the server refused to response.
 
 ## Changelog
+
+### Version 0.1.1
+
+Get Command Update:
+
+- List the inventory of a certain player.
+- Get the coordinates of chosen entities.
 
 ### Version 0.1
 

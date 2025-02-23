@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.util;
 
 import java.util.ArrayList;
@@ -26,6 +31,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.TypeFilter;
 
 public class Util {
@@ -249,9 +255,18 @@ public class Util {
         return getServerData(player.getServer()).getPlayerData(player);
     }
 
+    /**
+     * Safely Retrieves the health of the given entity.
+     *
+     * @param entity the entity whose health is to be retrieved; can be null
+     * @return the health of the entity if it is a LivingEntity and not removed, otherwise 0.0
+     */
     public static double getHealth(@Nullable Object entity) {
         if (entity == null) {
             return 0.0;
+        }
+        if (entity instanceof Double) {
+            return (Double) entity;
         }
         if (entity instanceof LivingEntity) {
             LivingEntity livingEntity = (LivingEntity) entity;
@@ -263,10 +278,47 @@ public class Util {
         return 0.0;
     }
 
-    public static List<Entity> getAllEntities(ServerWorld world) {
+    /**
+     * Safely Retrieves the maximum health of the given entity.
+     *
+     * @param entity the entity whose maximum health is to be retrieved; can be null
+     * @return the maximum health of the entity if it is a LivingEntity and not removed, otherwise 0.0
+     */
+    public static double getMaxHealth(@Nullable Object entity) {
+        if (entity == null) {
+            return 0.0;
+        }
+        if (entity instanceof Double) {
+            return (Double) entity;
+        }
+        if (entity instanceof LivingEntity) {
+            LivingEntity livingEntity = (LivingEntity) entity;
+            if (livingEntity.isRemoved()) {
+                return 0.0;
+            }
+            return livingEntity.getMaxHealth();
+        }
+        return 0.0;
+    }
+
+    @NotNull
+    public static List<Entity> getAllEntities(@NotNull ServerWorld world) {
         List<Entity> entities = new ArrayList<>();
         world.collectEntitiesByType(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
         return entities;
+    }
+
+    @NotNull
+    public static MutableText getBiomeText(@NotNull Entity entity) {
+        Identifier biomeId = entity.getWorld().getBiome(entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        MutableText biomeText = null;
+        if (biomeId == null) {
+            biomeText = Util.parseTranslateableText("fmod.misc.unknown");
+        } else {
+            // Vanilla should contain this translation key.
+            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
+        }
+        return biomeText;
     }
 
     public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {

@@ -10,7 +10,6 @@ import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
 
 public class PlayerDeath {
 
@@ -51,14 +50,7 @@ public class PlayerDeath {
         String strX = String.format("%.2f", x);
         String strY = String.format("%.2f", y);
         String strZ = String.format("%.2f", z);
-        Identifier biomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
-        MutableText biomeText = null;
-        if (biomeId == null) {
-            biomeText = Util.parseTranslateableText("fmod.misc.unknown");
-        } else {
-            // Vanilla should contain this translation key.
-            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
-        }
+        MutableText biomeText = Util.getBiomeText(player);
         MutableText text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
             new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
         ).withHoverEvent(

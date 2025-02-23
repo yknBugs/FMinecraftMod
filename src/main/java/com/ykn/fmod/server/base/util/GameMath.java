@@ -1,6 +1,12 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.util;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
@@ -32,6 +38,38 @@ public class GameMath {
     }
 
     /**
+     * Calculates the Euclidean distance between two points in 3D space.
+     *
+     * @param xa the x-coordinate of the first point
+     * @param ya the y-coordinate of the first point
+     * @param za the z-coordinate of the first point
+     * @param xb the x-coordinate of the second point
+     * @param yb the y-coordinate of the second point
+     * @param zb the z-coordinate of the second point
+     * @return the Euclidean distance between the two points
+     */
+    public static double getEuclideanDistance(double xa, double ya, double za, double xb, double yb, double zb) {
+        double dx = xa - xb;
+        double dy = ya - yb;
+        double dz = za - zb;
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /**
+     * Calculates the Euclidean distance between two vectors in 3D space.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the Euclidean distance between the two vectors
+     */
+    public static double getEuclideanDistance(Vec3d a, Vec3d b) {
+        double dx = a.getX() - b.getX();
+        double dy = a.getY() - b.getY();
+        double dz = a.getZ() - b.getZ();
+        return Math.sqrt(dx * dx + dy * dy + dz * dz);
+    }
+
+    /**
      * Calculates the horizontal Euclidean distance between two entities in the same world.
      * The distance is computed using only the X and Z coordinates, ignoring the Y coordinate.
      *
@@ -51,6 +89,36 @@ public class GameMath {
         }
         double dx = xa - xb;
         double dz = za - zb;
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    /**
+     * Calculates the horizontal Euclidean distance between two points in 3D space.
+     * The distance is computed using only the X and Z coordinates, ignoring the Y coordinate.
+     *
+     * @param xa the x-coordinate of the first point
+     * @param za the z-coordinate of the first point
+     * @param xb the x-coordinate of the second point
+     * @param zb the z-coordinate of the second point
+     * @return the horizontal Euclidean distance between the two points
+     */
+    public static double getHorizonalEuclideanDistance(double xa, double za, double xb, double zb) {
+        double dx = xa - xb;
+        double dz = za - zb;
+        return Math.sqrt(dx * dx + dz * dz);
+    }
+
+    /**
+     * Calculates the horizontal Euclidean distance between two vectors in 3D space.
+     * The distance is computed using only the X and Z coordinates, ignoring the Y coordinate.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the horizontal Euclidean distance between the two vectors
+     */
+    public static double getHorizonalEuclideanDistance(Vec3d a, Vec3d b) {
+        double dx = a.getX() - b.getX();
+        double dz = a.getZ() - b.getZ();
         return Math.sqrt(dx * dx + dz * dz);
     }
 
@@ -79,6 +147,40 @@ public class GameMath {
         double dz = za - zb;
         return Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
     }
+    
+    /**
+     * Calculates the Manhattan distance between two points in 3D space.
+     * The Manhattan distance is the sum of the absolute differences of their Cartesian coordinates.
+     *
+     * @param xa the x-coordinate of the first point
+     * @param ya the y-coordinate of the first point
+     * @param za the z-coordinate of the first point
+     * @param xb the x-coordinate of the second point
+     * @param yb the y-coordinate of the second point
+     * @param zb the z-coordinate of the second point
+     * @return the Manhattan distance between the two points
+     */
+    public static double getManhattanDistance(double xa, double ya, double za, double xb, double yb, double zb) {
+        double dx = xa - xb;
+        double dy = ya - yb;
+        double dz = za - zb;
+        return Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+    }
+
+    /**
+     * Calculates the Manhattan distance between two vectors in 3D space.
+     * The Manhattan distance is the sum of the absolute differences of their Cartesian coordinates.
+     * 
+     * @param a the first vector
+     * @param b the second vector
+     * @return the Manhattan distance between the two vectors
+     */
+    public static double getManhattanDistance(Vec3d a, Vec3d b) {
+        double dx = a.getX() - b.getX();
+        double dy = a.getY() - b.getY();
+        double dz = a.getZ() - b.getZ();
+        return Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
+    }
 
     /**
      * Calculates the horizontal Manhattan distance between two entities.
@@ -100,6 +202,36 @@ public class GameMath {
         }
         double dx = xa - xb;
         double dz = za - zb;
+        return Math.abs(dx) + Math.abs(dz);
+    }
+
+    /**
+     * Calculates the horizontal Manhattan distance between two points in 3D space.
+     * The Manhattan distance is the sum of the absolute differences of their Cartesian coordinates.
+     *
+     * @param xa the x-coordinate of the first point
+     * @param za the z-coordinate of the first point
+     * @param xb the x-coordinate of the second point
+     * @param zb the z-coordinate of the second point
+     * @return the horizontal Manhattan distance between the two points
+     */
+    public static double getHorizonalManhattanDistance(double xa, double za, double xb, double zb) {
+        double dx = xa - xb;
+        double dz = za - zb;
+        return Math.abs(dx) + Math.abs(dz);
+    }
+
+    /**
+     * Calculates the horizontal Manhattan distance between two vectors in 3D space.
+     * The Manhattan distance is the sum of the absolute differences of their Cartesian coordinates.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the horizontal Manhattan distance between the two vectors
+     */
+    public static double getHorizonalManhattanDistance(Vec3d a, Vec3d b) {
+        double dx = a.getX() - b.getX();
+        double dz = a.getZ() - b.getZ();
         return Math.abs(dx) + Math.abs(dz);
     }
 
@@ -130,6 +262,40 @@ public class GameMath {
     }
 
     /**
+     * Calculates the Chebyshev distance between two points in 3D space.
+     * The Chebyshev distance is the maximum of the absolute differences of their coordinates.
+     *
+     * @param xa the x-coordinate of the first point
+     * @param ya the y-coordinate of the first point
+     * @param za the z-coordinate of the first point
+     * @param xb the x-coordinate of the second point
+     * @param yb the y-coordinate of the second point
+     * @param zb the z-coordinate of the second point
+     * @return the Chebyshev distance between the two points
+     */
+    public static double getChebyshevDistance(double xa, double ya, double za, double xb, double yb, double zb) {
+        double dx = xa - xb;
+        double dy = ya - yb;
+        double dz = za - zb;
+        return Math.max(Math.max(Math.abs(dx), Math.abs(dy)), Math.abs(dz));
+    }
+
+    /**
+     * Calculates the Chebyshev distance between two vectors in 3D space.
+     * The Chebyshev distance is the maximum of the absolute differences of their coordinates.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the Chebyshev distance between the two vectors
+     */
+    public static double getChebyshevDistance(Vec3d a, Vec3d b) {
+        double dx = a.getX() - b.getX();
+        double dy = a.getY() - b.getY();
+        double dz = a.getZ() - b.getZ();
+        return Math.max(Math.max(Math.abs(dx), Math.abs(dy)), Math.abs(dz));
+    }
+
+    /**
      * Calculates the horizontal Chebyshev distance between two entities in the same world.
      * The Chebyshev distance is the maximum of the absolute differences of their coordinates.
      *
@@ -153,6 +319,36 @@ public class GameMath {
     }
 
     /**
+     * Calculates the horizontal Chebyshev distance between two points in 3D space.
+     * The Chebyshev distance is the maximum of the absolute differences of their coordinates.
+     *
+     * @param xa the x-coordinate of the first point
+     * @param za the z-coordinate of the first point
+     * @param xb the x-coordinate of the second point
+     * @param zb the z-coordinate of the second point
+     * @return the horizontal Chebyshev distance between the two points
+     */
+    public static double getHorizonalChebyshevDistance(double xa, double za, double xb, double zb) {
+        double dx = xa - xb;
+        double dz = za - zb;
+        return Math.max(Math.abs(dx), Math.abs(dz));
+    }
+
+    /**
+     * Calculates the horizontal Chebyshev distance between two vectors in 3D space.
+     * The Chebyshev distance is the maximum of the absolute differences of their coordinates.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the horizontal Chebyshev distance between the two vectors
+     */
+    public static double getHorizonalChebyshevDistance(Vec3d a, Vec3d b) {
+        double dx = a.getX() - b.getX();
+        double dz = a.getZ() - b.getZ();
+        return Math.max(Math.abs(dx), Math.abs(dz));
+    }
+
+    /**
      * Calculates the vertical distance between two entities.
      * The vertical distance is the absolute difference of their Y coordinates.
      *
@@ -169,6 +365,30 @@ public class GameMath {
             return Double.NaN;
         }
         return Math.abs(ya - yb);
+    }
+
+    /**
+     * Calculates the vertical distance between two points in 3D space.
+     * The vertical distance is the absolute difference of their Y coordinates.
+     *
+     * @param ya the y-coordinate of the first point
+     * @param yb the y-coordinate of the second point
+     * @return the vertical distance between the two points
+     */
+    public static double getVerticalDistance(double ya, double yb) {
+        return Math.abs(ya - yb);
+    }
+
+    /**
+     * Calculates the vertical distance between two vectors in 3D space.
+     * The vertical distance is the absolute difference of their Y coordinates.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the vertical distance between the two vectors
+     */
+    public static double getVerticalDistance(Vec3d a, Vec3d b) {
+        return Math.abs(a.getY() - b.getY());
     }
 
     /**
@@ -202,6 +422,17 @@ public class GameMath {
     }
 
     /**
+     * Calculates the minimum distance from a point to a bounding box.
+     *
+     * @param box The bounding box to which the distance is calculated.
+     * @param p The point from which the distance is calculated.
+     * @return The minimum distance from the point to the bounding box.
+     */
+    public static double getMinimumDistanceToBox(Box box, Vec3d p) {
+        return getMinimumDistanceToBox(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, p.x, p.y, p.z);
+    }
+
+    /**
      * Calculates the unit direction vector based on the given pitch and yaw angles.
      *
      * @param pitch the pitch angle in degrees
@@ -219,6 +450,166 @@ public class GameMath {
         double y = sinPitch;
         double z = -cosYaw * cosPitch;
         return new Vec3d(x, y, z);
+    }
+
+    /**
+     * Calculates the pitch angle (rotation around the X-axis) in degrees for a given vector.
+     *
+     * @param vec the vector for which to calculate the pitch angle
+     * @return the pitch angle in degrees
+     */
+    public static double getPitch(Vec3d vec) {
+        double x = vec.getX();
+        double y = vec.getY();
+        double z = vec.getZ();
+        double length = Math.sqrt(x * x + y * y + z * z);
+        if (length == 0) {
+            return Double.NaN;
+        }
+        double pitch = Math.asin(y / length);
+        return Math.toDegrees(pitch);
+    }
+
+    /**
+     * Calculates the pitch angle (rotation around the X-axis) in degrees for a given vector.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the pitch angle in degrees
+     */
+    public static double getPitch(Vec3d a, Vec3d b) {
+        double x = b.getX() - a.getX();
+        double y = b.getY() - a.getY();
+        double z = b.getZ() - a.getZ();
+        double length = Math.sqrt(x * x + y * y + z * z);
+        if (length == 0) {
+            return Double.NaN;
+        }
+        double pitch = Math.asin(y / length);
+        return Math.toDegrees(pitch);
+    }
+
+    /**
+     * Calculates the pitch angle (rotation around the X-axis) in degrees for a given vector.
+     *
+     * @param x the x-coordinate of the vector
+     * @param y the y-coordinate of the vector
+     * @param z the z-coordinate of the vector
+     * @return the pitch angle in degrees
+     */
+    public static double getPitch(double x, double y, double z) {
+        double length = Math.sqrt(x * x + y * y + z * z);
+        if (length == 0) {
+            return Double.NaN;
+        }
+        double pitch = Math.asin(y / length);
+        return Math.toDegrees(pitch);
+    }
+
+    /**
+     * Calculates the pitch angle (rotation around the X-axis) in degrees for a given vector.
+     *
+     * @param xa the x-coordinate of the first vector
+     * @param ya the y-coordinate of the first vector
+     * @param za the z-coordinate of the first vector
+     * @param xb the x-coordinate of the second vector
+     * @param yb the y-coordinate of the second vector
+     * @param zb the z-coordinate of the second vector
+     * @return the pitch angle in degrees
+     */
+    public static double getPitch(double xa, double ya, double za, double xb, double yb, double zb) {
+        double x = xb - xa;
+        double y = yb - ya;
+        double z = zb - za;
+        double length = Math.sqrt(x * x + y * y + z * z);
+        if (length == 0) {
+            return Double.NaN;
+        }
+        double pitch = Math.asin(y / length);
+        return Math.toDegrees(pitch);
+    }
+
+    /**
+     * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     *
+     * @param vec the vector for which to calculate the yaw angle
+     * @return the yaw angle in degrees
+     */
+    public static double getYaw(Vec3d vec) {
+        double x = vec.getX();
+        double z = vec.getZ();
+        if (x == 0.0 && z == 0.0) {
+            return Double.NaN;
+        }
+        double yaw = Math.atan2(-x, -z);
+        double d = Math.toDegrees(yaw);
+        if (d < 0.0) {
+            d += 360.0;
+        }
+        return d;
+    }
+
+    /**
+     * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @return the yaw angle in degrees
+     */
+    public static double getYaw(Vec3d a, Vec3d b) {
+        double x = b.getX() - a.getX();
+        double z = b.getZ() - a.getZ();
+        if (x == 0.0 && z == 0.0) {
+            return Double.NaN;
+        }
+        double yaw = Math.atan2(-x, -z);
+        double d = Math.toDegrees(yaw);
+        if (d < 0.0) {
+            d += 360.0;
+        }
+        return d;
+    }
+
+    /**
+     * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     *
+     * @param x the x-coordinate of the vector
+     * @param z the z-coordinate of the vector
+     * @return the yaw angle in degrees
+     */
+    public static double getYaw(double x, double z) {
+        if (x == 0.0 && z == 0.0) {
+            return Double.NaN;
+        }
+        double yaw = Math.atan2(-x, -z);
+        double d = Math.toDegrees(yaw);
+        if (d < 0.0) {
+            d += 360.0;
+        }
+        return d;
+    }
+
+    /**
+     * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     *
+     * @param xa the x-coordinate of the first vector
+     * @param za the z-coordinate of the first vector
+     * @param xb the x-coordinate of the second vector
+     * @param zb the z-coordinate of the second vector
+     * @return the yaw angle in degrees
+     */
+    public static double getYaw(double xa, double za, double xb, double zb) {
+        double x = xb - xa;
+        double z = zb - za;
+        if (x == 0.0 && z == 0.0) {
+            return Double.NaN;
+        }
+        double yaw = Math.atan2(-x, -z);
+        double d = Math.toDegrees(yaw);
+        if (d < 0.0) {
+            d += 360.0;
+        }
+        return d;
     }
 
     /**
@@ -258,7 +649,7 @@ public class GameMath {
             if (x < xmin || x > xmax) {
                 return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
             } else {
-                txa = -Double.POSITIVE_INFINITY;
+                txa = Double.NEGATIVE_INFINITY;
                 txb = Double.POSITIVE_INFINITY;
             }
         } else {
@@ -274,7 +665,7 @@ public class GameMath {
             if (y < ymin || y > ymax) {
                 return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
             } else {
-                tya = -Double.POSITIVE_INFINITY;
+                tya = Double.NEGATIVE_INFINITY;
                 tyb = Double.POSITIVE_INFINITY;
             }
         } else {
@@ -290,7 +681,7 @@ public class GameMath {
             if (z < zmin || z > zmax) {
                 return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
             } else {
-                tza = -Double.POSITIVE_INFINITY;
+                tza = Double.NEGATIVE_INFINITY;
                 tzb = Double.POSITIVE_INFINITY;
             }
         } else {
@@ -309,5 +700,18 @@ public class GameMath {
         } else {
             return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
         }
+    }
+
+    /**
+     * Calculates the first intersection point of a ray with an axis-aligned bounding box (AABB).
+     *
+     * @param box The AABB with which the ray is intersected.
+     * @param origin The origin of the ray.
+     * @param pitch The pitch angle of the ray's direction.
+     * @param yaw The yaw angle of the ray's direction.
+     * @return A Vec3d representing the intersection point, or a Vec3d with NaN values if there is no intersection.
+     */
+    public static Vec3d getRaytraceFirstIntersection(Box box, Vec3d origin, double pitch, double yaw) {
+        return getRaytraceFirstIntersection(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, origin.x, origin.y, origin.z, pitch, yaw);
     }
 }

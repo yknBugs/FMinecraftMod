@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn, Xenapte
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.util;
 
 import java.io.BufferedReader;

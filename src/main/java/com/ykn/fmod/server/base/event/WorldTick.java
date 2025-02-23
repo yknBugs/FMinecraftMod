@@ -85,13 +85,7 @@ public class WorldTick {
             String strX = String.format("%.2f", x);
             String strY = String.format("%.2f", y);
             String strZ = String.format("%.2f", z);
-            Identifier biomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
-            MutableText biomeText = null;
-            if (biomeId == null) {
-                biomeText = Util.parseTranslateableText("fmod.misc.unknown");
-            } else {
-                biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
-            }
+            MutableText biomeText = Util.getBiomeText(player);
             MutableText text = Util.parseTranslateableText("fmod.message.afk.broadcast", playerName, biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
                 new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
             ).withHoverEvent(

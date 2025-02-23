@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) Mod: No-Chat-Reports
+ * This file is under the WTFPL License
+ */
+
 package com.ykn.fmod.server.base.config;
 
 import java.io.BufferedReader;
