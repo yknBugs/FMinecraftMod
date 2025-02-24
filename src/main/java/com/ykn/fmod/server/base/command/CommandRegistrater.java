@@ -5,10 +5,14 @@
 
 package com.ykn.fmod.server.base.command;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -21,6 +25,10 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.ykn.fmod.server.base.data.GptData;
+import com.ykn.fmod.server.base.schedule.ScheduledTask;
+import com.ykn.fmod.server.base.schedule.playSong;
+import com.ykn.fmod.server.base.song.NbsSongDecoder;
+import com.ykn.fmod.server.base.song.NoteBlockSong;
 import com.ykn.fmod.server.base.util.EnumI18n;
 import com.ykn.fmod.server.base.util.GameMath;
 import com.ykn.fmod.server.base.util.GptHelper;
@@ -30,6 +38,7 @@ import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.entity.Entity;
@@ -257,6 +266,60 @@ public class CommandRegistrater {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
+    }
+
+    private int runSongPlayCommand(Collection<ServerPlayerEntity> players, String songName, CommandContext<ServerCommandSource> context) {
+        Path absPath = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).resolve(songName);
+        try (FileInputStream fileInputStream = new FileInputStream(absPath.toFile())) {
+            NoteBlockSong song = NbsSongDecoder.parse(fileInputStream);
+            song.finishLoading();
+            // Check if a song is still playing, if so, cancel the task
+            for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+                if (scheduledTask instanceof playSong) {
+                    playSong playSong = (playSong) scheduledTask;
+                    if (players.contains(playSong.getTarget())) {
+                        playSong.cancel();
+                    }
+                }
+            }
+            // Submit song task
+            for (ServerPlayerEntity player : players) {
+                playSong playSong = new playSong(song, player, context);
+                Util.getServerData(context.getSource().getServer()).submitScheduledTask(playSong);
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), song.getTitle()), true);
+            }
+        } catch (FileNotFoundException fileNotFoundException) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
+        } catch (IOException ioException) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
+        } catch (Exception exception) {
+            if (exception instanceof CommandException) {
+                throw (CommandException) exception;
+            }
+            throw new CommandException(Util.parseTranslateableText("fmod.command.song.error", songName));
+        }
+        return players.size();
+    }
+
+    private int runSongCancelCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+        int result = 0;
+        for (ServerPlayerEntity player : players) {
+            boolean isFound = false;
+            for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+                if (scheduledTask instanceof playSong) {
+                    playSong playSong = (playSong) scheduledTask;
+                    if (playSong.getTarget().getUuid() == player.getUuid()) {
+                        isFound = true;
+                        playSong.cancel();
+                        result++;
+                    }
+                }
+            }
+            if (isFound == false) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+            }
+        }
+        return result;
     }
 
     private int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
@@ -548,6 +611,21 @@ public class CommandRegistrater {
                                 .executes(context -> {return runGptHistoryCommand(IntegerArgumentType.getInteger(context, "index"), context);})
                             )
                             .executes(context -> {return runGptHistoryCommand(0, context);})
+                        )
+                    )
+                    .then(CommandManager.literal("song")
+                        .requires(source -> source.hasPermissionLevel(3))
+                        .then(CommandManager.literal("play")
+                            .then(CommandManager.argument("player", EntityArgumentType.players())
+                                .then(CommandManager.argument("song", StringArgumentType.greedyString())
+                                    .executes(context -> {return runSongPlayCommand(EntityArgumentType.getPlayers(context, "player"), StringArgumentType.getString(context, "song"), context);})
+                                )
+                            )
+                        )
+                        .then(CommandManager.literal("cancel")
+                            .then(CommandManager.argument("player", EntityArgumentType.players())
+                                .executes(context -> {return runSongCancelCommand(EntityArgumentType.getPlayers(context, "player"), context);})
+                            )
                         )
                     )
                     .then(CommandManager.literal("get")

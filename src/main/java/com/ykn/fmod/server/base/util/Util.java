@@ -321,6 +321,20 @@ public class Util {
         return biomeText;
     }
 
+    @NotNull
+    public static MutableText getEntityListText(@NotNull Collection<? extends Entity> entities) {
+        MutableText entityListText = Text.literal("");
+        int index = 0;
+        for (Entity entity : entities) {
+            if (index > 0) {
+                entityListText.append(Text.literal(", "));
+            }
+            entityListText.append(entity.getDisplayName());
+            index++;
+        }
+        return entityListText;
+    }
+
     public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
         worldData.put(server, data);
     }
