@@ -284,11 +284,14 @@ public class CommandRegistrater {
             }
             // Submit song task
             for (ServerPlayerEntity player : players) {
-                playSong playSong = new playSong(song, player, context);
+                playSong playSong = new playSong(song, songName, player, context);
                 Util.getServerData(context.getSource().getServer()).submitScheduledTask(playSong);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), song.getTitle()), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
         } catch (FileNotFoundException fileNotFoundException) {
+            if (SongFileSuggestion.getAvailableSongs() == 0) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
+            }
             throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
         } catch (IOException ioException) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
@@ -311,6 +314,29 @@ public class CommandRegistrater {
                     if (playSong.getTarget().getUuid() == player.getUuid()) {
                         isFound = true;
                         playSong.cancel();
+                        result++;
+                    }
+                }
+            }
+            if (isFound == false) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+            }
+        }
+        return result;
+    }
+
+    private int runSongGetCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+        int result = 0;
+        for (ServerPlayerEntity player : players) {
+            boolean isFound = false;
+            for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+                if (scheduledTask instanceof playSong) {
+                    playSong playSong = (playSong) scheduledTask;
+                    if (playSong.getTarget().getUuid() == player.getUuid()) {
+                        isFound = true;
+                        String currentTimeStr = String.format("%.1f", playSong.getTick() / 20.0);
+                        String totalTimeStr = String.format("%.1f", playSong.getSong().getLastTick() / 20.0);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr), false);
                         result++;
                     }
                 }
@@ -376,6 +402,9 @@ public class CommandRegistrater {
                 direction = Util.parseTranslateableText("fmod.misc.dirne");
             } else {
                 direction = Util.parseTranslateableText("fmod.misc.dirn");
+            }
+            if (degree > 180.0) {
+                degree -= 360.0;
             }
             final Text name = entity.getDisplayName();
             final String degStr = String.format("%.2f°", degree);
@@ -618,6 +647,7 @@ public class CommandRegistrater {
                         .then(CommandManager.literal("play")
                             .then(CommandManager.argument("player", EntityArgumentType.players())
                                 .then(CommandManager.argument("song", StringArgumentType.greedyString())
+                                    .suggests(SongFileSuggestion.suggest())
                                     .executes(context -> {return runSongPlayCommand(EntityArgumentType.getPlayers(context, "player"), StringArgumentType.getString(context, "song"), context);})
                                 )
                             )
@@ -625,6 +655,11 @@ public class CommandRegistrater {
                         .then(CommandManager.literal("cancel")
                             .then(CommandManager.argument("player", EntityArgumentType.players())
                                 .executes(context -> {return runSongCancelCommand(EntityArgumentType.getPlayers(context, "player"), context);})
+                            )
+                        )
+                        .then(CommandManager.literal("get")
+                            .then(CommandManager.argument("player", EntityArgumentType.players())
+                                .executes(context -> {return runSongGetCommand(EntityArgumentType.getPlayers(context, "player"), context);})
                             )
                         )
                     )

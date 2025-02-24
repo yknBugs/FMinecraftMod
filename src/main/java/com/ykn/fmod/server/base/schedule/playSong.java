@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.schedule;
 
 import java.util.List;
@@ -14,13 +19,15 @@ import net.minecraft.server.network.ServerPlayerEntity;
 public class playSong extends ScheduledTask {
 
     private NoteBlockSong song;
+    private String songName;
     private ServerPlayerEntity target;
     private CommandContext<ServerCommandSource> context;
     private int tick;
 
-    public playSong(NoteBlockSong song, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
+    public playSong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
         super(1, song.getLastTick() + 1);
         this.song = song;
+        this.songName = songName;
         this.target = target;
         this.context = context;
         this.tick = 0;
@@ -31,10 +38,6 @@ public class playSong extends ScheduledTask {
         List<NoteBlockNote> notes = song.getNotesMap().get(this.tick);
         if (notes != null) {
             for (NoteBlockNote note : notes) {
-                if (target == null || target.isDisconnected() || target.isRemoved()) {
-                    // Do not cancel the task here, so that if the player connects back, the song will continue
-                    break;
-                }
                 // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0D, (note.noteLevel - 12) / 12.0D));
                 target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0D, (note.noteLevel - 12) / 12.0D), 0));
             }
@@ -45,16 +48,25 @@ public class playSong extends ScheduledTask {
     @Override
     public void onCancel() {
         this.tick = song.getLastTick();
-        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.cancel", target.getDisplayName(), song.getTitle()), true);
+        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
     }
 
     @Override
     public void onFinish() {
-        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.finish", target.getDisplayName(), song.getTitle()), true);
+        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
+    }
+
+    @Override
+    public boolean shouldCancel() {
+        return target == null || target.isDisconnected() || target.isRemoved();
     }
 
     public NoteBlockSong getSong() {
         return song;
+    }
+
+    public String getSongName() {
+        return songName;
     }
 
     public ServerPlayerEntity getTarget() {

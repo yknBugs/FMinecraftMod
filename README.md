@@ -8,6 +8,8 @@ This is a server side mod, and it can work even the client does not have this mo
 
 - Talk to GPT in game with simple Markdown syntax highlight.
 
+- Playing noteblock song to all online players.
+
 - Use command to get information (such as inventory information) of other players.
 
 - Show death message and death coordinates.
@@ -59,9 +61,16 @@ GPT history may contains empty reply if the server refused to response.
 
 ## Changelog
 
+### Version 0.1.2
+
+Noteblock Song Update
+
+- Use command /f song to play noteblock song to target players.
+- The .nbs file should be put into the folder config/fminecraftmod.
+
 ### Version 0.1.1
 
-Get Command Update:
+Get Command Update
 
 - List the inventory of a certain player.
 - Get the coordinates of chosen entities.
