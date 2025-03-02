@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.base.command;
 
+import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -12,7 +13,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.file.Path;
 import java.util.Collection;
 
 import org.slf4j.Logger;
@@ -92,6 +92,7 @@ public class CommandRegistrater {
             context.getSource().sendFeedback(() -> commandFeedback, false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.version.error"));
         }
     }
@@ -106,6 +107,7 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Text.literal(e.getMessage()), false);
                 context.getSource().sendFeedback(() -> Text.literal(e.getStackTrace().toString()), false);
             } catch (Exception exception) {
+                logger.error("FMinectaftMod: Caught unexpected exception when executing command /f dev", exception);
                 throw new CommandException(Util.parseTranslateableText("fmod.command.dev.error"));
             }
         }
@@ -135,10 +137,12 @@ public class CommandRegistrater {
         } catch (MalformedURLException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt new", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
-        } catch (NullPointerException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt new", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt new", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -163,10 +167,12 @@ public class CommandRegistrater {
         } catch (MalformedURLException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt reply", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
-        } catch (NullPointerException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt reply", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt reply", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -196,10 +202,12 @@ public class CommandRegistrater {
         } catch (MalformedURLException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt regenerate", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
-        } catch (NullPointerException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt regenerate", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -232,10 +240,12 @@ public class CommandRegistrater {
         } catch (MalformedURLException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt edit " + index, e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
-        } catch (NullPointerException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt edit " + index, e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -261,16 +271,18 @@ public class CommandRegistrater {
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(postMessage)), false);
             context.getSource().sendFeedback(() -> Text.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
-        } catch (NullPointerException e) {
-            logger.error("FMinectaftMod: Unexpected error when executing command /f gpt show " + index, e);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
     private int runSongPlayCommand(Collection<ServerPlayerEntity> players, String songName, CommandContext<ServerCommandSource> context) {
-        Path absPath = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).resolve(songName);
-        try (FileInputStream fileInputStream = new FileInputStream(absPath.toFile())) {
+        try (FileInputStream fileInputStream = new FileInputStream(FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).resolve(songName).toFile())) {
             NoteBlockSong song = NbsSongDecoder.parse(fileInputStream);
             song.finishLoading();
             // Check if a song is still playing, if so, cancel the task
@@ -293,6 +305,8 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
             }
             throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
+        } catch (EOFException eofException) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.song.eofexception", songName));
         } catch (IOException ioException) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
         } catch (Exception exception) {
@@ -306,293 +320,338 @@ public class CommandRegistrater {
 
     private int runSongCancelCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
         int result = 0;
-        for (ServerPlayerEntity player : players) {
-            boolean isFound = false;
-            for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
-                if (scheduledTask instanceof playSong) {
-                    playSong playSong = (playSong) scheduledTask;
-                    if (playSong.getTarget().getUuid() == player.getUuid()) {
-                        isFound = true;
-                        playSong.cancel();
-                        result++;
+        try {
+            for (ServerPlayerEntity player : players) {
+                boolean isFound = false;
+                for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+                    if (scheduledTask instanceof playSong) {
+                        playSong playSong = (playSong) scheduledTask;
+                        if (playSong.getTarget().getUuid() == player.getUuid()) {
+                            isFound = true;
+                            playSong.cancel();
+                            result++;
+                        }
                     }
                 }
+                if (isFound == false) {
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                }
             }
-            if (isFound == false) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
-            }
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song cancel", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
     private int runSongGetCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
         int result = 0;
-        for (ServerPlayerEntity player : players) {
-            boolean isFound = false;
-            for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
-                if (scheduledTask instanceof playSong) {
-                    playSong playSong = (playSong) scheduledTask;
-                    if (playSong.getTarget().getUuid() == player.getUuid()) {
-                        isFound = true;
-                        String currentTimeStr = String.format("%.1f", playSong.getTick() / 20.0);
-                        String totalTimeStr = String.format("%.1f", playSong.getSong().getLastTick() / 20.0);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr), false);
-                        result++;
+        try {
+            for (ServerPlayerEntity player : players) {
+                boolean isFound = false;
+                for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+                    if (scheduledTask instanceof playSong) {
+                        playSong playSong = (playSong) scheduledTask;
+                        if (playSong.getTarget().getUuid() == player.getUuid()) {
+                            isFound = true;
+                            String currentTimeStr = String.format("%.1f", playSong.getTick() / 20.0);
+                            String totalTimeStr = String.format("%.1f", playSong.getSong().getLastTick() / 20.0);
+                            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr), false);
+                            result++;
+                        }
                     }
                 }
+                if (isFound == false) {
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                }
             }
-            if (isFound == false) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
-            }
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song get", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
     private int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
-        for (Entity entity : entities) {
-            Text name = entity.getDisplayName();
-            MutableText biome = Util.getBiomeText(entity);
-            String strX = String.format("%.2f", entity.getX());
-            String strY = String.format("%.2f", entity.getY());
-            String strZ = String.format("%.2f", entity.getZ());
-            MutableText text = Util.parseTranslateableText("fmod.command.get.coord", name, biome, strX, strY, strZ).styled(style -> style.withClickEvent(
-                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
-            ).withHoverEvent(
-                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
-            ));
-            context.getSource().sendFeedback(() -> text, false);
+        try {
+            for (Entity entity : entities) {
+                Text name = entity.getDisplayName();
+                MutableText biome = Util.getBiomeText(entity);
+                String strX = String.format("%.2f", entity.getX());
+                String strY = String.format("%.2f", entity.getY());
+                String strZ = String.format("%.2f", entity.getZ());
+                MutableText text = Util.parseTranslateableText("fmod.command.get.coord", name, biome, strX, strY, strZ).styled(style -> style.withClickEvent(
+                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+                ).withHoverEvent(
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
+                ));
+                context.getSource().sendFeedback(() -> text, false);
+            }
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get coord", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
     }
 
     private int runGetDistanceCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
         int result = 0;
-        Vec3d source = context.getSource().getPosition();
-        for (Entity entity : entities) {
-            if (context.getSource().getWorld() != entity.getWorld()) {
+        try {
+            Vec3d source = context.getSource().getPosition();
+            for (Entity entity : entities) {
+                if (context.getSource().getWorld() != entity.getWorld()) {
+                    final Text name = entity.getDisplayName();
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.dimdistance", name), false);
+                    continue;
+                }
+                Vec3d target = entity.getPos();
+                double distance = GameMath.getEuclideanDistance(source, target);
+                double pitch = GameMath.getPitch(source, target);
+                double yaw = GameMath.getYaw(source, target);
+                MutableText direction = Text.empty();
+                double degree = yaw;
+                if (pitch > 60.0) {
+                    direction = Util.parseTranslateableText("fmod.misc.diru");
+                    degree = pitch;
+                } else if (pitch < -60.0) {
+                    direction = Util.parseTranslateableText("fmod.misc.dird");
+                    degree = -pitch;
+                } else if (yaw > 22.5 && yaw < 67.5) {
+                    direction = Util.parseTranslateableText("fmod.misc.dirnw");
+                } else if (yaw >= 67.5 && yaw <= 112.5) {
+                    direction = Util.parseTranslateableText("fmod.misc.dirw");
+                } else if (yaw > 112.5 && yaw < 157.5) {
+                    direction = Util.parseTranslateableText("fmod.misc.dirsw");
+                } else if (yaw >= 157.5 && yaw <= 202.5) {
+                    direction = Util.parseTranslateableText("fmod.misc.dirs");
+                } else if (yaw > 202.5 && yaw < 247.5) {
+                    direction = Util.parseTranslateableText("fmod.misc.dirse");
+                } else if (yaw >= 247.5 && yaw <= 292.5) {
+                    direction = Util.parseTranslateableText("fmod.misc.dire");
+                } else if (yaw > 292.5 && yaw < 337.5) {
+                    direction = Util.parseTranslateableText("fmod.misc.dirne");
+                } else {
+                    direction = Util.parseTranslateableText("fmod.misc.dirn");
+                }
+                if (degree > 180.0) {
+                    degree -= 360.0;
+                }
                 final Text name = entity.getDisplayName();
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.dimdistance", name), false);
-                continue;
+                final String degStr = String.format("%.2f°", degree);
+                final String distStr = String.format("%.2f", distance);
+                final MutableText dirTxt = direction;
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
+                result++;
             }
-            Vec3d target = entity.getPos();
-            double distance = GameMath.getEuclideanDistance(source, target);
-            double pitch = GameMath.getPitch(source, target);
-            double yaw = GameMath.getYaw(source, target);
-            MutableText direction = Text.empty();
-            double degree = yaw;
-            if (pitch > 60.0) {
-                direction = Util.parseTranslateableText("fmod.misc.diru");
-                degree = pitch;
-            } else if (pitch < -60.0) {
-                direction = Util.parseTranslateableText("fmod.misc.dird");
-                degree = -pitch;
-            } else if (yaw > 22.5 && yaw < 67.5) {
-                direction = Util.parseTranslateableText("fmod.misc.dirnw");
-            } else if (yaw >= 67.5 && yaw <= 112.5) {
-                direction = Util.parseTranslateableText("fmod.misc.dirw");
-            } else if (yaw > 112.5 && yaw < 157.5) {
-                direction = Util.parseTranslateableText("fmod.misc.dirsw");
-            } else if (yaw >= 157.5 && yaw <= 202.5) {
-                direction = Util.parseTranslateableText("fmod.misc.dirs");
-            } else if (yaw > 202.5 && yaw < 247.5) {
-                direction = Util.parseTranslateableText("fmod.misc.dirse");
-            } else if (yaw >= 247.5 && yaw <= 292.5) {
-                direction = Util.parseTranslateableText("fmod.misc.dire");
-            } else if (yaw > 292.5 && yaw < 337.5) {
-                direction = Util.parseTranslateableText("fmod.misc.dirne");
-            } else {
-                direction = Util.parseTranslateableText("fmod.misc.dirn");
-            }
-            if (degree > 180.0) {
-                degree -= 360.0;
-            }
-            final Text name = entity.getDisplayName();
-            final String degStr = String.format("%.2f°", degree);
-            final String distStr = String.format("%.2f", distance);
-            final MutableText dirTxt = direction;
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
-            result++;
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get distance", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
     private int runGetHealthCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
-        for (Entity entity : entities) {
-            final Text name = entity.getDisplayName();
-            double hp = Util.getHealth(entity);
-            double maxhp = Util.getMaxHealth(entity);
-            final String hpStr = String.format("%.2f", hp);
-            final String maxhpStr = String.format("%.2f", maxhp);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
+        try {
+            for (Entity entity : entities) {
+                final Text name = entity.getDisplayName();
+                double hp = Util.getHealth(entity);
+                double maxhp = Util.getMaxHealth(entity);
+                final String hpStr = String.format("%.2f", hp);
+                final String maxhpStr = String.format("%.2f", maxhp);
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
+            }
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get health", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
     }
 
     private int runGetStatusCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
-        for (ServerPlayerEntity player : players) {
-            double hp = player.getHealth();
-            int hunger = player.getHungerManager().getFoodLevel();
-            double saturation = player.getHungerManager().getSaturationLevel();
-            int level = player.experienceLevel;
-            final Text name = player.getDisplayName();
-            final String hpStr = String.format("%.2f", hp);
-            final String hungerStr = String.valueOf(hunger);
-            final String saturationStr = String.format("%.2f", saturation);
-            final String levelStr = String.valueOf(level);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
+        try {
+            for (ServerPlayerEntity player : players) {
+                double hp = player.getHealth();
+                int hunger = player.getHungerManager().getFoodLevel();
+                double saturation = player.getHungerManager().getSaturationLevel();
+                int level = player.experienceLevel;
+                final Text name = player.getDisplayName();
+                final String hpStr = String.format("%.2f", hp);
+                final String hungerStr = String.valueOf(hunger);
+                final String saturationStr = String.format("%.2f", saturation);
+                final String levelStr = String.valueOf(level);
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
+            }
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get status", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return players.size();
     }
 
     private MutableText formatInventoryItemStack(ItemStack item) {
         MutableText itemText = Text.empty();
-        if (item == null || item.isEmpty()) {
-            itemText = Text.literal("00").formatted(Formatting.GRAY).styled(s -> s
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.command.get.emptyslot")))
-            );
-        } else if (item.getCount() < 100) {
-            String itemCount = String.format("%02d", item.getCount());
-            itemText = Text.literal(itemCount).formatted(Formatting.AQUA).styled(s -> s
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
-            );
-        } else {
-            itemText = Text.literal("9+").formatted(Formatting.AQUA).styled(s -> s
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
-            );
+        try {
+            if (item == null || item.isEmpty()) {
+                itemText = Text.literal("00").formatted(Formatting.GRAY).styled(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.command.get.emptyslot")))
+                );
+            } else if (item.getCount() < 100) {
+                String itemCount = String.format("%02d", item.getCount());
+                itemText = Text.literal(itemCount).formatted(Formatting.AQUA).styled(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
+                );
+            } else {
+                itemText = Text.literal("9+").formatted(Formatting.AQUA).styled(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
+                );
+            }
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when formatting item stack", e);
+            itemText = Text.literal("??").formatted(Formatting.RED);
         }
         return itemText;
     }
 
     private int runGetInventoryCommand(ServerPlayerEntity player, CommandContext<ServerCommandSource> context) {
-        PlayerInventory inventory = player.getInventory();
-        // Text Structure:
-        // [x] [x] [x] [x] [-] [-] [S] [+] [1]   (x: Armor, -: Placeholder, +: Offhand, 1: Current Chosen Slot Index)
-        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, S: Survival Gamemode [S: Survival, C: Creative, A: Adventure, V: Spectator])
-        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
-        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
-        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
-        // Armor
-        MutableText armorText = Text.empty();
-        for (int i = 0; i < 4; i++) {
-            ItemStack item = inventory.getArmorStack(i);
+        try {
+            PlayerInventory inventory = player.getInventory();
+            // Text Structure:
+            // [x] [x] [x] [x] [-] [-] [S] [+] [1]   (x: Armor, -: Placeholder, +: Offhand, 1: Current Chosen Slot Index)
+            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, S: Survival Gamemode [S: Survival, C: Creative, A: Adventure, V: Spectator])
+            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
+            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
+            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
+            // Armor
+            MutableText armorText = Text.empty();
+            for (int i = 0; i < 4; i++) {
+                ItemStack item = inventory.getArmorStack(i);
+                armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+                armorText.append(formatInventoryItemStack(item));
+                armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+                armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            }
+            // Placeholder
+            for (int i = 0; i < 2; i++) {
+                armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
+                armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            }
+            // Gamemode
+            armorText.append(Text.literal("[").formatted(Formatting.GOLD));
+            GameMode gamemode = player.interactionManager.getGameMode();
+            MutableText gamemodeText = Text.literal("+S");
+            if (gamemode == GameMode.CREATIVE) {
+                gamemodeText = Text.literal("+C");
+            } else if (gamemode == GameMode.ADVENTURE) {
+                gamemodeText = Text.literal("+A");
+            } else if (gamemode == GameMode.SPECTATOR) {
+                gamemodeText = Text.literal("+V");
+            }
+            gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
+            );
+            armorText.append(gamemodeText);
+            armorText.append(Text.literal("]").formatted(Formatting.GOLD));
+            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            // Offhand
+            ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
             armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
-            armorText.append(formatInventoryItemStack(item));
+            armorText.append(formatInventoryItemStack(offhandItem));
             armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
             armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-        }
-        // Placeholder
-        for (int i = 0; i < 2; i++) {
-            armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
+            // Selected Slot
+            armorText.append(Text.literal("[").formatted(Formatting.GOLD));
+            armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
+            armorText.append(Text.literal("]").formatted(Formatting.GOLD));
             armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-        }
-        // Gamemode
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-        GameMode gamemode = player.interactionManager.getGameMode();
-        MutableText gamemodeText = Text.literal("+S");
-        if (gamemode == GameMode.CREATIVE) {
-            gamemodeText = Text.literal("+C");
-        } else if (gamemode == GameMode.ADVENTURE) {
-            gamemodeText = Text.literal("+A");
-        } else if (gamemode == GameMode.SPECTATOR) {
-            gamemodeText = Text.literal("+V");
-        }
-        gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
-            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
-        );
-        armorText.append(gamemodeText);
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-        // Offhand
-        ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
-        armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
-        armorText.append(formatInventoryItemStack(offhandItem));
-        armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-        // Selected Slot
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-        armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-        // Inventory
-        MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
-        for (int i = 0; i < 3; i++) {
-            for (int j = 0; j < 9; j++) {
-                // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
-                int index = (i + 1) * 9 + j;
-                ItemStack item = inventory.getStack(index);
-                inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
-                inventoryText[i].append(formatInventoryItemStack(item));
-                inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
-                inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
+            // Inventory
+            MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 9; j++) {
+                    // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
+                    int index = (i + 1) * 9 + j;
+                    ItemStack item = inventory.getStack(index);
+                    inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
+                    inventoryText[i].append(formatInventoryItemStack(item));
+                    inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
+                    inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
+                }
             }
-        }
-        // Hotbar
-        MutableText hotbarText = Text.empty();
-        for (int i = 0; i < 9; i++) {
-            ItemStack item = inventory.getStack(i);
-            if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
-            } else {
-                hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+            // Hotbar
+            MutableText hotbarText = Text.empty();
+            for (int i = 0; i < 9; i++) {
+                ItemStack item = inventory.getStack(i);
+                if (i == inventory.selectedSlot) {
+                    hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
+                } else {
+                    hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+                }
+                hotbarText.append(formatInventoryItemStack(item));
+                if (i == inventory.selectedSlot) {
+                    hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
+                } else {
+                    hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+                }
+                hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
             }
-            hotbarText.append(formatInventoryItemStack(item));
-            if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
-            } else {
-                hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-            }
-            hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
+            // Feedback
+            final Text name = player.getDisplayName();
+            final Text linea = Util.parseTranslateableText("fmod.command.get.inventory", name);
+            final Text lineb = armorText;
+            final Text linec = inventoryText[0];
+            final Text lined = inventoryText[1];
+            final Text linee = inventoryText[2];
+            final Text linef = hotbarText;
+            context.getSource().sendFeedback(() -> linea, false);
+            context.getSource().sendFeedback(() -> lineb, false);
+            context.getSource().sendFeedback(() -> linec, false);
+            context.getSource().sendFeedback(() -> lined, false);
+            context.getSource().sendFeedback(() -> linee, false);
+            context.getSource().sendFeedback(() -> linef, false);
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get inventory", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
-        // Feedback
-        final Text name = player.getDisplayName();
-        final Text linea = Util.parseTranslateableText("fmod.command.get.inventory", name);
-        final Text lineb = armorText;
-        final Text linec = inventoryText[0];
-        final Text lined = inventoryText[1];
-        final Text linee = inventoryText[2];
-        final Text linef = hotbarText;
-        context.getSource().sendFeedback(() -> linea, false);
-        context.getSource().sendFeedback(() -> lineb, false);
-        context.getSource().sendFeedback(() -> linec, false);
-        context.getSource().sendFeedback(() -> lined, false);
-        context.getSource().sendFeedback(() -> linee, false);
-        context.getSource().sendFeedback(() -> linef, false);
         return Command.SINGLE_SUCCESS;
     }
 
     private int runGetItemCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
         int result = 0;
-        for (Entity entity : entities) {
-            Iterable<ItemStack> items = entity.getHandItems();
-            if (items == null || items.iterator().hasNext() == false) {
-                final Text name = entity.getDisplayName();
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
-                continue;
-            }
-            MutableText itemList = Text.empty();
-            int itemCountSum = 0;
-            for (ItemStack item : items) {
-                if (item.isEmpty()) {
+        try {
+            for (Entity entity : entities) {
+                Iterable<ItemStack> items = entity.getHandItems();
+                if (items == null || items.iterator().hasNext() == false) {
+                    final Text name = entity.getDisplayName();
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                     continue;
                 }
-                Text itemText = item.toHoverableText();
-                int itemCount = item.getCount();
-                result += itemCount;
-                itemCountSum += itemCount;
-                itemList.append(itemText);
-                if (itemCount > 1) {
-                    itemList.append(Text.literal("x" + itemCount + " "));
+                MutableText itemList = Text.empty();
+                int itemCountSum = 0;
+                for (ItemStack item : items) {
+                    if (item.isEmpty()) {
+                        continue;
+                    }
+                    Text itemText = item.toHoverableText();
+                    int itemCount = item.getCount();
+                    result += itemCount;
+                    itemCountSum += itemCount;
+                    itemList.append(itemText);
+                    if (itemCount > 1) {
+                        itemList.append(Text.literal("x" + itemCount + " "));
+                    } else {
+                        itemList.append(Text.literal(" "));
+                    }
+                }
+                final Text name = entity.getDisplayName();
+                final MutableText itemTxt = itemList;
+                if (itemCountSum <= 0) {
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                 } else {
-                    itemList.append(Text.literal(" "));
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name, itemTxt), false);
                 }
             }
-            final Text name = entity.getDisplayName();
-            final MutableText itemTxt = itemList;
-            if (itemCountSum <= 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
-            } else {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name, itemTxt), false);
-            }
+        } catch (Exception e) {
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get item", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }

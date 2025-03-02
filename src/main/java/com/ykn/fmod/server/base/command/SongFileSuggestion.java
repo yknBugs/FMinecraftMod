@@ -51,15 +51,6 @@ public class SongFileSuggestion implements SuggestionProvider<ServerCommandSourc
     }
 
     public static int getAvailableSongs() {
-        Path absPath = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
-        try {
-            if (!Files.exists(absPath)) {
-                Files.createDirectories(absPath);
-            }
-            return (int) Files.list(absPath).filter(path -> path.toString().endsWith(".nbs")).count();
-        } catch (Exception e) {
-            LoggerFactory.getLogger(Util.MODID).error("Error while getting .nbs file list", e);
-        }
-        return 0;
+        return suggest().cachedSongList.size();
     }
 }
