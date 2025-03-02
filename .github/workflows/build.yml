@@ -24,7 +24,7 @@ jobs:
       run: |
         echo "mod_ver=$(grep -F 'mod_version' gradle.properties | head -n 1 | awk -F '=' '{print $NF}')" >> "$GITHUB_ENV"
         echo "sha_short=$(git rev-parse --short ${{github.sha}})" >> "$GITHUB_ENV"
-        sed -i '/org.gradle.java.home/d' gradle.properties
+        # sed -i '/org.gradle.java.home/d' gradle.properties
         chmod +x gradlew
 
     - name: Build with Gradle
