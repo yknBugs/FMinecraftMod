@@ -1,7 +1,7 @@
 package com.ykn.fmod.server.base.util;
 
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
 
 public class EnumI18n {
 
@@ -14,7 +14,7 @@ public class EnumI18n {
             case ACTIONBAR:
                 return Util.parseTranslateableText("fmod.message.type.actionbar");
             default:
-                return Text.literal(type.toString());
+                return new LiteralText(type.toString());
         }
     }
 
@@ -35,7 +35,7 @@ public class EnumI18n {
             case NONE:
                 return Util.parseTranslateableText("fmod.message.type.none");
             default:
-                return Text.literal(method.toString());
+                return new LiteralText(method.toString());
         }
     }
 

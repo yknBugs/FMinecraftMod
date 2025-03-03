@@ -314,14 +314,14 @@ public class MarkdownToTextConverter {
     }
 
     private static MutableText parseMarkdownTokenToText(ArrayList<String> tokenText, ArrayList<ArrayList<MarkdownUnit>> tokenType, ArrayList<ArrayList<String>> tokenHint) {
-        MutableText result = Text.empty();
+        MutableText result = new LiteralText("");
         int tokenCount = tokenText.size();
 
         for (int i = 0; i < tokenCount; i++) {
             String token = tokenText.get(i);
             ArrayList<MarkdownUnit> type = tokenType.get(i);
             ArrayList<String> hint = tokenHint.get(i);
-            MutableText text = Text.literal(token);
+            MutableText text = new LiteralText(token);
 
             boolean alreadyApplyColor = false;
             boolean alreadyApplyBold = false;
@@ -470,7 +470,7 @@ public class MarkdownToTextConverter {
     }
 
     public static Text parseMarkdownToText(String markdown) {
-        MutableText result = Text.empty();
+        MutableText result = new LiteralText("");
 
         ArrayList<Integer> unitStartIndex = new ArrayList<>();
         ArrayList<Integer> unitEndIndex = new ArrayList<>();
@@ -492,7 +492,7 @@ public class MarkdownToTextConverter {
     }
 
     private static Text processCodeBlock(String lang, String code) {
-        MutableText codeText = Text.empty();
+        MutableText codeText = new LiteralText("");
 
         if (code == null) {
             return codeText;
@@ -510,7 +510,7 @@ public class MarkdownToTextConverter {
                 codeText = syntaxHighlightPython(code);
                 break;
             default:
-                codeText = Text.literal(code).formatted(Formatting.GRAY);
+                codeText = new LiteralText(code).formatted(Formatting.GRAY);
         }
 
         return codeText.styled(s -> s
@@ -557,27 +557,27 @@ public class MarkdownToTextConverter {
         ArrayList<ArrayList<CodeUnit>> tokenTypes = new ArrayList<>();
         codeTokenlize(code, patterns, codeType, tokens, tokenTypes);
 
-        MutableText result = Text.empty();
+        MutableText result = new LiteralText("");
         for (int i = 0; i < tokens.size(); i++) {
             String token = tokens.get(i);
             ArrayList<CodeUnit> type = tokenTypes.get(i);
 
             if (type.size() == 0) {
-                result.append(Text.literal(token).formatted(Formatting.GRAY));
+                result.append(new LiteralText(token).formatted(Formatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
-                result.append(Text.literal(token).formatted(Formatting.GOLD));
+                result.append(new LiteralText(token).formatted(Formatting.GOLD));
             } else if (type.contains(CodeUnit.COMMENT)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GREEN));
+                result.append(new LiteralText(token).formatted(Formatting.DARK_GREEN));
             }  else if (type.contains(CodeUnit.KEYWORD)) {
-                result.append(Text.literal(token).formatted(Formatting.AQUA, Formatting.BOLD));
+                result.append(new LiteralText(token).formatted(Formatting.AQUA, Formatting.BOLD));
             } else if (type.contains(CodeUnit.NUMBER)) {
-                result.append(Text.literal(token).formatted(Formatting.LIGHT_PURPLE));
+                result.append(new LiteralText(token).formatted(Formatting.LIGHT_PURPLE));
             } else if (type.contains(CodeUnit.PUNCTUATION)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_AQUA));
+                result.append(new LiteralText(token).formatted(Formatting.DARK_AQUA));
             } else if (type.contains(CodeUnit.CLASS)) {
-                result.append(Text.literal(token).formatted(Formatting.GREEN));
+                result.append(new LiteralText(token).formatted(Formatting.GREEN));
             } else if (type.contains(CodeUnit.FUNCTION)) {
-                result.append(Text.literal(token).formatted(Formatting.YELLOW));
+                result.append(new LiteralText(token).formatted(Formatting.YELLOW));
             }
         }
 
@@ -626,7 +626,7 @@ public class MarkdownToTextConverter {
         ArrayList<ArrayList<CodeUnit>> tokenTypes = new ArrayList<>();
         codeTokenlize(code, patterns, codeType, tokens, tokenTypes);
         
-        MutableText result = Text.empty();
+        MutableText result = new LiteralText("");
         int tokenCount = tokens.size();
         for (int i = 0; i < tokenCount; i++) {
             String token = tokens.get(i);
@@ -634,25 +634,25 @@ public class MarkdownToTextConverter {
             // In code block, each part of the text can only have one style, high priority style first
             // For example, string has a higher priority than keyword, because inside a string may contain keywords
             if (type.size() == 0) {
-                result.append(Text.literal(token).formatted(Formatting.GRAY));
+                result.append(new LiteralText(token).formatted(Formatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
-                result.append(Text.literal(token).formatted(Formatting.GOLD));
+                result.append(new LiteralText(token).formatted(Formatting.GOLD));
             } else if (type.contains(CodeUnit.COMMENT)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GREEN));
+                result.append(new LiteralText(token).formatted(Formatting.DARK_GREEN));
             } else if (type.contains(CodeUnit.PREPROCESSOR)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GRAY));
+                result.append(new LiteralText(token).formatted(Formatting.DARK_GRAY));
             } else if (type.contains(CodeUnit.KEYWORD)) {
-                result.append(Text.literal(token).formatted(Formatting.AQUA, Formatting.BOLD));
+                result.append(new LiteralText(token).formatted(Formatting.AQUA, Formatting.BOLD));
             } else if (type.contains(CodeUnit.HEADER)) {
-                result.append(Text.literal(token).formatted(Formatting.RED));
+                result.append(new LiteralText(token).formatted(Formatting.RED));
             } else if (type.contains(CodeUnit.NUMBER)) {
-                result.append(Text.literal(token).formatted(Formatting.LIGHT_PURPLE));
+                result.append(new LiteralText(token).formatted(Formatting.LIGHT_PURPLE));
             } else if (type.contains(CodeUnit.PUNCTUATION)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_AQUA));
+                result.append(new LiteralText(token).formatted(Formatting.DARK_AQUA));
             }  else if (type.contains(CodeUnit.CLASS)) {
-                result.append(Text.literal(token).formatted(Formatting.GREEN));
+                result.append(new LiteralText(token).formatted(Formatting.GREEN));
             } else if (type.contains(CodeUnit.FUNCTION)) {
-                result.append(Text.literal(token).formatted(Formatting.YELLOW));
+                result.append(new LiteralText(token).formatted(Formatting.YELLOW));
             }
         }
 
@@ -695,27 +695,27 @@ public class MarkdownToTextConverter {
         ArrayList<ArrayList<CodeUnit>> tokenTypes = new ArrayList<>();
         codeTokenlize(code, patterns, codeType, tokens, tokenTypes);
 
-        MutableText result = Text.empty();
+        MutableText result = new LiteralText("");
         int tokenCount = tokens.size();
         for (int i = 0; i < tokenCount; i++) {
             String token = tokens.get(i);
             ArrayList<CodeUnit> type = tokenTypes.get(i);
             if (type.size() == 0) {
-                result.append(Text.literal(token).formatted(Formatting.GRAY));
+                result.append(new LiteralText(token).formatted(Formatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
-                result.append(Text.literal(token).formatted(Formatting.GOLD));
+                result.append(new LiteralText(token).formatted(Formatting.GOLD));
             } else if (type.contains(CodeUnit.COMMENT)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GREEN));
+                result.append(new LiteralText(token).formatted(Formatting.DARK_GREEN));
             } else if (type.contains(CodeUnit.KEYWORD)) {
-                result.append(Text.literal(token).formatted(Formatting.AQUA, Formatting.BOLD));
+                result.append(new LiteralText(token).formatted(Formatting.AQUA, Formatting.BOLD));
             } else if (type.contains(CodeUnit.NUMBER)) {
-                result.append(Text.literal(token).formatted(Formatting.LIGHT_PURPLE));
+                result.append(new LiteralText(token).formatted(Formatting.LIGHT_PURPLE));
             } else if (type.contains(CodeUnit.PUNCTUATION)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_AQUA));
+                result.append(new LiteralText(token).formatted(Formatting.DARK_AQUA));
             } else if (type.contains(CodeUnit.CLASS)) {
-                result.append(Text.literal(token).formatted(Formatting.GREEN));
+                result.append(new LiteralText(token).formatted(Formatting.GREEN));
             } else if (type.contains(CodeUnit.FUNCTION)) {
-                result.append(Text.literal(token).formatted(Formatting.YELLOW));
+                result.append(new LiteralText(token).formatted(Formatting.YELLOW));
             }
         }
 

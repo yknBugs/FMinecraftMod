@@ -37,7 +37,7 @@ import com.ykn.fmod.server.base.util.MessageReceiver;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.command.v1.CommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.argument.EntityArgumentType;
@@ -49,8 +49,10 @@ import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
@@ -77,7 +79,7 @@ public class CommandRegistrater {
         "```\n" +
         "End of Test";
 
-        context.getSource().sendFeedback(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
+        context.getSource().sendFeedback(MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
         return null;
     }
 
@@ -89,7 +91,7 @@ public class CommandRegistrater {
     private int runFModCommand(CommandContext<ServerCommandSource> context) {
         try {
             MutableText commandFeedback = Util.parseTranslateableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
-            context.getSource().sendFeedback(() -> commandFeedback, false);
+            context.getSource().sendFeedback(commandFeedback, false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f", e);
@@ -99,13 +101,13 @@ public class CommandRegistrater {
 
     private int runDevCommand(CommandContext<ServerCommandSource> context) {
         try {
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.dev.start"), false);
+            context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.dev.start"), false);
             Object result = devFunction(context);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
+            context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
         } catch (Exception e) {
             try {
-                context.getSource().sendFeedback(() -> Text.literal(e.getMessage()), false);
-                context.getSource().sendFeedback(() -> Text.literal(e.getStackTrace().toString()), false);
+                context.getSource().sendFeedback(new LiteralText(e.getMessage()), false);
+                context.getSource().sendFeedback(new LiteralText(e.getStackTrace().toString()), false);
             } catch (Exception exception) {
                 logger.error("FMinectaftMod: Caught unexpected exception when executing command /f dev", exception);
                 throw new CommandException(Util.parseTranslateableText("fmod.command.dev.error"));
@@ -126,7 +128,7 @@ public class CommandRegistrater {
             }
             Thread thread = new Thread(gptHelper);
             thread.setDaemon(true);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendFeedback(new LiteralText("<").append(context.getSource().getDisplayName()).append("> ").append(new LiteralText(text)), true);
             thread.start();
             // if (context.getSource().getPlayer() != null) {
             //     // Other source would have already logged the message
@@ -160,7 +162,7 @@ public class CommandRegistrater {
             }
             Thread thread = new Thread(gptHelper);
             thread.setDaemon(true);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendFeedback(new LiteralText("<").append(context.getSource().getDisplayName()).append("> ").append(new LiteralText(text)), true);
             thread.start();
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
@@ -195,7 +197,7 @@ public class CommandRegistrater {
             }
             Thread thread = new Thread(gptHelper);
             thread.setDaemon(true);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendFeedback(new LiteralText("<").append(context.getSource().getDisplayName()).append("> ").append(new LiteralText(text)), true);
             thread.start();
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
@@ -233,7 +235,7 @@ public class CommandRegistrater {
             }
             Thread thread = new Thread(gptHelper);
             thread.setDaemon(true);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendFeedback(new LiteralText("<").append(context.getSource().getDisplayName()).append("> ").append(new LiteralText(text)), true);
             thread.start();
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
@@ -268,9 +270,9 @@ public class CommandRegistrater {
             final String postMessage = gptData.getPostMessages(index - 1);
             final String model = gptData.getGptModels(index - 1);
             final Text receivedMessage = gptData.getResponseTexts(index - 1);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(postMessage)), false);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
+            context.getSource().sendFeedback(new LiteralText("<").append(context.getSource().getDisplayName()).append("> ").append(new LiteralText(postMessage)), false);
+            context.getSource().sendFeedback(new LiteralText("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
+            context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
@@ -298,11 +300,11 @@ public class CommandRegistrater {
             for (ServerPlayerEntity player : players) {
                 playSong playSong = new playSong(song, songName, player, context);
                 Util.getServerData(context.getSource().getServer()).submitScheduledTask(playSong);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), songName), true);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
         } catch (FileNotFoundException fileNotFoundException) {
             if (SongFileSuggestion.getAvailableSongs() == 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.hint"), false);
             }
             throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
         } catch (EOFException eofException) {
@@ -334,7 +336,7 @@ public class CommandRegistrater {
                     }
                 }
                 if (isFound == false) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 }
             }
         } catch (Exception e) {
@@ -356,13 +358,13 @@ public class CommandRegistrater {
                             isFound = true;
                             String currentTimeStr = String.format("%.1f", playSong.getTick() / 20.0);
                             String totalTimeStr = String.format("%.1f", playSong.getSong().getLastTick() / 20.0);
-                            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr), false);
+                            context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr), false);
                             result++;
                         }
                     }
                 }
                 if (isFound == false) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 }
             }
         } catch (Exception e) {
@@ -385,7 +387,7 @@ public class CommandRegistrater {
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
                 ));
-                context.getSource().sendFeedback(() -> text, false);
+                context.getSource().sendFeedback(text, false);
             }
         } catch (Exception e) {
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get coord", e);
@@ -401,14 +403,14 @@ public class CommandRegistrater {
             for (Entity entity : entities) {
                 if (context.getSource().getWorld() != entity.getWorld()) {
                     final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.dimdistance", name), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.dimdistance", name), false);
                     continue;
                 }
                 Vec3d target = entity.getPos();
                 double distance = GameMath.getEuclideanDistance(source, target);
                 double pitch = GameMath.getPitch(source, target);
                 double yaw = GameMath.getYaw(source, target);
-                MutableText direction = Text.empty();
+                MutableText direction = new LiteralText("");
                 double degree = yaw;
                 if (pitch > 60.0) {
                     direction = Util.parseTranslateableText("fmod.misc.diru");
@@ -440,7 +442,7 @@ public class CommandRegistrater {
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
                 final MutableText dirTxt = direction;
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
         } catch (Exception e) {
@@ -458,7 +460,7 @@ public class CommandRegistrater {
                 double maxhp = Util.getMaxHealth(entity);
                 final String hpStr = String.format("%.2f", hp);
                 final String maxhpStr = String.format("%.2f", maxhp);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
             }
         } catch (Exception e) {
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get health", e);
@@ -479,7 +481,7 @@ public class CommandRegistrater {
                 final String hungerStr = String.valueOf(hunger);
                 final String saturationStr = String.format("%.2f", saturation);
                 final String levelStr = String.valueOf(level);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
             }
         } catch (Exception e) {
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get status", e);
@@ -489,25 +491,25 @@ public class CommandRegistrater {
     }
 
     private MutableText formatInventoryItemStack(ItemStack item) {
-        MutableText itemText = Text.empty();
+        MutableText itemText = new LiteralText("");
         try {
             if (item == null || item.isEmpty()) {
-                itemText = Text.literal("00").formatted(Formatting.GRAY).styled(s -> s
+                itemText = new LiteralText("00").formatted(Formatting.GRAY).styled(s -> s
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.command.get.emptyslot")))
                 );
             } else if (item.getCount() < 100) {
                 String itemCount = String.format("%02d", item.getCount());
-                itemText = Text.literal(itemCount).formatted(Formatting.AQUA).styled(s -> s
+                itemText = new LiteralText(itemCount).formatted(Formatting.AQUA).styled(s -> s
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
                 );
             } else {
-                itemText = Text.literal("9+").formatted(Formatting.AQUA).styled(s -> s
+                itemText = new LiteralText("9+").formatted(Formatting.AQUA).styled(s -> s
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
                 );
             }
         } catch (Exception e) {
             logger.error("FMinectaftMod: Caught unexpected exception when formatting item stack", e);
-            itemText = Text.literal("??").formatted(Formatting.RED);
+            itemText = new LiteralText("??").formatted(Formatting.RED);
         }
         return itemText;
     }
@@ -522,76 +524,76 @@ public class CommandRegistrater {
             // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
             // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
             // Armor
-            MutableText armorText = Text.empty();
+            MutableText armorText = new LiteralText("");
             for (int i = 0; i < 4; i++) {
                 ItemStack item = inventory.getArmorStack(i);
-                armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+                armorText.append(new LiteralText("[").formatted(Formatting.LIGHT_PURPLE));
                 armorText.append(formatInventoryItemStack(item));
-                armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-                armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+                armorText.append(new LiteralText("]").formatted(Formatting.LIGHT_PURPLE));
+                armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
             }
             // Placeholder
             for (int i = 0; i < 2; i++) {
-                armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
-                armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+                armorText.append(new LiteralText("[--]").formatted(Formatting.GRAY));
+                armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
             }
             // Gamemode
-            armorText.append(Text.literal("[").formatted(Formatting.GOLD));
+            armorText.append(new LiteralText("[").formatted(Formatting.GOLD));
             GameMode gamemode = player.interactionManager.getGameMode();
-            MutableText gamemodeText = Text.literal("+S");
+            MutableText gamemodeText = new LiteralText("+S");
             if (gamemode == GameMode.CREATIVE) {
-                gamemodeText = Text.literal("+C");
+                gamemodeText = new LiteralText("+C");
             } else if (gamemode == GameMode.ADVENTURE) {
-                gamemodeText = Text.literal("+A");
+                gamemodeText = new LiteralText("+A");
             } else if (gamemode == GameMode.SPECTATOR) {
-                gamemodeText = Text.literal("+V");
+                gamemodeText = new LiteralText("+V");
             }
             gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TranslatableText("gameMode." + gamemode.getName())))
             );
             armorText.append(gamemodeText);
-            armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(new LiteralText("]").formatted(Formatting.GOLD));
+            armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
             // Offhand
             ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
-            armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+            armorText.append(new LiteralText("[").formatted(Formatting.LIGHT_PURPLE));
             armorText.append(formatInventoryItemStack(offhandItem));
-            armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(new LiteralText("]").formatted(Formatting.LIGHT_PURPLE));
+            armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
             // Selected Slot
-            armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-            armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
-            armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(new LiteralText("[").formatted(Formatting.GOLD));
+            armorText.append(new LiteralText("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
+            armorText.append(new LiteralText("]").formatted(Formatting.GOLD));
+            armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
             // Inventory
-            MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
+            MutableText[] inventoryText = {new LiteralText(""), new LiteralText(""), new LiteralText("")};
             for (int i = 0; i < 3; i++) {
                 for (int j = 0; j < 9; j++) {
                     // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
                     int index = (i + 1) * 9 + j;
                     ItemStack item = inventory.getStack(index);
-                    inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
+                    inventoryText[i].append(new LiteralText("[").formatted(Formatting.GREEN));
                     inventoryText[i].append(formatInventoryItemStack(item));
-                    inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
-                    inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
+                    inventoryText[i].append(new LiteralText("]").formatted(Formatting.GREEN));
+                    inventoryText[i].append(new LiteralText(" ").formatted(Formatting.RESET));
                 }
             }
             // Hotbar
-            MutableText hotbarText = Text.empty();
+            MutableText hotbarText = new LiteralText("");
             for (int i = 0; i < 9; i++) {
                 ItemStack item = inventory.getStack(i);
                 if (i == inventory.selectedSlot) {
-                    hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
+                    hotbarText.append(new LiteralText("[").formatted(Formatting.GOLD));
                 } else {
-                    hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+                    hotbarText.append(new LiteralText("[").formatted(Formatting.LIGHT_PURPLE));
                 }
                 hotbarText.append(formatInventoryItemStack(item));
                 if (i == inventory.selectedSlot) {
-                    hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
+                    hotbarText.append(new LiteralText("]").formatted(Formatting.GOLD));
                 } else {
-                    hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+                    hotbarText.append(new LiteralText("]").formatted(Formatting.LIGHT_PURPLE));
                 }
-                hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
+                hotbarText.append(new LiteralText(" ").formatted(Formatting.RESET));
             }
             // Feedback
             final Text name = player.getDisplayName();
@@ -601,12 +603,12 @@ public class CommandRegistrater {
             final Text lined = inventoryText[1];
             final Text linee = inventoryText[2];
             final Text linef = hotbarText;
-            context.getSource().sendFeedback(() -> linea, false);
-            context.getSource().sendFeedback(() -> lineb, false);
-            context.getSource().sendFeedback(() -> linec, false);
-            context.getSource().sendFeedback(() -> lined, false);
-            context.getSource().sendFeedback(() -> linee, false);
-            context.getSource().sendFeedback(() -> linef, false);
+            context.getSource().sendFeedback(linea, false);
+            context.getSource().sendFeedback(lineb, false);
+            context.getSource().sendFeedback(linec, false);
+            context.getSource().sendFeedback(lined, false);
+            context.getSource().sendFeedback(linee, false);
+            context.getSource().sendFeedback(linef, false);
         } catch (Exception e) {
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get inventory", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
@@ -618,13 +620,13 @@ public class CommandRegistrater {
         int result = 0;
         try {
             for (Entity entity : entities) {
-                Iterable<ItemStack> items = entity.getHandItems();
+                Iterable<ItemStack> items = entity.getItemsHand();
                 if (items == null || items.iterator().hasNext() == false) {
                     final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                     continue;
                 }
-                MutableText itemList = Text.empty();
+                MutableText itemList = new LiteralText("");
                 int itemCountSum = 0;
                 for (ItemStack item : items) {
                     if (item.isEmpty()) {
@@ -636,17 +638,17 @@ public class CommandRegistrater {
                     itemCountSum += itemCount;
                     itemList.append(itemText);
                     if (itemCount > 1) {
-                        itemList.append(Text.literal("x" + itemCount + " "));
+                        itemList.append(new LiteralText("x" + itemCount + " "));
                     } else {
-                        itemList.append(Text.literal(" "));
+                        itemList.append(new LiteralText(" "));
                     }
                 }
                 final Text name = entity.getDisplayName();
                 final MutableText itemTxt = itemList;
                 if (itemCountSum <= 0) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name, itemTxt), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.item", name, itemTxt), false);
                 }
             }
         } catch (Exception e) {
@@ -659,7 +661,7 @@ public class CommandRegistrater {
     private int runReloadCommand(CommandContext<ServerCommandSource> context) {
         try {
             Util.loadServerConfig();
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), true);
+            context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.reload.success"), true);
         } catch (Exception e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.reload.error"));
         }
@@ -668,7 +670,7 @@ public class CommandRegistrater {
 
     public boolean registerCommand() {
         try {
-            CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+            CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
                 final LiteralCommandNode<ServerCommandSource> fModCommandNode = dispatcher.register(CommandManager.literal("fminecraftmod")
                     .requires(source -> source.hasPermissionLevel(0))
                     .executes(context -> {return runFModCommand(context);})
@@ -1032,273 +1034,273 @@ public class CommandRegistrater {
             switch (options) {
                 case "serverTranslation":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", Util.serverConfig.isEnableServerTranslation()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.translate", Util.serverConfig.isEnableServerTranslation()), false);
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.translate", value), true);
                     }
                     break;
                 case "entityDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", text), false);
                     } else {
                         Util.serverConfig.setEntityDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.entdeathmsg", text), true);
                     }
                     break;
                 case "bossDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", text), false);
                     } else {
                         Util.serverConfig.setBossDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bcbossdeath", text), true);
                     }
                     break;
                 case "namedMobDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getNamedEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.nameddeath", text), false);
                     } else {
                         Util.serverConfig.setNamedEntityDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.nameddeath", text), true);
                     }
                     break;
                 case "killerDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getKillerEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", text), false);
                     } else {
                         Util.serverConfig.setKillerEntityDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bckillerdeath", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bckillerdeath", text), true);
                     }
                     break;
                 case "bossMaxHealthThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
                     } else {
                         Util.serverConfig.setBossMaxHpThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
                     }
                     break;
                 case "playerDeathCoord":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", text), false);
                     } else {
                         Util.serverConfig.setPlayerDeathCoord((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bcdeathcoord", text), true);
                     }
                     break;
                 case "projectileHitsEntity":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthers());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projhitting", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.projhitting", text), false);
                     } else {
                         Util.serverConfig.setProjectileHitOthers((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projhitting", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.projhitting", text), true);
                     }
                     break;
                 case "projectileBeingHit":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHit());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projbeinghit", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.projbeinghit", text), false);
                     } else {
                         Util.serverConfig.setProjectileBeingHit((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projbeinghit", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.projbeinghit", text), true);
                     }
                     break;
                 case "informAFK":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.informafk", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.informafk", text), false);
                     } else {
                         Util.serverConfig.setInformAfking((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.informafk", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.informafk", text), true);
                     }
                     break;
                 case "informAFKThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.informafkthres", String.format("%.2f", Util.serverConfig.getInformAfkingThreshold() / 20.0)), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.informafkthres", String.format("%.2f", Util.serverConfig.getInformAfkingThreshold() / 20.0)), false);
                     } else {
                         Util.serverConfig.setInformAfkingThreshold((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.informafkthres", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.informafkthres", value), true);
                     }
                     break;
                 case "broadcastAFK":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcafk", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bcafk", text), false);
                     } else {
                         Util.serverConfig.setBroadcastAfking((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcafk", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bcafk", text), true);
                     }
                     break;
                 case "broadcastAFKThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcafkthres", String.format("%.2f", Util.serverConfig.getBroadcastAfkingThreshold() / 20.0)), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bcafkthres", String.format("%.2f", Util.serverConfig.getBroadcastAfkingThreshold() / 20.0)), false);
                     } else {
                         Util.serverConfig.setBroadcastAfkingThreshold((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcafkthres", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bcafkthres", value), true);
                     }
                     break;
                 case "backFromAFK":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.stopafk", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.stopafk", text), false);
                     } else {
                         Util.serverConfig.setStopAfking((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.stopafk", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.stopafk", text), true);
                     }
                     break;
                 case "biomeChangeMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiome());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.changebiome", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.changebiome", text), false);
                     } else {
                         Util.serverConfig.setChangeBiome((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.changebiome", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.changebiome", text), true);
                     }
                     break;
                 case "biomeChangeDelay":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.biomedelay", String.format("%.2f", Util.serverConfig.getChangeBiomeDelay() / 20.0)), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.biomedelay", String.format("%.2f", Util.serverConfig.getChangeBiomeDelay() / 20.0)), false);
                     } else {
                         Util.serverConfig.setChangeBiomeDelay((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.biomedelay", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.biomedelay", value), true);
                     }
                     break;
                 case "bossFightMessageLocation":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossFightMessageLocation());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightloc", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bossfightloc", text), false);
                     } else {
                         Util.serverConfig.setBossFightMessageLocation((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightloc", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bossfightloc", text), true);
                     }
                     break;
                 case "bossFightMessageReceiver":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBossFightMessageReceiver());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightreceiver", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bossfightreceiver", text), false);
                     } else {
                         Util.serverConfig.setBossFightMessageReceiver((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightreceiver", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bossfightreceiver", text), true);
                     }
                     break;
                 case "bossFightMessageInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightinterval", String.format("%.2f", Util.serverConfig.getBossFightInterval() / 20.0)), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.bossfightinterval", String.format("%.2f", Util.serverConfig.getBossFightInterval() / 20.0)), false);
                     } else {
                         Util.serverConfig.setBossFightInterval((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightinterval", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.bossfightinterval", value), true);
                     }
                     break;
                 case "monsterSurroundMessageLocation":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getMonsterSurroundMessageLocation());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterloc", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.monsterloc", text), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundMessageLocation((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterloc", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.monsterloc", text), true);
                     }
                     break;
                 case "monsterSurroundMessageReceiver":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getMonsterSurroundMessageReceiver());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterreceiver", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.monsterreceiver", text), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundMessageReceiver((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterreceiver", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.monsterreceiver", text), true);
                     }
                     break;
                 case "monsterSurroundMessageInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterinterval", String.format("%.2f", Util.serverConfig.getMonsterSurroundInterval() / 20.0)), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.monsterinterval", String.format("%.2f", Util.serverConfig.getMonsterSurroundInterval() / 20.0)), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundInterval((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterinterval", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.monsterinterval", value), true);
                     }
                     break;
                 case "monsterNumberThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsternumber", Util.serverConfig.getMonsterNumberThreshold()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.monsternumber", Util.serverConfig.getMonsterNumberThreshold()), false);
                     } else {
                         Util.serverConfig.setMonsterNumberThreshold((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsternumber", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.monsternumber", value), true);
                     }
                     break;
                 case "monsterDistanceThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterdistance", Util.serverConfig.getMonsterDistanceThreshold()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.monsterdistance", Util.serverConfig.getMonsterDistanceThreshold()), false);
                     } else {
                         Util.serverConfig.setMonsterDistanceThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterdistance", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.monsterdistance", value), true);
                     }
                     break;
                 case "entityNumberWarning":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityNumberWarning());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entitywarning", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.entitywarning", text), false);
                     } else {
                         Util.serverConfig.setEntityNumberWarning((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entitywarning", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.entitywarning", text), true);
                     }
                     break;
                 case "entityNumberThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entitynumber", Util.serverConfig.getEntityNumberThreshold()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.entitynumber", Util.serverConfig.getEntityNumberThreshold()), false);
                     } else {
                         Util.serverConfig.setEntityNumberThreshold((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entitynumber", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.entitynumber", value), true);
                     }
                     break;
                 case "entityNumberCheckInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entityinterval", Util.serverConfig.getEntityNumberInterval()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.entityinterval", Util.serverConfig.getEntityNumberInterval()), false);
                     } else {
                         Util.serverConfig.setEntityNumberInterval((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entityinterval", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.entityinterval", value), true);
                     }
                     break;
                 case "playerHurtMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurt());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.playerhurt", text), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.playerhurt", text), false);
                     } else {
                         Util.serverConfig.setPlayerSeriousHurt((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.playerhurt", text), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.playerhurt", text), true);
                     }
                     break;
                 case "hugeDamageThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.damagethres", Util.serverConfig.getPlayerHurtThreshold() * 100.0), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.damagethres", Util.serverConfig.getPlayerHurtThreshold() * 100.0), false);
                     } else {
                         Util.serverConfig.setPlayerHurtThreshold((double) value / 100.0);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.damagethres", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.damagethres", value), true);
                     }
                     break;
                 case "gptUrl":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpturl", Util.serverConfig.getGptUrl()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.gpturl", Util.serverConfig.getGptUrl()), false);
                     } else {
                         try {
                             new URI((String) value).toURL();
@@ -1306,53 +1308,53 @@ public class CommandRegistrater {
                             throw new CommandException(Util.parseTranslateableText("fmod.command.options.invalidurl", value));
                         }
                         Util.serverConfig.setGptUrl((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpturl", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.gpturl", value), true);
                     }
                     break;
                 case "gptAccessTokens":
                     if (value == null) {
                         final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptkey", secureTokens), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.gptkey", secureTokens), false);
                     } else {
                         String token = (String) value;
                         Util.serverConfig.setGptAccessTokens(token);
                         // For security reasons, we don't want to show the full token in the log, only show the first 5 and the last 5 characters
                         final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), true);
                     }
                     break;
                 case "gptModel":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
                     } else {
                         Util.serverConfig.setGptModel((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.gptmodel", value), true);
                     }
                     break;
                 case "gptSystemPrompts":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptsysprompt", Util.serverConfig.getGptSystemPrompt()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.gptsysprompt", Util.serverConfig.getGptSystemPrompt()), false);
                     } else {
                         Util.serverConfig.setGptSystemPrompt((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptsysprompt", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.gptsysprompt", value), true);
                     }
                     break;
                 case "gptTemperature":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
                     } else {
                         double temperature = (double) value;
                         Util.serverConfig.setGptTemperature(temperature);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.gpttemperature", value), true);
                     }
                     break;
                 case "gptTimeout":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
                     } else {
                         int timeout = (int) value;
                         Util.serverConfig.setGptServerTimeout(timeout * 1000);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), true);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.gpttimeout", value), true);
                     }
                     break;
                 default:

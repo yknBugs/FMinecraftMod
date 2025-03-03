@@ -29,10 +29,13 @@ import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypeFilter;
+import net.minecraft.util.registry.BuiltinRegistries;
 
 public class Util {
 
@@ -212,10 +215,10 @@ public class Util {
     @NotNull
     public static MutableText parseTranslateableText(@NotNull String key, Object... args) {
         if (serverConfig.isEnableServerTranslation()) {
-            String translatedText = Text.translatable(key, args).getString();
-            return Text.literal(translatedText);
+            String translatedText = new TranslatableText(key, args).getString();
+            return new LiteralText(translatedText);
         } else {
-            return Text.translatable(key, args);
+            return new TranslatableText(key, args);
         }
     }
 
@@ -303,31 +306,34 @@ public class Util {
 
     @NotNull
     public static List<Entity> getAllEntities(@NotNull ServerWorld world) {
-        List<Entity> entities = new ArrayList<>();
-        world.collectEntitiesByType(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
-        return entities;
+        List<? extends Entity> entities = world.getEntitiesByType(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved());
+        List<Entity> entitiesList = new ArrayList<>();
+        for (Entity entity : entities) {
+            entitiesList.add(entity);
+        }
+        return entitiesList;
     }
 
     @NotNull
     public static MutableText getBiomeText(@NotNull Entity entity) {
-        Identifier biomeId = entity.getWorld().getBiome(entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        Identifier biomeId = BuiltinRegistries.BIOME.getId(entity.getWorld().getBiome(entity.getBlockPos()));
         MutableText biomeText = null;
         if (biomeId == null) {
             biomeText = Util.parseTranslateableText("fmod.misc.unknown");
         } else {
             // Vanilla should contain this translation key.
-            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
+            biomeText = new TranslatableText("biome." + biomeId.toString().replace(":", "."));
         }
         return biomeText;
     }
 
     @NotNull
     public static MutableText getEntityListText(@NotNull Collection<? extends Entity> entities) {
-        MutableText entityListText = Text.literal("");
+        MutableText entityListText = new LiteralText("");
         int index = 0;
         for (Entity entity : entities) {
             if (index > 0) {
-                entityListText.append(Text.literal(", "));
+                entityListText.append(new LiteralText(", "));
             }
             entityListText.append(entity.getDisplayName());
             index++;

@@ -17,6 +17,7 @@ import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.BuiltinRegistries;
 
 public class WorldTick {
 
@@ -102,7 +103,7 @@ public class WorldTick {
     }
 
     private void handleChangeBiomePlayer(ServerPlayerEntity player, PlayerData playerData) {
-        Identifier biomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        Identifier biomeId = BuiltinRegistries.BIOME.getId(player.getWorld().getBiome(player.getBlockPos()));
         if (!biomeId.equals(playerData.lastBiomeId)) {
             Util.getServerData(server).submitScheduledTask(new BiomeMessage(player, biomeId));
             playerData.lastBiomeId = biomeId;

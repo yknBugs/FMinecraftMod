@@ -5,8 +5,9 @@ import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.registry.BuiltinRegistries;
 
 public class BiomeMessage extends ScheduledTask {
 
@@ -25,7 +26,7 @@ public class BiomeMessage extends ScheduledTask {
         if (biomeId == null) {
             biomeText = Util.parseTranslateableText("fmod.misc.unknown");
         } else {
-            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
+            biomeText = new TranslatableText("biome." + biomeId.toString().replace(":", "."));
         }
         Util.postMessage(player, Util.serverConfig.getChangeBiome(), MessageLocation.ACTIONBAR, Util.parseTranslateableText("fmod.message.biome.change", player.getDisplayName(), biomeText));
     }
@@ -35,7 +36,7 @@ public class BiomeMessage extends ScheduledTask {
         if (player.isDisconnected() || player.isRemoved()) {
             return true;
         }
-        Identifier currentBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        Identifier currentBiomeId = BuiltinRegistries.BIOME.getId(player.getWorld().getBiome(player.getBlockPos()));
         if (currentBiomeId.equals(biomeId)) {
             return false;
         } else {
