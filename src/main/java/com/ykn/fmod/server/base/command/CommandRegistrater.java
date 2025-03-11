@@ -13,7 +13,9 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import org.slf4j.Logger;
 
@@ -92,6 +94,9 @@ public class CommandRegistrater {
             context.getSource().sendFeedback(() -> commandFeedback, false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.version.error"));
         }
@@ -283,14 +288,27 @@ public class CommandRegistrater {
 
     private int runSongPlayCommand(Collection<ServerPlayerEntity> players, String songName, CommandContext<ServerCommandSource> context) {
         try (FileInputStream fileInputStream = new FileInputStream(FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).resolve(songName).toFile())) {
+            // Refresh song suggestion list
+            SongFileSuggestion.suggest();
+            if (SongFileSuggestion.getAvailableSongs() == 0) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
+            }
+            // Load song
             NoteBlockSong song = NbsSongDecoder.parse(fileInputStream);
             song.finishLoading();
             // Check if a song is still playing, if so, cancel the task
             for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
                 if (scheduledTask instanceof playSong) {
                     playSong playSong = (playSong) scheduledTask;
-                    if (players.contains(playSong.getTarget())) {
-                        playSong.cancel();
+                    // if (players.contains(playSong.getTarget())) {
+                    //     // The Entity class overrides the equals method using network id instead of uuid, which will change after reloading
+                    //     // So, this method is not reliable
+                    //     playSong.cancel();
+                    // }
+                    for (ServerPlayerEntity player : players) {
+                        if (playSong.getTarget().getUuid() == player.getUuid()) {
+                            playSong.cancel();
+                        }
                     }
                 }
             }
@@ -301,9 +319,6 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
         } catch (FileNotFoundException fileNotFoundException) {
-            if (SongFileSuggestion.getAvailableSongs() == 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
-            }
             throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
         } catch (EOFException eofException) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.song.eofexception", songName));
@@ -338,6 +353,9 @@ public class CommandRegistrater {
                 }
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song cancel", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
@@ -366,10 +384,32 @@ public class CommandRegistrater {
                 }
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song get", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
+    }
+
+    private ServerPlayerEntity getShareCommandExecutor(CommandContext<ServerCommandSource> context) {
+        if (context == null) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+        }
+        ServerCommandSource source = context.getSource();
+        if (source == null) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+        }
+        ServerPlayerEntity player = source.getPlayer();
+        if (player == null) {
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+        }
+        return player;
+        // return Optional.ofNullable(context)
+        //     .map(CommandContext::getSource)
+        //     .map(ServerCommandSource::getPlayer)
+        //     .orElseThrow(() -> new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly")));
     }
 
     private int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
@@ -388,10 +428,65 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> text, false);
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get coord", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
+    }
+
+    private int runShareCoordCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity player = getShareCommandExecutor(context);
+            Text name = player.getDisplayName();
+            MutableText biome = Util.getBiomeText(player);
+            String strX = String.format("%.2f", player.getX());
+            String strY = String.format("%.2f", player.getY());
+            String strZ = String.format("%.2f", player.getZ());
+            MutableText text = Util.parseTranslateableText("fmod.command.share.coord", name, biome, strX, strY, strZ).styled(style -> style.withClickEvent(
+                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+            ).withHoverEvent(
+                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
+            ));
+            Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share coord", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private MutableText getDirectionText(Vec3d source, Vec3d target) {
+        double pitch = GameMath.getPitch(source, target);
+        double yaw = GameMath.getYaw(source, target);
+        MutableText direction = Text.empty();
+        if (pitch > 60.0) {
+            direction = Util.parseTranslateableText("fmod.misc.diru");
+        } else if (pitch < -60.0) {
+            direction = Util.parseTranslateableText("fmod.misc.dird");
+        } else if (yaw > 22.5 && yaw < 67.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirnw");
+        } else if (yaw >= 67.5 && yaw <= 112.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirw");
+        } else if (yaw > 112.5 && yaw < 157.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirsw");
+        } else if (yaw >= 157.5 && yaw <= 202.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirs");
+        } else if (yaw > 202.5 && yaw < 247.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirse");
+        } else if (yaw >= 247.5 && yaw <= 292.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dire");
+        } else if (yaw > 292.5 && yaw < 337.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirne");
+        } else {
+            direction = Util.parseTranslateableText("fmod.misc.dirn");
+        }
+        return direction;
     }
 
     private int runGetDistanceCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
@@ -408,30 +503,11 @@ public class CommandRegistrater {
                 double distance = GameMath.getEuclideanDistance(source, target);
                 double pitch = GameMath.getPitch(source, target);
                 double yaw = GameMath.getYaw(source, target);
-                MutableText direction = Text.empty();
                 double degree = yaw;
                 if (pitch > 60.0) {
-                    direction = Util.parseTranslateableText("fmod.misc.diru");
                     degree = pitch;
                 } else if (pitch < -60.0) {
-                    direction = Util.parseTranslateableText("fmod.misc.dird");
                     degree = -pitch;
-                } else if (yaw > 22.5 && yaw < 67.5) {
-                    direction = Util.parseTranslateableText("fmod.misc.dirnw");
-                } else if (yaw >= 67.5 && yaw <= 112.5) {
-                    direction = Util.parseTranslateableText("fmod.misc.dirw");
-                } else if (yaw > 112.5 && yaw < 157.5) {
-                    direction = Util.parseTranslateableText("fmod.misc.dirsw");
-                } else if (yaw >= 157.5 && yaw <= 202.5) {
-                    direction = Util.parseTranslateableText("fmod.misc.dirs");
-                } else if (yaw > 202.5 && yaw < 247.5) {
-                    direction = Util.parseTranslateableText("fmod.misc.dirse");
-                } else if (yaw >= 247.5 && yaw <= 292.5) {
-                    direction = Util.parseTranslateableText("fmod.misc.dire");
-                } else if (yaw > 292.5 && yaw < 337.5) {
-                    direction = Util.parseTranslateableText("fmod.misc.dirne");
-                } else {
-                    direction = Util.parseTranslateableText("fmod.misc.dirn");
                 }
                 if (degree > 180.0) {
                     degree -= 360.0;
@@ -439,15 +515,63 @@ public class CommandRegistrater {
                 final Text name = entity.getDisplayName();
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
-                final MutableText dirTxt = direction;
+                final MutableText dirTxt = getDirectionText(source, target);
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get distance", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
+    }
+
+    private int runShareDistanceCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity player = getShareCommandExecutor(context);
+            Vec3d target = player.getPos();
+            List<ServerPlayerEntity> onlinePlayers = Util.getOnlinePlayers(context.getSource().getServer());
+            for (ServerPlayerEntity onlinePlayer : onlinePlayers) {
+                if (onlinePlayer.getUuid() == player.getUuid()) {
+                    Util.sendTextMessage(onlinePlayer, Util.parseTranslateableText("fmod.command.share.selfdistance"));
+                    continue;
+                }
+                if (player.getWorld() != onlinePlayer.getWorld()) {
+                    final Text name = player.getDisplayName();
+                    Util.sendTextMessage(onlinePlayer, Util.parseTranslateableText("fmod.command.share.dimdistance", name));
+                    continue;
+                }
+                Vec3d source = onlinePlayer.getPos();
+                double distance = GameMath.getEuclideanDistance(source, target);
+                double pitch = GameMath.getPitch(source, target);
+                double yaw = GameMath.getYaw(source, target);
+                double degree = yaw;
+                if (pitch > 60.0) {
+                    degree = pitch;
+                } else if (pitch < -60.0) {
+                    degree = -pitch;
+                }
+                if (degree > 180.0) {
+                    degree -= 360.0;
+                }
+                final Text name = player.getDisplayName();
+                final String degStr = String.format("%.2f°", degree);
+                final String distStr = String.format("%.2f", distance);
+                final MutableText dirTxt = getDirectionText(source, target);
+                final MutableText text = Util.parseTranslateableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
+                Util.sendTextMessage(onlinePlayer, text);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share distance", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
     private int runGetHealthCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
@@ -461,10 +585,33 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get health", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
+    }
+
+    private int runShareHealthCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity player = getShareCommandExecutor(context);
+            double hp = Util.getHealth(player);
+            double maxhp = Util.getMaxHealth(player);
+            final Text name = player.getDisplayName();
+            final String hpStr = String.format("%.2f", hp);
+            final String maxhpStr = String.format("%.2f", maxhp);
+            MutableText text = Util.parseTranslateableText("fmod.command.share.health", name, hpStr, maxhpStr);
+            Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share health", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
     private int runGetStatusCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
@@ -482,10 +629,37 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get status", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return players.size();
+    }
+
+    private int runShareStatusCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity player = getShareCommandExecutor(context);
+            double hp = player.getHealth();
+            int hunger = player.getHungerManager().getFoodLevel();
+            double saturation = player.getHungerManager().getSaturationLevel();
+            int level = player.experienceLevel;
+            final Text name = player.getDisplayName();
+            final String hpStr = String.format("%.2f", hp);
+            final String hungerStr = String.valueOf(hunger);
+            final String saturationStr = String.format("%.2f", saturation);
+            final String levelStr = String.valueOf(level);
+            MutableText text = Util.parseTranslateableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
+            Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share status", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
     private MutableText formatInventoryItemStack(ItemStack item) {
@@ -506,110 +680,138 @@ public class CommandRegistrater {
                 );
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when formatting item stack", e);
             itemText = Text.literal("??").formatted(Formatting.RED);
         }
         return itemText;
     }
 
-    private int runGetInventoryCommand(ServerPlayerEntity player, CommandContext<ServerCommandSource> context) {
-        try {
-            PlayerInventory inventory = player.getInventory();
-            // Text Structure:
-            // [x] [x] [x] [x] [-] [-] [S] [+] [1]   (x: Armor, -: Placeholder, +: Offhand, 1: Current Chosen Slot Index)
-            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, S: Survival Gamemode [S: Survival, C: Creative, A: Adventure, V: Spectator])
-            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
-            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
-            // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
-            // Armor
-            MutableText armorText = Text.empty();
-            for (int i = 0; i < 4; i++) {
-                ItemStack item = inventory.getArmorStack(i);
-                armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
-                armorText.append(formatInventoryItemStack(item));
-                armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-                armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-            }
-            // Placeholder
-            for (int i = 0; i < 2; i++) {
-                armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
-                armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-            }
-            // Gamemode
-            armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-            GameMode gamemode = player.interactionManager.getGameMode();
-            MutableText gamemodeText = Text.literal("+S");
-            if (gamemode == GameMode.CREATIVE) {
-                gamemodeText = Text.literal("+C");
-            } else if (gamemode == GameMode.ADVENTURE) {
-                gamemodeText = Text.literal("+A");
-            } else if (gamemode == GameMode.SPECTATOR) {
-                gamemodeText = Text.literal("+V");
-            }
-            gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
-                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
-            );
-            armorText.append(gamemodeText);
-            armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-            // Offhand
-            ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
+    private List<MutableText> getInventoryTexts(ServerPlayerEntity player) {
+        PlayerInventory inventory = player.getInventory();
+        // Text Structure:
+        // [x] [x] [x] [x] [-] [-] [S] [+] [1]   (x: Armor, -: Placeholder, +: Offhand, 1: Current Chosen Slot Index)
+        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, S: Survival Gamemode [S: Survival, C: Creative, A: Adventure, V: Spectator])
+        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
+        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
+        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
+        MutableText armorText = Text.empty();
+        for (int i = 0; i < 4; i++) {
+            ItemStack item = inventory.getArmorStack(i);
             armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
-            armorText.append(formatInventoryItemStack(offhandItem));
+            armorText.append(formatInventoryItemStack(item));
             armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
             armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-            // Selected Slot
-            armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-            armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
-            armorText.append(Text.literal("]").formatted(Formatting.GOLD));
+        }
+        // Placeholder
+        for (int i = 0; i < 2; i++) {
+            armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
             armorText.append(Text.literal(" ").formatted(Formatting.RESET));
-            // Inventory
-            MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 9; j++) {
-                    // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
-                    int index = (i + 1) * 9 + j;
-                    ItemStack item = inventory.getStack(index);
-                    inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
-                    inventoryText[i].append(formatInventoryItemStack(item));
-                    inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
-                    inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
-                }
+        }
+        // Gamemode
+        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
+        GameMode gamemode = player.interactionManager.getGameMode();
+        MutableText gamemodeText = Text.literal("+S");
+        if (gamemode == GameMode.CREATIVE) {
+            gamemodeText = Text.literal("+C");
+        } else if (gamemode == GameMode.ADVENTURE) {
+            gamemodeText = Text.literal("+A");
+        } else if (gamemode == GameMode.SPECTATOR) {
+            gamemodeText = Text.literal("+V");
+        }
+        gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
+        );
+        armorText.append(gamemodeText);
+        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
+        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        // Offhand
+        ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
+        armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+        armorText.append(formatInventoryItemStack(offhandItem));
+        armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        // Selected Slot
+        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
+        armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
+        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
+        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        // Inventory
+        MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 9; j++) {
+                // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
+                int index = (i + 1) * 9 + j;
+                ItemStack item = inventory.getStack(index);
+                inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
+                inventoryText[i].append(formatInventoryItemStack(item));
+                inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
+                inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
             }
-            // Hotbar
-            MutableText hotbarText = Text.empty();
-            for (int i = 0; i < 9; i++) {
-                ItemStack item = inventory.getStack(i);
-                if (i == inventory.selectedSlot) {
-                    hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
-                } else {
-                    hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
-                }
-                hotbarText.append(formatInventoryItemStack(item));
-                if (i == inventory.selectedSlot) {
-                    hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
-                } else {
-                    hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-                }
-                hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
+        }
+        // Hotbar
+        MutableText hotbarText = Text.empty();
+        for (int i = 0; i < 9; i++) {
+            ItemStack item = inventory.getStack(i);
+            if (i == inventory.selectedSlot) {
+                hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
+            } else {
+                hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
             }
-            // Feedback
+            hotbarText.append(formatInventoryItemStack(item));
+            if (i == inventory.selectedSlot) {
+                hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
+            } else {
+                hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+            }
+            hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
+        }
+        // Feedback
+        final MutableText linea = armorText;
+        final MutableText lineb = inventoryText[0];
+        final MutableText linec = inventoryText[1];
+        final MutableText lined = inventoryText[2];
+        final MutableText linee = hotbarText;
+        return Arrays.asList(linea, lineb, linec, lined, linee);
+    }
+
+    private int runGetInventoryCommand(ServerPlayerEntity player, CommandContext<ServerCommandSource> context) {
+        try {
+            List<MutableText> inventoryText = getInventoryTexts(player);
             final Text name = player.getDisplayName();
-            final Text linea = Util.parseTranslateableText("fmod.command.get.inventory", name);
-            final Text lineb = armorText;
-            final Text linec = inventoryText[0];
-            final Text lined = inventoryText[1];
-            final Text linee = inventoryText[2];
-            final Text linef = hotbarText;
-            context.getSource().sendFeedback(() -> linea, false);
-            context.getSource().sendFeedback(() -> lineb, false);
-            context.getSource().sendFeedback(() -> linec, false);
-            context.getSource().sendFeedback(() -> lined, false);
-            context.getSource().sendFeedback(() -> linee, false);
-            context.getSource().sendFeedback(() -> linef, false);
+            final Text title = Util.parseTranslateableText("fmod.command.get.inventory", name);
+            context.getSource().sendFeedback(() -> title, false);
+            for (MutableText text : inventoryText) {
+                context.getSource().sendFeedback(() -> text, false);
+            }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get inventory", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runShareInventoryCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity player = getShareCommandExecutor(context);
+            List<MutableText> inventoryText = getInventoryTexts(player);
+            final Text name = player.getDisplayName();
+            final Text title = Util.parseTranslateableText("fmod.command.share.inventory", name);
+            Util.broadcastTextMessage(context.getSource().getServer(), title);
+            for (MutableText text : inventoryText) {
+                Util.broadcastTextMessage(context.getSource().getServer(), text);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share inventory", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -646,14 +848,59 @@ public class CommandRegistrater {
                 if (itemCountSum <= 0) {
                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name, itemTxt), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name).append(itemTxt), false);
                 }
             }
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get item", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
+    }
+
+    private int runShareItemCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity player = getShareCommandExecutor(context);
+            Iterable<ItemStack> items = player.getHandItems();
+            if (items == null || items.iterator().hasNext() == false) {
+                final Text name = player.getDisplayName();
+                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
+                return Command.SINGLE_SUCCESS;
+            }
+            MutableText itemList = Text.empty();
+            int itemCountSum = 0;
+            for (ItemStack item : items) {
+                if (item.isEmpty()) {
+                    continue;
+                }
+                Text itemText = item.toHoverableText();
+                int itemCount = item.getCount();
+                itemCountSum += itemCount;
+                itemList.append(itemText);
+                if (itemCount > 1) {
+                    itemList.append(Text.literal("x" + itemCount + " "));
+                } else {
+                    itemList.append(Text.literal(" "));
+                }
+            }
+            final Text name = player.getDisplayName();
+            final MutableText itemTxt = itemList;
+            if (itemCountSum <= 0) {
+                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
+            } else {
+                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.item", name).append(itemTxt));
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share item", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
     private int runReloadCommand(CommandContext<ServerCommandSource> context) {
@@ -661,6 +908,9 @@ public class CommandRegistrater {
             Util.loadServerConfig();
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), true);
         } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
             throw new CommandException(Util.parseTranslateableText("fmod.command.reload.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -754,6 +1004,15 @@ public class CommandRegistrater {
                                 .executes(context -> {return runGetItemCommand(EntityArgumentType.getEntities(context, "entity"), context);})
                             )
                         )
+                    )
+                    .then(CommandManager.literal("share")
+                        .requires(source -> source.hasPermissionLevel(0))
+                        .then(CommandManager.literal("coord").executes(context -> {return runShareCoordCommand(context);}))
+                        .then(CommandManager.literal("distance").executes(context -> {return runShareDistanceCommand(context);}))
+                        .then(CommandManager.literal("health").executes(context -> {return runShareHealthCommand(context);}))
+                        .then(CommandManager.literal("status").executes(context -> {return runShareStatusCommand(context);}))
+                        .then(CommandManager.literal("inventory").executes(context -> {return runShareInventoryCommand(context);}))
+                        .then(CommandManager.literal("item").executes(context -> {return runShareItemCommand(context);}))
                     )
                     .then(CommandManager.literal("reload")
                         .requires(source -> source.hasPermissionLevel(4))
