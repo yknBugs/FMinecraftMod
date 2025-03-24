@@ -393,6 +393,44 @@ public class CommandRegistrater {
         return result;
     }
 
+    private int runSongSearchCommand(Collection<ServerPlayerEntity> players, double timepoint, CommandContext<ServerCommandSource> context) {
+        int result = 0;
+        try {
+            for (ServerPlayerEntity player : players) {
+                boolean isFound = false;
+                for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+                    if (scheduledTask instanceof playSong) {
+                        playSong playSong = (playSong) scheduledTask;
+                        if (playSong.getTarget().getUuid() == player.getUuid()) {
+                            isFound = true;
+                            String songName = playSong.getSongName();
+                            double songLength = playSong.getSong().getLastTick() / 20.0;
+                            String songLengthStr = String.format("%.1f", songLength);
+                            String timepointStr = String.format("%.1f", timepoint);
+                            if (timepoint < 0 || timepoint > songLength) {
+                                throw new CommandException(Util.parseTranslateableText("fmod.command.song.long", songName, songLengthStr, timepointStr));
+                            } else {
+                                playSong.search((int) (timepoint * 20));
+                                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", songName, player.getDisplayName(), timepointStr, songLengthStr), true);
+                                result++;
+                            }
+                        }
+                    }
+                }
+                if (isFound == false) {
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                }
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song search", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return result;
+    }
+
     private ServerPlayerEntity getShareCommandExecutor(CommandContext<ServerCommandSource> context) {
         if (context == null) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
@@ -969,6 +1007,13 @@ public class CommandRegistrater {
                         .then(CommandManager.literal("get")
                             .then(CommandManager.argument("player", EntityArgumentType.players())
                                 .executes(context -> {return runSongGetCommand(EntityArgumentType.getPlayers(context, "player"), context);})
+                            )
+                        )
+                        .then(CommandManager.literal("search")
+                            .then(CommandManager.argument("player", EntityArgumentType.players())
+                                .then(CommandManager.argument("timepoint", DoubleArgumentType.doubleArg(0.0))
+                                    .executes(context -> {return runSongSearchCommand(EntityArgumentType.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "timepoint"), context);})
+                                )
                             )
                         )
                     )

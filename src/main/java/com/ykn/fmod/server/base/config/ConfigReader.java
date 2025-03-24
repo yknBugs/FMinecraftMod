@@ -39,6 +39,10 @@ public class ConfigReader {
     public static <T extends ConfigReader> Optional<T> readFile(String fileName, Class<T> configClass) {
         Path file = CONFIG_DIR.resolve(fileName);
 
+        if (!file.normalize().startsWith(CONFIG_DIR.normalize())) {
+            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Config file path is outside of the config directory");
+            return Optional.empty();
+        }
         if (!Files.isRegularFile(file)) {
             return Optional.empty();
         }
@@ -53,6 +57,10 @@ public class ConfigReader {
     public static <T> void writeFile(String fileName, T config) {
         Path file = CONFIG_DIR.resolve(fileName);
 
+        if (!file.normalize().startsWith(CONFIG_DIR.normalize())) {
+            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Config file path is outside of the config directory");
+            return;
+        }
         try {
             Files.createDirectories(file.getParent());
             try (BufferedWriter writer = Files.newBufferedWriter(file)) {

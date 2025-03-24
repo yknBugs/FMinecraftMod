@@ -76,4 +76,25 @@ public class playSong extends ScheduledTask {
     public int getTick() {
         return tick;
     }
+
+    /**
+     * Searches and schedules the playback of a song based on the given tick.
+     *
+     * @param tick The current tick to search for. If the tick is less than 0, it resets to 0 
+     *             and reschedules the playback from the beginning of the song. If the tick 
+     *             exceeds the last tick of the song, the playback is canceled. Otherwise, 
+     *             it updates the current tick and reschedules the playback for the remaining 
+     *             duration of the song.
+     */
+    public void search(int tick) {
+        if (tick < 0) {
+            this.tick = 0;
+            this.reschedule(1, song.getLastTick() + 1);
+        } else if (tick > song.getLastTick() - 1) {
+            this.cancel();
+        } else {
+            this.tick = tick;
+            this.reschedule(1, song.getLastTick() + 1 - tick);
+        }
+    }
 }

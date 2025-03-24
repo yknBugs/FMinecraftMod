@@ -64,6 +64,8 @@
     "fmod.command.song.cancel": "已取消向 %s 播放音乐 %s",
     "fmod.command.song.empty": "%s 没有正在播放的音乐",
     "fmod.command.song.finish": "%s 收听的音乐 %s 已播放完毕",
+    "fmod.command.song.search": "向 %s 播放 %s 的第 %s 秒/%s 秒",
+    "fmod.command.song.long": "正在播放的音乐 %s 的总时长为 %s 秒，因此无法从第 %s 秒开始播放",
     "fmod.command.song.error": "无法播放音乐 %s",
     "fmod.command.reload.success": "重载配置文件成功",
     "fmod.command.reload.error": "重载配置文件时发生错误",
