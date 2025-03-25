@@ -66,6 +66,8 @@
     "fmod.command.song.finish": "The song %2$s has been finished for %1$s.",
     "fmod.command.song.search": "Playing %1$s at %3$ss/%4$ss for %2$s.",
     "fmod.command.song.long": "The song %s is only %ss long, so cannot play the song at %ss.",
+    "fmod.command.song.speed": "Set the speed of %2$s for %1$s to %3$s.",
+    "fmod.command.song.pause": "Pause the song %2$s for %1$s.",
     "fmod.command.song.error": "Cannot play the song %s",
     "fmod.command.reload.success": "Reload the configuration file successfully.",
     "fmod.command.reload.error": "An error occurred while reloading the configuration file.",

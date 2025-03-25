@@ -13,6 +13,7 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -287,15 +288,23 @@ public class CommandRegistrater {
     }
 
     private int runSongPlayCommand(Collection<ServerPlayerEntity> players, String songName, CommandContext<ServerCommandSource> context) {
-        try (FileInputStream fileInputStream = new FileInputStream(FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).resolve(songName).toFile())) {
+        try {
             // Refresh song suggestion list
             SongFileSuggestion.suggest();
             if (SongFileSuggestion.getAvailableSongs() == 0) {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
             }
+            Path songFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            Path songPath = songFolder.resolve(songName).normalize();
+            if (!songPath.startsWith(songFolder)) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
+            }
+
             // Load song
-            NoteBlockSong song = NbsSongDecoder.parse(fileInputStream);
-            song.finishLoading();
+            NoteBlockSong song = null;
+            try (FileInputStream fileInputStream = new FileInputStream(songPath.toFile())) {
+                song = NbsSongDecoder.parse(fileInputStream);
+            }
             // Check if a song is still playing, if so, cancel the task
             for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
                 if (scheduledTask instanceof playSong) {
@@ -372,8 +381,8 @@ public class CommandRegistrater {
                         playSong playSong = (playSong) scheduledTask;
                         if (playSong.getTarget().getUuid() == player.getUuid()) {
                             isFound = true;
-                            String currentTimeStr = String.format("%.1f", playSong.getTick() / 20.0);
-                            String totalTimeStr = String.format("%.1f", playSong.getSong().getLastTick() / 20.0);
+                            String currentTimeStr = String.format("%.1f", playSong.getSong().getVirtualTick(playSong.getTick()) / 20.0);
+                            String totalTimeStr = String.format("%.1f", playSong.getSong().getMaxVirtualTick() / 20.0);
                             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr), false);
                             result++;
                         }
@@ -404,14 +413,14 @@ public class CommandRegistrater {
                         if (playSong.getTarget().getUuid() == player.getUuid()) {
                             isFound = true;
                             String songName = playSong.getSongName();
-                            double songLength = playSong.getSong().getLastTick() / 20.0;
+                            double songLength = playSong.getSong().getMaxVirtualTick() / 20.0;
                             String songLengthStr = String.format("%.1f", songLength);
                             String timepointStr = String.format("%.1f", timepoint);
                             if (timepoint < 0 || timepoint > songLength) {
-                                throw new CommandException(Util.parseTranslateableText("fmod.command.song.long", songName, songLengthStr, timepointStr));
+                                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.long", songName, songLengthStr, timepointStr), false);
                             } else {
                                 playSong.search((int) (timepoint * 20));
-                                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", songName, player.getDisplayName(), timepointStr, songLengthStr), true);
+                                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
                                 result++;
                             }
                         }
@@ -426,6 +435,43 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song search", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return result;
+    }
+
+    private int runSongSpeedCommand(Collection<ServerPlayerEntity> players, double speed, CommandContext<ServerCommandSource> context) {
+        int result = 0;
+        try {
+            for (ServerPlayerEntity player : players) {
+                boolean isFound = false;
+                for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+                    if (scheduledTask instanceof playSong) {
+                        playSong playSong = (playSong) scheduledTask;
+                        if (playSong.getTarget().getUuid() == player.getUuid()) {
+                            isFound = true;
+                            Text playerName = player.getDisplayName();
+                            String songName = playSong.getSongName();
+                            String speedStr = String.format("%.2f", speed);
+                            playSong.changeSpeed(speed);
+                            if (speed == 0) {
+                                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.pause", playerName, songName), true);
+                            } else {
+                                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.speed", playerName, songName, speedStr), true);
+                            }
+                            result++;
+                        }
+                    }
+                }
+                if (isFound == false) {
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                }
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song speed", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -1013,6 +1059,13 @@ public class CommandRegistrater {
                             .then(CommandManager.argument("player", EntityArgumentType.players())
                                 .then(CommandManager.argument("timepoint", DoubleArgumentType.doubleArg(0.0))
                                     .executes(context -> {return runSongSearchCommand(EntityArgumentType.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "timepoint"), context);})
+                                )
+                            )
+                        )
+                        .then(CommandManager.literal("speed")
+                            .then(CommandManager.argument("player", EntityArgumentType.players())
+                                .then(CommandManager.argument("speed", DoubleArgumentType.doubleArg())
+                                    .executes(context -> {return runSongSpeedCommand(EntityArgumentType.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "speed"), context);})
                                 )
                             )
                         )

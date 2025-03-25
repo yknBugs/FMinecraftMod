@@ -20,7 +20,7 @@ public class NbsSongDecoder {
     public static final int NOTE_OFFSET = 33;
 
     public static NoteBlockSong parse(InputStream inputStream) throws IOException {
-        HashMap<Integer, List<NoteBlockNote>> notesMap = new HashMap<>();
+        HashMap<Double, List<NoteBlockNote>> notesMap = new HashMap<>();
         DataInputStream dataInputStream = new DataInputStream(inputStream);
         short length = readShort(dataInputStream);
         int nbsversion = 0;
@@ -36,7 +36,7 @@ public class NbsSongDecoder {
         String author = readString(dataInputStream); // Song Author
         readString(dataInputStream); // original author
         readString(dataInputStream); // description
-        float speed = readShort(dataInputStream) / 100f; // tempo
+        double speed = readShort(dataInputStream) / 100.0; // tempo
         dataInputStream.readBoolean(); // auto-save
         dataInputStream.readByte(); // auto-save duration
         dataInputStream.readByte(); // x/4ths, time signature
@@ -58,7 +58,7 @@ public class NbsSongDecoder {
             if (jumpTicks == 0) {
                 break;
             }
-            tick += jumpTicks * (20f / speed);
+            tick += jumpTicks * (20.0 / speed);
             while (true) {
                 short jumpLayers = readShort(dataInputStream); // jumps till next layer
                 if (jumpLayers == 0) {
@@ -81,14 +81,14 @@ public class NbsSongDecoder {
                 }
 
                 NoteBlockNote note = new NoteBlockNote(inst, key - NOTE_OFFSET);
-                setNote((int) Math.round(tick), note, notesMap);
+                setNote(tick, note, notesMap);
             }
         }
 
         return new NoteBlockSong(notesMap, title, author);
     }
 
-    private static void setNote(int ticks, NoteBlockNote note, HashMap<Integer, List<NoteBlockNote>> notesMap) {
+    private static void setNote(double ticks, NoteBlockNote note, HashMap<Double, List<NoteBlockNote>> notesMap) {
         List<NoteBlockNote> notes = notesMap.get(ticks);
         if (notes == null) {
             notes = new ArrayList<>();

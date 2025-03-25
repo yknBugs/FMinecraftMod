@@ -25,7 +25,7 @@ public class playSong extends ScheduledTask {
     private int tick;
 
     public playSong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
-        super(1, song.getLastTick() + 1);
+        super(1, song.getMaxRealTick());
         this.song = song;
         this.songName = songName;
         this.target = target;
@@ -35,11 +35,11 @@ public class playSong extends ScheduledTask {
 
     @Override
     public void onTick() {
-        List<NoteBlockNote> notes = song.getNotesMap().get(this.tick);
+        List<NoteBlockNote> notes = song.getNotes(this.tick);
         if (notes != null) {
             for (NoteBlockNote note : notes) {
-                // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0D, (note.noteLevel - 12) / 12.0D));
-                target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0D, (note.noteLevel - 12) / 12.0D), 0));
+                // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0));
+                target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
             }
         }
         this.tick++;
@@ -47,7 +47,7 @@ public class playSong extends ScheduledTask {
 
     @Override
     public void onCancel() {
-        this.tick = song.getLastTick();
+        this.tick = song.getMaxRealTick();
         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
     }
 
@@ -78,23 +78,36 @@ public class playSong extends ScheduledTask {
     }
 
     /**
-     * Searches and schedules the playback of a song based on the given tick.
-     *
-     * @param tick The current tick to search for. If the tick is less than 0, it resets to 0 
-     *             and reschedules the playback from the beginning of the song. If the tick 
-     *             exceeds the last tick of the song, the playback is canceled. Otherwise, 
-     *             it updates the current tick and reschedules the playback for the remaining 
-     *             duration of the song.
+     * Jump to a specific position of the song based on the given virtual tick.
+     * 
+     * @param virtualTick The current virtual tick to evaluate the song's state.
+     *                     This represents the logical progression of the song.
      */
-    public void search(int tick) {
-        if (tick < 0) {
-            this.tick = 0;
-            this.reschedule(1, song.getLastTick() + 1);
-        } else if (tick > song.getLastTick() - 1) {
+    public void search(double virtualTick) {
+        double remainingVirtualTicks = song.getRemainingVirtualTicks(virtualTick);
+        if (remainingVirtualTicks < 0) {
             this.cancel();
-        } else {
-            this.tick = tick;
-            this.reschedule(1, song.getLastTick() + 1 - tick);
+            return;
         }
+        if (virtualTick > song.getMaxVirtualTick()) {
+            this.cancel();
+            return;
+        }
+        this.tick = song.getRealTick(virtualTick);
+        int remainingRealTicks = song.getRemainingRealTicks(this.tick);
+        this.reschedule(1, remainingRealTicks == 2147483647 ? 2147483647 : remainingRealTicks + 1);
+    }
+
+    /**
+     * Changes the playback speed of the song and reschedules the task accordingly.
+     *
+     * @param speed The new speed multiplier for the song playback. A value greater than 1.0
+     *              increases the speed, while a value between 0.0 and 1.0 decreases it.
+     *              A value of 0.0 means the song is paused, and a value below 0 means reverse playback.
+     */
+    public void changeSpeed(double speed) {
+        this.tick = song.setSpeed(speed, this.tick);
+        int remainingRealTicks = song.getRemainingRealTicks(this.tick);
+        this.reschedule(1, remainingRealTicks == 2147483647 ? 2147483647 : remainingRealTicks + 1);
     }
 }
