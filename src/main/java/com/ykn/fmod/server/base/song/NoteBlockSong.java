@@ -214,7 +214,7 @@ public class NoteBlockSong {
      * <p>
      * The method determines the virtual tick value depending on the speed:
      * <ul>
-     *   <li>If the speed is 0, the virtual tick is 0.0.</li>
+     *   <li>If the speed is 0, the virtual tick is the same as the real tick.</li>
      *   <li>If the speed is positive, the virtual tick is calculated as the product
      *       of the real tick and the speed.</li>
      *   <li>If the speed is negative, the virtual tick is calculated as the product
@@ -227,7 +227,7 @@ public class NoteBlockSong {
      */
     public double getVirtualTick(int realTick) {
         if (this.speed == 0) {
-            return 0.0;
+            return realTick;
         } else if (this.speed > 0) {
             return realTick * this.speed;
         } else {
@@ -235,7 +235,19 @@ public class NoteBlockSong {
         }
     }
 
+    /**
+     * Converts a virtual tick value to a real tick value based on the song's speed.
+     * If the speed is zero, the virtual tick is rounded to the nearest integer.
+     * Otherwise, it calculates the nearest real tick using the song's maximum virtual tick
+     * and speed parameters.
+     *
+     * @param virtualTick The virtual tick value to be converted.
+     * @return The corresponding real tick value.
+     */
     public int getRealTick(double virtualTick) {
+        if (speed == 0) {
+            return (int) Math.round(virtualTick);
+        }
         return findNearestRealTick(virtualTick, this.maxVirtualTick, this.speed);
     }
 

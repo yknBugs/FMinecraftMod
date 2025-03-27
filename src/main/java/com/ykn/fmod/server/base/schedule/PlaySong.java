@@ -16,21 +16,23 @@ import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 
-public class playSong extends ScheduledTask {
+public class PlaySong extends ScheduledTask {
 
     private NoteBlockSong song;
     private String songName;
     private ServerPlayerEntity target;
     private CommandContext<ServerCommandSource> context;
     private int tick;
+    private boolean showInfo;
 
-    public playSong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
+    public PlaySong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
         super(1, song.getMaxRealTick());
         this.song = song;
         this.songName = songName;
         this.target = target;
         this.context = context;
         this.tick = 0;
+        this.showInfo = false;
     }
 
     @Override
@@ -42,7 +44,15 @@ public class playSong extends ScheduledTask {
                 target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
             }
         }
-        this.tick++;
+        if (this.showInfo) {
+            String currentTimeStr = String.format("%.1f", this.song.getVirtualTick(this.tick) / 20.0);
+            String totalTimeStr = String.format("%.1f", this.song.getMaxVirtualTick() / 20.0);
+            String speedStr = String.format("%.2f", this.song.getSpeed());
+            Util.sendActionBarMessage(target, Util.parseTranslateableText("fmod.command.song.info", songName, currentTimeStr, totalTimeStr, speedStr));
+        }
+        if (this.getSong().getSpeed() != 0) {
+            this.tick++;
+        }
     }
 
     @Override
@@ -77,13 +87,17 @@ public class playSong extends ScheduledTask {
         return tick;
     }
 
+    public boolean isShowInfo() {
+        return showInfo;
+    }
+
     /**
      * Jump to a specific position of the song based on the given virtual tick.
      * 
      * @param virtualTick The current virtual tick to evaluate the song's state.
      *                     This represents the logical progression of the song.
      */
-    public void search(double virtualTick) {
+    public void seek(double virtualTick) {
         double remainingVirtualTicks = song.getRemainingVirtualTicks(virtualTick);
         if (remainingVirtualTicks < 0) {
             this.cancel();
@@ -109,5 +123,9 @@ public class playSong extends ScheduledTask {
         this.tick = song.setSpeed(speed, this.tick);
         int remainingRealTicks = song.getRemainingRealTicks(this.tick);
         this.reschedule(1, remainingRealTicks == 2147483647 ? 2147483647 : remainingRealTicks + 1);
+    }
+
+    public void setShowInfo(boolean showInfo) {
+        this.showInfo = showInfo;
     }
 }
