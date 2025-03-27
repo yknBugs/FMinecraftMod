@@ -393,22 +393,6 @@ public class CommandRegistrater {
     private int runSongCancelCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
         int result = 0;
         try {
-            // for (ServerPlayerEntity player : players) {
-            //     boolean isFound = false;
-            //     for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
-            //         if (scheduledTask instanceof PlaySong) {
-            //             PlaySong playSong = (PlaySong) scheduledTask;
-            //             if (playSong.getTarget().getUuid() == player.getUuid()) {
-            //                 isFound = true;
-            //                 playSong.cancel();
-            //                 result++;
-            //             }
-            //         }
-            //     }
-            //     if (isFound == false) {
-            //         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
-            //     }
-            // }
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 playSong.cancel();
                 return true;
@@ -429,25 +413,6 @@ public class CommandRegistrater {
     private int runSongGetCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
         int result = 0;
         try {
-            // for (ServerPlayerEntity player : players) {
-            //     boolean isFound = false;
-            //     for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
-            //         if (scheduledTask instanceof PlaySong) {
-            //             PlaySong playSong = (PlaySong) scheduledTask;
-            //             if (playSong.getTarget().getUuid() == player.getUuid()) {
-            //                 isFound = true;
-            //                 String currentTimeStr = String.format("%.1f", playSong.getSong().getVirtualTick(playSong.getTick()) / 20.0);
-            //                 String totalTimeStr = String.format("%.1f", playSong.getSong().getMaxVirtualTick() / 20.0);
-            //                 String speedStr = String.format("%.2f", playSong.getSong().getSpeed());
-            //                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr, speedStr), false);
-            //                 result++;
-            //             }
-            //         }
-            //     }
-            //     if (isFound == false) {
-            //         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
-            //     }
-            // }
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 String currentTimeStr = String.format("%.1f", playSong.getSong().getVirtualTick(playSong.getTick()) / 20.0);
                 String totalTimeStr = String.format("%.1f", playSong.getSong().getMaxVirtualTick() / 20.0);
@@ -471,27 +436,6 @@ public class CommandRegistrater {
     private int runSongShowInfoCommand(Collection<ServerPlayerEntity> players, boolean showInfo, CommandContext<ServerCommandSource> context) {
         int result = 0;
         try {
-            // for (ServerPlayerEntity player : players) {
-            //     boolean isFound = false;
-            //     for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
-            //         if (scheduledTask instanceof PlaySong) {
-            //             PlaySong playSong = (PlaySong) scheduledTask;
-            //             if (playSong.getTarget().getUuid() == player.getUuid()) {
-            //                 isFound = true;
-            //                 playSong.setShowInfo(showInfo);
-            //                 if (showInfo) {
-            //                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.show", player.getDisplayName(), playSong.getSongName()), true);
-            //                 } else {
-            //                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hide", player.getDisplayName(), playSong.getSongName()), true);
-            //                 }
-            //                 result++;
-            //             }
-            //         }
-            //     }
-            //     if (isFound == false) {
-            //         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
-            //     }
-            // }
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 playSong.setShowInfo(showInfo);
                 if (showInfo) {
@@ -514,41 +458,37 @@ public class CommandRegistrater {
         return result;
     }
 
+    private int runSongShowInfoCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+        int result = 0;
+        try {
+            result = doSongTaskOrDefault(players, context, (player, playSong) -> {
+                MutableText isShowInfo = EnumI18n.getBooleanValueI18n(playSong.isShowInfo());
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.status", player.getDisplayName(), playSong.getSongName(), isShowInfo), false);
+                return true;
+            }, player -> {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                return false;
+            });
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song showinfo", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return result;
+    }
+
     private int runSongSeekCommand(Collection<ServerPlayerEntity> players, double timepoint, CommandContext<ServerCommandSource> context) {
         int result = 0;
         try {
-            // for (ServerPlayerEntity player : players) {
-            //     boolean isFound = false;
-            //     for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
-            //         if (scheduledTask instanceof PlaySong) {
-            //             PlaySong playSong = (PlaySong) scheduledTask;
-            //             if (playSong.getTarget().getUuid() == player.getUuid()) {
-            //                 isFound = true;
-            //                 String songName = playSong.getSongName();
-            //                 double songLength = playSong.getSong().getMaxVirtualTick() / 20.0;
-            //                 String songLengthStr = String.format("%.1f", songLength);
-            //                 String timepointStr = String.format("%.1f", timepoint);
-            //                 if (timepoint < 0 || timepoint > songLength) {
-            //                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.long", songName, songLengthStr, timepointStr), false);
-            //                 } else {
-            //                     playSong.seek((int) (timepoint * 20));
-            //                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
-            //                     result++;
-            //                 }
-            //             }
-            //         }
-            //     }
-            //     if (isFound == false) {
-            //         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
-            //     }
-            // }
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 String songName = playSong.getSongName();
                 double songLength = playSong.getSong().getMaxVirtualTick() / 20.0;
                 String songLengthStr = String.format("%.1f", songLength);
                 String timepointStr = String.format("%.1f", timepoint);
                 if (timepoint < 0 || timepoint > songLength) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.long", songName, songLengthStr, timepointStr), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.long", player.getDisplayName(), songName, songLengthStr, timepointStr), false);
                 } else {
                     playSong.seek((int) (timepoint * 20));
                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
@@ -572,30 +512,6 @@ public class CommandRegistrater {
     private int runSongSpeedCommand(Collection<ServerPlayerEntity> players, double speed, CommandContext<ServerCommandSource> context) {
         int result = 0;
         try {
-            // for (ServerPlayerEntity player : players) {
-            //     boolean isFound = false;
-            //     for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
-            //         if (scheduledTask instanceof PlaySong) {
-            //             PlaySong playSong = (PlaySong) scheduledTask;
-            //             if (playSong.getTarget().getUuid() == player.getUuid()) {
-            //                 isFound = true;
-            //                 Text playerName = player.getDisplayName();
-            //                 String songName = playSong.getSongName();
-            //                 String speedStr = String.format("%.2f", speed);
-            //                 playSong.changeSpeed(speed);
-            //                 if (speed == 0) {
-            //                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.pause", playerName, songName), true);
-            //                 } else {
-            //                     context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.speed", playerName, songName, speedStr), true);
-            //                 }
-            //                 result++;
-            //             }
-            //         }
-            //     }
-            //     if (isFound == false) {
-            //         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
-            //     }
-            // }
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 Text playerName = player.getDisplayName();
                 String songName = playSong.getSongName();
@@ -1204,6 +1120,7 @@ public class CommandRegistrater {
                                 .then(CommandManager.argument("enable", BoolArgumentType.bool())
                                     .executes(context -> {return runSongShowInfoCommand(EntityArgumentType.getPlayers(context, "player"), BoolArgumentType.getBool(context, "enable"), context);})
                                 )
+                                .executes(context -> {return runSongShowInfoCommand(EntityArgumentType.getPlayers(context, "player"), context);})
                             )
                         )
                         .then(CommandManager.literal("seek")
@@ -1540,7 +1457,7 @@ public class CommandRegistrater {
             switch (options) {
                 case "serverTranslation":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", Util.serverConfig.isEnableServerTranslation()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), true);

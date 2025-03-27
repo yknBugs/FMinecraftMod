@@ -24,6 +24,8 @@ public class PlaySong extends ScheduledTask {
     private CommandContext<ServerCommandSource> context;
     private int tick;
     private boolean showInfo;
+    private int lastShowInfoSeconds;
+    private int lastShowInfoTicks;
 
     public PlaySong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
         super(1, song.getMaxRealTick());
@@ -33,6 +35,8 @@ public class PlaySong extends ScheduledTask {
         this.context = context;
         this.tick = 0;
         this.showInfo = false;
+        this.lastShowInfoSeconds = 0;
+        this.lastShowInfoTicks = 0;
     }
 
     @Override
@@ -44,11 +48,16 @@ public class PlaySong extends ScheduledTask {
                 target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
             }
         }
+        int currentSeconds = (int) (this.song.getVirtualTick(this.tick) / 20.0);
         if (this.showInfo) {
-            String currentTimeStr = String.format("%.1f", this.song.getVirtualTick(this.tick) / 20.0);
-            String totalTimeStr = String.format("%.1f", this.song.getMaxVirtualTick() / 20.0);
-            String speedStr = String.format("%.2f", this.song.getSpeed());
-            Util.sendActionBarMessage(target, Util.parseTranslateableText("fmod.command.song.info", songName, currentTimeStr, totalTimeStr, speedStr));
+            if (currentSeconds != this.lastShowInfoSeconds || Math.abs(this.tick - this.lastShowInfoTicks) > 40) {
+                this.lastShowInfoSeconds = currentSeconds;
+                this.lastShowInfoTicks = this.tick;
+                String currentTimeStr = Integer.toString(currentSeconds);
+                String totalTimeStr = Integer.toString((int) (this.song.getMaxVirtualTick() / 20.0));
+                String speedStr = String.format("%.2f", this.song.getSpeed());
+                Util.sendActionBarMessage(target, Util.parseTranslateableText("fmod.command.song.info", songName, currentTimeStr, totalTimeStr, speedStr));
+            }
         }
         if (this.getSong().getSpeed() != 0) {
             this.tick++;

@@ -53,9 +53,15 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 
 ## Known Issues
 
-Java Syntax Highlight may not work properly with full package path and ? symbol in generics.
+Markdown Syntax Highlight has many limitations.
 
 ## Changelog
+
+### Version 0.1.4
+
+- Song playback speed
+- Show song playback status in Actionbar
+- And jump to a specific time point of a song
 
 ### Version 0.1.3
 
