@@ -15,6 +15,16 @@ import java.util.List;
 
 import net.minecraft.block.enums.Instrument;
 
+/**
+ * The {@code NbsSongDecoder} class is responsible for decoding Note Block Studio (NBS) song files
+ * from an input stream and converting them into a {@link NoteBlockSong} object.
+ * 
+ * <p>Usage:
+ * <pre>
+ * InputStream inputStream = ...; // Obtain an input stream for the NBS file
+ * NoteBlockSong song = NbsSongDecoder.parse(inputStream);
+ * </pre>
+ */
 public class NbsSongDecoder {
 
     public static final int NOTE_OFFSET = 33;

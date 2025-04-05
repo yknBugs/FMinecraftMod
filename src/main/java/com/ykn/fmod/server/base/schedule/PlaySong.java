@@ -26,9 +26,10 @@ public class PlaySong extends ScheduledTask {
     private boolean showInfo;
     private int lastShowInfoSeconds;
     private int lastShowInfoTicks;
+    private double lastShowInfoSpeed;
 
     public PlaySong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
-        super(1, song.getMaxRealTick());
+        super(1, song.getMaxRealTick() == 2147483647 ? 2147483647 : song.getMaxRealTick() + 1);
         this.song = song;
         this.songName = songName;
         this.target = target;
@@ -37,6 +38,7 @@ public class PlaySong extends ScheduledTask {
         this.showInfo = false;
         this.lastShowInfoSeconds = 0;
         this.lastShowInfoTicks = 0;
+        this.lastShowInfoSpeed = 1.0;
     }
 
     @Override
@@ -50,9 +52,10 @@ public class PlaySong extends ScheduledTask {
         }
         int currentSeconds = (int) (this.song.getVirtualTick(this.tick) / 20.0);
         if (this.showInfo) {
-            if (currentSeconds != this.lastShowInfoSeconds || Math.abs(this.tick - this.lastShowInfoTicks) > 40) {
+            if (currentSeconds != this.lastShowInfoSeconds || Math.abs(this.tick - this.lastShowInfoTicks) > 40 || this.song.getSpeed() != this.lastShowInfoSpeed) {
                 this.lastShowInfoSeconds = currentSeconds;
                 this.lastShowInfoTicks = this.tick;
+                this.lastShowInfoSpeed = this.song.getSpeed();
                 String currentTimeStr = Integer.toString(currentSeconds);
                 String totalTimeStr = Integer.toString((int) (this.song.getMaxVirtualTick() / 20.0));
                 String speedStr = String.format("%.2f", this.song.getSpeed());

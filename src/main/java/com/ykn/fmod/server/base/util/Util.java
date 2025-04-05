@@ -41,6 +41,9 @@ public class Util {
     public static final String LOGGERNAME = "FMinecraftMod";
     public static final String MODID = "fminecraftmod";
 
+    /**
+     * A static instance of the {@link TypeFilter} class that is used to get all the entities that are loaded and not removed in the world.
+     */
     public static final TypeFilter<Entity, Entity> PASSTHROUGH_FILTER = new TypeFilter<Entity, Entity>(){
         @Override
         public Entity downcast(Entity entity) {
@@ -52,13 +55,34 @@ public class Util {
         }
     };
 
+    /**
+     * A static instance of the {@link ServerConfig} class.
+     * This is used to manage and access server configuration settings.
+     */
     public static ServerConfig serverConfig = new ServerConfig();
+
+    /**
+     * A static map that associates a MinecraftServer instance with its corresponding ServerData.
+     * This map is used to store and manage data related to different Minecraft server instances.
+     */
     public static HashMap<MinecraftServer, ServerData> worldData = new HashMap<>();
 
+    /**
+     * Retrieves the version of the mod.
+     *
+     * @return The version of the mod as a String.
+     * @throws IllegalStateException If the mod container cannot be found.
+     */
     public static String getModVersion() {
         return FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getMetadata().getVersion().toString();
     }
 
+    /**
+     * Retrieves a comma-separated string of the authors of the mod.
+     *
+     * @return A string containing the names of the authors of the mod, separated by commas.
+     * @throws IllegalStateException If the mod container cannot be found.
+     */
     public static String getModAuthors() {
         Collection<Person> authors = FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getMetadata().getAuthors();
         StringBuilder authorsString = new StringBuilder();
@@ -73,10 +97,23 @@ public class Util {
         return authorsString.toString();
     }
 
+    /**
+     * Retrieves the current version of Minecraft being used.
+     *
+     * @return A string representing the Minecraft version.
+     */
     public static String getMinecraftVersion() {
         return SharedConstants.getGameVersion().getName();
     }
 
+    /**
+     * Retrieves a list of online players from the given Minecraft server.
+     * If the server is null, an empty list is returned.
+     *
+     * @param server The Minecraft server instance, or null if unavailable.
+     * @return A list of {@link ServerPlayerEntity} representing the online players.
+     *         Returns an empty list if the server is null.
+     */
     @NotNull
     public static List<ServerPlayerEntity> getOnlinePlayers(@Nullable MinecraftServer server) {
         if (server == null) {
@@ -87,10 +124,22 @@ public class Util {
         return copy;
     }
 
+    /**
+     * Sends an action bar message to the specified player.
+     *
+     * @param player  The {@link ServerPlayerEntity} to whom the message will be sent. Must not be null.
+     * @param message The {@link Text} message to display in the action bar. Must not be null.
+     */
     public static void sendActionBarMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
         player.networkHandler.sendPacket(new OverlayMessageS2CPacket(message));
     }
 
+    /**
+     * Sends an action bar message to all online players on the server.
+     *
+     * @param server  The Minecraft server instance. If null, the method will return without performing any action.
+     * @param message The message to be displayed in the action bar. Must not be null.
+     */
     public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @NotNull Text message) {
         if (server == null) {
             return;
@@ -101,10 +150,23 @@ public class Util {
         }
     }
 
+    /**
+     * Sends a text message to the specified server player.
+     *
+     * @param player  The server player to whom the message will be sent. Must not be null.
+     * @param message The text message to send to the player. Must not be null.
+     */
     public static void sendTextMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
         player.sendMessage(message, false);
     }
 
+    /**
+     * Broadcasts a text message to all online players on the server and logs the message
+     * to the server console.
+     *
+     * @param server The Minecraft server instance. If null, the method will return without doing anything.
+     * @param message The text message to broadcast. Must not be null.
+     */
     public static void broadcastTextMessage(@Nullable MinecraftServer server, @NotNull Text message) {
         if (server == null) {
             return;
@@ -117,6 +179,13 @@ public class Util {
         LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
     }
 
+    /**
+     * Sends a message to the specified player based on the provided message location type.
+     *
+     * @param player The {@link ServerPlayerEntity} to whom the message will be sent. Must not be null.
+     * @param type   The {@link MessageLocation} indicating where the message should be displayed (e.g., CHAT, ACTIONBAR, NONE). Must not be null.
+     * @param message The {@link Text} message to be sent. Must not be null.
+     */
     public static void sendMessage(@NotNull ServerPlayerEntity player, @NotNull MessageLocation type, @NotNull Text message) {
         switch (type) {
             case NONE:
@@ -128,11 +197,18 @@ public class Util {
                 sendActionBarMessage(player, message);
                 break;
             default:
-                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type.");
+                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type: " + type);
                 break;
         }
     }
 
+    /**
+     * Broadcasts a message to players on the server based on the specified message location type.
+     *
+     * @param server The Minecraft server instance. Can be null if no server is available.
+     * @param type   The location type where the message should be broadcasted. Must not be null.
+     * @param message The message to broadcast. Must not be null.
+     */
     public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageLocation type, @NotNull Text message) {
         switch (type) {
             case NONE:
@@ -144,11 +220,19 @@ public class Util {
                 broadcastActionBarMessage(server, message);
                 break;
             default:
-                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type.");
+                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type: " + type);
                 break;
         }
     }
 
+    /**
+     * Sends a message to players based on the specified delivery method.
+     *
+     * @param player  The player who will receive the message. Must not be null.
+     * @param method  The delivery method for the message. Must not be null.
+     * @param type    The location type of the message (e.g., chat, action bar). Must not be null.
+     * @param message The message content to be sent. Must not be null.
+     */
     public static void postMessage(@NotNull ServerPlayerEntity player, @NotNull MessageReceiver method, @NotNull MessageLocation type, @NotNull Text message) {
         switch (method) {
             case ALL:
@@ -209,6 +293,16 @@ public class Util {
         }
     }
 
+    /**
+     * Parses a translatable text key into a {@link MutableText} object, optionally translating it
+     * based on the server configuration.
+     *
+     * @param key  The translation key to be parsed. Must not be null.
+     * @param args Optional arguments to format the translatable text.
+     * @return A {@link MutableText} object representing the parsed text. If server translation
+     *         is enabled, the text is translated and returned as a literal text. Otherwise,
+     *         it is returned as a translatable text.
+     */
     @NotNull
     public static MutableText parseTranslateableText(@NotNull String key, Object... args) {
         if (serverConfig.isEnableServerTranslation()) {
@@ -219,6 +313,10 @@ public class Util {
         }
     }
 
+    /**
+     * Loads the server configuration from the "server.json" file.
+     * This method acquires a write lock to ensure thread safety while loading the configuration.
+     */
     public static void loadServerConfig() {
         utilLock.writeLock().lock();
         try {
@@ -229,6 +327,10 @@ public class Util {
         LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Server config loaded.");
     }
 
+    /**
+     * Saves the server configuration to a file.
+     * This method acquires a write lock to ensure thread safety while saving the configuration.
+     */
     public static void saveServerConfig() {
         utilLock.writeLock().lock();
         try {
@@ -239,6 +341,13 @@ public class Util {
         LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Server config saved.");
     }
 
+    /**
+     * Retrieves the {@link ServerData} associated with the given {@link MinecraftServer}.
+     * If no existing {@link ServerData} is found, a new instance is created, stored, and returned.
+     *
+     * @param server the {@link MinecraftServer} instance for which the {@link ServerData} is requested
+     * @return the {@link ServerData} associated with the given server
+     */
     @NotNull
     public static ServerData getServerData(@NotNull MinecraftServer server) {
         ServerData data = worldData.get(server);
@@ -250,6 +359,12 @@ public class Util {
         return data;
     }
 
+    /**
+     * Retrieves the PlayerData associated with the given ServerPlayerEntity.
+     *
+     * @param player The ServerPlayerEntity for which the PlayerData is to be retrieved. Must not be null.
+     * @return The PlayerData object associated with the specified player.
+     */
     @NotNull
     public static PlayerData getPlayerData(@NotNull ServerPlayerEntity player) {
         return getServerData(player.getServer()).getPlayerData(player);
@@ -301,6 +416,12 @@ public class Util {
         return 0.0;
     }
 
+    /**
+     * Retrieves all entities from the specified ServerWorld that are loaded and not removed.
+     *
+     * @param world the ServerWorld instance from which to collect entities.
+     * @return a list of all entities in the specified world that meet the criteria.
+     */
     @NotNull
     public static List<Entity> getAllEntities(@NotNull ServerWorld world) {
         List<Entity> entities = new ArrayList<>();
@@ -308,6 +429,13 @@ public class Util {
         return entities;
     }
 
+    /**
+     * Retrieves the biome name as a localized text for the given entity's current position.
+     *
+     * @param entity The entity whose current biome is to be determined. Must not be null.
+     * @return A {@link MutableText} representing the localized name of the biome. If the biome
+     *         cannot be determined, a default "unknown" text is returned.
+     */
     @NotNull
     public static MutableText getBiomeText(@NotNull Entity entity) {
         Identifier biomeId = entity.getWorld().getBiome(entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
@@ -321,6 +449,15 @@ public class Util {
         return biomeText;
     }
 
+    /**
+     * Generates a concatenated text representation of a collection of entities.
+     * Each entity's display name is appended to the resulting text, separated by commas.
+     *
+     * @param entities A collection of entities whose display names will be included in the text.
+     *                 The collection must not be null and may contain any subclass of {@link Entity}.
+     * @return A {@link MutableText} object containing the concatenated display names of the entities.
+     *         If the collection is empty, an empty text is returned.
+     */
     @NotNull
     public static MutableText getEntityListText(@NotNull Collection<? extends Entity> entities) {
         MutableText entityListText = Text.literal("");
@@ -335,10 +472,21 @@ public class Util {
         return entityListText;
     }
 
+    /**
+     * Overrides the server data for the specified Minecraft server.
+     *
+     * @param server the Minecraft server whose data is to be overridden, must not be null.
+     * @param data   the new server data to associate with the specified server, must not be null.
+     */
     public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
         worldData.put(server, data);
     }
 
+    /**
+     * Resets the server data for the specified Minecraft server.
+     *
+     * @param server the Minecraft server whose data is to be reset; must not be null
+     */
     public static void resetServerData(@NotNull MinecraftServer server) {
         ServerData data = new ServerData();
         worldData.put(server, data);

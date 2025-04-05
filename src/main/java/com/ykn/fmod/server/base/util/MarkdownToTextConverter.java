@@ -17,6 +17,13 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * This class provides methods to analyze, parse, and convert
+ * markdown syntax into structured text representations. It supports identifying various
+ * markdown elements such as headers, bold, italic, inline code, hyperlinks, and more.
+ * Additionally, it includes functionality for syntax highlighting of code blocks in
+ * supported programming languages like Java, C++, and Python.
+ */
 public class MarkdownToTextConverter {
 
     /**
@@ -469,6 +476,12 @@ public class MarkdownToTextConverter {
         }
     }
 
+    /**
+     * Converts a given markdown string into a Text object with simple syntax highlighting.
+     *
+     * @param markdown The input markdown string to be converted.
+     * @return A Text object representing the parsed content of the markdown string.
+     */
     public static Text parseMarkdownToText(String markdown) {
         MutableText result = Text.empty();
 
