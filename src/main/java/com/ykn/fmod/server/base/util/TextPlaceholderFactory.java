@@ -159,7 +159,12 @@ public class TextPlaceholderFactory<T> {
                     LoggerFactory.getLogger(Util.LOGGERNAME).warn("Missing placeholder: " + part);
                     finalText.add(Text.literal(part));
                 } else {
-                    finalText.add(placeholderFunction.apply(t));
+                    try {
+                        finalText.add(placeholderFunction.apply(t));
+                    } catch (Exception e) {
+                        LoggerFactory.getLogger(Util.LOGGERNAME).error("Error while parsing placeholder: " + part, e);
+                        finalText.add(Text.literal(part));
+                    }
                 }
             }
         }

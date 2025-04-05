@@ -39,6 +39,7 @@ import com.ykn.fmod.server.base.util.GameMath;
 import com.ykn.fmod.server.base.util.GptHelper;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
 import com.ykn.fmod.server.base.util.MessageReceiver;
+import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
@@ -1047,6 +1048,23 @@ public class CommandRegistrater {
         return Command.SINGLE_SUCCESS;
     }
 
+    private int runSayCommand(String message, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerPlayerEntity player = context.getSource().getPlayer();
+            MutableText text = Text.literal("<").append(player.getDisplayName()).append(Text.literal("> ")).append(
+                TextPlaceholderFactory.ofDefault().parse(message, player)
+            );
+            Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f say", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
     private int runReloadCommand(CommandContext<ServerCommandSource> context) {
         try {
             Util.loadServerConfig();
@@ -1179,6 +1197,13 @@ public class CommandRegistrater {
                         .then(CommandManager.literal("status").executes(context -> {return runShareStatusCommand(context);}))
                         .then(CommandManager.literal("inventory").executes(context -> {return runShareInventoryCommand(context);}))
                         .then(CommandManager.literal("item").executes(context -> {return runShareItemCommand(context);}))
+                    )
+                    .then(CommandManager.literal("say")
+                        .requires(source -> source.hasPermissionLevel(0))
+                        .then(CommandManager.argument("message", StringArgumentType.greedyString())
+                            .suggests(SayCommandSuggestion.suggestDefault())
+                            .executes(context -> {return runSayCommand(StringArgumentType.getString(context, "message"), context);})
+                        )
                     )
                     .then(CommandManager.literal("reload")
                         .requires(source -> source.hasPermissionLevel(4))
