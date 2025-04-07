@@ -28,6 +28,7 @@ import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.ykn.fmod.server.base.data.GptData;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
@@ -296,7 +297,7 @@ public class CommandRegistrater {
             // Refresh song suggestion list
             SongFileSuggestion.suggest();
             if (SongFileSuggestion.getAvailableSongs() == 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.hint"), false);
             }
             Path songFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
             Path songPath = songFolder.resolve(songName).normalize();
@@ -400,7 +401,7 @@ public class CommandRegistrater {
                 playSong.cancel();
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -420,10 +421,10 @@ public class CommandRegistrater {
                 String currentTimeStr = String.format("%.1f", playSong.getSong().getVirtualTick(playSong.getTick()) / 20.0);
                 String totalTimeStr = String.format("%.1f", playSong.getSong().getMaxVirtualTick() / 20.0);
                 String speedStr = String.format("%.2f", playSong.getSong().getSpeed());
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr, speedStr), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr, speedStr), false);
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -442,13 +443,13 @@ public class CommandRegistrater {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 playSong.setShowInfo(showInfo);
                 if (showInfo) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.show", player.getDisplayName(), playSong.getSongName()), true);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.show", player.getDisplayName(), playSong.getSongName()), true);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hide", player.getDisplayName(), playSong.getSongName()), true);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.hide", player.getDisplayName(), playSong.getSongName()), true);
                 }
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -466,10 +467,10 @@ public class CommandRegistrater {
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 MutableText isShowInfo = EnumI18n.getBooleanValueI18n(playSong.isShowInfo());
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.status", player.getDisplayName(), playSong.getSongName(), isShowInfo), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.status", player.getDisplayName(), playSong.getSongName(), isShowInfo), false);
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -491,15 +492,15 @@ public class CommandRegistrater {
                 String songLengthStr = String.format("%.1f", songLength);
                 String timepointStr = String.format("%.1f", timepoint);
                 if (timepoint < 0 || timepoint > songLength) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.long", player.getDisplayName(), songName, songLengthStr, timepointStr), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.long", player.getDisplayName(), songName, songLengthStr, timepointStr), false);
                 } else {
                     playSong.seek((int) (timepoint * 20));
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
                     return true;
                 }
                 return false;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -521,13 +522,13 @@ public class CommandRegistrater {
                 String speedStr = String.format("%.2f", speed);
                 playSong.changeSpeed(speed);
                 if (speed == 0) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.pause", playerName, songName), true);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.pause", playerName, songName), true);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.speed", playerName, songName, speedStr), true);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.speed", playerName, songName, speedStr), true);
                 }
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -540,7 +541,7 @@ public class CommandRegistrater {
         return result;
     }
 
-    private ServerPlayerEntity getShareCommandExecutor(CommandContext<ServerCommandSource> context) {
+    private ServerPlayerEntity getShareCommandExecutor(CommandContext<ServerCommandSource> context) throws CommandException, CommandSyntaxException {
         if (context == null) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
         }
@@ -611,7 +612,7 @@ public class CommandRegistrater {
     private MutableText getDirectionText(Vec3d source, Vec3d target) {
         double pitch = GameMath.getPitch(source, target);
         double yaw = GameMath.getYaw(source, target);
-        MutableText direction = Text.empty();
+        MutableText direction = new LiteralText("");
         if (pitch > 60.0) {
             direction = Util.parseTranslateableText("fmod.misc.diru");
         } else if (pitch < -60.0) {
@@ -663,7 +664,7 @@ public class CommandRegistrater {
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
                 final MutableText dirTxt = getDirectionText(source, target);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
+                context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
         } catch (Exception e) {
@@ -844,76 +845,76 @@ public class CommandRegistrater {
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
-        MutableText armorText = Text.empty();
+        MutableText armorText = new LiteralText("");
         for (int i = 0; i < 4; i++) {
             ItemStack item = inventory.getArmorStack(i);
-            armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+            armorText.append(new LiteralText("[").formatted(Formatting.LIGHT_PURPLE));
             armorText.append(formatInventoryItemStack(item));
-            armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(new LiteralText("]").formatted(Formatting.LIGHT_PURPLE));
+            armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
         }
         // Placeholder
         for (int i = 0; i < 2; i++) {
-            armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(new LiteralText("[--]").formatted(Formatting.GRAY));
+            armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
         }
         // Gamemode
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
+        armorText.append(new LiteralText("[").formatted(Formatting.GOLD));
         GameMode gamemode = player.interactionManager.getGameMode();
-        MutableText gamemodeText = Text.literal("+S");
+        MutableText gamemodeText = new LiteralText("+S");
         if (gamemode == GameMode.CREATIVE) {
-            gamemodeText = Text.literal("+C");
+            gamemodeText = new LiteralText("+C");
         } else if (gamemode == GameMode.ADVENTURE) {
-            gamemodeText = Text.literal("+A");
+            gamemodeText = new LiteralText("+A");
         } else if (gamemode == GameMode.SPECTATOR) {
-            gamemodeText = Text.literal("+V");
+            gamemodeText = new LiteralText("+V");
         }
         gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
-            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new TranslatableText("gameMode." + gamemode.getName())))
         );
         armorText.append(gamemodeText);
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(new LiteralText("]").formatted(Formatting.GOLD));
+        armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
         // Offhand
         ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
-        armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+        armorText.append(new LiteralText("[").formatted(Formatting.LIGHT_PURPLE));
         armorText.append(formatInventoryItemStack(offhandItem));
-        armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(new LiteralText("]").formatted(Formatting.LIGHT_PURPLE));
+        armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
         // Selected Slot
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-        armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(new LiteralText("[").formatted(Formatting.GOLD));
+        armorText.append(new LiteralText("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
+        armorText.append(new LiteralText("]").formatted(Formatting.GOLD));
+        armorText.append(new LiteralText(" ").formatted(Formatting.RESET));
         // Inventory
-        MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
+        MutableText[] inventoryText = {new LiteralText(""), new LiteralText(""), new LiteralText("")};
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {
                 // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
                 int index = (i + 1) * 9 + j;
                 ItemStack item = inventory.getStack(index);
-                inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
+                inventoryText[i].append(new LiteralText("[").formatted(Formatting.GREEN));
                 inventoryText[i].append(formatInventoryItemStack(item));
-                inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
-                inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
+                inventoryText[i].append(new LiteralText("]").formatted(Formatting.GREEN));
+                inventoryText[i].append(new LiteralText(" ").formatted(Formatting.RESET));
             }
         }
         // Hotbar
-        MutableText hotbarText = Text.empty();
+        MutableText hotbarText = new LiteralText("");
         for (int i = 0; i < 9; i++) {
             ItemStack item = inventory.getStack(i);
             if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
+                hotbarText.append(new LiteralText("[").formatted(Formatting.GOLD));
             } else {
-                hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+                hotbarText.append(new LiteralText("[").formatted(Formatting.LIGHT_PURPLE));
             }
             hotbarText.append(formatInventoryItemStack(item));
             if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
+                hotbarText.append(new LiteralText("]").formatted(Formatting.GOLD));
             } else {
-                hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+                hotbarText.append(new LiteralText("]").formatted(Formatting.LIGHT_PURPLE));
             }
-            hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
+            hotbarText.append(new LiteralText(" ").formatted(Formatting.RESET));
         }
         // Feedback
         final MutableText linea = armorText;
@@ -929,9 +930,9 @@ public class CommandRegistrater {
             List<MutableText> inventoryText = getInventoryTexts(player);
             final Text name = player.getDisplayName();
             final Text title = Util.parseTranslateableText("fmod.command.get.inventory", name);
-            context.getSource().sendFeedback(() -> title, false);
+            context.getSource().sendFeedback(title, false);
             for (MutableText text : inventoryText) {
-                context.getSource().sendFeedback(() -> text, false);
+                context.getSource().sendFeedback(text, false);
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
@@ -995,7 +996,7 @@ public class CommandRegistrater {
                 if (itemCountSum <= 0) {
                     context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name).append(itemTxt), false);
+                    context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.get.item", name).append(itemTxt), false);
                 }
             }
         } catch (Exception e) {
@@ -1011,13 +1012,13 @@ public class CommandRegistrater {
     private int runShareItemCommand(CommandContext<ServerCommandSource> context) {
         try {
             ServerPlayerEntity player = getShareCommandExecutor(context);
-            Iterable<ItemStack> items = player.getHandItems();
+            Iterable<ItemStack> items = player.getItemsHand();
             if (items == null || items.iterator().hasNext() == false) {
                 final Text name = player.getDisplayName();
                 Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
                 return Command.SINGLE_SUCCESS;
             }
-            MutableText itemList = Text.empty();
+            MutableText itemList = new LiteralText("");
             int itemCountSum = 0;
             for (ItemStack item : items) {
                 if (item.isEmpty()) {
@@ -1028,9 +1029,9 @@ public class CommandRegistrater {
                 itemCountSum += itemCount;
                 itemList.append(itemText);
                 if (itemCount > 1) {
-                    itemList.append(Text.literal("x" + itemCount + " "));
+                    itemList.append(new LiteralText("x" + itemCount + " "));
                 } else {
-                    itemList.append(Text.literal(" "));
+                    itemList.append(new LiteralText(" "));
                 }
             }
             final Text name = player.getDisplayName();
@@ -1053,8 +1054,8 @@ public class CommandRegistrater {
     private int runSayCommand(String message, CommandContext<ServerCommandSource> context) {
         try {
             ServerPlayerEntity player = context.getSource().getPlayer();
-            MutableText text = Text.literal("<").append(player.getDisplayName()).append(Text.literal("> ")).append(
-                TextPlaceholderFactory.ofDefault().parse(message, player)
+            MutableText text = new LiteralText("<").append(player.getDisplayName()).append(new LiteralText("> ")).append(
+                TextPlaceholderFactory.ofDefault().parse(message.replace('&', '\u00a7'), player)
             );
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
@@ -1484,7 +1485,7 @@ public class CommandRegistrater {
             switch (options) {
                 case "serverTranslation":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
+                        context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
                         context.getSource().sendFeedback(Util.parseTranslateableText("fmod.command.options.translate", value), true);

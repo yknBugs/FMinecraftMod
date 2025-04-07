@@ -17,8 +17,10 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.HoverEvent;
+import net.minecraft.text.LiteralText;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.text.TranslatableText;
 
 /**
  * A utility class for managing and parsing text placeholders. This class allows
@@ -59,7 +61,7 @@ public class TextPlaceholderFactory<T> {
     }
 
     public TextPlaceholderFactory<T> add(String key, String value) {
-        this.placeholders.put(key, t -> Text.literal(value));
+        this.placeholders.put(key, t -> new LiteralText(value));
         return this;
     }
 
@@ -150,26 +152,26 @@ public class TextPlaceholderFactory<T> {
             String part = splitText.get(i);
             if (i % 2 == 0) {
                 // Even indexes are the strings that should be splited
-                finalText.add(Text.literal(part));
+                finalText.add(new LiteralText(part));
             } else {
                 // Odd indexes are the delimiters that should be kept
                 Function<T, Text> placeholderFunction = this.placeholders.get(part);
                 if (placeholderFunction == null) {
                     // Unlikely to happen
                     LoggerFactory.getLogger(Util.LOGGERNAME).warn("Missing placeholder: " + part);
-                    finalText.add(Text.literal(part));
+                    finalText.add(new LiteralText(part));
                 } else {
                     try {
                         finalText.add(placeholderFunction.apply(t));
                     } catch (Exception e) {
                         LoggerFactory.getLogger(Util.LOGGERNAME).error("Error while parsing placeholder: " + part, e);
-                        finalText.add(Text.literal(part));
+                        finalText.add(new LiteralText(part));
                     }
                 }
             }
         }
         
-        MutableText result = Text.empty();
+        MutableText result = new LiteralText("");
         for (Text part : finalText) {
             result.append(part);
         }
@@ -203,30 +205,29 @@ public class TextPlaceholderFactory<T> {
      */
     public static TextPlaceholderFactory<ServerPlayerEntity> ofDefault() {
         return new TextPlaceholderFactory<ServerPlayerEntity>()
-            .add("&", t -> Text.literal("\u00a7"))
             .add("${player}", t -> t.getDisplayName())
-            .add("${health}", t -> Text.literal(String.format("%.2f", t.getHealth())))
-            .add("${hp}", t -> Text.literal(String.format("%.2f", t.getHealth())))
-            .add("${maxhealth}", t -> Text.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${maxhp}", t -> Text.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${level}", t -> Text.literal(String.valueOf(t.experienceLevel)))
-            .add("${hunger}", t -> Text.literal(String.valueOf(t.getHungerManager().getFoodLevel())))
-            .add("${saturation}", t -> Text.literal(String.format("%.2f", t.getHungerManager().getSaturationLevel())))
-            .add("${x}", t -> Text.literal(String.format("%.2f", t.getX())))
-            .add("${y}", t -> Text.literal(String.format("%.2f", t.getY())))
-            .add("${z}", t -> Text.literal(String.format("%.2f", t.getZ())))
-            .add("${pitch}", t -> Text.literal(String.format("%.2f", t.getPitch())))
-            .add("${yaw}", t -> Text.literal(String.format("%.2f", t.getYaw())))
+            .add("${health}", t -> new LiteralText(String.format("%.2f", t.getHealth())))
+            .add("${hp}", t -> new LiteralText(String.format("%.2f", t.getHealth())))
+            .add("${maxhealth}", t -> new LiteralText(String.format("%.2f", t.getMaxHealth())))
+            .add("${maxhp}", t -> new LiteralText(String.format("%.2f", t.getMaxHealth())))
+            .add("${level}", t -> new LiteralText(String.valueOf(t.experienceLevel)))
+            .add("${hunger}", t -> new LiteralText(String.valueOf(t.getHungerManager().getFoodLevel())))
+            .add("${saturation}", t -> new LiteralText(String.format("%.2f", t.getHungerManager().getSaturationLevel())))
+            .add("${x}", t -> new LiteralText(String.format("%.2f", t.getX())))
+            .add("${y}", t -> new LiteralText(String.format("%.2f", t.getY())))
+            .add("${z}", t -> new LiteralText(String.format("%.2f", t.getZ())))
+            .add("${pitch}", t -> new LiteralText(String.format("%.2f", t.getPitch())))
+            .add("${yaw}", t -> new LiteralText(String.format("%.2f", t.getYaw())))
             .add("${biome}", t -> Util.getBiomeText(t))
             .add("${coord}", t -> {
                 Text biomeText = Util.getBiomeText(t);
                 String strX = String.format("%.2f", t.getX());
                 String strY = String.format("%.2f", t.getY());
                 String strZ = String.format("%.2f", t.getZ());
-                Text x = Text.literal(strX);
-                Text y = Text.literal(strY);
-                Text z = Text.literal(strZ);
-                MutableText result = Text.literal("[").append(biomeText).append("] (").append(x).append(", ").append(y).append(", ").append(z).append(")");
+                Text x = new LiteralText(strX);
+                Text y = new LiteralText(strY);
+                Text z = new LiteralText(strZ);
+                MutableText result = new LiteralText("[").append(biomeText).append("] (").append(x).append(", ").append(y).append(", ").append(z).append(")");
                 result = result.styled(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
                 ).withHoverEvent(
@@ -237,10 +238,10 @@ public class TextPlaceholderFactory<T> {
             .add("${mainhand}", t -> {
                 ItemStack item = t.getMainHandStack();
                 if (item == null || item.isEmpty()) {
-                    return Text.translatable("fmod.command.get.emptyslot");
+                    return new TranslatableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
-                        return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
+                        return new LiteralText("").append(item.toHoverableText()).append("x").append(new LiteralText(String.valueOf(item.getCount())));
                     } else {
                         return item.toHoverableText();
                     }
@@ -249,10 +250,10 @@ public class TextPlaceholderFactory<T> {
             .add("${offhand}", t -> {
                 ItemStack item = t.getOffHandStack();
                 if (item == null || item.isEmpty()) {
-                    return Text.translatable("fmod.command.get.emptyslot");
+                    return new TranslatableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
-                        return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
+                        return new LiteralText("").append(item.toHoverableText()).append("x").append(new LiteralText(String.valueOf(item.getCount())));
                     } else {
                         return item.toHoverableText();
                     }
