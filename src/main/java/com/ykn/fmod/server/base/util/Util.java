@@ -35,7 +35,7 @@ import net.minecraft.text.Text;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.TypeFilter;
-import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.Registry;
 
 public class Util {
 
@@ -444,7 +444,7 @@ public class Util {
      */
     @NotNull
     public static MutableText getBiomeText(@NotNull Entity entity) {
-        Identifier biomeId = BuiltinRegistries.BIOME.getId(entity.getWorld().getBiome(entity.getBlockPos()));
+        Identifier biomeId = entity.getWorld().getRegistryManager().get(Registry.BIOME_KEY).getId(entity.getWorld().getBiome(entity.getBlockPos()));
         MutableText biomeText = null;
         if (biomeId == null) {
             biomeText = Util.parseTranslateableText("fmod.misc.unknown");

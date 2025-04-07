@@ -9,7 +9,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.Registry;
 
 public class BiomeMessage extends ScheduledTask {
 
@@ -38,7 +38,7 @@ public class BiomeMessage extends ScheduledTask {
         if (player.isDisconnected() || player.isRemoved()) {
             return true;
         }
-        Identifier currentBiomeId = BuiltinRegistries.BIOME.getId(player.getWorld().getBiome(player.getBlockPos()));
+        Identifier currentBiomeId = player.getWorld().getRegistryManager().get(Registry.BIOME_KEY).getId(player.getWorld().getBiome(player.getBlockPos()));
         // if (currentBiomeId.equals(biomeId)) {
         if (Objects.equals(currentBiomeId, biomeId)) {
             return false;

@@ -18,7 +18,7 @@ import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.registry.BuiltinRegistries;
+import net.minecraft.util.registry.Registry;
 
 public class WorldTick {
 
@@ -104,7 +104,8 @@ public class WorldTick {
     }
 
     private void handleChangeBiomePlayer(ServerPlayerEntity player, PlayerData playerData) {
-        Identifier biomeId = BuiltinRegistries.BIOME.getId(player.getWorld().getBiome(player.getBlockPos()));
+        // Identifier biomeId = BuiltinRegistries.BIOME.getId(player.getWorld().getBiome(player.getBlockPos()));
+        Identifier biomeId = player.getWorld().getRegistryManager().get(Registry.BIOME_KEY).getId(player.getWorld().getBiome(player.getBlockPos()));
         // BiomeId is nullable, because other mods may register new biomes without a biome id.
         // if (!biomeId.equals(playerData.lastBiomeId)) {
         if (!Objects.equals(biomeId, playerData.lastBiomeId)) {
