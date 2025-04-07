@@ -19,17 +19,18 @@ import net.minecraft.server.command.ServerCommandSource;
 
 public class SongFileSuggestion implements SuggestionProvider<ServerCommandSource> {
 
-    public ArrayList<String> cachedSongList;
+    public static ArrayList<String> cachedSongList;
 
     public SongFileSuggestion() {
-        this.cachedSongList = new ArrayList<>();
+        // Refresh the list of .nbs files in the config directory
+        cachedSongList = new ArrayList<>();
         Path absPath = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
         try {
             if (!Files.exists(absPath)) {
                 Files.createDirectories(absPath);
             }
             Files.list(absPath).filter(path -> path.toString().endsWith(".nbs")).forEach(path -> {
-                this.cachedSongList.add(path.getFileName().toString());
+                cachedSongList.add(path.getFileName().toString());
             });
         } catch (Exception e) {
             LoggerFactory.getLogger(Util.MODID).error("Error while getting .nbs file list", e);
@@ -38,7 +39,7 @@ public class SongFileSuggestion implements SuggestionProvider<ServerCommandSourc
 
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
-        for (String song : this.cachedSongList) {
+        for (String song : cachedSongList) {
             if (song.startsWith(builder.getRemaining())) {
                 builder.suggest(song);
             }
@@ -51,6 +52,6 @@ public class SongFileSuggestion implements SuggestionProvider<ServerCommandSourc
     }
 
     public static int getAvailableSongs() {
-        return suggest().cachedSongList.size();
+        return cachedSongList.size();
     }
 }

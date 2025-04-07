@@ -39,13 +39,13 @@ cd FMinecraftMod
 .\gradlew build
 ```
 
-If you got an error on this step, please go to `gradle.properties` and find this line:
+If you got an error on this step, please go to `gradle.properties` and add this line:
 
 ```text
 org.gradle.java.home=...
 ```
 
-Please modify the Path to your JDK17 JAVA_HOME.
+to your actual JDK17 JAVA_HOME.
 
 ### Step 3
 
@@ -53,13 +53,20 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 
 ## Known Issues
 
-Java Syntax Highlight may not work properly with full package path and ? symbol in generics.
-
-Cpp Syntax Hightlight forgets keyword delete
-
-GPT history may contains empty reply if the server refused to response.
+Markdown Syntax Highlight has many limitations.
 
 ## Changelog
+
+### Version 0.1.4
+
+- Song playback speed
+- Show song playback status in Actionbar
+- And jump to a specific time point of a song
+
+### Version 0.1.3
+
+- Share your information to other players.
+- Fix bugs.
 
 ### Version 0.1.2
 

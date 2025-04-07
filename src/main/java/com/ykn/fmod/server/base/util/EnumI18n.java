@@ -39,4 +39,11 @@ public class EnumI18n {
         }
     }
 
+    public static MutableText getBooleanValueI18n(boolean value) {
+        if (value) {
+            return Util.parseTranslateableText("options.on");
+        } else {
+            return Util.parseTranslateableText("options.off");
+        }
+    }
 }
