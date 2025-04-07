@@ -1,5 +1,7 @@
 package com.ykn.fmod.server.base.schedule;
 
+import java.util.Objects;
+
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
@@ -37,7 +39,8 @@ public class BiomeMessage extends ScheduledTask {
             return true;
         }
         Identifier currentBiomeId = BuiltinRegistries.BIOME.getId(player.getWorld().getBiome(player.getBlockPos()));
-        if (currentBiomeId.equals(biomeId)) {
+        // if (currentBiomeId.equals(biomeId)) {
+        if (Objects.equals(currentBiomeId, biomeId)) {
             return false;
         } else {
             // During delay period, if the player changes to a new biome, the scheduled task should be cancelled.

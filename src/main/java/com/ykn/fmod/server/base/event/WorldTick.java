@@ -1,6 +1,7 @@
 package com.ykn.fmod.server.base.event;
 
 import java.util.List;
+import java.util.Objects;
 
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.schedule.BiomeMessage;
@@ -104,7 +105,9 @@ public class WorldTick {
 
     private void handleChangeBiomePlayer(ServerPlayerEntity player, PlayerData playerData) {
         Identifier biomeId = BuiltinRegistries.BIOME.getId(player.getWorld().getBiome(player.getBlockPos()));
-        if (!biomeId.equals(playerData.lastBiomeId)) {
+        // BiomeId is nullable, because other mods may register new biomes without a biome id.
+        // if (!biomeId.equals(playerData.lastBiomeId)) {
+        if (!Objects.equals(biomeId, playerData.lastBiomeId)) {
             Util.getServerData(server).submitScheduledTask(new BiomeMessage(player, biomeId));
             playerData.lastBiomeId = biomeId;
         }
