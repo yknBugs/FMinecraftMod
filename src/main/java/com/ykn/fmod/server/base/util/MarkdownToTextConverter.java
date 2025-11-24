@@ -600,7 +600,7 @@ public class MarkdownToTextConverter {
     private static MutableText syntaxHighlightCpp(String code) {
         Pattern commentPattern = Pattern.compile("(?s)/\\*.*?\\*/|//.*?(?=\\r?\\n|$)");
         Pattern stringPattern = Pattern.compile("(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
-        Pattern keywordPattern = Pattern.compile("\\b(?:auto|break|case|catch|class|const|continue|default|do|else|enum|explicit|export|extern|for|friend|goto|if|inline|namespace|new|operator|private|protected|public|return|sizeof|static|struct|switch|template|this|throw|try|typedef|union|using|virtual|volatile|while|int|double|float|long|char|unsigned|signed|void|bool|true|false|nullptr|static_cast|dynamic_cast|const_cast|reinterpret_cast|typeid|typename|alignof|alignas|noexcept|constexpr|decltype|override|final|delete)\\b");
+        Pattern keywordPattern = Pattern.compile("\\b(?:auto|break|case|catch|class|concept|const|continue|default|do|else|enum|explicit|export|extern|for|friend|goto|if|inline|namespace|new|operator|private|protected|public|return|sizeof|static|struct|switch|template|this|throw|try|typedef|union|using|virtual|volatile|while|int|double|float|long|char|unsigned|signed|void|bool|true|false|nullptr|static_cast|dynamic_cast|const_cast|reinterpret_cast|typeid|typename|alignof|alignas|noexcept|constexpr|decltype|override|final|delete)\\b");
         Pattern preprocessorPattern = Pattern.compile("(?m)^\\s*#\\s*\\w+");
         Pattern numberPattern = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+(?:[lL])?|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?:[fFdDlL])?)(?![A-Za-z0-9_$])");
         Pattern punctuationPattern = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
