@@ -1,7 +1,12 @@
 package com.ykn.fmod.server.flow.logic;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import net.minecraft.text.HoverEvent;
+import net.minecraft.text.MutableText;
+import net.minecraft.text.Text;
 
 /**
  * This class represents a custom logic flow that can be executed.
@@ -19,9 +24,9 @@ public class LogicFlow {
     public String name;
 
     /**
-     * All nodes in this logic flow.
+     * All nodes in this logic flow, mapped by their IDs
      */
-    public List<FlowNode> nodes;
+    private Map<Long, FlowNode> nodes;
 
     /**
      * The first node to be executed in this logic flow.
@@ -31,8 +36,24 @@ public class LogicFlow {
     public LogicFlow(String name) {
         this.idCounter = 0L;
         this.name = name;
-        this.nodes = new ArrayList<>();
+        this.nodes = new HashMap<>();
         this.startNodeId = -1L;
+    }
+
+    public Collection<FlowNode> getNodes() {
+        return this.nodes.values();
+    }
+
+    public FlowNode getNode(long id) {
+        return this.nodes.get(id);
+    }
+
+    public void addNode(FlowNode node) {
+        this.nodes.put(node.getId(), node);
+    }
+
+    public void removeNode(long id) {
+        this.nodes.remove(id);
     }
 
     /**
@@ -42,5 +63,19 @@ public class LogicFlow {
     public long generateId() {
         this.idCounter++;
         return this.idCounter;
+    }
+
+    public Text render() {
+        MutableText title = Text.literal(this.name).append("\n");
+        Collection<FlowNode> nodes = this.getNodes();
+        for (FlowNode node : nodes) { 
+            Text nodeText = node.render(this);
+            MutableText nodeEntry = Text.literal("[").append(node.name).append("] ");
+            nodeEntry = nodeEntry.styled(s -> s
+                .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, nodeText))
+            );
+            title = title.append(nodeEntry);
+        }
+        return title;
     }
 }

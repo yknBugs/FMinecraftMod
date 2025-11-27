@@ -48,6 +48,11 @@ public class NodeMetadata {
     public final List<Text> inputDescriptions;
 
     /**
+     * The data types of the inputs
+     */
+    public final List<Text> inputDataTypes;
+
+    /**
      * The official name of the outputs
      */
     public final List<Text> outputNames;
@@ -56,6 +61,11 @@ public class NodeMetadata {
      * The description about the outputs
      */
     public final List<Text> outputDescriptions;
+
+    /**
+     * The data types of the outputs
+     */
+    public final List<Text> outputDataTypes;
 
     /**
      * The official name of the branches
@@ -69,8 +79,8 @@ public class NodeMetadata {
 
     public NodeMetadata(int inputNumber, int outputNumber, int branchNumber,
                         Text displayName, Text description,
-                        List<Text> inputNames, List<Text> inputDescriptions,
-                        List<Text> outputNames, List<Text> outputDescriptions,
+                        List<Text> inputNames, List<Text> inputDescriptions, List<Text> inputDataTypes,
+                        List<Text> outputNames, List<Text> outputDescriptions, List<Text> outputDataTypes,
                         List<Text> branchNames, List<Text> branchDescriptions) {
         this.inputNumber = inputNumber;
         this.outputNumber = outputNumber;
@@ -79,8 +89,10 @@ public class NodeMetadata {
         this.description = description;
         this.inputNames = inputNames;
         this.inputDescriptions = inputDescriptions;
+        this.inputDataTypes = inputDataTypes;
         this.outputNames = outputNames;
         this.outputDescriptions = outputDescriptions;
+        this.outputDataTypes = outputDataTypes;
         this.branchNames = branchNames;
         this.branchDescriptions = branchDescriptions;
     }

@@ -9,6 +9,8 @@ import java.io.EOFException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -37,11 +39,15 @@ import com.ykn.fmod.server.base.song.NoteBlockSong;
 import com.ykn.fmod.server.base.util.EnumI18n;
 import com.ykn.fmod.server.base.util.GameMath;
 import com.ykn.fmod.server.base.util.GptHelper;
-import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
 import com.ykn.fmod.server.base.util.MessageReceiver;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.flow.logic.DataReference;
+import com.ykn.fmod.server.flow.logic.ExecutionContext;
+import com.ykn.fmod.server.flow.logic.FlowNode;
+import com.ykn.fmod.server.flow.logic.LogicFlow;
+import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
@@ -69,21 +75,89 @@ public class CommandRegistrater {
         // This function is used for development purposes. Execute command /f dev to run this function.
         // This function should be removed in the final release.
 
-        String markdownTest = "C++ Syntax Highlight Test\n" + 
-        "```cpp\n" +
-        "#include <string>\n" +
-        "#include <vector>\n" +
-        "#include <algorithm>\n\n" +
-        "int main() {\n" +
-        "    std::vector<std::string> s;\n" + 
-        "    std::sort(s.begin(), s.end(), [&s](auto& a, auto& b) {\n" + 
-        "        a = s;\n" +
-        "    });\n" +
-        "}\n" +
-        "```\n" +
-        "End of Test";
+        // Markdown Highlight Test
+        // String markdownTest = "C++ Syntax Highlight Test\n" + 
+        // "```cpp\n" +
+        // "#include <string>\n" +
+        // "#include <vector>\n" +
+        // "#include <algorithm>\n\n" +
+        // "int main() {\n" +
+        // "    std::vector<std::string> s;\n" + 
+        // "    std::sort(s.begin(), s.end(), [&s](auto& a, auto& b) {\n" + 
+        // "        a = s;\n" +
+        // "    });\n" +
+        // "}\n" +
+        // "```\n" +
+        // "End of Test";
 
-        context.getSource().sendFeedback(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
+        // context.getSource().sendFeedback(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
+
+        // Logic Flow Test
+        context.getSource().sendFeedback(() -> Text.literal("Building Logic Flow"), false);
+        LogicFlow flow = new LogicFlow("Test Flow");
+        FlowNode node1 = NodeRegistry.createNode("Set Variable Node", flow.generateId(), "Save 10 to var x");
+        node1.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
+        node1.setInput(1, DataReference.createConstantReference(Double.valueOf(10)));
+        flow.addNode(node1);
+        flow.startNodeId = node1.getId();
+
+        FlowNode node2 = NodeRegistry.createNode("Get Variable Node", flow.generateId(), "Get var x");
+        node2.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
+        flow.addNode(node2);
+        node1.setNextNodeId(0, node2.getId());
+
+        FlowNode node3 = NodeRegistry.createNode("Binary Arithmetic Node", flow.generateId(), "Calculate x + 1");
+        node3.setInput(0, DataReference.createNodeOutputReference(node2.getId(), 0));
+        node3.setInput(1, DataReference.createConstantReference(Double.valueOf(1)));
+        node3.setInput(2, DataReference.createConstantReference(String.valueOf("+")));
+        flow.addNode(node3);
+        node2.setNextNodeId(0, node3.getId());
+
+        FlowNode node4 = NodeRegistry.createNode("Set Variable Node", flow.generateId(), "Store calculate result to x");
+        node4.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
+        node4.setInput(1, DataReference.createNodeOutputReference(node3.getId(), 0));
+        flow.addNode(node4);
+        node3.setNextNodeId(0, node4.getId());
+
+        FlowNode node5 = NodeRegistry.createNode("Get Variable Node", flow.generateId(), "Get var x again");
+        node5.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
+        flow.addNode(node5);
+        node4.setNextNodeId(0, node5.getId());
+
+        FlowNode node6 = NodeRegistry.createNode("Binary Arithmetic Node", flow.generateId(), "Calculate x + 1 again");
+        node6.setInput(0, DataReference.createNodeOutputReference(node5.getId(), 0));
+        node6.setInput(1, DataReference.createConstantReference(Double.valueOf(1)));
+        node6.setInput(2, DataReference.createConstantReference(String.valueOf("+")));
+        flow.addNode(node6);
+        node5.setNextNodeId(0, node6.getId());
+
+        FlowNode node7 = NodeRegistry.createNode("Broadcast Message Node", flow.generateId(), "Send calculated result to all players");
+        node7.setInput(0, DataReference.createConstantReference(context.getSource().getServer()));
+        node7.setInput(1, DataReference.createConstantReference(String.valueOf("chat")));
+        node7.setInput(2, DataReference.createNodeOutputReference(node6.getId(), 0));
+        flow.addNode(node7);
+        node6.setNextNodeId(0, node7.getId());
+
+        FlowNode node8 = NodeRegistry.createNode("Broadcast Message Node", flow.generateId(), "Send get x result to all players");
+        node8.setInput(0, DataReference.createConstantReference(context.getSource().getServer()));
+        node8.setInput(1, DataReference.createConstantReference(String.valueOf("chat")));
+        node8.setInput(2, DataReference.createNodeOutputReference(node5.getId(), 0));
+        flow.addNode(node8);
+        node7.setNextNodeId(0, node8.getId());
+
+        context.getSource().sendFeedback(() -> Text.literal("Rendering Logic Flow"), false);
+        context.getSource().sendFeedback(() -> flow.render(), false);
+
+        context.getSource().sendFeedback(() -> Text.literal("Executing Logic Flow"), false);
+        ExecutionContext ctx = new ExecutionContext(flow);
+        ctx.execute(10);
+
+        if (ctx.getException() != null) {
+            context.getSource().sendFeedback(() -> ctx.getException().getMessageText(), false);
+        } else {
+            context.getSource().sendFeedback(() -> Text.literal("Logic Flow executed successfully"), false);
+        }
+
         return null;
     }
 
@@ -112,8 +186,13 @@ public class CommandRegistrater {
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
         } catch (Exception e) {
             try {
-                context.getSource().sendFeedback(() -> Text.literal(e.getMessage()), false);
-                context.getSource().sendFeedback(() -> Text.literal(e.getStackTrace().toString()), false);
+                StringWriter sw = new StringWriter();
+                PrintWriter pw = new PrintWriter(sw);
+                e.printStackTrace(pw);
+                // context.getSource().sendFeedback(() -> Text.literal(e.getMessage()), false);
+                context.getSource().sendFeedback(() -> Text.literal(sw.toString()), false);
+                pw.close();
+                sw.close();
             } catch (Exception exception) {
                 logger.error("FMinectaftMod: Caught unexpected exception when executing command /f dev", exception);
                 throw new CommandException(Util.parseTranslateableText("fmod.command.dev.error"));

@@ -1,5 +1,6 @@
 package com.ykn.fmod.server.flow.logic;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,11 +19,6 @@ public class ExecutionContext {
      * The logic flow being executed in this context
      */
     private LogicFlow flow;
-
-    /**
-     * All nodes in this logic flow, mapped by their IDs
-     */
-    private Map<Long, FlowNode> nodes;
 
     /**
      * All the node statuses in this execution context, mapped by their node IDs
@@ -46,8 +42,11 @@ public class ExecutionContext {
 
     public ExecutionContext(LogicFlow flow) {
         this.flow = flow;
-        this.nodes = new HashMap<>();
         this.nodeStatuses = new HashMap<>();
+        Collection<FlowNode> nodes = flow.getNodes();
+        for (FlowNode node : nodes) {
+            this.nodeStatuses.put(node.getId(), new NodeStatus(node));
+        }
         this.variables = new HashMap<>();
         this.nodeExecutionCounter = 0L;
         this.exception = null;
@@ -57,15 +56,7 @@ public class ExecutionContext {
         return flow;
     }
 
-    public void addNode(FlowNode node) {
-        this.nodes.put(node.getId(), node);
-        this.nodeStatuses.put(node.getId(), new NodeStatus(node));
-    }
-
-    public FlowNode getNode(long nodeId) {
-        return this.nodes.get(nodeId);
-    }
-
+    @Nullable
     public NodeStatus getNodeStatus(long nodeId) {
         return this.nodeStatuses.get(nodeId);
     }
@@ -74,6 +65,7 @@ public class ExecutionContext {
         this.variables.put(name, value);
     }
 
+    @Nullable
     public Object getVariable(String name) {
         return this.variables.get(name);
     }
@@ -104,7 +96,7 @@ public class ExecutionContext {
     public void execute(long maxAllowedNodes) {
         this.resetExecutionStatus();
         this.nodeExecutionCounter = 0L;
-        FlowNode currentNode = this.getNode(flow.startNodeId);
+        FlowNode currentNode = this.flow.getNode(flow.startNodeId);
         try {
             while (currentNode != null) {
                 if (this.nodeExecutionCounter > maxAllowedNodes) {

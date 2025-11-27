@@ -11,6 +11,7 @@ import com.ykn.fmod.server.base.command.CommandRegistrater;
 import com.ykn.fmod.server.base.event.NewLevel;
 import com.ykn.fmod.server.base.event.WorldTick;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
 public class FMod implements ModInitializer {
 
@@ -33,6 +34,9 @@ public class FMod implements ModInitializer {
 			WorldTick worldTick = new WorldTick(server);
 			worldTick.onWorldTick();
 		});
+
+		// Register Nodes
+		NodeRegistry.registerDefaultNodes();
 
 		Util.loadServerConfig();
 		LOGGER.info("FMinecraftMod: Server side initialized successfully.");

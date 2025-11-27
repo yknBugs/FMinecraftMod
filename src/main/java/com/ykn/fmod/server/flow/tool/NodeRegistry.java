@@ -45,6 +45,10 @@ public class NodeRegistry {
      * Or: {@code NodeRegistry.register((new ExampleNode(-2, "Temp Node")).getType(), ExampleNode::new);}
      */
     public static void registerDefaultNodes() {
-        NodeRegistry.register("Addition Node", AdditionNode::new);
+        NodeRegistry.register("Binary Arithmetic Node", BinaryArithmeticNode::new);
+        NodeRegistry.register("Broadcast Message Node", BroadcastMessageNode::new);
+        NodeRegistry.register("Get Variable Node", GetVariableNode::new);
+        NodeRegistry.register("If Condition Node", IfConditionNode::new);
+        NodeRegistry.register("Set Variable Node", SetVariableNode::new);
     }
 }

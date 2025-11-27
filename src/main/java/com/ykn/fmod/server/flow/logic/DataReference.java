@@ -1,5 +1,10 @@
 package com.ykn.fmod.server.flow.logic;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import com.ykn.fmod.server.base.util.Util;
+
 /**
  * Represents the input or output data of a FlowNode.
  * It can be a constant value or a reference to another node's output.
@@ -69,5 +74,27 @@ public class DataReference {
      */
     public static DataReference createEmptyReference() {
         return createConstantReference(null);
+    }
+
+    /**
+     * Resolve the actual value of this data reference in the given execution context
+     * @param context The execution context
+     * @return The resolved value
+     * @throws LogicException If an error occurs during resolution
+     */
+    @Nullable
+    public Object resolve(@NotNull ExecutionContext context) throws LogicException {
+        if (this.type == ReferenceType.CONSTANT) {
+            return this.value;
+        } else if (this.type == ReferenceType.NODE_OUTPUT) {
+            LogicFlow flow = context.getFlow();
+            FlowNode node = flow.getNode(this.referenceId);
+            if (node == null) {
+                throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.nullnode", flow.name), null);
+            }
+            return node.getOutput(context, this.referenceIndex);
+        } else {
+            throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.assert"), null);
+        }
     }
 }
