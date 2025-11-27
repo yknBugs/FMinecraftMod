@@ -25,7 +25,7 @@ public class GetVariableNode extends FlowNode {
 
     public GetVariableNode(long id, String name) {
         super(id, name, 1, 1, 1);
-        this.type = "Get Variable Node";
+        this.type = "GetVariableNode";
     }
 
     @Override

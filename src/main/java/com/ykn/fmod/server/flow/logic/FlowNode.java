@@ -48,7 +48,7 @@ public class FlowNode {
 
     public FlowNode(long id, String name, int inputNumber, int outputNumber, int branchNumber) {
         this.id = id;
-        this.type = "Abstract Node";
+        this.type = "AbstractNode";
         this.name = name;
         this.inputs = new ArrayList<>();
         for (int i = 0; i < inputNumber; i++) {
@@ -129,9 +129,11 @@ public class FlowNode {
         // Executed multiple times is expected because we allow loops in logic flows, so no need to check hasExecuted here.
         NodeStatus status = context.getNodeStatus(this.id);
         List<Object> resolvedInputs = resolveInputs(context);
+        status.inputs = resolvedInputs;
         this.onExecute(context, status, resolvedInputs);
         long nextNodeId = this.getNextNodeId(context, status, resolvedInputs);
         status.setExecuted();
+        status.nextBranchId = nextNodeId;
         return context.getFlow().getNode(nextNodeId);
     }
 
@@ -223,6 +225,13 @@ public class FlowNode {
         this.nextNodeIds.set(branchIndex, nodeId);
     }
 
+    /**
+     * Render this node into a text representation for display.
+     * It only renders the static information about this node, not the execution status.
+     * To render the execution status, use {@link NodeStatus#render()} instead.
+     * @param flow The logic flow this node belongs to
+     * @return A text representation of this node
+     */
     public Text render(LogicFlow flow) {
         // Render title
         MutableText text = Util.parseTranslateableText("fmod.flow.node.title", this.name, this.metadata.displayName, this.metadata.description);

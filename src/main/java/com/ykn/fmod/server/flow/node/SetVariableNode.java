@@ -26,7 +26,7 @@ public class SetVariableNode extends FlowNode {
 
     public SetVariableNode(long id, String name) {
         super(id, name, 2, 1, 1);
-        this.type = "Set Variable Node";
+        this.type = "SetVariableNode";
     }
 
     @Override

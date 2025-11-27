@@ -1,5 +1,6 @@
 package com.ykn.fmod.server.flow.tool;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,10 +46,14 @@ public class NodeRegistry {
      * Or: {@code NodeRegistry.register((new ExampleNode(-2, "Temp Node")).getType(), ExampleNode::new);}
      */
     public static void registerDefaultNodes() {
-        NodeRegistry.register("Binary Arithmetic Node", BinaryArithmeticNode::new);
-        NodeRegistry.register("Broadcast Message Node", BroadcastMessageNode::new);
-        NodeRegistry.register("Get Variable Node", GetVariableNode::new);
-        NodeRegistry.register("If Condition Node", IfConditionNode::new);
-        NodeRegistry.register("Set Variable Node", SetVariableNode::new);
+        NodeRegistry.register("BinaryArithmeticNode", BinaryArithmeticNode::new);
+        NodeRegistry.register("BroadcastMessageNode", BroadcastMessageNode::new);
+        NodeRegistry.register("GetVariableNode", GetVariableNode::new);
+        NodeRegistry.register("IfConditionNode", IfConditionNode::new);
+        NodeRegistry.register("SetVariableNode", SetVariableNode::new);
+    }
+
+    public static Collection<String> getNodeList() {
+        return registry.keySet();
     }
 }

@@ -65,6 +65,12 @@ public class LogicFlow {
         return this.idCounter;
     }
 
+    /**
+     * Render this logic flow into a text representation for display.
+     * It renders the static information about this flow.
+     * To render the dynamic status of an execution, use {@link ExecutionContext#render()} instead.
+     * @return A text representation of this flow
+     */
     public Text render() {
         MutableText title = Text.literal(this.name).append("\n");
         Collection<FlowNode> nodes = this.getNodes();

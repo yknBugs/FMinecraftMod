@@ -28,7 +28,7 @@ public class BroadcastMessageNode extends FlowNode {
 
     public BroadcastMessageNode(long id, String name) {
         super(id, name, 3, 0, 1);
-        this.type = "Broadcast Message Node";
+        this.type = "BroadcastMessageNode";
     }
 
     @Override

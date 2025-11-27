@@ -95,50 +95,50 @@ public class CommandRegistrater {
         // Logic Flow Test
         context.getSource().sendFeedback(() -> Text.literal("Building Logic Flow"), false);
         LogicFlow flow = new LogicFlow("Test Flow");
-        FlowNode node1 = NodeRegistry.createNode("Set Variable Node", flow.generateId(), "Save 10 to var x");
+        FlowNode node1 = NodeRegistry.createNode("SetVariableNode", flow.generateId(), "Save 10 to var x");
         node1.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
         node1.setInput(1, DataReference.createConstantReference(Double.valueOf(10)));
         flow.addNode(node1);
         flow.startNodeId = node1.getId();
 
-        FlowNode node2 = NodeRegistry.createNode("Get Variable Node", flow.generateId(), "Get var x");
+        FlowNode node2 = NodeRegistry.createNode("GetVariableNode", flow.generateId(), "Get var x");
         node2.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
         flow.addNode(node2);
         node1.setNextNodeId(0, node2.getId());
 
-        FlowNode node3 = NodeRegistry.createNode("Binary Arithmetic Node", flow.generateId(), "Calculate x + 1");
+        FlowNode node3 = NodeRegistry.createNode("BinaryArithmeticNode", flow.generateId(), "Calculate x + 1");
         node3.setInput(0, DataReference.createNodeOutputReference(node2.getId(), 0));
         node3.setInput(1, DataReference.createConstantReference(Double.valueOf(1)));
         node3.setInput(2, DataReference.createConstantReference(String.valueOf("+")));
         flow.addNode(node3);
         node2.setNextNodeId(0, node3.getId());
 
-        FlowNode node4 = NodeRegistry.createNode("Set Variable Node", flow.generateId(), "Store calculate result to x");
+        FlowNode node4 = NodeRegistry.createNode("SetVariableNode", flow.generateId(), "Store calculate result to x");
         node4.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
         node4.setInput(1, DataReference.createNodeOutputReference(node3.getId(), 0));
         flow.addNode(node4);
         node3.setNextNodeId(0, node4.getId());
 
-        FlowNode node5 = NodeRegistry.createNode("Get Variable Node", flow.generateId(), "Get var x again");
+        FlowNode node5 = NodeRegistry.createNode("GetVariableNode", flow.generateId(), "Get var x again");
         node5.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
         flow.addNode(node5);
         node4.setNextNodeId(0, node5.getId());
 
-        FlowNode node6 = NodeRegistry.createNode("Binary Arithmetic Node", flow.generateId(), "Calculate x + 1 again");
+        FlowNode node6 = NodeRegistry.createNode("BinaryArithmeticNode", flow.generateId(), "Calculate x + 1 again");
         node6.setInput(0, DataReference.createNodeOutputReference(node5.getId(), 0));
         node6.setInput(1, DataReference.createConstantReference(Double.valueOf(1)));
         node6.setInput(2, DataReference.createConstantReference(String.valueOf("+")));
         flow.addNode(node6);
         node5.setNextNodeId(0, node6.getId());
 
-        FlowNode node7 = NodeRegistry.createNode("Broadcast Message Node", flow.generateId(), "Send calculated result to all players");
+        FlowNode node7 = NodeRegistry.createNode("BroadcastMessageNode", flow.generateId(), "Send calculated result to all players");
         node7.setInput(0, DataReference.createConstantReference(context.getSource().getServer()));
         node7.setInput(1, DataReference.createConstantReference(String.valueOf("chat")));
         node7.setInput(2, DataReference.createNodeOutputReference(node6.getId(), 0));
         flow.addNode(node7);
         node6.setNextNodeId(0, node7.getId());
 
-        FlowNode node8 = NodeRegistry.createNode("Broadcast Message Node", flow.generateId(), "Send get x result to all players");
+        FlowNode node8 = NodeRegistry.createNode("BroadcastMessageNode", flow.generateId(), "Send get x result to all players");
         node8.setInput(0, DataReference.createConstantReference(context.getSource().getServer()));
         node8.setInput(1, DataReference.createConstantReference(String.valueOf("chat")));
         node8.setInput(2, DataReference.createNodeOutputReference(node5.getId(), 0));
@@ -157,6 +157,9 @@ public class CommandRegistrater {
         } else {
             context.getSource().sendFeedback(() -> Text.literal("Logic Flow executed successfully"), false);
         }
+
+        context.getSource().sendFeedback(() -> Text.literal("Rendering Execution Context"), false);
+        context.getSource().sendFeedback(() -> ctx.render(), false);
 
         return null;
     }

@@ -30,7 +30,7 @@ public class BinaryArithmeticNode extends FlowNode {
 
     public BinaryArithmeticNode(long id, String name) {
         super(id, name, 3, 1, 1);
-        this.type = "Binary Arithmetic Node";
+        this.type = "BinaryArithmeticNode";
     }
 
     @Override
