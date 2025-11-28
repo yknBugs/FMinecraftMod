@@ -44,7 +44,7 @@ public class FlowNode {
     /**
      * The IDs of the next nodes to execute after this node.
      */
-    protected List<Long> nextNodeIds;
+    public List<Long> nextNodeIds;
 
     public FlowNode(long id, String name, int inputNumber, int outputNumber, int branchNumber) {
         this.id = id;
@@ -204,6 +204,18 @@ public class FlowNode {
     protected void setOutput(ExecutionContext context, int index, Object value) {
         NodeStatus status = context.getNodeStatus(this.id);
         status.setOutput(index, value);
+    }
+
+    /**
+     * This method indicates whether this node is an event node.
+     * Event nodes should always be the starting point of a logic flow execution.
+     * And the event nodes will be automatically triggered by the system when the corresponding event occurs.
+     * By default, nodes are not event nodes. Override this method in subclasses to specify event nodes.
+     * @return true if this node is an event node, false otherwise
+     */
+    public boolean isEventNode() {
+        // Override in subclasses to specify event nodes
+        return false;
     }
 
     /**

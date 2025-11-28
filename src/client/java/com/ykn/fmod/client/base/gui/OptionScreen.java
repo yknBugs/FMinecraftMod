@@ -89,6 +89,26 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.translate"),
                 Text.translatable("fmod.options.hint.translate")
             ));
+            // Flow Length (non-linear slider)
+            SliderWidget flowLengthSlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getMaxFlowLength())),
+                Math.log((double) Util.serverConfig.getMaxFlowLength()) / Math.log(2147483647.0)
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) Math.exp(this.value * Math.log(2147483647.0)))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setMaxFlowLength((int) Math.exp(this.value * Math.log(2147483647.0)));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                flowLengthSlider,
+                Text.translatable("fmod.options.flowlength"),
+                Text.translatable("fmod.options.hint.flowlength")
+            ));
             // Entity Death Message
             this.addEntry(new ButtonConfigEntry(
                 ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage()), button -> {

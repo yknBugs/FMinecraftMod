@@ -48,6 +48,15 @@ public class LogicFlow {
         return this.nodes.get(id);
     }
 
+    public FlowNode getNodeByName(String name) {
+        for (FlowNode node : this.nodes.values()) {
+            if (name.equals(node.name)) {
+                return node;
+            }
+        }
+        return null;
+    }
+
     public void addNode(FlowNode node) {
         this.nodes.put(node.getId(), node);
     }

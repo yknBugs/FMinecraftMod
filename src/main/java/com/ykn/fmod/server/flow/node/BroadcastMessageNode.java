@@ -12,8 +12,10 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
+import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
+import net.minecraft.world.World;
 
 /**
  * A flow node that broadcasts a message to all players on the server.
@@ -69,10 +71,16 @@ public class BroadcastMessageNode extends FlowNode {
     private MinecraftServer parseServer(Object serverObj) throws LogicException {
         if (serverObj == null) {
             throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
-        } else if (!(serverObj instanceof MinecraftServer)) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
-        }
-        return (MinecraftServer) serverObj;
+        } else if (serverObj instanceof MinecraftServer) {
+            return (MinecraftServer) serverObj;
+        } else if (serverObj instanceof Entity) {
+            Entity entity = (Entity) serverObj;
+            return entity.getServer();
+        } else if (serverObj instanceof World) {
+            World world = (World) serverObj;
+            return world.getServer();
+        }   
+        throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
     }
 
     private MessageLocation parseMessageType(Object typeObj) throws LogicException {

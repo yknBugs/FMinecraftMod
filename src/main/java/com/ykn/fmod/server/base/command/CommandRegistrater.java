@@ -1299,6 +1299,12 @@ public class CommandRegistrater {
                             )
                             .executes(context -> {return runOptionsCommand("serverTranslation", null, context);})
                         )
+                        .then(CommandManager.literal("maxFlowLength")
+                            .then(CommandManager.argument("length", IntegerArgumentType.integer(1))
+                                .executes(context -> {return runOptionsCommand("maxFlowLength", IntegerArgumentType.getInteger(context, "length"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("maxFlowLength", null, context);})
+                        )
                         .then(CommandManager.literal("entityDeathMessage")
                             .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.NONE, context);}))
                             .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.CHAT, context);}))
@@ -1568,6 +1574,14 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), true);
+                    }
+                    break;
+                case "maxFlowLength":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.flowlength", Util.serverConfig.getMaxFlowLength()), false);
+                    } else {
+                        Util.serverConfig.setMaxFlowLength((int) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.flowlength", value), true);
                     }
                     break;
                 case "entityDeathMessage":

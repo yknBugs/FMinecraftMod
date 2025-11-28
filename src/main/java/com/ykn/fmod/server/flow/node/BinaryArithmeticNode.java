@@ -140,6 +140,45 @@ public class BinaryArithmeticNode extends FlowNode {
             return;
         }
 
+        if (num1Obj instanceof Vec3d || num2Obj instanceof Vec3d) {
+            Vec3d vec = null;
+            Double scalar = null;
+            if (num1Obj instanceof Vec3d) {
+                vec = (Vec3d) num1Obj;
+                scalar = TypeAdaptor.parseNumberLikeObject(num2Obj);
+                if (scalar == null) {
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
+                }
+            } else {
+                vec = (Vec3d) num2Obj;
+                scalar = TypeAdaptor.parseNumberLikeObject(num1Obj);
+                if (scalar == null) {
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
+                }
+            }
+            Vec3d result;
+            switch (operation.toLowerCase()) {
+                case "+":
+                    result = new Vec3d(vec.x + scalar, vec.y + scalar, vec.z + scalar);
+                    break;
+                case "-":
+                    result = new Vec3d(vec.x - scalar, vec.y - scalar, vec.z - scalar);
+                    break;
+                case "*":
+                case "x":
+                    result = new Vec3d(vec.x * scalar, vec.y * scalar, vec.z * scalar);
+                    break;
+                case "/":
+                    // NaN is valid here to represent division by zero
+                    result = new Vec3d(vec.x / scalar, vec.y / scalar, vec.z / scalar);
+                    break;
+                default:
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            }
+            status.setOutput(0, result);
+            return;
+        }
+
         if (num1Obj instanceof Vec2f && num2Obj instanceof Vec2f) {
             Vec2f vec1 = (Vec2f) num1Obj;
             Vec2f vec2 = (Vec2f) num2Obj;
@@ -162,6 +201,45 @@ public class BinaryArithmeticNode extends FlowNode {
                     // dot product
                     status.setOutput(0, vec1.dot(vec2));
                     return;
+                default:
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            }
+            status.setOutput(0, result);
+            return;
+        }
+
+        if (num1Obj instanceof Vec2f || num2Obj instanceof Vec2f) {
+            Vec2f vec = null;
+            Double scalar = null;
+            if (num1Obj instanceof Vec2f) {
+                vec = (Vec2f) num1Obj;
+                scalar = TypeAdaptor.parseNumberLikeObject(num2Obj);
+                if (scalar == null) {
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
+                }
+            } else {
+                vec = (Vec2f) num2Obj;
+                scalar = TypeAdaptor.parseNumberLikeObject(num1Obj);
+                if (scalar == null) {
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
+                }
+            }
+            float scalarF = scalar.floatValue();
+            Vec2f result;
+            switch (operation.toLowerCase()) {
+                case "+":
+                    result = new Vec2f(vec.x + scalarF, vec.y + scalarF);
+                    break;
+                case "-":
+                    result = new Vec2f(vec.x - scalarF, vec.y - scalarF);
+                    break;
+                case "*":
+                case "x":
+                    result = new Vec2f(vec.x * scalarF, vec.y * scalarF);
+                    break;
+                case "/":
+                    result = new Vec2f(vec.x / scalarF, vec.y / scalarF);
+                    break;
                 default:
                     throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }

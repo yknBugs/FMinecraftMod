@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.Nullable;
+
 import com.ykn.fmod.server.flow.node.*;
 
 import com.ykn.fmod.server.flow.logic.FlowNode;
@@ -13,7 +15,9 @@ import com.ykn.fmod.server.flow.logic.FlowNode;
  */
 public class NodeRegistry {
 
-    private static Map<String, NodeFactory> registry = new HashMap<>();
+    private static Map<String, NodeFactory> nodes = new HashMap<>();
+
+    private static Map<String, NodeFactory> eventNodes = new HashMap<>();
 
     public interface NodeFactory {
         FlowNode create(long id, String name);
@@ -26,7 +30,17 @@ public class NodeRegistry {
      * @param factory The factory to create instances of the node
      */
     public static void register(String type, NodeFactory factory) {
-        registry.put(type, factory);
+        nodes.put(type, factory);
+    }
+
+    /**
+     * To register a new event node type, please use {@code NodeRegistry.registerEvent("Event Node Type", EventNodeType::new);}
+     * Note that the {@code EventNodeType} must have a constructor exactly with the parameters
+     * @param type The type name of the event node
+     * @param factory The factory to create instances of the event node
+     */
+    public static void registerEvent(String type, NodeFactory factory) {
+        eventNodes.put(type, factory);
     }
 
     /**
@@ -36,8 +50,17 @@ public class NodeRegistry {
      * @param name The name of the node
      * @return The created FlowNode instance
      */
+    @Nullable
     public static FlowNode createNode(String type, long id, String name) {
-        return registry.get(type).create(id, name);
+        NodeFactory factory = nodes.get(type);
+        if (factory == null) {
+            factory = eventNodes.get(type);
+        }
+        if (factory == null) {
+            return null;
+        } else {
+            return factory.create(id, name);
+        }
     }
 
     /**
@@ -51,9 +74,15 @@ public class NodeRegistry {
         NodeRegistry.register("GetVariableNode", GetVariableNode::new);
         NodeRegistry.register("IfConditionNode", IfConditionNode::new);
         NodeRegistry.register("SetVariableNode", SetVariableNode::new);
+
+        NodeRegistry.registerEvent("DummyNode", DummyNode::new);
     }
 
     public static Collection<String> getNodeList() {
-        return registry.keySet();
+        return nodes.keySet();
+    }
+
+    public static Collection<String> getEventNodeList() {
+        return eventNodes.keySet();
     }
 }

@@ -19,6 +19,13 @@ public class ServerConfig extends ConfigReader {
     protected boolean serverTranslation;
 
     /**
+     * The maximum number of nodes that can be executed in a single flow execution.
+     * This is designed to prevent infinite loops in flow executions.
+     * Default: 32767
+     */
+    protected int maxFlowLength;
+
+    /**
      * The message sent to the client when an entity dies.
      * Default: NONE
      */
@@ -285,6 +292,31 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.serverTranslation = serverTranslation;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getMaxFlowLength() {
+        lock.readLock().lock();
+        try {
+            if (maxFlowLength <= 0) {
+                return 32767;
+            }
+            return maxFlowLength;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setMaxFlowLength(int maxFlowLength) {
+        lock.writeLock().lock();
+        try {
+            if (maxFlowLength <= 0) {
+                this.maxFlowLength = 32767;
+            } else {
+                this.maxFlowLength = maxFlowLength;
+            }
         } finally {
             lock.writeLock().unlock();
         }
