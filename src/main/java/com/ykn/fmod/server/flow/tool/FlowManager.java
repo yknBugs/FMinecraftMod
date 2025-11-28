@@ -50,7 +50,6 @@ public class FlowManager {
     }
 
     public void removeNode(String name) {
-        // TODO: We might also need to remove the connections related to this node.
         this.redoPath.clear();
         FlowNode node = this.flow.getNodeByName(name);
         if (node != null) {

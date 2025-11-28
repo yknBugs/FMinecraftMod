@@ -32,6 +32,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.ykn.fmod.server.base.data.GptData;
+import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.schedule.PlaySong;
 import com.ykn.fmod.server.base.song.NbsSongDecoder;
@@ -39,14 +40,15 @@ import com.ykn.fmod.server.base.song.NoteBlockSong;
 import com.ykn.fmod.server.base.util.EnumI18n;
 import com.ykn.fmod.server.base.util.GameMath;
 import com.ykn.fmod.server.base.util.GptHelper;
+import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
 import com.ykn.fmod.server.base.util.MessageReceiver;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
+import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
-import com.ykn.fmod.server.flow.logic.LogicFlow;
+import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -76,90 +78,68 @@ public class CommandRegistrater {
         // This function should be removed in the final release.
 
         // Markdown Highlight Test
-        // String markdownTest = "C++ Syntax Highlight Test\n" + 
-        // "```cpp\n" +
-        // "#include <string>\n" +
-        // "#include <vector>\n" +
-        // "#include <algorithm>\n\n" +
-        // "int main() {\n" +
-        // "    std::vector<std::string> s;\n" + 
-        // "    std::sort(s.begin(), s.end(), [&s](auto& a, auto& b) {\n" + 
-        // "        a = s;\n" +
-        // "    });\n" +
-        // "}\n" +
-        // "```\n" +
-        // "End of Test";
+        String markdownTest = "C++ Syntax Highlight Test\n" + 
+        "```cpp\n" +
+        "#include <string>\n" +
+        "#include <vector>\n" +
+        "#include <algorithm>\n\n" +
+        "int main() {\n" +
+        "    std::vector<std::string> s;\n" + 
+        "    std::sort(s.begin(), s.end(), [&s](auto& a, auto& b) {\n" + 
+        "        a = s;\n" +
+        "    });\n" +
+        "}\n" +
+        "```\n" +
+        "End of Test";
 
-        // context.getSource().sendFeedback(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
+        context.getSource().sendFeedback(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
 
-        // Logic Flow Test
-        context.getSource().sendFeedback(() -> Text.literal("Building Logic Flow"), false);
-        LogicFlow flow = new LogicFlow("Test Flow");
-        FlowNode node1 = NodeRegistry.createNode("SetVariableNode", flow.generateId(), "Save 10 to var x");
-        node1.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
-        node1.setInput(1, DataReference.createConstantReference(Double.valueOf(10)));
-        flow.addNode(node1);
-        flow.startNodeId = node1.getId();
+        ServerData serverData = Util.getServerData(context.getSource().getServer());
+        if (serverData.logicFlows.size() == 0) {
+            // Logic Flow Test
+            FlowManager flowManager = new FlowManager("Test Flow", "SetVariableNode", "Save 10 to var x");
+            flowManager.setConstInput("Save 10 to var x", 0, "x");
+            flowManager.setConstInput("Save 10 to var x", 1, 10);
+            
+            flowManager.createNode("GetVariableNode", "Get var x");
+            flowManager.setConstInput("Get var x", 0, "x");
+            flowManager.setNextNode("Save 10 to var x", 0, "Get var x");
 
-        FlowNode node2 = NodeRegistry.createNode("GetVariableNode", flow.generateId(), "Get var x");
-        node2.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
-        flow.addNode(node2);
-        node1.setNextNodeId(0, node2.getId());
+            flowManager.createNode("BinaryArithmeticNode", "Calculate x + 1");
+            flowManager.setReferenceInput("Calculate x + 1", 0, "Get var x", 0);
+            flowManager.setConstInput("Calculate x + 1", 1, 1);
+            flowManager.setConstInput("Calculate x + 1", 2, "+");
+            flowManager.setNextNode("Get var x", 0, "Calculate x + 1");
 
-        FlowNode node3 = NodeRegistry.createNode("BinaryArithmeticNode", flow.generateId(), "Calculate x + 1");
-        node3.setInput(0, DataReference.createNodeOutputReference(node2.getId(), 0));
-        node3.setInput(1, DataReference.createConstantReference(Double.valueOf(1)));
-        node3.setInput(2, DataReference.createConstantReference(String.valueOf("+")));
-        flow.addNode(node3);
-        node2.setNextNodeId(0, node3.getId());
+            flowManager.createNode("SetVariableNode", "Store calculate result to x");
+            flowManager.setConstInput("Store calculate result to x", 0, "x");
+            flowManager.setReferenceInput("Store calculate result to x", 1, "Calculate x + 1", 0);
+            flowManager.createNode("GetVariableNode", "Get var x again");
+            flowManager.setNextNode("Store calculate result to x", 0, "Get var x again");
 
-        FlowNode node4 = NodeRegistry.createNode("SetVariableNode", flow.generateId(), "Store calculate result to x");
-        node4.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
-        node4.setInput(1, DataReference.createNodeOutputReference(node3.getId(), 0));
-        flow.addNode(node4);
-        node3.setNextNodeId(0, node4.getId());
+            flowManager.setConstInput("Get var x again", 0, "x");
+            flowManager.createNode("BinaryArithmeticNode", "Calculate x + 1 again");
+            flowManager.setReferenceInput("Calculate x + 1 again", 0, "Get var x again", 0);
+            flowManager.setConstInput("Calculate x + 1 again", 1, 1);
+            flowManager.setConstInput("Calculate x + 1 again", 2, "+");
+            flowManager.setNextNode("Get var x again", 0, "Calculate x + 1 again");
 
-        FlowNode node5 = NodeRegistry.createNode("GetVariableNode", flow.generateId(), "Get var x again");
-        node5.setInput(0, DataReference.createConstantReference(String.valueOf("x")));
-        flow.addNode(node5);
-        node4.setNextNodeId(0, node5.getId());
+            flowManager.createNode("BroadcastMessageNode", "Send calculated result to all players");
+            flowManager.setConstInput("Send calculated result to all players", 0, context.getSource().getServer());
+            flowManager.setConstInput("Send calculated result to all players", 1, "chat");
+            flowManager.setReferenceInput("Send calculated result to all players", 2, "Calculate x + 1 again", 0);
+            flowManager.setNextNode("Calculate x + 1 again", 0, "Send calculated result to all players");
 
-        FlowNode node6 = NodeRegistry.createNode("BinaryArithmeticNode", flow.generateId(), "Calculate x + 1 again");
-        node6.setInput(0, DataReference.createNodeOutputReference(node5.getId(), 0));
-        node6.setInput(1, DataReference.createConstantReference(Double.valueOf(1)));
-        node6.setInput(2, DataReference.createConstantReference(String.valueOf("+")));
-        flow.addNode(node6);
-        node5.setNextNodeId(0, node6.getId());
-
-        FlowNode node7 = NodeRegistry.createNode("BroadcastMessageNode", flow.generateId(), "Send calculated result to all players");
-        node7.setInput(0, DataReference.createConstantReference(context.getSource().getServer()));
-        node7.setInput(1, DataReference.createConstantReference(String.valueOf("chat")));
-        node7.setInput(2, DataReference.createNodeOutputReference(node6.getId(), 0));
-        flow.addNode(node7);
-        node6.setNextNodeId(0, node7.getId());
-
-        FlowNode node8 = NodeRegistry.createNode("BroadcastMessageNode", flow.generateId(), "Send get x result to all players");
-        node8.setInput(0, DataReference.createConstantReference(context.getSource().getServer()));
-        node8.setInput(1, DataReference.createConstantReference(String.valueOf("chat")));
-        node8.setInput(2, DataReference.createNodeOutputReference(node5.getId(), 0));
-        flow.addNode(node8);
-        node7.setNextNodeId(0, node8.getId());
-
-        context.getSource().sendFeedback(() -> Text.literal("Rendering Logic Flow"), false);
-        context.getSource().sendFeedback(() -> flow.render(), false);
-
-        context.getSource().sendFeedback(() -> Text.literal("Executing Logic Flow"), false);
-        ExecutionContext ctx = new ExecutionContext(flow);
-        ctx.execute(10);
-
-        if (ctx.getException() != null) {
-            context.getSource().sendFeedback(() -> ctx.getException().getMessageText(), false);
+            flowManager.createNode("BroadcastMessageNode", "Send get x result to all players");
+            flowManager.setConstInput("Send get x result to all players", 0, context.getSource().getServer());
+            flowManager.setConstInput("Send get x result to all players", 1, "chat");
+            flowManager.setReferenceInput("Send get x result to all players", 2, "Get var x again", 0);
+            flowManager.setNextNode("Send calculated result to all players", 0, "Send get x result to all players");
+            serverData.logicFlows.put(flowManager.flow.name, flowManager);
+            context.getSource().sendFeedback(() -> Text.literal("Saved the example logic flow"), false);
         } else {
-            context.getSource().sendFeedback(() -> Text.literal("Logic Flow executed successfully"), false);
+            context.getSource().sendFeedback(() -> Text.literal("Logic flow already exists, not saving"), false);
         }
-
-        context.getSource().sendFeedback(() -> Text.literal("Rendering Execution Context"), false);
-        context.getSource().sendFeedback(() -> ctx.render(), false);
 
         return null;
     }
@@ -177,7 +157,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.version.error"));
         }
     }
@@ -197,7 +177,7 @@ public class CommandRegistrater {
                 pw.close();
                 sw.close();
             } catch (Exception exception) {
-                logger.error("FMinectaftMod: Caught unexpected exception when executing command /f dev", exception);
+                logger.error("FMinecraftMod: Caught unexpected exception when executing command /f dev", exception);
                 throw new CommandException(Util.parseTranslateableText("fmod.command.dev.error"));
             }
         }
@@ -208,16 +188,15 @@ public class CommandRegistrater {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
-            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            GptData gptData = data.getGptData(context.getSource().getName());
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.newConversation(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            Thread thread = new Thread(gptHelper);
-            thread.setDaemon(true);
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            thread.start();
+            data.globalRequestPool.submit(gptHelper);
             // if (context.getSource().getPlayer() != null) {
             //     // Other source would have already logged the message
             //     logger.info("<{}> {}", context.getSource().getDisplayName().getString(), text);
@@ -232,7 +211,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt new", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt new", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -242,16 +221,15 @@ public class CommandRegistrater {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
-            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            GptData gptData = data.getGptData(context.getSource().getName());
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.reply(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            Thread thread = new Thread(gptHelper);
-            thread.setDaemon(true);
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            thread.start();
+            data.globalRequestPool.submit(gptHelper);
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -262,7 +240,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt reply", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt reply", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -272,7 +250,8 @@ public class CommandRegistrater {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
-            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            GptData gptData = data.getGptData(context.getSource().getName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
@@ -283,10 +262,9 @@ public class CommandRegistrater {
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            Thread thread = new Thread(gptHelper);
-            thread.setDaemon(true);
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            thread.start();
+            data.globalRequestPool.submit(gptHelper);
+
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -297,7 +275,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -307,7 +285,8 @@ public class CommandRegistrater {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
-            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            GptData gptData = data.getGptData(context.getSource().getName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
@@ -321,10 +300,8 @@ public class CommandRegistrater {
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            Thread thread = new Thread(gptHelper);
-            thread.setDaemon(true);
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            thread.start();
+            data.globalRequestPool.submit(gptHelper);
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -335,7 +312,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -365,7 +342,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -487,7 +464,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song cancel", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song cancel", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -510,7 +487,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song get", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song get", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -535,7 +512,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song showinfo", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -556,7 +533,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song showinfo", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -586,7 +563,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song search", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song search", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -614,7 +591,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f song speed", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song speed", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -658,7 +635,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get coord", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
@@ -682,7 +659,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share coord", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -750,7 +727,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get distance", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -795,7 +772,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share distance", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -815,7 +792,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get health", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
@@ -835,7 +812,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share health", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -859,7 +836,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get status", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return players.size();
@@ -883,7 +860,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share status", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -910,7 +887,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when formatting item stack", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when formatting item stack", e);
             itemText = Text.literal("??").formatted(Formatting.RED);
         }
         return itemText;
@@ -1017,7 +994,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get inventory", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -1037,7 +1014,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share inventory", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -1082,7 +1059,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f get item", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
@@ -1124,7 +1101,7 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f share item", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -1141,7 +1118,528 @@ public class CommandRegistrater {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            logger.error("FMinectaftMod: Caught unexpected exception when executing command /f say", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f say", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runCreateFlowCommand(String name, String eventNode, String eventNodeName, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            if (data.logicFlows.get(name) != null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", name));
+            }
+            Collection<String> validEventNodes = NodeRegistry.getEventNodeList();
+            if (!validEventNodes.contains(eventNode)) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.event.unknown", eventNode));
+            }
+            FlowManager flowManager = new FlowManager(name, eventNode, eventNodeName);
+            data.logicFlows.put(name, flowManager);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.create.success", eventNode, name), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow create", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runRenameFlowCommand(String oldName, String newName, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(oldName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", oldName));
+            }
+            if (data.logicFlows.get(newName) != null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.rename.exists", newName));
+            }
+            data.logicFlows.remove(oldName);
+            targetFlow.flow.name = newName;
+            data.logicFlows.put(newName, targetFlow);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.rename.success", oldName, newName), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow rename", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runGetEnableFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(name);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+            }
+            if (targetFlow.isEnabled) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.true", name), false);
+            } else {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.false", name), false);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runSetEnableFlowCommand(String name, boolean enable, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(name);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+            }
+            targetFlow.isEnabled = enable;
+            if (enable) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.true", name), true);
+            } else {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.false", name), true);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runExecuteFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(name);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+            }
+            ExecutionContext ctx = new ExecutionContext(targetFlow.flow);
+            ctx.execute(Util.serverConfig.getMaxFlowLength());
+            if (ctx.getException() != null) {
+                throw new CommandException(ctx.getException().getMessageText());
+            }
+            data.executeHistory.add(ctx);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow execute", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runDeleteFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(name);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+            }
+            data.logicFlows.remove(name);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.delete.success", name), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow delete", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runFlowHistoryCommand(int pageIndex, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            List<ExecutionContext> history = data.executeHistory;
+            // 5 entries per page
+            int maxPage = (history.size() + 4) / 5;
+            if (maxPage <= 0) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.history.null"), false);
+                return Command.SINGLE_SUCCESS;
+            }
+            int index = pageIndex;
+            if (index <= 0) {
+                index = maxPage;
+            }
+            if (index > maxPage) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.history.indexerror", pageIndex, maxPage));
+            }
+            int start = (index - 1) * 5;
+            int end = Math.min(start + 5, history.size());
+            String indexStr = String.valueOf(index);
+            String maxPageStr = String.valueOf(maxPage);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.history.title", indexStr, maxPageStr), false);
+            for (int i = start; i < end; i++) {
+                ExecutionContext entry = history.get(i);
+                String iStr = String.valueOf(i + 1);
+                MutableText entryText =  Util.parseTranslateableText("fmod.command.flow.history.entry", iStr, entry.getFlow().name).styled(s -> s
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow log " + iStr))
+                );
+                context.getSource().sendFeedback(() -> entryText, false);
+            }
+            MutableText navigateText = Text.empty();
+            if (index > 1) {
+                String prevIndexStr = String.valueOf(index - 1);
+                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.prev").styled(s -> s
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow history " + prevIndexStr))
+                ));
+            }
+            if (index < maxPage) {
+                String nextIndexStr = String.valueOf(index + 1);
+                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.next").styled(s -> s
+                    .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow history " + nextIndexStr))
+                ));
+            }
+            if (maxPage > 1) {
+                context.getSource().sendFeedback(() -> navigateText, false);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow history", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runViewFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(name);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+            }
+            Text text = targetFlow.flow.render();
+            context.getSource().sendFeedback(() -> text, false);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow view", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runLogFlowCommand(int index, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            List<ExecutionContext> history = data.executeHistory;
+            if (index <= 0 || index > history.size()) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.log.indexerror", String.valueOf(index)));
+            }
+            ExecutionContext entry = history.get(index - 1);
+            Text text = entry.render();
+            context.getSource().sendFeedback(() -> text, false);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow log", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowNewNodeCommand(String flowName, String type, String name, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            Collection<String> validNodeTypes = NodeRegistry.getNodeList();
+            if (!validNodeTypes.contains(type)) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.unknown", type));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode != null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.exists", name, flowName));
+            }
+            targetFlow.createNode(type, name);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.newnode.success", name, flowName), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowRemoveNodeCommand(String flowName, String name, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+            }
+            if (existingNode.isEventNode()) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.delete.event", flowName, name));
+            }
+            targetFlow.removeNode(name);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.removenode.success", name, flowName), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowRenameNodeCommand(String flowName, String oldName, String newName, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(oldName);
+            if (existingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", oldName, flowName));
+            }
+            FlowNode newNode = targetFlow.flow.getNodeByName(newName);
+            if (newNode != null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.exists", newName, flowName));
+            }
+            targetFlow.renameNode(oldName, newName);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.renamenode.success", oldName, flowName, newName), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowConstInputCommand(String flowName, String name, int index, String value, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+            }
+            if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+            }
+            // parse const value
+            Object parsedValue = value;
+            // parse special values related to the command source but hard to describe it as a String
+            if ("this.server".equals(value)) {
+                parsedValue = context.getSource().getServer();
+            } else if ("this.entity".equals(value)) {
+                parsedValue = context.getSource().getEntity();
+            } else if ("this.position".equals(value)) {
+                parsedValue = context.getSource().getPosition();
+            } else if ("this.world".equals(value)) {
+                parsedValue = context.getSource().getWorld();
+            } else if ("this.displayName".equals(value)) {
+                parsedValue = context.getSource().getDisplayName();
+            } else if ("this.name".equals(value)) {
+                parsedValue = context.getSource().getName();
+            } else if (TypeAdaptor.parseNumberLikeObject(value) != null) {
+                parsedValue = TypeAdaptor.parseNumberLikeObject(value);
+            } else if (TypeAdaptor.parseBooleanLikeObject(value) != null) {
+                parsedValue = TypeAdaptor.parseBooleanLikeObject(value);
+            } else if ("null".equals(value)) {
+                parsedValue = null;
+            }
+            String parsedValueStr = String.valueOf(parsedValue);
+            targetFlow.setConstInput(name, index - 1, parsedValue);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowRefInputCommand(String flowName, String name, int index, String refNode, int refIndex, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+            }
+            if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+            }
+            FlowNode refExistingNode = targetFlow.flow.getNodeByName(refNode);
+            if (refExistingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", refNode, flowName));
+            }
+            if (refIndex <= 0 || refIndex > refExistingNode.getMetadata().outputNumber) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.output.indexerror", refNode, String.valueOf(refIndex)));
+            }
+            targetFlow.setReferenceInput(name, index, refNode, refIndex);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowDisconnectInputCommand(String flowName, String name, int index, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+            }
+            if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+            }
+            targetFlow.disconnectInput(name, index);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowNextNodeCommand(String flowName, String name, int index, String next, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+            }
+            if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
+            }
+            FlowNode nextNode = targetFlow.flow.getNodeByName(next);
+            if (nextNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", next, flowName));
+            }
+            targetFlow.setNextNode(name, index, next);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowFinalBranchCommand(String flowName, String name, int index, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+            }
+            if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
+            }
+            targetFlow.disconnectNextNode(name, index);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowUndoCommand(String flowName, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            if (targetFlow.undoPath.isEmpty()) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.nothing", flowName), false);
+                return Command.SINGLE_SUCCESS;
+            } else {
+                targetFlow.undo();
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.success", flowName), true);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runEditFlowRedoCommand(String flowName, CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+            }
+            if (targetFlow.redoPath.isEmpty()) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.nothing", flowName), false);
+                return Command.SINGLE_SUCCESS;
+            } else {
+                targetFlow.redo();
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.success", flowName), true);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -1290,6 +1788,149 @@ public class CommandRegistrater {
                     .then(CommandManager.literal("reload")
                         .requires(source -> source.hasPermissionLevel(4))
                         .executes(context -> {return runReloadCommand(context);})
+                    )
+                    .then(CommandManager.literal("flow")
+                        .requires(source -> source.hasPermissionLevel(3))
+                        .then(CommandManager.literal("create")
+                            .then(CommandManager.argument("name", StringArgumentType.string())
+                                .then(CommandManager.argument("event", StringArgumentType.string())
+                                    .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList()))
+                                    .then(CommandManager.argument("node", StringArgumentType.string())
+                                        .executes(context -> {return runCreateFlowCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "event"), StringArgumentType.getString(context, "node"), context);})
+                                    )
+                                )
+                            )
+                        )
+                        .then(CommandManager.literal("edit")
+                            .then(CommandManager.argument("name", StringArgumentType.string())
+                                .suggests(LogicFlowSuggestion.suggest())
+                                .then(CommandManager.literal("new")
+                                    .then(CommandManager.argument("type", StringArgumentType.string())
+                                        .suggests(StringSuggestion.suggest(NodeRegistry.getNodeList()))
+                                        .then(CommandManager.argument("node", StringArgumentType.string())
+                                            .executes(context -> {return runEditFlowNewNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context);})
+                                        )
+                                    )
+                                )
+                                .then(CommandManager.literal("remove")
+                                    .then(CommandManager.argument("node", StringArgumentType.string())
+                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .executes(context -> {return runEditFlowRemoveNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), context);})
+                                    )
+                                )
+                                .then(CommandManager.literal("rename")
+                                    .then(CommandManager.argument("old", StringArgumentType.string())
+                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .then(CommandManager.argument("new", StringArgumentType.string())
+                                            .executes(context -> {return runEditFlowRenameNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
+                                        )
+                                    )
+                                )
+                                .then(CommandManager.literal("const")
+                                    .then(CommandManager.argument("node", StringArgumentType.string())
+                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                            .then(CommandManager.argument("value", StringArgumentType.greedyString())
+                                                .suggests(StringSuggestion.suggestSelf())
+                                                .executes(context -> {return runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context);})
+                                            )
+                                        )
+                                    )
+                                )
+                                .then(CommandManager.literal("reference")
+                                    .then(CommandManager.argument("node", StringArgumentType.string())
+                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                            .then(CommandManager.argument("refNode", StringArgumentType.string())
+                                                .suggests(FlowNodeSuggestion.suggest())
+                                                .then(CommandManager.argument("refIndex", IntegerArgumentType.integer(1))
+                                                    .executes(context -> {return runEditFlowRefInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "refNode"), IntegerArgumentType.getInteger(context, "refIndex"), context);})
+                                                )
+                                            )
+                                        )
+                                    )
+                                )
+                                .then(CommandManager.literal("disconnect")
+                                    .then(CommandManager.argument("node", StringArgumentType.string())
+                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                            .executes(context -> {return runEditFlowDisconnectInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
+                                        )
+                                    )
+                                )
+                                .then(CommandManager.literal("next")
+                                    .then(CommandManager.argument("node", StringArgumentType.string())
+                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                            .then(CommandManager.argument("next", StringArgumentType.string())
+                                                .suggests(FlowNodeSuggestion.suggest())
+                                                .executes(context -> {return runEditFlowNextNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "next"), context);})
+                                            )
+                                        )
+                                    )
+                                )
+                                .then(CommandManager.literal("final")
+                                    .then(CommandManager.argument("node", StringArgumentType.string())
+                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                            .executes(context -> {return runEditFlowFinalBranchCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
+                                        )
+                                    )
+                                )
+                                .then(CommandManager.literal("redo")
+                                    .executes(context -> {return runEditFlowRedoCommand(StringArgumentType.getString(context, "name"), context);})
+                                )
+                                .then(CommandManager.literal("undo")
+                                    .executes(context -> {return runEditFlowUndoCommand(StringArgumentType.getString(context, "name"), context);})
+                                )
+                            )
+                        )
+                        .then(CommandManager.literal("rename")
+                            .then(CommandManager.argument("old", StringArgumentType.string())
+                                .suggests(LogicFlowSuggestion.suggest())
+                                .then(CommandManager.argument("new", StringArgumentType.string())
+                                    .executes(context -> {return runRenameFlowCommand(StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
+                                )
+                            )
+                        )
+                        .then(CommandManager.literal("enable")
+                            .then(CommandManager.argument("name", StringArgumentType.string())
+                                .suggests(LogicFlowSuggestion.suggest())
+                                .then(CommandManager.argument("enabled", BoolArgumentType.bool())
+                                    .executes(context -> {return runSetEnableFlowCommand(StringArgumentType.getString(context, "name"), BoolArgumentType.getBool(context, "enabled"), context);})
+                                )
+                                .executes(context -> {return runGetEnableFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                            )
+                        )
+                        .then(CommandManager.literal("execute")
+                            .then(CommandManager.argument("name", StringArgumentType.string())
+                                .suggests(LogicFlowSuggestion.suggest())
+                                .executes(context -> {return runExecuteFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                            )
+                        )
+                        .then(CommandManager.literal("view")
+                            .then(CommandManager.argument("name", StringArgumentType.string())
+                                .suggests(LogicFlowSuggestion.suggest())
+                                .executes(context -> {return runViewFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                            )
+                        )
+                        .then(CommandManager.literal("log")
+                            .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
+                                .executes(context -> {return runLogFlowCommand(IntegerArgumentType.getInteger(context, "index"), context);})
+                            )
+                        )
+                        .then(CommandManager.literal("history")
+                            .then(CommandManager.argument("page", IntegerArgumentType.integer(1))
+                                .executes(context -> {return runFlowHistoryCommand(IntegerArgumentType.getInteger(context, "page"), context);})
+                            )
+                            .executes(context -> {return runFlowHistoryCommand(0, context);})
+                        )
+                        .then(CommandManager.literal("delete")
+                            .then(CommandManager.argument("name", StringArgumentType.string())
+                                .suggests(LogicFlowSuggestion.suggest())
+                                .executes(context -> {return runDeleteFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                            )
+                        )
                     )
                     .then(CommandManager.literal("options")
                         .requires(source -> source.hasPermissionLevel(4))
@@ -1560,7 +2201,7 @@ public class CommandRegistrater {
 
             return true;
         } catch (Exception e) {
-            logger.error("FMinectaftMod: Unable to register command.", e);
+            logger.error("FMinecraftMod: Unable to register command.", e);
             return false;
         }
     }

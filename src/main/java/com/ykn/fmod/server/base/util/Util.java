@@ -479,6 +479,11 @@ public class Util {
      * @param data   the new server data to associate with the specified server, must not be null.
      */
     public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
+        ServerData existingData = worldData.get(server);
+        if (existingData != null) {
+            existingData.globalRequestPool.shutdownNow();
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the glodal thread pool.");
+        }
         worldData.put(server, data);
     }
 
@@ -488,6 +493,11 @@ public class Util {
      * @param server the Minecraft server whose data is to be reset; must not be null
      */
     public static void resetServerData(@NotNull MinecraftServer server) {
+        ServerData existingData = worldData.get(server);
+        if (existingData != null) {
+            existingData.globalRequestPool.shutdownNow();
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the glodal thread pool.");
+        }
         ServerData data = new ServerData();
         worldData.put(server, data);
     }

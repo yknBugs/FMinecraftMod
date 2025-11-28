@@ -4,35 +4,45 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
+import com.ykn.fmod.server.flow.logic.ExecutionContext;
+import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 
 /**
  * WARNING: This class is not thread-safe.
+ * WARNING: The globalRequestPool must be gracefully shutdown when replacing or resetting ServerData.
  */
 public class ServerData {
 
     public HashMap<UUID, PlayerData> playerData;
 
-    public ArrayList<ScheduledTask> scheduledTasks;
+    public HashMap<String, FlowManager> logicFlows;
+    public List<ExecutionContext> executeHistory;
+    public List<ScheduledTask> scheduledTasks;
     public Collection<UUID> killerEntities;
     public HashMap<String, GptData> gptRequestStatus;
+    public ExecutorService globalRequestPool;
 
     private int serverTick;
 
     public ServerData() {
         playerData = new HashMap<>();
+        logicFlows = new HashMap<>();
         scheduledTasks = new ArrayList<>();
         killerEntities = new HashSet<>();
         gptRequestStatus = new HashMap<>();
-
+        globalRequestPool = Executors.newFixedThreadPool(8);
         serverTick = 0;
     }
 
@@ -59,7 +69,7 @@ public class ServerData {
     }
 
     @NotNull
-    public ArrayList<ScheduledTask> getScheduledTasks() {
+    public List<ScheduledTask> getScheduledTasks() {
         return scheduledTasks;
     }
 
@@ -107,6 +117,22 @@ public class ServerData {
             gptRequestStatus.put(source, data);
         }
         return data;
+    }
+
+    /**
+     * Returns a list of ExecutionContext instances from the execution history whose associated flow name exactly matches the provided name.
+     * If no matching contexts are found, an empty list is returned.
+     * @param name the flow name to match against each ExecutionContext's flow.name
+     * @return a list of matching ExecutionContext objects (never null)
+     */
+    public List<ExecutionContext> gatherHistoryByName(String name) {
+        List<ExecutionContext> result = new ArrayList<>();
+        for (ExecutionContext context : executeHistory) {
+            if (context.getFlow().name.equals(name)) {
+                result.add(context);
+            }
+        }
+        return result;
     }
 
     public int getServerTick() {
