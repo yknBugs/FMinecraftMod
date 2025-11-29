@@ -16,6 +16,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -114,6 +115,8 @@ public class CommandRegistrater {
             flowManager.createNode("SetVariableNode", "Store calculate result to x");
             flowManager.setConstInput("Store calculate result to x", 0, "x");
             flowManager.setReferenceInput("Store calculate result to x", 1, "Calculate x + 1", 0);
+            flowManager.setNextNode("Calculate x + 1", 0, "Store calculate result to x");
+
             flowManager.createNode("GetVariableNode", "Get var x again");
             flowManager.setNextNode("Store calculate result to x", 0, "Get var x again");
 
@@ -1147,6 +1150,51 @@ public class CommandRegistrater {
         return Command.SINGLE_SUCCESS;
     }
 
+    private int runListFlowCommand(CommandContext<ServerCommandSource> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            if (data.logicFlows.isEmpty()) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.list.empty"), false);
+                return Command.SINGLE_SUCCESS;
+            }
+            List<MutableText> flowLines = new ArrayList<>();
+            int enabledCount = 0;
+            int totalCount = 0;
+            for (FlowManager flowManager : data.logicFlows.values()) {
+                MutableText line = null;
+                String numNodesStr = String.valueOf(flowManager.flow.getNodes().size());
+                String startNodeStr = flowManager.flow.getNode(flowManager.flow.startNodeId).name;
+                if (flowManager.isEnabled) {
+                    line = Util.parseTranslateableText("fmod.command.flow.list.enabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
+                    );
+                    enabledCount++;
+                } else {
+                    line = Util.parseTranslateableText("fmod.command.flow.list.disabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
+                        .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
+                    );
+                }
+                totalCount++;
+                flowLines.add(line);
+            }
+            String enabledCountStr = String.valueOf(enabledCount);
+            String totalCountStr = String.valueOf(totalCount);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.list.title", totalCountStr, enabledCountStr), false);
+            for (MutableText line : flowLines) {
+                context.getSource().sendFeedback(() -> line, false);
+            }
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow list", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
     private int runRenameFlowCommand(String oldName, String newName, CommandContext<ServerCommandSource> context) {
         try {
             ServerData data = Util.getServerData(context.getSource().getServer());
@@ -1155,7 +1203,7 @@ public class CommandRegistrater {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", oldName));
             }
             if (data.logicFlows.get(newName) != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.rename.exists", newName));
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", newName));
             }
             data.logicFlows.remove(oldName);
             targetFlow.flow.name = newName;
@@ -1225,10 +1273,10 @@ public class CommandRegistrater {
             }
             ExecutionContext ctx = new ExecutionContext(targetFlow.flow);
             ctx.execute(Util.serverConfig.getMaxFlowLength());
+            data.executeHistory.add(ctx);
             if (ctx.getException() != null) {
                 throw new CommandException(ctx.getException().getMessageText());
             }
-            data.executeHistory.add(ctx);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
@@ -1284,6 +1332,7 @@ public class CommandRegistrater {
                 ExecutionContext entry = history.get(i);
                 String iStr = String.valueOf(i + 1);
                 MutableText entryText =  Util.parseTranslateableText("fmod.command.flow.history.entry", iStr, entry.getFlow().name).styled(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow log " + iStr))
                 );
                 context.getSource().sendFeedback(() -> entryText, false);
@@ -1503,7 +1552,7 @@ public class CommandRegistrater {
             if (refIndex <= 0 || refIndex > refExistingNode.getMetadata().outputNumber) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.output.indexerror", refNode, String.valueOf(refIndex)));
             }
-            targetFlow.setReferenceInput(name, index, refNode, refIndex);
+            targetFlow.setReferenceInput(name, index - 1, refNode, refIndex - 1);
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
@@ -1529,7 +1578,7 @@ public class CommandRegistrater {
             if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
-            targetFlow.disconnectInput(name, index);
+            targetFlow.disconnectInput(name, index - 1);
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
@@ -1559,7 +1608,7 @@ public class CommandRegistrater {
             if (nextNode == null) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", next, flowName));
             }
-            targetFlow.setNextNode(name, index, next);
+            targetFlow.setNextNode(name, index - 1, next);
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
@@ -1585,7 +1634,7 @@ public class CommandRegistrater {
             if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
             }
-            targetFlow.disconnectNextNode(name, index);
+            targetFlow.disconnectNextNode(name, index - 1);
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
@@ -1794,19 +1843,22 @@ public class CommandRegistrater {
                         .then(CommandManager.literal("create")
                             .then(CommandManager.argument("name", StringArgumentType.string())
                                 .then(CommandManager.argument("event", StringArgumentType.string())
-                                    .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList()))
+                                    .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList(), true))
                                     .then(CommandManager.argument("node", StringArgumentType.string())
                                         .executes(context -> {return runCreateFlowCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "event"), StringArgumentType.getString(context, "node"), context);})
                                     )
                                 )
                             )
                         )
+                        .then(CommandManager.literal("list")
+                            .executes(context -> {return runListFlowCommand(context);})
+                        )
                         .then(CommandManager.literal("edit")
                             .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest())
+                                .suggests(LogicFlowSuggestion.suggest(true))
                                 .then(CommandManager.literal("new")
                                     .then(CommandManager.argument("type", StringArgumentType.string())
-                                        .suggests(StringSuggestion.suggest(NodeRegistry.getNodeList()))
+                                        .suggests(StringSuggestion.suggest(NodeRegistry.getNodeList(), true))
                                         .then(CommandManager.argument("node", StringArgumentType.string())
                                             .executes(context -> {return runEditFlowNewNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context);})
                                         )
@@ -1814,13 +1866,13 @@ public class CommandRegistrater {
                                 )
                                 .then(CommandManager.literal("remove")
                                     .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .executes(context -> {return runEditFlowRemoveNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), context);})
                                     )
                                 )
                                 .then(CommandManager.literal("rename")
                                     .then(CommandManager.argument("old", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("new", StringArgumentType.string())
                                             .executes(context -> {return runEditFlowRenameNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
                                         )
@@ -1828,10 +1880,10 @@ public class CommandRegistrater {
                                 )
                                 .then(CommandManager.literal("const")
                                     .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
                                             .then(CommandManager.argument("value", StringArgumentType.greedyString())
-                                                .suggests(StringSuggestion.suggestSelf())
+                                                .suggests(StringSuggestion.suggestSelf(false))
                                                 .executes(context -> {return runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context);})
                                             )
                                         )
@@ -1839,10 +1891,10 @@ public class CommandRegistrater {
                                 )
                                 .then(CommandManager.literal("reference")
                                     .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
                                             .then(CommandManager.argument("refNode", StringArgumentType.string())
-                                                .suggests(FlowNodeSuggestion.suggest())
+                                                .suggests(FlowNodeSuggestion.suggest(true, 3))
                                                 .then(CommandManager.argument("refIndex", IntegerArgumentType.integer(1))
                                                     .executes(context -> {return runEditFlowRefInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "refNode"), IntegerArgumentType.getInteger(context, "refIndex"), context);})
                                                 )
@@ -1852,7 +1904,7 @@ public class CommandRegistrater {
                                 )
                                 .then(CommandManager.literal("disconnect")
                                     .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
                                             .executes(context -> {return runEditFlowDisconnectInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
                                         )
@@ -1860,10 +1912,10 @@ public class CommandRegistrater {
                                 )
                                 .then(CommandManager.literal("next")
                                     .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
                                             .then(CommandManager.argument("next", StringArgumentType.string())
-                                                .suggests(FlowNodeSuggestion.suggest())
+                                                .suggests(FlowNodeSuggestion.suggest(true, 3))
                                                 .executes(context -> {return runEditFlowNextNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "next"), context);})
                                             )
                                         )
@@ -1871,7 +1923,7 @@ public class CommandRegistrater {
                                 )
                                 .then(CommandManager.literal("final")
                                     .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest())
+                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
                                             .executes(context -> {return runEditFlowFinalBranchCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
                                         )
@@ -1887,7 +1939,7 @@ public class CommandRegistrater {
                         )
                         .then(CommandManager.literal("rename")
                             .then(CommandManager.argument("old", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest())
+                                .suggests(LogicFlowSuggestion.suggest(true))
                                 .then(CommandManager.argument("new", StringArgumentType.string())
                                     .executes(context -> {return runRenameFlowCommand(StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
                                 )
@@ -1895,7 +1947,7 @@ public class CommandRegistrater {
                         )
                         .then(CommandManager.literal("enable")
                             .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest())
+                                .suggests(LogicFlowSuggestion.suggest(true))
                                 .then(CommandManager.argument("enabled", BoolArgumentType.bool())
                                     .executes(context -> {return runSetEnableFlowCommand(StringArgumentType.getString(context, "name"), BoolArgumentType.getBool(context, "enabled"), context);})
                                 )
@@ -1904,13 +1956,13 @@ public class CommandRegistrater {
                         )
                         .then(CommandManager.literal("execute")
                             .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest())
+                                .suggests(LogicFlowSuggestion.suggest(true))
                                 .executes(context -> {return runExecuteFlowCommand(StringArgumentType.getString(context, "name"), context);})
                             )
                         )
                         .then(CommandManager.literal("view")
                             .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest())
+                                .suggests(LogicFlowSuggestion.suggest(true))
                                 .executes(context -> {return runViewFlowCommand(StringArgumentType.getString(context, "name"), context);})
                             )
                         )
@@ -1927,7 +1979,7 @@ public class CommandRegistrater {
                         )
                         .then(CommandManager.literal("delete")
                             .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest())
+                                .suggests(LogicFlowSuggestion.suggest(true))
                                 .executes(context -> {return runDeleteFlowCommand(StringArgumentType.getString(context, "name"), context);})
                             )
                         )

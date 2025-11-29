@@ -39,6 +39,7 @@ public class ServerData {
     public ServerData() {
         playerData = new HashMap<>();
         logicFlows = new HashMap<>();
+        executeHistory = new ArrayList<>();
         scheduledTasks = new ArrayList<>();
         killerEntities = new HashSet<>();
         gptRequestStatus = new HashMap<>();

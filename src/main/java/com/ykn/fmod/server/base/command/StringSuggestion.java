@@ -15,26 +15,32 @@ import net.minecraft.server.command.ServerCommandSource;
 public class StringSuggestion implements SuggestionProvider<ServerCommandSource> {
 
     public Collection<String> stringList;
+    private final boolean needQuote;
 
-    public StringSuggestion(Collection<String> list) {
+    public StringSuggestion(Collection<String> list, boolean needQuote) {
         this.stringList = list;
+        this.needQuote = needQuote;
     }
 
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String item : stringList) {
-            if (item.startsWith(builder.getRemaining())) {
-                builder.suggest(item);
+            String suggestion = item;
+            if (needQuote) {
+                suggestion = "\"" + suggestion + "\"";
+            }
+            if (suggestion.startsWith(builder.getRemaining())) {
+                builder.suggest(suggestion);
             }
         }
         return builder.buildFuture();
     }
 
-    public static StringSuggestion suggest(Collection<String> list) {
-        return new StringSuggestion(list);
+    public static StringSuggestion suggest(Collection<String> list, boolean needQuote) {
+        return new StringSuggestion(list, needQuote);
     }
 
-    public static StringSuggestion suggestSelf() {
+    public static StringSuggestion suggestSelf(boolean needQuote) {
         Collection<String> self = new ArrayList<>();
         self.add("this.server");
         self.add("this.entity");
@@ -45,7 +51,7 @@ public class StringSuggestion implements SuggestionProvider<ServerCommandSource>
         self.add("null");
         self.add("true");
         self.add("false");
-        return new StringSuggestion(self);
+        return new StringSuggestion(self, needQuote);
     }
 
     public StringSuggestion update(Collection<String> list) {

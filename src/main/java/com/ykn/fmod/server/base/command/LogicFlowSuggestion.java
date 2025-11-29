@@ -14,23 +14,29 @@ import net.minecraft.server.command.ServerCommandSource;
 
 public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSource> {
 
-    public LogicFlowSuggestion() {
+    private final boolean needQuote;
 
+    public LogicFlowSuggestion(boolean needQuote) {
+        this.needQuote = needQuote;
     }
 
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         Collection<String> flows = Util.getServerData(context.getSource().getServer()).logicFlows.keySet();
         for (String flow : flows) {
-            if (flow.startsWith(builder.getRemaining())) {
-                builder.suggest(flow);
+            String suggestion = flow;
+            if (needQuote) {
+                suggestion = "\"" + suggestion + "\"";
+            }
+            if (suggestion.startsWith(builder.getRemaining())) {
+                builder.suggest(suggestion);
             }
         }
         return builder.buildFuture();
     }
 
-    public static LogicFlowSuggestion suggest() {
-        return new LogicFlowSuggestion();
+    public static LogicFlowSuggestion suggest(boolean needQuote) {
+        return new LogicFlowSuggestion(needQuote);
     }
 
 }

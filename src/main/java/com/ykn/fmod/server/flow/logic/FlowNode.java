@@ -52,7 +52,7 @@ public class FlowNode {
         this.name = name;
         this.inputs = new ArrayList<>();
         for (int i = 0; i < inputNumber; i++) {
-            this.inputs.add(null);
+            this.inputs.add(DataReference.createEmptyReference());
         }
         this.nextNodeIds = new ArrayList<>();
         for (int i = 0; i < branchNumber; i++) {
