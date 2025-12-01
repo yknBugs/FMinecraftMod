@@ -73,6 +73,25 @@ public class ExecutionContext {
         return this.nodeStatuses.get(nodeId);
     }
 
+    public FlowNode getStartNode() {
+        return this.flow.getNode(this.flow.startNodeId);
+    }
+
+    public void setStartNodeOutput(int outputIndex, Object value) {
+        NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.startNodeId);
+        if (startNodeStatus != null) {
+            startNodeStatus.setOutput(outputIndex, value);
+        }
+    }
+
+    public int getStartNodeOutputNumber() {
+        FlowNode startNode = this.flow.getNode(this.flow.startNodeId);
+        if (startNode != null) {
+            return startNode.getMetadata().outputNumber;
+        }
+        return 0;
+    }
+
     public void setVariable(String name, Object value) {
         this.variables.put(name, value);
     }

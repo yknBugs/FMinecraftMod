@@ -55,7 +55,7 @@ public class IfConditionNode extends FlowNode {
     @Override
     public long getNextNodeId(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         Object conditionObj = resolvedInputs.get(0);
-        Boolean condition = TypeAdaptor.parseBooleanLikeObject(conditionObj);
+        Boolean condition = TypeAdaptor.parse(conditionObj).asBoolean();
         if (condition == null) {
             throw new LogicException(null, Util.parseTranslateableText("fmod.node.if.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
         } else if (condition == true) {

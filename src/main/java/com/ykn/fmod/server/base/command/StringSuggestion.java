@@ -1,6 +1,5 @@
 package com.ykn.fmod.server.base.command;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -38,20 +37,6 @@ public class StringSuggestion implements SuggestionProvider<ServerCommandSource>
 
     public static StringSuggestion suggest(Collection<String> list, boolean needQuote) {
         return new StringSuggestion(list, needQuote);
-    }
-
-    public static StringSuggestion suggestSelf(boolean needQuote) {
-        Collection<String> self = new ArrayList<>();
-        self.add("this.server");
-        self.add("this.entity");
-        self.add("this.position");
-        self.add("this.world");
-        self.add("this.displayName");
-        self.add("this.name");
-        self.add("null");
-        self.add("true");
-        self.add("false");
-        return new StringSuggestion(self, needQuote);
     }
 
     public StringSuggestion update(Collection<String> list) {

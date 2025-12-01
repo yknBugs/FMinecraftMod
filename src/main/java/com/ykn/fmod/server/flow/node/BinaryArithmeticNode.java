@@ -68,7 +68,7 @@ public class BinaryArithmeticNode extends FlowNode {
         Object num1Obj = resolvedInputs.get(0);
         Object num2Obj = resolvedInputs.get(1);
         Object opObj = resolvedInputs.get(2);
-        String operation = TypeAdaptor.parseStringLikeObject(opObj);
+        String operation = TypeAdaptor.parse(opObj).asString();
 
         // Special handling for "==" operator
         if ("=".equals(operation) || "==".equals(operation)) {
@@ -106,32 +106,36 @@ public class BinaryArithmeticNode extends FlowNode {
         }
 
         // Hanlding Unique cases for some specific data types
-        if (num1Obj instanceof Vec3d && num2Obj instanceof Vec3d) {
-            Vec3d vec1 = (Vec3d) num1Obj;
-            Vec3d vec2 = (Vec3d) num2Obj;
+        Double tryDoubleNum1 = TypeAdaptor.parse(num1Obj).asDouble();
+        Double tryDoubleNum2 = TypeAdaptor.parse(num2Obj).asDouble();
+
+        // Try Vec3d operations
+        Vec3d tryVec3dNum1 = TypeAdaptor.parse(num1Obj).asVec3d();
+        Vec3d tryVec3dNum2 = TypeAdaptor.parse(num2Obj).asVec3d();
+        if (tryVec3dNum1 != null && tryVec3dNum2 != null) {
             Vec3d result;
             switch (operation.toLowerCase()) {
                 case "+":
-                    result = vec1.add(vec2);
+                    result = tryVec3dNum1.add(tryVec3dNum2);
                     break;
                 case "-":
-                    result = vec1.subtract(vec2);
+                    result = tryVec3dNum1.subtract(tryVec3dNum2);
                     break;
                 case "*":
                 case "x":
-                    result = new Vec3d(vec1.x * vec2.x, vec1.y * vec2.y, vec1.z * vec2.z);
+                    result = new Vec3d(tryVec3dNum1.x * tryVec3dNum2.x, tryVec3dNum1.y * tryVec3dNum2.y, tryVec3dNum1.z * tryVec3dNum2.z);
                     break;
                 case "/":
                     // NaN is valid here to represent division by zero
-                    result = new Vec3d(vec1.x / vec2.x, vec1.y / vec2.y, vec1.z / vec2.z);
+                    result = new Vec3d(tryVec3dNum1.x / tryVec3dNum2.x, tryVec3dNum1.y / tryVec3dNum2.y, tryVec3dNum1.z / tryVec3dNum2.z);
                     break;
                 case "@":
                     // dot product
-                    status.setOutput(0, vec1.dotProduct(vec2));
+                    status.setOutput(0, tryVec3dNum1.dotProduct(tryVec3dNum2));
                     return;
                 case "#":
                     // cross product
-                    result = vec1.crossProduct(vec2);
+                    result = tryVec3dNum1.crossProduct(tryVec3dNum2);
                     break;
                 default:
                     throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
@@ -140,37 +144,22 @@ public class BinaryArithmeticNode extends FlowNode {
             return;
         }
 
-        if (num1Obj instanceof Vec3d || num2Obj instanceof Vec3d) {
-            Vec3d vec = null;
-            Double scalar = null;
-            if (num1Obj instanceof Vec3d) {
-                vec = (Vec3d) num1Obj;
-                scalar = TypeAdaptor.parseNumberLikeObject(num2Obj);
-                if (scalar == null) {
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
-                }
-            } else {
-                vec = (Vec3d) num2Obj;
-                scalar = TypeAdaptor.parseNumberLikeObject(num1Obj);
-                if (scalar == null) {
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
-                }
-            }
+        if (tryVec3dNum1 != null && tryDoubleNum2 != null) {
             Vec3d result;
             switch (operation.toLowerCase()) {
                 case "+":
-                    result = new Vec3d(vec.x + scalar, vec.y + scalar, vec.z + scalar);
+                    result = new Vec3d(tryVec3dNum1.x + tryDoubleNum2, tryVec3dNum1.y + tryDoubleNum2, tryVec3dNum1.z + tryDoubleNum2);
                     break;
                 case "-":
-                    result = new Vec3d(vec.x - scalar, vec.y - scalar, vec.z - scalar);
+                    result = new Vec3d(tryVec3dNum1.x - tryDoubleNum2, tryVec3dNum1.y - tryDoubleNum2, tryVec3dNum1.z - tryDoubleNum2);
                     break;
                 case "*":
                 case "x":
-                    result = new Vec3d(vec.x * scalar, vec.y * scalar, vec.z * scalar);
+                    result = new Vec3d(tryVec3dNum1.x * tryDoubleNum2, tryVec3dNum1.y * tryDoubleNum2, tryVec3dNum1.z * tryDoubleNum2);
                     break;
                 case "/":
                     // NaN is valid here to represent division by zero
-                    result = new Vec3d(vec.x / scalar, vec.y / scalar, vec.z / scalar);
+                    result = new Vec3d(tryVec3dNum1.x / tryDoubleNum2, tryVec3dNum1.y / tryDoubleNum2, tryVec3dNum1.z / tryDoubleNum2);
                     break;
                 default:
                     throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
@@ -178,28 +167,59 @@ public class BinaryArithmeticNode extends FlowNode {
             status.setOutput(0, result);
             return;
         }
-
-        if (num1Obj instanceof Vec2f && num2Obj instanceof Vec2f) {
-            Vec2f vec1 = (Vec2f) num1Obj;
-            Vec2f vec2 = (Vec2f) num2Obj;
-            Vec2f result;
+        if (tryDoubleNum1 != null && tryVec3dNum2 != null) {
+            Vec3d result;
             switch (operation.toLowerCase()) {
                 case "+":
-                    result = vec1.add(vec2);
+                    result = new Vec3d(tryDoubleNum1 + tryVec3dNum2.x, tryDoubleNum1 + tryVec3dNum2.y, tryDoubleNum1 + tryVec3dNum2.z);
                     break;
                 case "-":
-                    result = new Vec2f(vec1.x - vec2.x, vec1.y - vec2.y);
+                    result = new Vec3d(tryDoubleNum1 - tryVec3dNum2.x, tryDoubleNum1 - tryVec3dNum2.y, tryDoubleNum1 - tryVec3dNum2.z);
                     break;
                 case "*":
                 case "x":
-                    result = new Vec2f(vec1.x * vec2.x, vec1.y * vec2.y);
+                    result = new Vec3d(tryDoubleNum1 * tryVec3dNum2.x, tryDoubleNum1 * tryVec3dNum2.y, tryDoubleNum1 * tryVec3dNum2.z);
                     break;
                 case "/":
-                    result = new Vec2f(vec1.x / vec2.x, vec1.y / vec2.y);
+                    // NaN is valid here to represent division by zero
+                    result = new Vec3d(tryDoubleNum1 / tryVec3dNum2.x, tryDoubleNum1 / tryVec3dNum2.y, tryDoubleNum1 / tryVec3dNum2.z);
+                    break;
+                default:
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            }
+            status.setOutput(0, result);
+            return;
+        }
+        if (tryVec3dNum1 != null && tryVec3dNum2 == null && tryDoubleNum2 == null) {
+            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
+        }
+        if (tryVec3dNum2 != null && tryVec3dNum1 == null && tryDoubleNum1 == null) {
+            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
+        }
+
+        // Try Vec2f operations
+        Vec2f tryVec2fNum1 = TypeAdaptor.parse(num1Obj).asVec2f();
+        Vec2f tryVec2fNum2 = TypeAdaptor.parse(num2Obj).asVec2f();
+
+        if (tryVec2fNum1 != null && tryVec2fNum2 != null) {
+            Vec2f result;
+            switch (operation.toLowerCase()) {
+                case "+":
+                    result = tryVec2fNum1.add(tryVec2fNum2);
+                    break;
+                case "-":
+                    result = new Vec2f(tryVec2fNum1.x - tryVec2fNum2.x, tryVec2fNum1.y - tryVec2fNum2.y);
+                    break;
+                case "*":
+                case "x":
+                    result = new Vec2f(tryVec2fNum1.x * tryVec2fNum2.x, tryVec2fNum1.y * tryVec2fNum2.y);
+                    break;
+                case "/":
+                    result = new Vec2f(tryVec2fNum1.x / tryVec2fNum2.x, tryVec2fNum1.y / tryVec2fNum2.y);
                     break;
                 case "@":
                     // dot product
-                    status.setOutput(0, vec1.dot(vec2));
+                    status.setOutput(0, tryVec2fNum1.dot(tryVec2fNum2));
                     return;
                 default:
                     throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
@@ -208,37 +228,22 @@ public class BinaryArithmeticNode extends FlowNode {
             return;
         }
 
-        if (num1Obj instanceof Vec2f || num2Obj instanceof Vec2f) {
-            Vec2f vec = null;
-            Double scalar = null;
-            if (num1Obj instanceof Vec2f) {
-                vec = (Vec2f) num1Obj;
-                scalar = TypeAdaptor.parseNumberLikeObject(num2Obj);
-                if (scalar == null) {
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
-                }
-            } else {
-                vec = (Vec2f) num2Obj;
-                scalar = TypeAdaptor.parseNumberLikeObject(num1Obj);
-                if (scalar == null) {
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
-                }
-            }
-            float scalarF = scalar.floatValue();
+        if (tryVec2fNum1 != null && tryDoubleNum2 != null) {
+            float scalarF = tryDoubleNum2.floatValue();
             Vec2f result;
             switch (operation.toLowerCase()) {
                 case "+":
-                    result = new Vec2f(vec.x + scalarF, vec.y + scalarF);
+                    result = new Vec2f(tryVec2fNum1.x + scalarF, tryVec2fNum1.y + scalarF);
                     break;
                 case "-":
-                    result = new Vec2f(vec.x - scalarF, vec.y - scalarF);
+                    result = new Vec2f(tryVec2fNum1.x - scalarF, tryVec2fNum1.y - scalarF);
                     break;
                 case "*":
                 case "x":
-                    result = new Vec2f(vec.x * scalarF, vec.y * scalarF);
+                    result = new Vec2f(tryVec2fNum1.x * scalarF, tryVec2fNum1.y * scalarF);
                     break;
                 case "/":
-                    result = new Vec2f(vec.x / scalarF, vec.y / scalarF);
+                    result = new Vec2f(tryVec2fNum1.x / scalarF, tryVec2fNum1.y / scalarF);
                     break;
                 default:
                     throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
@@ -246,19 +251,118 @@ public class BinaryArithmeticNode extends FlowNode {
             status.setOutput(0, result);
             return;
         }
+        if (tryDoubleNum1 != null && tryVec2fNum2 != null) {
+            float scalarF = tryDoubleNum1.floatValue();
+            Vec2f result;
+            switch (operation.toLowerCase()) {
+                case "+":
+                    result = new Vec2f(scalarF + tryVec2fNum2.x, scalarF + tryVec2fNum2.y);
+                    break;
+                case "-":
+                    result = new Vec2f(scalarF - tryVec2fNum2.x, scalarF - tryVec2fNum2.y);
+                    break;
+                case "*":
+                case "x":
+                    result = new Vec2f(scalarF * tryVec2fNum2.x, scalarF * tryVec2fNum2.y);
+                    break;
+                case "/":
+                    result = new Vec2f(scalarF / tryVec2fNum2.x, scalarF / tryVec2fNum2.y);
+                    break;
+                default:
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            }
+            status.setOutput(0, result);
+            return;
+        }
+        if (tryVec2fNum1 != null && tryVec2fNum2 == null && tryDoubleNum2 == null) {
+            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
+        }
+        if (tryVec2fNum2 != null && tryVec2fNum1 == null && tryDoubleNum1 == null) {
+            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
+        }
 
-        // String and Text support append operation
-        if (num1Obj instanceof String && num2Obj instanceof String) {
-            String str1 = (String) num1Obj;
-            String str2 = (String) num2Obj;
-            if ("+".equals(operation)) {
-                status.setOutput(0, str1 + str2);
-                return;
-            } else {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+        // Double operations
+        if (tryDoubleNum1 != null && tryDoubleNum2 != null) {
+            try {
+                switch (operation.toLowerCase()) {
+                    case "+":
+                        status.setOutput(0, tryDoubleNum1 + tryDoubleNum2);
+                        return;
+                    case "-":
+                        status.setOutput(0, tryDoubleNum1 - tryDoubleNum2);
+                        return;
+                    case "*":
+                    case "x":
+                        status.setOutput(0, tryDoubleNum1 * tryDoubleNum2);
+                        return;
+                    case "/":
+                        // NaN is valid here to represent division by zero
+                        status.setOutput(0, tryDoubleNum1 / tryDoubleNum2);
+                        return;
+                    case "%":
+                        if (tryDoubleNum2 == 0) {
+                            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.divzero", this.name), null);
+                        }
+                        status.setOutput(0, tryDoubleNum1 % tryDoubleNum2);
+                        return;
+                    case ">":
+                        status.setOutput(0, tryDoubleNum1 > tryDoubleNum2);
+                        return;
+                    case "<":
+                        status.setOutput(0, tryDoubleNum1 < tryDoubleNum2);
+                        return;
+                    case ">=":
+                        status.setOutput(0, tryDoubleNum1 >= tryDoubleNum2);
+                        return;
+                    case "<=":
+                        status.setOutput(0, tryDoubleNum1 <= tryDoubleNum2);
+                        return;
+                    case "^":
+                        status.setOutput(0, Math.pow(tryDoubleNum1, tryDoubleNum2));
+                        return;
+                    case "max":
+                        status.setOutput(0, Math.max(tryDoubleNum1, tryDoubleNum2));
+                        return;
+                    case "min":
+                        status.setOutput(0, Math.min(tryDoubleNum1, tryDoubleNum2));
+                        return;
+                    case "log":
+                        status.setOutput(0, Math.log(tryDoubleNum2) / Math.log(tryDoubleNum1));
+                        return;
+                    case "atan2":
+                        status.setOutput(0, Math.atan2(tryDoubleNum1, tryDoubleNum2));
+                        return;
+                    case "hypot":
+                        status.setOutput(0, Math.hypot(tryDoubleNum1, tryDoubleNum2));
+                        return;
+                    default:
+                        throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                }
+            } catch (ArithmeticException ex) {
+                throw new LogicException(ex, Util.parseTranslateableText("fmod.node.bialu.error.arithmetic", this.name), null);
             }
         }
 
+        // Logic expressions for boolean inputs
+        Boolean tryBoolNum1 = TypeAdaptor.parse(num1Obj).asBoolean();
+        Boolean tryBoolNum2 = TypeAdaptor.parse(num2Obj).asBoolean();
+
+        if (tryBoolNum1 != null && tryBoolNum2 != null) {
+            switch (operation.toLowerCase()) {
+                case "and":
+                case "&&":
+                    status.setOutput(0, tryBoolNum1 && tryBoolNum2);
+                    return;
+                case "or":
+                case "||":
+                    status.setOutput(0, tryBoolNum1 || tryBoolNum2);
+                    return;
+                default:
+                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            }
+        }
+
+        // String and Text support append operation
         if (num1Obj instanceof Text && num2Obj instanceof Text) {
             Text text1 = (Text) num1Obj;
             Text text2 = (Text) num2Obj;
@@ -270,93 +374,26 @@ public class BinaryArithmeticNode extends FlowNode {
             } else {
                 throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
-        }
-
-        // Logic expressions for boolean inputs
-        if (num1Obj instanceof Boolean && num2Obj instanceof Boolean) {
-            Boolean bool1 = (Boolean) num1Obj;
-            Boolean bool2 = (Boolean) num2Obj;
-            switch (operation.toLowerCase()) {
-                case "and":
-                case "&&":
-                    status.setOutput(0, bool1 && bool2);
-                    return;
-                case "or":
-                case "||":
-                    status.setOutput(0, bool1 || bool2);
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+        } else if (num1Obj instanceof Text) {
+            String str2 = TypeAdaptor.parse(num2Obj).asString();
+            Text text1 = (Text) num1Obj;
+            MutableText result = Text.empty();
+            if ("+".equals(operation)) {
+                result = result.append(text1).append(str2);
+                status.setOutput(0, result);
+                return;
+            } else {
+                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
         }
 
-        // Fallback to number parsing and arithmetic
-        Double number1 = TypeAdaptor.parseNumberLikeObject(num1Obj);
-        Double number2 = TypeAdaptor.parseNumberLikeObject(num2Obj);
-        try {
-            if (number1 == null) {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
-            }
-            if (number2 == null) {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
-            }
-
-            switch (operation.toLowerCase()) {
-                case "+":
-                    status.setOutput(0, number1 + number2);
-                    return;
-                case "-":
-                    status.setOutput(0, number1 - number2);
-                    return;
-                case "*":
-                case "x":
-                    status.setOutput(0, number1 * number2);
-                    return;
-                case "/":
-                    // NaN is valid here to represent division by zero
-                    status.setOutput(0, number1 / number2);
-                    return;
-                case "%":
-                    if (number2 == 0) {
-                        throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.divzero", this.name), null);
-                    }
-                    status.setOutput(0, number1 % number2);
-                    return;
-                case ">":
-                    status.setOutput(0, number1 > number2);
-                    return;
-                case "<":
-                    status.setOutput(0, number1 < number2);
-                    return;
-                case ">=":
-                    status.setOutput(0, number1 >= number2);
-                    return;
-                case "<=":
-                    status.setOutput(0, number1 <= number2);
-                    return;
-                case "^":
-                    status.setOutput(0, Math.pow(number1, number2));
-                    return;
-                case "max":
-                    status.setOutput(0, Math.max(number1, number2));
-                    return;
-                case "min":
-                    status.setOutput(0, Math.min(number1, number2));
-                    return;
-                case "log":
-                    status.setOutput(0, Math.log(number2) / Math.log(number1));
-                    return;
-                case "atan2":
-                    status.setOutput(0, Math.atan2(number1, number2));
-                    return;
-                case "hypot":
-                    status.setOutput(0, Math.hypot(number1, number2));
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
-            }
-        } catch (ArithmeticException ex) {
-            throw new LogicException(ex, Util.parseTranslateableText("fmod.node.bialu.error.arithmetic", this.name), null);
+        String str1 = TypeAdaptor.parse(num1Obj).asString();
+        String str2 = TypeAdaptor.parse(num2Obj).asString();
+        if ("+".equals(operation)) {
+            status.setOutput(0, str1 + str2);
+            return;
+        } else {
+            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
         }
     }
 }

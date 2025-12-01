@@ -22,7 +22,7 @@ import net.minecraft.text.Text;
 public class DummyNode extends FlowNode {
 
     public DummyNode(long id, String name) {
-        super(id, name, 0, 0, 1);
+        super(id, name, 0, 1, 1);
         this.type = "DummyNode";
     }
 
@@ -36,6 +36,9 @@ public class DummyNode extends FlowNode {
         List<Text> outputNames = new ArrayList<>();
         List<Text> outputDescriptions = new ArrayList<>();
         List<Text> outputDataTypes = new ArrayList<>();
+        outputNames.add(Util.parseTranslateableText("fmod.node.dummy.output.name"));
+        outputDescriptions.add(Util.parseTranslateableText("fmod.node.dummy.output.feat"));
+        outputDataTypes.add(Util.parseTranslateableText("fmod.node.dummy.output.type"));
         List<Text> branchNames = new ArrayList<>();
         List<Text> branchDescriptions = new ArrayList<>();
         branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));

@@ -3,51 +3,76 @@ package com.ykn.fmod.server.base.util;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.block.Block;
+import net.minecraft.entity.Entity;
+import net.minecraft.item.ItemStack;
 import net.minecraft.text.Text;
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.Vec3i;
 
+/**
+ * Utility class for adapting and parsing different object types.
+ * Class Cast Rules:
+ * - String: Available for all kinds of objects.
+ * - Double, Boolean, Vec3d, Vec2f: One single object can only be cast to one of these types.
+ * Recommended try cast sequence: Null -> Vec3d -> Vec2f -> Double -> Boolean -> String
+ */
 public class TypeAdaptor {
+
+    private Object o;
+
+    private TypeAdaptor(Object o) {
+        this.o = o;
+    }
+
+    public static TypeAdaptor parse(Object o) {
+        return new TypeAdaptor(o);
+    }
 
     /**
      * Parses an object into a string representation.
-     *
-     * @param obj the object to be parsed; can be null
      * @return the string representation of the object; returns an empty string if the object is null
      */
     @NotNull
-    public static String parseStringLikeObject(@Nullable Object obj) {
-        if (obj == null) {
+    public String asString() {
+        if (o == null) {
             return "";
-        } else if (obj instanceof String) {
-            return (String) obj;
-        } else if (obj instanceof Text) {
-            Text textObj = (Text) obj;
+        } else if (o instanceof String) {
+            return (String) o;
+        } else if (o instanceof Text) {
+            Text textObj = (Text) o;
             return textObj.getString();
+        } else if (o instanceof Entity) {
+            Entity entity = (Entity) o;
+            return entity.getDisplayName().getString();
+        } else if (o instanceof ItemStack) {
+            ItemStack itemStack = (ItemStack) o;
+            return itemStack.getName().getString();
+        } else if (o instanceof Block) {
+            Block block = (Block) o;
+            return block.getName().getString();
         } else {
-            return obj.toString();
+            return o.toString();
         }
     }
 
     /**
      * Parses an object into a Boolean representation.
-     *
-     * @param obj the object to be parsed; can be null
      * @return the Boolean representation of the object; returns null if parsing fails
      */
     @Nullable
-    public static Boolean parseBooleanLikeObject(@Nullable Object obj) {
-        if (obj == null) {
+    public Boolean asBoolean() {
+        if (o == null) {
             return null;
-        } else if (obj instanceof Boolean) {
-            return (Boolean) obj;
-        } else if (obj instanceof Number) {
-            Number num = (Number) obj;
-            return num.intValue() != 0;
+        } else if (o instanceof Boolean) {
+            return (Boolean) o;
         } else {
-            String str = parseStringLikeObject(obj);
-            if ("yes".equalsIgnoreCase(str) || "true".equalsIgnoreCase(str) || "1".equals(str) || "on".equalsIgnoreCase(str) ||
+            String str = this.asString().trim();
+            if ("yes".equalsIgnoreCase(str) || "true".equalsIgnoreCase(str) || "on".equalsIgnoreCase(str) ||
                 "enable".equalsIgnoreCase(str) || "y".equalsIgnoreCase(str) || "open".equalsIgnoreCase(str)) {
                 return true;
-            } else if ("no".equalsIgnoreCase(str) || "false".equalsIgnoreCase(str) || "0".equals(str) || "off".equalsIgnoreCase(str) ||
+            } else if ("no".equalsIgnoreCase(str) || "false".equalsIgnoreCase(str) || "off".equalsIgnoreCase(str) ||
                        "disable".equalsIgnoreCase(str) || "n".equalsIgnoreCase(str) || "close".equalsIgnoreCase(str)) {
                 return false;
             } else {
@@ -58,19 +83,21 @@ public class TypeAdaptor {
     
     /**
      * Parses an object into a Double representation.
-     *
-     * @param obj the object to be parsed; can be null
      * @return the Double representation of the object; returns null if parsing fails
      */
     @Nullable
-    public static Double parseNumberLikeObject(@Nullable Object obj) {
-        if (obj == null) {
+    public Double asDouble() {
+        if (o == null) {
             return null;
-        } else if (obj instanceof Number) {
-            Number number = (Number) obj;
+        } else if (o instanceof Number) {
+            Number number = (Number) o;
             return number.doubleValue();
+        } else if (o instanceof ItemStack) {
+            ItemStack itemStack = (ItemStack) o;
+            double count = itemStack.getCount();
+            return count;
         } else {
-            String str = parseStringLikeObject(obj);
+            String str = this.asString().trim();
             try {
                 return Double.parseDouble(str);
             } catch (NumberFormatException e) {
@@ -78,4 +105,63 @@ public class TypeAdaptor {
             }
         }
     }
-}
+
+    /**
+     * Parses an object into a Vec3d representation.
+     * @return the Vec3d representation of the object; returns null if parsing fails
+     */
+    @Nullable
+    public Vec3d asVec3d() {
+        if (o instanceof Vec3d) {
+            return (Vec3d) o;
+        } else if (o instanceof Vec3i) {
+            Vec3i vec3i = (Vec3i) o;
+            Vec3d vec3d = new Vec3d(vec3i.getX(), vec3i.getY(), vec3i.getZ());
+            return vec3d;
+        } else if (o instanceof Entity) {
+            Entity entity = (Entity) o;
+            return entity.getPos();
+        } else {
+            // String will usually be in format (x, y, z) in Minecraft
+            String str = this.asString().trim();
+            str = str.replace("(", "").replace(")", "");
+            String[] parts = str.split(",");
+            if (parts.length == 3) {
+                try {
+                    double x = Double.parseDouble(parts[0].trim());
+                    double y = Double.parseDouble(parts[1].trim());
+                    double z = Double.parseDouble(parts[2].trim());
+                    return new Vec3d(x, y, z);
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Parses an object into a Vec2f representation.
+     * @return the Vec2f representation of the object; returns null if parsing fails
+     */
+    @Nullable
+    public Vec2f asVec2f() {
+        if (o instanceof Vec2f) {
+            return (Vec2f) o;
+        } else {
+            String str = this.asString().trim();
+            str = str.replace("(", "").replace(")", "");
+            String[] parts = str.split(",");
+            if (parts.length == 2) {
+                try {
+                    float x = Float.parseFloat(parts[0].trim());
+                    float y = Float.parseFloat(parts[1].trim());
+                    return new Vec2f(x, y);
+                } catch (NumberFormatException e) {
+                    return null;
+                }
+            }
+            return null;
+        }
+    }
+}   

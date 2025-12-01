@@ -44,9 +44,9 @@ import com.ykn.fmod.server.base.util.GptHelper;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
 import com.ykn.fmod.server.base.util.MessageReceiver;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
-import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
@@ -1413,6 +1413,9 @@ public class CommandRegistrater {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
             ExecutionContext ctx = new ExecutionContext(targetFlow.flow);
+            if (ctx.getStartNodeOutputNumber() > 0) {
+                ctx.setStartNodeOutput(0, context.getSource().getServer());
+            }
             ctx.execute(Util.serverConfig.getMaxFlowLength());
             data.executeHistory.add(ctx);
             if (ctx.getException() != null) {
@@ -1646,27 +1649,8 @@ public class CommandRegistrater {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
             // parse const value
-            Object parsedValue = value;
-            // parse special values related to the command source but hard to describe it as a String
-            if ("this.server".equals(value)) {
-                parsedValue = context.getSource().getServer();
-            } else if ("this.entity".equals(value)) {
-                parsedValue = context.getSource().getEntity();
-            } else if ("this.position".equals(value)) {
-                parsedValue = context.getSource().getPosition();
-            } else if ("this.world".equals(value)) {
-                parsedValue = context.getSource().getWorld();
-            } else if ("this.displayName".equals(value)) {
-                parsedValue = context.getSource().getDisplayName();
-            } else if ("this.name".equals(value)) {
-                parsedValue = context.getSource().getName();
-            } else if (TypeAdaptor.parseNumberLikeObject(value) != null) {
-                parsedValue = TypeAdaptor.parseNumberLikeObject(value);
-            } else if (TypeAdaptor.parseBooleanLikeObject(value) != null) {
-                parsedValue = TypeAdaptor.parseBooleanLikeObject(value);
-            } else if ("null".equals(value)) {
-                parsedValue = null;
-            }
+            DataReference ref = FlowSerializer.parseConstDataReference(value);
+            Object parsedValue = ref.value;
             String parsedValueStr = String.valueOf(parsedValue);
             targetFlow.setConstInput(name, index - 1, parsedValue);
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
@@ -2040,7 +2024,6 @@ public class CommandRegistrater {
                                         .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
                                             .then(CommandManager.argument("value", StringArgumentType.greedyString())
-                                                .suggests(StringSuggestion.suggestSelf(false))
                                                 .executes(context -> {return runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context);})
                                             )
                                         )

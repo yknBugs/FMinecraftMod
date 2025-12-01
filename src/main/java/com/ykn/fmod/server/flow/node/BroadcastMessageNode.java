@@ -89,7 +89,7 @@ public class BroadcastMessageNode extends FlowNode {
         } else if (typeObj instanceof MessageLocation) {
             return (MessageLocation) typeObj;
         } else {
-            String typeStr = TypeAdaptor.parseStringLikeObject(typeObj);
+            String typeStr = TypeAdaptor.parse(typeObj).asString().trim();
             if ("actionbar".equalsIgnoreCase(typeStr)) {
                 return MessageLocation.ACTIONBAR;
             } else if ("chat".equalsIgnoreCase(typeStr)) {
@@ -106,7 +106,7 @@ public class BroadcastMessageNode extends FlowNode {
         } else if (messageObj instanceof Text) {
             return (Text) messageObj;
         } else {
-            String messageStr = TypeAdaptor.parseStringLikeObject(messageObj);
+            String messageStr = TypeAdaptor.parse(messageObj).asString();
             return Text.literal(messageStr);
         }
     }

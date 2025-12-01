@@ -1,5 +1,6 @@
 package com.ykn.fmod.server.flow.tool;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,9 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
+
+import net.minecraft.util.math.Vec2f;
+import net.minecraft.util.math.Vec3d;
 
 /**
  * LogicFlow Serializer
@@ -45,6 +49,26 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  */
 public class FlowSerializer {
 
+    public static DataReference parseConstDataReference(String valueStr) {
+        Vec3d valueVec3d = TypeAdaptor.parse(valueStr).asVec3d();
+        Vec2f valueVec2f = TypeAdaptor.parse(valueStr).asVec2f();
+        Double valueDouble = TypeAdaptor.parse(valueStr).asDouble();
+        Boolean boolValue = TypeAdaptor.parse(valueStr).asBoolean();
+        if (valueStr == null || "null".equals(valueStr)) {
+            return DataReference.createEmptyReference();
+        } else if (valueVec3d != null) {
+            return DataReference.createConstantReference(valueVec3d);
+        } else if (valueVec2f != null) {
+            return DataReference.createConstantReference(valueVec2f);
+        } else if (valueDouble != null) {
+            return DataReference.createConstantReference(valueDouble);
+        } else if (boolValue != null) {
+            return DataReference.createConstantReference(boolValue);
+        } else {
+            return DataReference.createConstantReference(valueStr);
+        }
+    }
+
     private static JsonObject serializeDataReference(DataReference ref) {
         JsonObject json = new JsonObject();
         switch (ref.type) {
@@ -69,21 +93,7 @@ public class FlowSerializer {
         String type = json.get("type").getAsString();
         if ("const".equals(type)) {
             String valueStr = json.get("value").getAsString();
-            Double value = TypeAdaptor.parseNumberLikeObject(valueStr);
-            Boolean boolValue = TypeAdaptor.parseBooleanLikeObject(valueStr);
-            if (valueStr == null || "null".equals(valueStr)) {
-                return DataReference.createEmptyReference();
-            } else if ("1".equals(valueStr)) {
-                return DataReference.createConstantReference(1);
-            } else if ("0".equals(valueStr)) {
-                return DataReference.createConstantReference(0);
-            } else if (boolValue != null) {
-                return DataReference.createConstantReference(boolValue);
-            } else if (value != null) {
-                return DataReference.createConstantReference(value);
-            } else {
-                return DataReference.createConstantReference(valueStr);
-            }
+            return parseConstDataReference(valueStr);
         } else if ("reference".equals(type)) {
             long id = json.get("id").getAsLong();
             int index = json.get("index").getAsInt();
@@ -263,7 +273,7 @@ public class FlowSerializer {
         if (!Files.isRegularFile(path)) {
             return null;
         }
-        try (var reader = Files.newBufferedReader(path)) {
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
             Gson gson = new Gson();
             JsonObject json = gson.fromJson(reader, JsonObject.class);
             LogicFlow flow = fromJson(json);

@@ -6,6 +6,8 @@ A Minecraft Mod for Management
 
 This is a server side mod, and it can work even the client does not have this mod installed.
 
+- In-game node based simple flowchart engine. Build your custom feature at any time.
+
 - Talk to GPT in game with simple Markdown syntax highlight.
 
 - Playing noteblock song to all online players.
@@ -58,6 +60,14 @@ Markdown Syntax Highlight has many limitations.
 Say command cannot render colored text (Need more info).
 
 ## Changelog
+
+### Version 0.2.0
+
+Important Update: Custom Logic Flow
+
+- Use command /f flow to build simple algorithm without need to restart the game.
+- Save your custom flow into a file and load it back at any time.
+- The .flow file should be put into the folder config/fminecraftmod.
 
 ### Version 0.1.4
 

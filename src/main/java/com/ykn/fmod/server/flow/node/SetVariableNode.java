@@ -59,7 +59,7 @@ public class SetVariableNode extends FlowNode {
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         Object varNameObj = resolvedInputs.get(0);
-        String varName = TypeAdaptor.parseStringLikeObject(varNameObj);
+        String varName = TypeAdaptor.parse(varNameObj).asString();
         Object valueObj = resolvedInputs.get(1);
         Object rawValue = context.getVariable(varName);
         context.setVariable(varName, valueObj);
