@@ -1,0 +1,60 @@
+package com.ykn.fmod.server.base.command;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
+
+import org.slf4j.LoggerFactory;
+
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
+import com.ykn.fmod.server.base.util.Util;
+
+import net.fabricmc.loader.api.FabricLoader;
+import net.minecraft.server.command.ServerCommandSource;
+
+public class FlowFileSuggestion implements SuggestionProvider<ServerCommandSource> {
+
+    public static ArrayList<String> cachedFlowList = new ArrayList<>();
+
+    public FlowFileSuggestion() {
+        // Refresh the list of .flow files in the config directory
+        cachedFlowList = new ArrayList<>();
+        Path absPath = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
+        try {
+            if (!Files.exists(absPath)) {
+                Files.createDirectories(absPath);
+            }
+            Files.list(absPath).filter(path -> path.toString().endsWith(".flow")).forEach(path -> {
+                cachedFlowList.add(path.getFileName().toString());
+            });
+        } catch (Exception e) {
+            LoggerFactory.getLogger(Util.MODID).error("Error while getting .flow file list", e);
+        }
+    }
+
+    @Override
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+        for (String flow : cachedFlowList) {
+            if (flow.startsWith(builder.getRemaining())) {
+                builder.suggest(flow);
+            }
+        }
+        if ("*".startsWith(builder.getRemaining())) {
+            builder.suggest("*");
+        }
+        return builder.buildFuture();
+    }
+
+    public static FlowFileSuggestion suggest() {
+        return new FlowFileSuggestion();
+    }
+
+    public static int getAvailableFlows() {
+        return cachedFlowList.size();
+    }
+}

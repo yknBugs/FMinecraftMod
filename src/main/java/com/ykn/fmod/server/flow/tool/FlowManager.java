@@ -32,6 +32,13 @@ public class FlowManager {
      */
     public Stack<NodeEditPath> undoPath;
 
+    public FlowManager(LogicFlow flow) {
+        this.flow = flow;
+        this.isEnabled = false;
+        this.redoPath = new Stack<>();
+        this.undoPath = new Stack<>();
+    }
+
     public FlowManager(String name, String eventNode, String eventNodeName) {
         this.flow = new LogicFlow(name);
         FlowNode startNode = NodeRegistry.createNode(eventNode, flow.generateId(), eventNodeName);

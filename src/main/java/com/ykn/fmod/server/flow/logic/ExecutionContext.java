@@ -52,9 +52,9 @@ public class ExecutionContext {
     private LogicException exception;
 
     public ExecutionContext(LogicFlow flow) {
-        this.flow = flow;
+        this.flow = flow.copy();
         this.nodeStatuses = new HashMap<>();
-        Collection<FlowNode> nodes = flow.getNodes();
+        Collection<FlowNode> nodes = this.flow.getNodes();
         for (FlowNode node : nodes) {
             this.nodeStatuses.put(node.getId(), new NodeStatus(node));
         }
@@ -65,7 +65,7 @@ public class ExecutionContext {
     }
 
     public LogicFlow getFlow() {
-        return flow;
+        return this.flow;
     }
 
     @Nullable
@@ -83,28 +83,29 @@ public class ExecutionContext {
     }
 
     public long getNodeExecutionCounter() {
-        return nodeExecutionCounter;
+        return this.nodeExecutionCounter;
     }
 
     public List<NodeStatus> getExecutedSequence() {
-        return executedSequence;
+        return this.executedSequence;
     }
 
     @Nullable
     public LogicException getException() {
-        return exception;
+        return this.exception;
     }
 
     /**
      * Reset the execution status of all nodes and clear all variables
+     * We strongly recommend creating a new ExecutionContext for each execution instead of reusing an existing one.
      */
     public void resetExecutionStatus() {
         for (NodeStatus status : this.nodeStatuses.values()) {
             status.reset();
         }
-        variables.clear();
+        this.variables.clear();
         this.nodeExecutionCounter = 0L;
-        executedSequence.clear();
+        this.executedSequence.clear();
         this.exception = null;
     }
     
@@ -114,7 +115,7 @@ public class ExecutionContext {
      */
     public void execute(long maxAllowedNodes) {
         this.resetExecutionStatus();
-        FlowNode currentNode = this.flow.getNode(flow.startNodeId);
+        FlowNode currentNode = this.flow.getNode(this.flow.startNodeId);
         try {
             while (currentNode != null) {
                 if (this.nodeExecutionCounter > maxAllowedNodes) {
@@ -138,7 +139,7 @@ public class ExecutionContext {
      * @return A text representation of this execution status.
      */
     public Text render() {
-        MutableText title = Text.literal(this.flow.name).append("\n");
+        MutableText title = Text.literal(this.flow.name).append(" ");
         for (int i = 0; i < this.executedSequence.size(); i++) { 
             NodeStatus node = this.executedSequence.get(i);
             Text nodeText = node.render(i + 1, this.flow);
@@ -149,7 +150,7 @@ public class ExecutionContext {
             title = title.append(nodeEntry);
         }
         if (this.exception != null) {
-            title = title.append("\n").append(exception.getMessageText());
+            title = title.append(" ").append(exception.getMessageText());
         }
         return title;
     }

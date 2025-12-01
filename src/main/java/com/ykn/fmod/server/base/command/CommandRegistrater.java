@@ -49,7 +49,9 @@ import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
+import com.ykn.fmod.server.flow.logic.LogicFlow;
 import com.ykn.fmod.server.flow.tool.FlowManager;
+import com.ykn.fmod.server.flow.tool.FlowSerializer;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -422,6 +424,7 @@ public class CommandRegistrater {
      * @return The number of successful task executions.
      */
     private int doSongTaskOrDefault(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context, BiPredicate<ServerPlayerEntity, PlaySong> taskToDo, Predicate<ServerPlayerEntity> defaultTask) {
+        SongFileSuggestion.suggest();
         int result = 0;
         for (ServerPlayerEntity player : players) {
             boolean isFound = false;
@@ -1150,8 +1153,142 @@ public class CommandRegistrater {
         return Command.SINGLE_SUCCESS;
     }
 
+    private int runCopyFlowCommand(String sourceName, String targetName, CommandContext<ServerCommandSource> context) {
+        try {
+            FlowFileSuggestion.suggest();
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager sourceFlow = data.logicFlows.get(sourceName);
+            if (sourceFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", sourceName));
+            }
+            FlowManager targetFlow = data.logicFlows.get(targetName);
+            if (targetFlow != null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", targetName));
+            }
+            FlowManager copiedFlow = new FlowManager(sourceFlow.flow.copy());
+            copiedFlow.flow.name = targetName;
+            data.logicFlows.put(targetName, copiedFlow);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.copy.success", sourceName, targetName), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow copy", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runLoadFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+        try {
+            FlowFileSuggestion.suggest();
+            if (FlowFileSuggestion.getAvailableFlows() == 0) {
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.hint"), false);
+            }
+            Path flowFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            if ("*".equals(name)) {
+                // Load all flow files
+                int loadedCount = 0;
+                for (String flowFileName : FlowFileSuggestion.cachedFlowList) {
+                    Path flowPath = flowFolder.resolve(flowFileName).normalize();
+                    if (!flowPath.startsWith(flowFolder)) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.filenotfound", flowFileName), false);
+                        continue;
+                    }
+                    LogicFlow flow = FlowSerializer.loadFile(flowPath);
+                    if (flow == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.ioexception", flowFileName), false);
+                        continue;
+                    }
+                    if (data.logicFlows.get(flow.name) != null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.exists", flow.name), false);
+                        continue;
+                    }
+                    FlowManager flowManager = new FlowManager(flow);
+                    data.logicFlows.put(flow.name, flowManager);
+                    loadedCount++;
+                }
+                int loadedCountFinal = loadedCount;
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.all", String.valueOf(loadedCountFinal)), true);
+                return loadedCountFinal;
+            }
+            Path flowPath = flowFolder.resolve(name).normalize();
+            if (!flowPath.startsWith(flowFolder)) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.load.filenotfound", name));
+            }
+            LogicFlow flow = FlowSerializer.loadFile(flowPath);
+            if (flow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.load.ioexception", name));
+            }
+            if (data.logicFlows.get(flow.name) != null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", flow.name));
+            }
+            FlowManager flowManager = new FlowManager(flow);
+            data.logicFlows.put(flow.name, flowManager);
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.success", flow.name), true);
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow load", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int runSaveFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+        try {
+            Path flowFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            if ("*".equals(name)) {
+                // Save all flows
+                int savedCount = 0;
+                for (FlowManager flowManager : data.logicFlows.values()) {
+                    Path flowPath = flowFolder.resolve(flowManager.flow.name + ".flow").normalize();
+                    if (!flowPath.startsWith(flowFolder)) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.notavailable", flowManager.flow.name), false);
+                        continue;
+                    }
+                    boolean success = FlowSerializer.saveFile(flowManager.flow, flowPath, true);
+                    if (success) {
+                        savedCount++;
+                    } else {
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.ioexception", flowManager.flow.name), false);
+                    }
+                }
+                int savedCountFinal = savedCount;
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.all", String.valueOf(savedCountFinal)), true);
+                FlowFileSuggestion.suggest();
+                return savedCountFinal;
+            }
+            FlowManager targetFlow = data.logicFlows.get(name);
+            if (targetFlow == null) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+            }
+            Path flowPath = flowFolder.resolve(targetFlow.flow.name + ".flow").normalize();
+            if (!flowPath.startsWith(flowFolder)) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.save.notavailable", targetFlow.flow.name));
+            }
+            boolean success = FlowSerializer.saveFile(targetFlow.flow, flowPath, true);
+            if (!success) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.save.ioexception", targetFlow.flow.name));
+            }
+            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.success", targetFlow.flow.name), true);
+            FlowFileSuggestion.suggest();
+        } catch (Exception e) {
+            if (e instanceof CommandException) {
+                throw (CommandException) e;
+            }
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow save", e);
+            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
     private int runListFlowCommand(CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             if (data.logicFlows.isEmpty()) {
                 context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.list.empty"), false);
@@ -1197,6 +1334,7 @@ public class CommandRegistrater {
 
     private int runRenameFlowCommand(String oldName, String newName, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(oldName);
             if (targetFlow == null) {
@@ -1221,6 +1359,7 @@ public class CommandRegistrater {
 
     private int runGetEnableFlowCommand(String name, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
@@ -1243,6 +1382,7 @@ public class CommandRegistrater {
 
     private int runSetEnableFlowCommand(String name, boolean enable, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
@@ -1266,6 +1406,7 @@ public class CommandRegistrater {
 
     private int runExecuteFlowCommand(String name, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
@@ -1289,6 +1430,7 @@ public class CommandRegistrater {
 
     private int runDeleteFlowCommand(String name, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
@@ -1308,6 +1450,7 @@ public class CommandRegistrater {
 
     private int runFlowHistoryCommand(int pageIndex, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             List<ExecutionContext> history = data.executeHistory;
             // 5 entries per page
@@ -1365,6 +1508,7 @@ public class CommandRegistrater {
 
     private int runViewFlowCommand(String name, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
@@ -1384,6 +1528,7 @@ public class CommandRegistrater {
 
     private int runLogFlowCommand(int index, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             List<ExecutionContext> history = data.executeHistory;
             if (index <= 0 || index > history.size()) {
@@ -1404,6 +1549,7 @@ public class CommandRegistrater {
 
     private int runEditFlowNewNodeCommand(String flowName, String type, String name, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1431,6 +1577,7 @@ public class CommandRegistrater {
 
     private int runEditFlowRemoveNodeCommand(String flowName, String name, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1457,6 +1604,7 @@ public class CommandRegistrater {
 
     private int runEditFlowRenameNodeCommand(String flowName, String oldName, String newName, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1484,6 +1632,7 @@ public class CommandRegistrater {
 
     private int runEditFlowConstInputCommand(String flowName, String name, int index, String value, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1533,6 +1682,7 @@ public class CommandRegistrater {
 
     private int runEditFlowRefInputCommand(String flowName, String name, int index, String refNode, int refIndex, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1566,6 +1716,7 @@ public class CommandRegistrater {
 
     private int runEditFlowDisconnectInputCommand(String flowName, String name, int index, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1592,6 +1743,7 @@ public class CommandRegistrater {
 
     private int runEditFlowNextNodeCommand(String flowName, String name, int index, String next, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1622,6 +1774,7 @@ public class CommandRegistrater {
 
     private int runEditFlowFinalBranchCommand(String flowName, String name, int index, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1648,6 +1801,7 @@ public class CommandRegistrater {
 
     private int runEditFlowUndoCommand(String flowName, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1672,6 +1826,7 @@ public class CommandRegistrater {
 
     private int runEditFlowRedoCommand(String flowName, CommandContext<ServerCommandSource> context) {
         try {
+            FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
@@ -1696,6 +1851,8 @@ public class CommandRegistrater {
 
     private int runReloadCommand(CommandContext<ServerCommandSource> context) {
         try {
+            SongFileSuggestion.suggest();
+            FlowFileSuggestion.suggest();
             Util.loadServerConfig();
             context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), true);
         } catch (Exception e) {
@@ -1943,6 +2100,26 @@ public class CommandRegistrater {
                                 .then(CommandManager.argument("new", StringArgumentType.string())
                                     .executes(context -> {return runRenameFlowCommand(StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
                                 )
+                            )
+                        )
+                        .then(CommandManager.literal("copy")
+                            .then(CommandManager.argument("flow", StringArgumentType.string())
+                                .suggests(LogicFlowSuggestion.suggest(true))
+                                .then(CommandManager.argument("name", StringArgumentType.string())
+                                    .executes(context -> {return runCopyFlowCommand(StringArgumentType.getString(context, "flow"), StringArgumentType.getString(context, "name"), context);})
+                                )
+                            )
+                        )
+                        .then(CommandManager.literal("save")
+                            .then(CommandManager.argument("name", StringArgumentType.greedyString())
+                                .suggests(LogicFlowSuggestion.suggestSave())
+                                .executes(context -> {return runSaveFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                            )
+                        )
+                        .then(CommandManager.literal("load")
+                            .then(CommandManager.argument("name", StringArgumentType.greedyString())
+                                .suggests(FlowFileSuggestion.suggest())
+                                .executes(context -> {return runLoadFlowCommand(StringArgumentType.getString(context, "name"), context);})
                             )
                         )
                         .then(CommandManager.literal("enable")

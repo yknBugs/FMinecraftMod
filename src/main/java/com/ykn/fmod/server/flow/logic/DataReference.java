@@ -9,7 +9,7 @@ import com.ykn.fmod.server.base.util.Util;
  * Represents the input or output data of a FlowNode.
  * It can be a constant value or a reference to another node's output.
  */
-public class DataReference {
+public class DataReference implements Cloneable {
 
     public enum ReferenceType {
         CONSTANT,
@@ -96,5 +96,25 @@ public class DataReference {
         } else {
             throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.assert"), null);
         }
+    }
+
+    /**
+     * Create a copy of this data reference
+     * Will NOT deep copy the value object
+     * @return The copied data reference
+     */
+    @NotNull
+    public DataReference copy() {
+        DataReference ref = new DataReference();
+        ref.type = this.type;
+        ref.value = this.value;
+        ref.referenceId = this.referenceId;
+        ref.referenceIndex = this.referenceIndex;
+        return ref;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return this.copy();
     }
 }

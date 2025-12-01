@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -12,7 +13,7 @@ import net.minecraft.text.Text;
  * This class represents a node in a logic flow.
  * To create a new node with its own functionality, inherit from this class and override necessary methods.
  */
-public class FlowNode {
+public class FlowNode implements Cloneable {
 
     /**
      * The unique ID of this node within the logic flow.
@@ -150,15 +151,15 @@ public class FlowNode {
     }
 
     public long getId() {
-        return id;
+        return this.id;
     }
 
     public String getType() {
-        return type;
+        return this.type;
     }
 
     public NodeMetadata getMetadata() {
-        return metadata;
+        return this.metadata;
     }
 
     /**
@@ -235,6 +236,29 @@ public class FlowNode {
      */
     public void setNextNodeId(int branchIndex, long nodeId) {
         this.nextNodeIds.set(branchIndex, nodeId);
+    }
+
+    /**
+     * Create a copy of this node, including its inputs and next node IDs.
+     * @return A new FlowNode object
+     */
+    public FlowNode copy() {
+        // Need to keep child class type here, so using NodeRegistry instead of new FlowNode(...)
+        FlowNode newNode = NodeRegistry.createNode(this.type, this.id, this.name);
+        for (int i = 0; i < this.metadata.inputNumber; i++) {
+            DataReference inputRef = this.inputs.get(i);
+            newNode.inputs.set(i, inputRef.copy());
+        }
+        for (int i = 0; i < this.nextNodeIds.size(); i++) {
+            long nextNodeId = this.nextNodeIds.get(i);
+            newNode.nextNodeIds.set(i, nextNodeId);
+        }
+        return newNode;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return this.copy();
     }
 
     /**

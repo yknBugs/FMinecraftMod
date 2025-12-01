@@ -55,8 +55,6 @@ You will find the mod file located in your `./build/libs` folder, copy the mod f
 
 Markdown Syntax Highlight has many limitations.
 
-Execution Context should use a copy of the flowNode, not reference.
-
 Say command cannot render colored text (Need more info).
 
 ## Changelog

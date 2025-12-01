@@ -15,9 +15,11 @@ import net.minecraft.server.command.ServerCommandSource;
 public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSource> {
 
     private final boolean needQuote;
+    private final boolean allowAll;
 
-    public LogicFlowSuggestion(boolean needQuote) {
+    public LogicFlowSuggestion(boolean needQuote, boolean allowAll) {
         this.needQuote = needQuote;
+        this.allowAll = allowAll;
     }
 
     @Override
@@ -32,11 +34,17 @@ public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSour
                 builder.suggest(suggestion);
             }
         }
+        if (allowAll && "*".startsWith(builder.getRemaining())) {
+            builder.suggest("*");
+        }
         return builder.buildFuture();
     }
 
     public static LogicFlowSuggestion suggest(boolean needQuote) {
-        return new LogicFlowSuggestion(needQuote);
+        return new LogicFlowSuggestion(needQuote, false);
     }
 
+    public static LogicFlowSuggestion suggestSave() {
+        return new LogicFlowSuggestion(false, true);
+    }
 }
