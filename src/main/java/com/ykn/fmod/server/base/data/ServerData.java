@@ -43,7 +43,7 @@ public class ServerData {
         scheduledTasks = new ArrayList<>();
         killerEntities = new HashSet<>();
         gptRequestStatus = new HashMap<>();
-        globalRequestPool = Executors.newFixedThreadPool(8);
+        globalRequestPool = Executors.newCachedThreadPool();
         serverTick = 0;
     }
 

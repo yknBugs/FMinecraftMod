@@ -12,24 +12,21 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.Text;
-import net.minecraft.world.World;
 
 /**
  * A flow node that broadcasts a message to all players on the server.
  * Inputs:
- * 1. MinecraftServer - The server to broadcast the message on.
- * 2. MessageLocation - The location to send the message (chat or actionbar).
- * 3. Text - The message to broadcast.
+ * 1. MessageLocation - The location to send the message (chat or actionbar).
+ * 2. Text - The message to broadcast.
  * Outputs: None
  * Branches: 1 (Next node)
  */
 public class BroadcastMessageNode extends FlowNode {
 
     public BroadcastMessageNode(long id, String name) {
-        super(id, name, 3, 0, 1);
+        super(id, name, 2, 0, 1);
         this.type = "BroadcastMessageNode";
     }
 
@@ -40,9 +37,6 @@ public class BroadcastMessageNode extends FlowNode {
         List<Text> inputNames = new ArrayList<>();
         List<Text> inputDescriptions = new ArrayList<>();
         List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslateableText("fmod.node.bcmessage.input.server.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.bcmessage.input.server.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.bcmessage.input.server.type"));
         inputNames.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.name"));
         inputDescriptions.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.feat"));
         inputDataTypes.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.type"));
@@ -62,25 +56,10 @@ public class BroadcastMessageNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        MinecraftServer server = parseServer(resolvedInputs.get(0));
-        MessageLocation messageType = parseMessageType(resolvedInputs.get(1));
-        Text message = parseMessage(resolvedInputs.get(2));
+        MinecraftServer server = context.getServer();
+        MessageLocation messageType = parseMessageType(resolvedInputs.get(0));
+        Text message = parseMessage(resolvedInputs.get(1));
         Util.broadcastMessage(server, messageType, message);
-    }
-
-    private MinecraftServer parseServer(Object serverObj) throws LogicException {
-        if (serverObj == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
-        } else if (serverObj instanceof MinecraftServer) {
-            return (MinecraftServer) serverObj;
-        } else if (serverObj instanceof Entity) {
-            Entity entity = (Entity) serverObj;
-            return entity.getServer();
-        } else if (serverObj instanceof World) {
-            World world = (World) serverObj;
-            return world.getServer();
-        }   
-        throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
     }
 
     private MessageLocation parseMessageType(Object typeObj) throws LogicException {
@@ -95,14 +74,14 @@ public class BroadcastMessageNode extends FlowNode {
             } else if ("chat".equalsIgnoreCase(typeStr)) {
                 return MessageLocation.CHAT;
             } else {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
+                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
             }
         }
     }
 
-    private Text parseMessage(Object messageObj) {
+    private Text parseMessage(Object messageObj) throws LogicException {
         if (messageObj == null) {
-            return Text.empty(); 
+            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
         } else if (messageObj instanceof Text) {
             return (Text) messageObj;
         } else {

@@ -190,12 +190,6 @@ public class BinaryArithmeticNode extends FlowNode {
             status.setOutput(0, result);
             return;
         }
-        if (tryVec3dNum1 != null && tryVec3dNum2 == null && tryDoubleNum2 == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
-        }
-        if (tryVec3dNum2 != null && tryVec3dNum1 == null && tryDoubleNum1 == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
-        }
 
         // Try Vec2f operations
         Vec2f tryVec2fNum1 = TypeAdaptor.parse(num1Obj).asVec2f();
@@ -273,12 +267,6 @@ public class BinaryArithmeticNode extends FlowNode {
             }
             status.setOutput(0, result);
             return;
-        }
-        if (tryVec2fNum1 != null && tryVec2fNum2 == null && tryDoubleNum2 == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(1)), null);
-        }
-        if (tryVec2fNum2 != null && tryVec2fNum1 == null && tryDoubleNum1 == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
         }
 
         // Double operations

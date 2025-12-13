@@ -130,15 +130,13 @@ public class CommandRegistrater {
             flowManager.setNextNode("Get var x again", 0, "Calculate x + 1 again");
 
             flowManager.createNode("BroadcastMessageNode", "Send calculated result to all players");
-            flowManager.setConstInput("Send calculated result to all players", 0, context.getSource().getServer());
-            flowManager.setConstInput("Send calculated result to all players", 1, "chat");
-            flowManager.setReferenceInput("Send calculated result to all players", 2, "Calculate x + 1 again", 0);
+            flowManager.setConstInput("Send calculated result to all players", 0, "chat");
+            flowManager.setReferenceInput("Send calculated result to all players", 1, "Calculate x + 1 again", 0);
             flowManager.setNextNode("Calculate x + 1 again", 0, "Send calculated result to all players");
 
             flowManager.createNode("BroadcastMessageNode", "Send get x result to all players");
-            flowManager.setConstInput("Send get x result to all players", 0, context.getSource().getServer());
-            flowManager.setConstInput("Send get x result to all players", 1, "chat");
-            flowManager.setReferenceInput("Send get x result to all players", 2, "Get var x again", 0);
+            flowManager.setConstInput("Send get x result to all players", 0, "chat");
+            flowManager.setReferenceInput("Send get x result to all players", 1, "Get var x again", 0);
             flowManager.setNextNode("Send calculated result to all players", 0, "Send get x result to all players");
             serverData.logicFlows.put(flowManager.flow.name, flowManager);
             context.getSource().sendFeedback(() -> Text.literal("Saved the example logic flow"), false);
@@ -1412,11 +1410,8 @@ public class CommandRegistrater {
             if (targetFlow == null) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
-            ExecutionContext ctx = new ExecutionContext(targetFlow.flow);
-            if (ctx.getStartNodeOutputNumber() > 0) {
-                ctx.setStartNodeOutput(0, context.getSource().getServer());
-            }
-            ctx.execute(Util.serverConfig.getMaxFlowLength());
+            ExecutionContext ctx = new ExecutionContext(targetFlow.flow, context.getSource().getServer());
+            ctx.execute(Util.serverConfig.getMaxFlowLength(), null, null);
             data.executeHistory.add(ctx);
             if (ctx.getException() != null) {
                 throw new CommandException(ctx.getException().getMessageText());

@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.util.Util;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -25,6 +26,11 @@ public class ExecutionContext {
      * The logic flow being executed in this context
      */
     private LogicFlow flow;
+
+    /**
+     * The Minecraft server where this flow is executed
+     */
+    private MinecraftServer server;
 
     /**
      * All the node statuses in this execution context, mapped by their node IDs
@@ -51,8 +57,9 @@ public class ExecutionContext {
      */
     private LogicException exception;
 
-    public ExecutionContext(LogicFlow flow) {
+    public ExecutionContext(LogicFlow flow, MinecraftServer server) {
         this.flow = flow.copy();
+        this.server = server;
         this.nodeStatuses = new HashMap<>();
         Collection<FlowNode> nodes = this.flow.getNodes();
         for (FlowNode node : nodes) {
@@ -68,6 +75,10 @@ public class ExecutionContext {
         return this.flow;
     }
 
+    public MinecraftServer getServer() {
+        return this.server;
+    }
+
     @Nullable
     public NodeStatus getNodeStatus(long nodeId) {
         return this.nodeStatuses.get(nodeId);
@@ -75,13 +86,6 @@ public class ExecutionContext {
 
     public FlowNode getStartNode() {
         return this.flow.getNode(this.flow.startNodeId);
-    }
-
-    public void setStartNodeOutput(int outputIndex, Object value) {
-        NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.startNodeId);
-        if (startNodeStatus != null) {
-            startNodeStatus.setOutput(outputIndex, value);
-        }
     }
 
     public int getStartNodeOutputNumber() {
@@ -99,6 +103,10 @@ public class ExecutionContext {
     @Nullable
     public Object getVariable(String name) {
         return this.variables.get(name);
+    }
+
+    public Map<String, Object> getVariables() {
+        return this.variables;
     }
 
     public long getNodeExecutionCounter() {
@@ -131,9 +139,22 @@ public class ExecutionContext {
     /**
      * Execute the flow from its start node up to a specified maximum number of node executions.
      * @param maxAllowedNodes the maximum number of nodes that may be executed before the execution is considered a dead loop and aborted
+     * @param startNodeOutputs optional outputs to set for the start node before execution begins (usually contains context about the event that triggered the flow)
+     * @param initialVariables optional initial variables to set before execution begins (can be used when one flow calls another)
      */
-    public void execute(long maxAllowedNodes) {
+    public void execute(long maxAllowedNodes, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
         this.resetExecutionStatus();
+        if (startNodeOutputs != null) {
+            NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.startNodeId);
+            if (startNodeStatus != null) {
+                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.node.getMetadata().outputNumber; i++) {
+                    startNodeStatus.setOutput(i, startNodeOutputs.get(i));
+                }
+            }
+        }
+        if (initialVariables != null) {
+            this.variables.putAll(initialVariables);
+        }
         FlowNode currentNode = this.flow.getNode(this.flow.startNodeId);
         try {
             while (currentNode != null) {
