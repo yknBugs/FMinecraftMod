@@ -4,11 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.logic.ExecutionContext;
-import com.ykn.fmod.server.flow.logic.FlowNode;
-import com.ykn.fmod.server.flow.logic.LogicException;
+import com.ykn.fmod.server.flow.logic.EventNode;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
-import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 import net.minecraft.text.Text;
 
@@ -19,7 +16,7 @@ import net.minecraft.text.Text;
  * Outputs: None
  * Branches: 1 (Next node)
  */
-public class DummyNode extends FlowNode {
+public class DummyNode extends EventNode {
 
     public DummyNode(long id, String name) {
         super(id, name, 0, 0, 1);
@@ -43,15 +40,4 @@ public class DummyNode extends FlowNode {
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }
-
-    @Override
-    protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        // Do nothing
-    }
-
-    @Override
-    public boolean isEventNode() {
-        return true;
-    }
-
 }

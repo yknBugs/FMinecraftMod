@@ -84,12 +84,13 @@ public class ExecutionContext {
         return this.nodeStatuses.get(nodeId);
     }
 
+    @Nullable
     public FlowNode getStartNode() {
-        return this.flow.getNode(this.flow.startNodeId);
+        return this.flow.getFirstNode();
     }
 
     public int getStartNodeOutputNumber() {
-        FlowNode startNode = this.flow.getNode(this.flow.startNodeId);
+        FlowNode startNode = this.flow.getFirstNode();
         if (startNode != null) {
             return startNode.getMetadata().outputNumber;
         }
@@ -155,8 +156,11 @@ public class ExecutionContext {
         if (initialVariables != null) {
             this.variables.putAll(initialVariables);
         }
-        FlowNode currentNode = this.flow.getNode(this.flow.startNodeId);
+        FlowNode currentNode = this.flow.getFirstNode();
         try {
+            if (currentNode == null) {
+                throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.nullstart"), null);
+            }
             while (currentNode != null) {
                 if (this.nodeExecutionCounter > maxAllowedNodes) {
                     throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.deadloop", maxAllowedNodes), null);

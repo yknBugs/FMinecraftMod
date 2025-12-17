@@ -77,6 +77,7 @@ public class NodeRegistry {
         NodeRegistry.register("RunFlowNode", RunFlowNode::new);
 
         NodeRegistry.registerEvent("DummyNode", DummyNode::new);
+        NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
     }
 
     public static Collection<String> getNodeList() {

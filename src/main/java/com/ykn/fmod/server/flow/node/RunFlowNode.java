@@ -77,7 +77,9 @@ public class RunFlowNode extends FlowNode {
         if (targetFlow == null) {
             throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.noflow", flowName), null);
         }
-
+        if (targetFlow.isEnabled == false) {
+            throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.disabled", flowName), null);
+        }
         if (delayInput <= 0) {
             ExecutionContext ctx = new ExecutionContext(targetFlow.flow, server);
             if (keepVariables) {

@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Stack;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -50,10 +52,17 @@ public class LogicFlow implements Cloneable {
         return this.nodes.values();
     }
 
+    @Nullable
     public FlowNode getNode(long id) {
         return this.nodes.get(id);
     }
 
+    @Nullable
+    public FlowNode getFirstNode() {
+        return this.nodes.get(this.startNodeId);
+    }
+
+    @Nullable
     public FlowNode getNodeByName(String name) {
         for (FlowNode node : this.nodes.values()) {
             if (name.equals(node.name)) {
@@ -144,7 +153,7 @@ public class LogicFlow implements Cloneable {
     public void addNode(FlowNode node) {
         this.nodes.put(node.getId(), node);
         if (node.getId() >= this.idCounter) {
-            this.idCounter = node.getId() + 1;
+            this.idCounter = node.getId();
         }
     }
 

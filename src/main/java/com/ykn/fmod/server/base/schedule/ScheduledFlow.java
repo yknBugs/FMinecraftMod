@@ -36,4 +36,12 @@ public class ScheduledFlow extends ScheduledTask {
         data.executeHistory.add(ctx);
     }
 
+    @Override
+    public boolean shouldCancel() {
+        if (flowManager == null || server == null || flowManager.isEnabled == false) {
+            return true;
+        }
+        return false;
+    }
+
 }

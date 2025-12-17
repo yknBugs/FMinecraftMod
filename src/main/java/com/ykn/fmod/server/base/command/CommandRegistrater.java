@@ -1298,7 +1298,11 @@ public class CommandRegistrater {
             for (FlowManager flowManager : data.logicFlows.values()) {
                 MutableText line = null;
                 String numNodesStr = String.valueOf(flowManager.flow.getNodes().size());
-                String startNodeStr = flowManager.flow.getNode(flowManager.flow.startNodeId).name;
+                FlowNode startNode = flowManager.flow.getFirstNode();
+                if (startNode == null) {
+                    continue;
+                }
+                String startNodeStr = startNode.name;
                 if (flowManager.isEnabled) {
                     line = Util.parseTranslateableText("fmod.command.flow.list.enabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
@@ -1409,6 +1413,9 @@ public class CommandRegistrater {
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
                 throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+            }
+            if (targetFlow.isEnabled == false) {
+                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.disabled", name));
             }
             ExecutionContext ctx = new ExecutionContext(targetFlow.flow, context.getSource().getServer());
             ctx.execute(Util.serverConfig.getMaxFlowLength(), null, null);

@@ -14,6 +14,7 @@ import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
+import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.entity.LivingEntity;
@@ -131,6 +132,17 @@ public class ServerData {
         for (ExecutionContext context : executeHistory) {
             if (context.getFlow().name.equals(name)) {
                 result.add(context);
+            }
+        }
+        return result;
+    }
+
+    public List<FlowManager> gatherFlowByFirstNodeType(String type) {
+        List<FlowManager> result = new ArrayList<>();
+        for (FlowManager manager : logicFlows.values()) {
+            FlowNode firstNode = manager.flow.getFirstNode();
+            if (firstNode != null && firstNode.getType().equals(type)) {
+                result.add(manager);
             }
         }
         return result;
