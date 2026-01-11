@@ -7,8 +7,8 @@ package com.ykn.fmod.server.base.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.jetbrains.annotations.NotNull;
@@ -65,7 +65,7 @@ public class Util {
      * A static map that associates a MinecraftServer instance with its corresponding ServerData.
      * This map is used to store and manage data related to different Minecraft server instances.
      */
-    public static HashMap<MinecraftServer, ServerData> worldData = new HashMap<>();
+    public static ConcurrentHashMap<MinecraftServer, ServerData> worldData = new ConcurrentHashMap<>();
 
     /**
      * Retrieves the version of the mod.
@@ -481,7 +481,7 @@ public class Util {
     public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
-            existingData.globalRequestPool.shutdownNow();
+            existingData.globalRequestPool.shutdown();
             LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the glodal thread pool.");
         }
         worldData.put(server, data);
@@ -495,7 +495,7 @@ public class Util {
     public static void resetServerData(@NotNull MinecraftServer server) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
-            existingData.globalRequestPool.shutdownNow();
+            existingData.globalRequestPool.shutdown();
             LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the glodal thread pool.");
         }
         ServerData data = new ServerData();

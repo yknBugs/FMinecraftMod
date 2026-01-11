@@ -24,7 +24,7 @@ public class GptData {
 
     protected List<String> postMessages;
     protected List<Text> responseTexts;
-    protected List<String> reponseMessages;
+    protected List<String> responseMessages;
     protected List<String> responseJson;
     protected List<URL> requestUrls;
     protected List<String> gptModels;
@@ -39,7 +39,7 @@ public class GptData {
     public GptData() {
         postMessages = new ArrayList<>();
         responseTexts = new ArrayList<>();
-        reponseMessages = new ArrayList<>();
+        responseMessages = new ArrayList<>();
         responseJson = new ArrayList<>();
         requestUrls = new ArrayList<>();
         gptModels = new ArrayList<>();
@@ -69,7 +69,7 @@ public class GptData {
                 this.requestUrls.add(this.cachedRequestUrl);
                 this.gptModels.add(this.cachedGptModel);
                 this.responseTemperature.add(this.cachedResponseTemperature);
-                this.reponseMessages.add(message);
+                this.responseMessages.add(message);
                 this.responseTexts.add(text);
                 this.responseJson.add(responseJson);
                 this.hasReceivedResponse = true;
@@ -127,7 +127,7 @@ public class GptData {
      * - requestUrls
      * - gptModels
      * - responseTemperature
-     * - reponseMessages
+     * - responseMessages
      * - responseTexts
      * - responseJson
      *
@@ -142,7 +142,7 @@ public class GptData {
                 this.requestUrls.clear();
                 this.gptModels.clear();
                 this.responseTemperature.clear();
-                this.reponseMessages.clear();
+                this.responseMessages.clear();
                 this.responseTexts.clear();
                 this.responseJson.clear();
                 result = true;
@@ -203,11 +203,29 @@ public class GptData {
      * @return true if the history was successfully cleared and the message was sent, false otherwise.
      */
     public boolean newConversation(String message, URL url, String gptModel, double responseTemperature) {
-        boolean result = this.clearHistory();
-        if (result) {
-            result = this.reply(message, url, gptModel, responseTemperature);
+        this.lock.writeLock().lock();
+        try {
+            if (this.hasReceivedResponse == false) {
+                return false;
+            }
+            // Clear history
+            this.postMessages.clear();
+            this.requestUrls.clear();
+            this.gptModels.clear();
+            this.responseTemperature.clear();
+            this.responseMessages.clear();
+            this.responseTexts.clear();
+            this.responseJson.clear();
+            // Reply
+            this.cachedPostMessage = message;
+            this.cachedRequestUrl = url;
+            this.cachedGptModel = gptModel;
+            this.cachedResponseTemperature = responseTemperature;
+            this.hasReceivedResponse = false;
+            return true;
+        } finally {
+            this.lock.writeLock().unlock();
         }
-        return result;
     }
 
     /**
@@ -217,29 +235,30 @@ public class GptData {
      *         was removed from the history; {@code false} otherwise.
      */
     public boolean regenerate() {
-        if (this.getHistorySize() == 0) {
-            return false;
-        }
-        if (this.getHasReceivedResponse() == false) {
-            return false;
-        }
-        int lastMessageIndex = this.getHistorySize() - 1;
-        boolean result = this.reply(this.postMessages.get(lastMessageIndex), this.requestUrls.get(lastMessageIndex), this.gptModels.get(lastMessageIndex), this.responseTemperature.get(lastMessageIndex));
-        if (result) {
-            this.lock.writeLock().lock();
-            try {
-                this.postMessages.remove(lastMessageIndex);
-                this.requestUrls.remove(lastMessageIndex);
-                this.gptModels.remove(lastMessageIndex);
-                this.responseTemperature.remove(lastMessageIndex);
-                this.reponseMessages.remove(lastMessageIndex);
-                this.responseTexts.remove(lastMessageIndex);
-                this.responseJson.remove(lastMessageIndex);
-            } finally {
-                this.lock.writeLock().unlock();
+        this.lock.writeLock().lock();
+        try {
+            if (this.postMessages.size() == 0 || this.hasReceivedResponse == false) {
+                return false;
             }
+            int lastMessageIndex = this.postMessages.size() - 1;
+            // Reply
+            this.cachedPostMessage = this.postMessages.get(lastMessageIndex);
+            this.cachedRequestUrl = this.requestUrls.get(lastMessageIndex);
+            this.cachedGptModel = this.gptModels.get(lastMessageIndex);
+            this.cachedResponseTemperature = this.responseTemperature.get(lastMessageIndex);
+            this.hasReceivedResponse = false;
+            // Remove last message
+            this.postMessages.remove(lastMessageIndex);
+            this.requestUrls.remove(lastMessageIndex);
+            this.gptModels.remove(lastMessageIndex);
+            this.responseTemperature.remove(lastMessageIndex);
+            this.responseMessages.remove(lastMessageIndex);
+            this.responseTexts.remove(lastMessageIndex);
+            this.responseJson.remove(lastMessageIndex);
+            return true;
+        } finally {
+            this.lock.writeLock().unlock();
         }
-        return result;
     }
 
     /**
@@ -253,29 +272,30 @@ public class GptData {
      * @return true if the reply was successful and the last message was removed; false otherwise.
      */
     public boolean regenerate(URL url, String gptModel, double responseTemperature) {
-        if (this.getHistorySize() == 0) {
-            return false;
-        }
-        if (this.getHasReceivedResponse() == false) {
-            return false;
-        }
-        int lastMessageIndex = this.getHistorySize() - 1;
-        boolean result = this.reply(this.postMessages.get(lastMessageIndex), url, gptModel, responseTemperature);
-        if (result) {
-            this.lock.writeLock().lock();
-            try {
-                this.postMessages.remove(lastMessageIndex);
-                this.requestUrls.remove(lastMessageIndex);
-                this.gptModels.remove(lastMessageIndex);
-                this.responseTemperature.remove(lastMessageIndex);
-                this.reponseMessages.remove(lastMessageIndex);
-                this.responseTexts.remove(lastMessageIndex);
-                this.responseJson.remove(lastMessageIndex);
-            } finally {
-                this.lock.writeLock().unlock();
+        this.lock.writeLock().lock();
+        try {
+            if (this.postMessages.size() == 0 || this.hasReceivedResponse == false) {
+                return false;
             }
+            int lastMessageIndex = this.postMessages.size() - 1;
+            // Reply
+            this.cachedPostMessage = this.postMessages.get(lastMessageIndex);
+            this.cachedRequestUrl = url;
+            this.cachedGptModel = gptModel;
+            this.cachedResponseTemperature = responseTemperature;
+            this.hasReceivedResponse = false;
+            // Remove last message
+            this.postMessages.remove(lastMessageIndex);
+            this.requestUrls.remove(lastMessageIndex);
+            this.gptModels.remove(lastMessageIndex);
+            this.responseTemperature.remove(lastMessageIndex);
+            this.responseMessages.remove(lastMessageIndex);
+            this.responseTexts.remove(lastMessageIndex);
+            this.responseJson.remove(lastMessageIndex);
+            return true;
+        } finally {
+            this.lock.writeLock().unlock();
         }
-        return result;
     }
 
     /**
@@ -290,28 +310,31 @@ public class GptData {
      * @return true if the history was successfully edited, false otherwise.
      */
     public boolean editHistory(int index, String message, URL url, String gptModel, double responseTemperature) {
-        if (index < 0 || index >= this.getHistorySize()) {
-            return false;
-        }
-        if (this.getHasReceivedResponse() == false) {
-            return false;
-        }
-        boolean result = this.reply(message, url, gptModel, responseTemperature);
         this.lock.writeLock().lock();
         try {
-            while (result && this.postMessages.size() > index) {
+            if (index < 0 || index >= this.postMessages.size() || this.hasReceivedResponse == false) {
+                return false;
+            }
+            // Reply
+            this.cachedPostMessage = message;
+            this.cachedRequestUrl = url;
+            this.cachedGptModel = gptModel;
+            this.cachedResponseTemperature = responseTemperature;
+            this.hasReceivedResponse = false;
+            // Clear history after index
+            while (this.postMessages.size() > index) {
                 this.postMessages.remove(index);
                 this.requestUrls.remove(index);
                 this.gptModels.remove(index);
                 this.responseTemperature.remove(index);
-                this.reponseMessages.remove(index);
+                this.responseMessages.remove(index);
                 this.responseTexts.remove(index);
                 this.responseJson.remove(index);
             }
+            return true;
         } finally {
             this.lock.writeLock().unlock();
         }
-        return result;
     }
 
     public String getPostMessages(int index) {
@@ -344,7 +367,7 @@ public class GptData {
     public String getReponseMessages(int index) {
         this.lock.readLock().lock();
         try {
-            return this.reponseMessages.get(index);
+            return this.responseMessages.get(index);
         } finally {
             this.lock.readLock().unlock();
         }
@@ -440,7 +463,7 @@ public class GptData {
         }
         for (int i = 0; i < postMessages.size(); i++) {
             messages.add(new ChatMessage("user", postMessages.get(i)));
-            messages.add(new ChatMessage("assistant", reponseMessages.get(i)));
+            messages.add(new ChatMessage("assistant", responseMessages.get(i)));
         }
         messages.add(new ChatMessage("user", cachedPostMessage));
         return messages.toArray(new ChatMessage[messages.size()]);

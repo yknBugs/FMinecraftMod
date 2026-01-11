@@ -78,6 +78,8 @@ public class NodeRegistry {
 
         NodeRegistry.registerEvent("DummyNode", DummyNode::new);
         NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
+        NodeRegistry.registerEvent("EntityDamageEventNode", EntityDamageEventNode::new);
+        NodeRegistry.registerEvent("ProjectileHitEntityEventNode", ProjectileHitEntityEventNode::new);
     }
 
     public static Collection<String> getNodeList() {

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -32,7 +33,7 @@ public class ServerData {
     public List<ExecutionContext> executeHistory;
     public List<ScheduledTask> scheduledTasks;
     public Collection<UUID> killerEntities;
-    public HashMap<String, GptData> gptRequestStatus;
+    public ConcurrentHashMap<String, GptData> gptRequestStatus;
     public ExecutorService globalRequestPool;
 
     private int serverTick;
@@ -43,7 +44,7 @@ public class ServerData {
         executeHistory = new ArrayList<>();
         scheduledTasks = new ArrayList<>();
         killerEntities = new HashSet<>();
-        gptRequestStatus = new HashMap<>();
+        gptRequestStatus = new ConcurrentHashMap<>();
         globalRequestPool = Executors.newCachedThreadPool();
         serverTick = 0;
     }
@@ -113,12 +114,7 @@ public class ServerData {
      */
     @NotNull
     public GptData getGptData(@NotNull String source) {
-        GptData data = gptRequestStatus.get(source);
-        if (data == null) {
-            data = new GptData();
-            gptRequestStatus.put(source, data);
-        }
-        return data;
+        return gptRequestStatus.computeIfAbsent(source, k -> new GptData());
     }
 
     /**
@@ -137,12 +133,14 @@ public class ServerData {
         return result;
     }
 
-    public List<FlowManager> gatherFlowByFirstNodeType(String type) {
+    public List<FlowManager> gatherFlowByFirstNodeType(String type, boolean enabledOnly) {
         List<FlowManager> result = new ArrayList<>();
         for (FlowManager manager : logicFlows.values()) {
             FlowNode firstNode = manager.flow.getFirstNode();
             if (firstNode != null && firstNode.getType().equals(type)) {
-                result.add(manager);
+                if (enabledOnly == false || manager.isEnabled) {
+                    result.add(manager);
+                }
             }
         }
         return result;
