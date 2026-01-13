@@ -3,25 +3,25 @@ package com.ykn.fmod.server.base.event;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 
 public class PlayerDeath {
 
-    private ServerPlayerEntity player;
+    private ServerPlayer player;
     private DamageSource damageSource;
 
-    public PlayerDeath(ServerPlayerEntity player, DamageSource damageSource) {
+    public PlayerDeath(ServerPlayer player, DamageSource damageSource) {
         this.player = player;
         this.damageSource = damageSource;
     }
 
-    public ServerPlayerEntity getPlayer() {
+    public ServerPlayer getPlayer() {
         return player;
     }
 
@@ -38,20 +38,20 @@ public class PlayerDeath {
             return;
         }
 
-        LivingEntity killer = player.getPrimeAdversary();
-        if (killer != null && killer.isPlayer() == false) {
+        LivingEntity killer = player.getKillCredit();
+        if (killer != null && killer.isAlwaysTicking() == false) {
             Util.getServerData(killer.getServer()).addKillerEntity(killer);
         }
 
-        Text playerName = player.getDisplayName();
+        Component playerName = player.getDisplayName();
         double x = player.getX();
         double y = player.getY();
         double z = player.getZ();
         String strX = String.format("%.2f", x);
         String strY = String.format("%.2f", y);
         String strZ = String.format("%.2f", z);
-        MutableText biomeText = Util.getBiomeText(player);
-        MutableText text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
+        MutableComponent biomeText = Util.getBiomeText(player);
+        MutableComponent text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, biomeText, strX, strY, strZ).withStyle(style -> style.withClickEvent(
             new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
         ).withHoverEvent(
             new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))

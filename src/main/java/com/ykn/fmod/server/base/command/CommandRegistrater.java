@@ -32,6 +32,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.mojang.logging.LogUtils;
 import com.ykn.fmod.server.base.data.GptData;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
@@ -54,29 +55,29 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.flow.tool.FlowSerializer;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandRuntimeException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 public class CommandRegistrater {
 
-    private Logger logger;
+    private static Logger logger = LogUtils.getLogger();
 
-    private Object devFunction(CommandContext<ServerCommandSource> context) {
+    private static Object devFunction(CommandContext<CommandSourceStack> context) {
         // This function is used for development purposes. Execute command /f dev to run this function.
         // This function should be removed in the final release.
 
@@ -95,7 +96,7 @@ public class CommandRegistrater {
         "```\n" +
         "End of Test";
 
-        context.getSource().sendFeedback(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
+        context.getSource().sendSuccess(() -> MarkdownToTextConverter.parseMarkdownToText(markdownTest), false);
 
         ServerData serverData = Util.getServerData(context.getSource().getServer());
         if (serverData.logicFlows.size() == 0) {
@@ -139,229 +140,225 @@ public class CommandRegistrater {
             flowManager.setReferenceInput("Send get x result to all players", 1, "Get var x again", 0);
             flowManager.setNextNode("Send calculated result to all players", 0, "Send get x result to all players");
             serverData.logicFlows.put(flowManager.flow.name, flowManager);
-            context.getSource().sendFeedback(() -> Text.literal("Saved the example logic flow"), false);
+            context.getSource().sendSuccess(() -> Component.literal("Saved the example logic flow"), false);
         } else {
-            context.getSource().sendFeedback(() -> Text.literal("Logic flow already exists, not saving"), false);
+            context.getSource().sendSuccess(() -> Component.literal("Logic flow already exists, not saving"), false);
         }
 
         return null;
     }
 
-    public CommandRegistrater(Logger logger) {
-        this.logger = logger;
-    }
-
-    private int runFModCommand(CommandContext<ServerCommandSource> context) {
+    private static int runFModCommand(CommandContext<CommandSourceStack> context) {
         try {
-            MutableText commandFeedback = Util.parseTranslateableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
-            context.getSource().sendFeedback(() -> commandFeedback, false);
+            MutableComponent commandFeedback = Util.parseTranslateableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
+            context.getSource().sendSuccess(() -> commandFeedback, false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.version.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.version.error"));
         }
     }
 
-    private int runDevCommand(CommandContext<ServerCommandSource> context) {
+    private static int runDevCommand(CommandContext<CommandSourceStack> context) {
         try {
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.dev.start"), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.dev.start"), false);
             Object result = devFunction(context);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
         } catch (Exception e) {
             try {
                 StringWriter sw = new StringWriter();
                 PrintWriter pw = new PrintWriter(sw);
                 e.printStackTrace(pw);
-                // context.getSource().sendFeedback(() -> Text.literal(e.getMessage()), false);
-                context.getSource().sendFeedback(() -> Text.literal(sw.toString()), false);
+                // context.getSource().sendSuccess(() -> Component.literal(e.getMessage()), false);
+                context.getSource().sendSuccess(() -> Component.literal(sw.toString()), false);
                 pw.close();
                 sw.close();
             } catch (Exception exception) {
                 logger.error("FMinecraftMod: Caught unexpected exception when executing command /f dev", exception);
-                throw new CommandException(Util.parseTranslateableText("fmod.command.dev.error"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.dev.error"));
             }
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGptNewCommand(String text, CommandContext<ServerCommandSource> context) {
+    private static int runGptNewCommand(String text, CommandContext<CommandSourceStack> context) {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
-            GptData gptData = data.getGptData(context.getSource().getName());
+            GptData gptData = data.getGptData(context.getSource().getTextName());
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.newConversation(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
             // if (context.getSource().getPlayer() != null) {
             //     // Other source would have already logged the message
             //     logger.info("<{}> {}", context.getSource().getDisplayName().getString(), text);
             // }
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt new", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGptReplyCommand(String text, CommandContext<ServerCommandSource> context) {
+    private static int runGptReplyCommand(String text, CommandContext<CommandSourceStack> context) {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
-            GptData gptData = data.getGptData(context.getSource().getName());
+            GptData gptData = data.getGptData(context.getSource().getTextName());
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.reply(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt reply", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGptRegenerateCommand(CommandContext<ServerCommandSource> context) {
+    private static int runGptRegenerateCommand(CommandContext<CommandSourceStack> context) {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
-            GptData gptData = data.getGptData(context.getSource().getName());
+            GptData gptData = data.getGptData(context.getSource().getTextName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
             }
             String text = gptData.getPostMessages(gptDataLength - 1);
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.regenerate(url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
 
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGptEditCommand(int index, String text, CommandContext<ServerCommandSource> context) {
+    private static int runGptEditCommand(int index, String text, CommandContext<CommandSourceStack> context) {
         try {
             String urlString = Util.serverConfig.getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
-            GptData gptData = data.getGptData(context.getSource().getName());
+            GptData gptData = data.getGptData(context.getSource().getTextName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
             }
             // The Command argument index begins from 1, the source code index begins from 0
             if (index <= 0 || index > gptDataLength) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
             }
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.editHistory(index - 1, text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.spam"));
             }
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
+            context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGptHistoryCommand(int index, CommandContext<ServerCommandSource> context) {
+    private static int runGptHistoryCommand(int index, CommandContext<CommandSourceStack> context) {
         try {
-            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
+            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getTextName());
             final int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
             }
             if (index == 0) {
                 index = gptDataLength;
             }
             if (index < 0 || index > gptDataLength) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
             }
             final int finalIndex = index;
             final String postMessage = gptData.getPostMessages(index - 1);
             final String model = gptData.getGptModels(index - 1);
-            final Text receivedMessage = gptData.getResponseTexts(index - 1);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(postMessage)), false);
-            context.getSource().sendFeedback(() -> Text.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
+            final Component receivedMessage = gptData.getResponseTexts(index - 1);
+            context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(postMessage)), false);
+            context.getSource().sendSuccess(() -> Component.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runSongPlayCommand(Collection<ServerPlayerEntity> players, String songName, CommandContext<ServerCommandSource> context) {
+    private static int runSongPlayCommand(Collection<ServerPlayer> players, String songName, CommandContext<CommandSourceStack> context) {
         try {
             // Refresh song suggestion list
             SongFileSuggestion.suggest();
             if (SongFileSuggestion.getAvailableSongs() == 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
             }
-            Path songFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            Path songFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID);
             Path songPath = songFolder.resolve(songName).normalize();
             if (!songPath.startsWith(songFolder)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
             }
 
             // Load song
@@ -370,7 +367,7 @@ public class CommandRegistrater {
                 song = NbsSongDecoder.parse(fileInputStream);
             }
             if (song == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
             }
             // Check if a song is still playing, if so, cancel the task
             for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
@@ -381,30 +378,30 @@ public class CommandRegistrater {
                     //     // So, this method is not reliable
                     //     playSong.cancel();
                     // }
-                    for (ServerPlayerEntity player : players) {
-                        if (playSong.getTarget().getUuid() == player.getUuid()) {
+                    for (ServerPlayer player : players) {
+                        if (playSong.getTarget().getUUID() == player.getUUID()) {
                             playSong.cancel();
                         }
                     }
                 }
             }
             // Submit song task
-            for (ServerPlayerEntity player : players) {
+            for (ServerPlayer player : players) {
                 PlaySong playSong = new PlaySong(song, songName, player, context);
                 Util.getServerData(context.getSource().getServer()).submitScheduledTask(playSong);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), songName), true);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
         } catch (FileNotFoundException fileNotFoundException) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
         } catch (EOFException eofException) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.eofexception", songName));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.song.eofexception", songName));
         } catch (IOException ioException) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
         } catch (Exception exception) {
-            if (exception instanceof CommandException) {
-                throw (CommandException) exception;
+            if (exception instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) exception;
             }
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.error", songName));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.song.error", songName));
         }
         return players.size();
     }
@@ -421,15 +418,15 @@ public class CommandRegistrater {
      *                    The parameter is the player. If null, no default task will be performed.
      * @return The number of successful task executions.
      */
-    private int doSongTaskOrDefault(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context, BiPredicate<ServerPlayerEntity, PlaySong> taskToDo, Predicate<ServerPlayerEntity> defaultTask) {
+    private static int doSongTaskOrDefault(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context, BiPredicate<ServerPlayer, PlaySong> taskToDo, Predicate<ServerPlayer> defaultTask) {
         SongFileSuggestion.suggest();
         int result = 0;
-        for (ServerPlayerEntity player : players) {
+        for (ServerPlayer player : players) {
             boolean isFound = false;
             for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
                 if (scheduledTask instanceof PlaySong) {
                     PlaySong playSong = (PlaySong) scheduledTask;
-                    if (playSong.getTarget().getUuid() == player.getUuid()) {
+                    if (playSong.getTarget().getUUID() == player.getUUID()) {
                         isFound = true;
                         boolean isSuccess = true;
                         if (taskToDo != null) {
@@ -454,96 +451,96 @@ public class CommandRegistrater {
         return result;
     }
 
-    private int runSongCancelCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+    private static int runSongCancelCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 playSong.cancel();
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song cancel", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private int runSongGetCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+    private static int runSongGetCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 String currentTimeStr = String.format("%.1f", playSong.getSong().getVirtualTick(playSong.getTick()) / 20.0);
                 String totalTimeStr = String.format("%.1f", playSong.getSong().getMaxVirtualTick() / 20.0);
                 String speedStr = String.format("%.2f", playSong.getSong().getSpeed());
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr, speedStr), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr, speedStr), false);
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song get", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private int runSongShowInfoCommand(Collection<ServerPlayerEntity> players, boolean showInfo, CommandContext<ServerCommandSource> context) {
+    private static int runSongShowInfoCommand(Collection<ServerPlayer> players, boolean showInfo, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 playSong.setShowInfo(showInfo);
                 if (showInfo) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.show", player.getDisplayName(), playSong.getSongName()), true);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.show", player.getDisplayName(), playSong.getSongName()), true);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hide", player.getDisplayName(), playSong.getSongName()), true);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.hide", player.getDisplayName(), playSong.getSongName()), true);
                 }
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private int runSongShowInfoCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+    private static int runSongShowInfoCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
-                MutableText isShowInfo = EnumI18n.getBooleanValueI18n(playSong.isShowInfo());
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.status", player.getDisplayName(), playSong.getSongName(), isShowInfo), false);
+                MutableComponent isShowInfo = EnumI18n.getBooleanValueI18n(playSong.isShowInfo());
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.status", player.getDisplayName(), playSong.getSongName(), isShowInfo), false);
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private int runSongSeekCommand(Collection<ServerPlayerEntity> players, double timepoint, CommandContext<ServerCommandSource> context) {
+    private static int runSongSeekCommand(Collection<ServerPlayer> players, double timepoint, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
@@ -552,127 +549,127 @@ public class CommandRegistrater {
                 String songLengthStr = String.format("%.1f", songLength);
                 String timepointStr = String.format("%.1f", timepoint);
                 if (timepoint < 0 || timepoint > songLength) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.long", player.getDisplayName(), songName, songLengthStr, timepointStr), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.long", player.getDisplayName(), songName, songLengthStr, timepointStr), false);
                 } else {
                     playSong.seek((int) (timepoint * 20));
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
                     return true;
                 }
                 return false;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song search", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private int runSongSpeedCommand(Collection<ServerPlayerEntity> players, double speed, CommandContext<ServerCommandSource> context) {
+    private static int runSongSpeedCommand(Collection<ServerPlayer> players, double speed, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
-                Text playerName = player.getDisplayName();
+                Component playerName = player.getDisplayName();
                 String songName = playSong.getSongName();
                 String speedStr = String.format("%.2f", speed);
                 playSong.changeSpeed(speed);
                 if (speed == 0) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.pause", playerName, songName), true);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.pause", playerName, songName), true);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.speed", playerName, songName, speedStr), true);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.speed", playerName, songName, speedStr), true);
                 }
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song speed", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private ServerPlayerEntity getShareCommandExecutor(CommandContext<ServerCommandSource> context) {
+    private static ServerPlayer getShareCommandExecutor(CommandContext<CommandSourceStack> context) {
         if (context == null) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.playeronly"));
         }
-        ServerCommandSource source = context.getSource();
+        CommandSourceStack source = context.getSource();
         if (source == null) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.playeronly"));
         }
-        ServerPlayerEntity player = source.getPlayer();
+        ServerPlayer player = source.getPlayer();
         if (player == null) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.playeronly"));
         }
         return player;
         // return Optional.ofNullable(context)
         //     .map(CommandContext::getSource)
-        //     .map(ServerCommandSource::getPlayer)
-        //     .orElseThrow(() -> new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly")));
+        //     .map(CommandSourceStack::getPlayer)
+        //     .orElseThrow(() -> new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.playeronly")));
     }
 
-    private int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         try {
             for (Entity entity : entities) {
-                Text name = entity.getDisplayName();
-                MutableText biome = Util.getBiomeText(entity);
+                Component name = entity.getDisplayName();
+                MutableComponent biome = Util.getBiomeText(entity);
                 String strX = String.format("%.2f", entity.getX());
                 String strY = String.format("%.2f", entity.getY());
                 String strZ = String.format("%.2f", entity.getZ());
-                MutableText text = Util.parseTranslateableText("fmod.command.get.coord", name, biome, strX, strY, strZ).styled(style -> style.withClickEvent(
+                MutableComponent text = Util.parseTranslateableText("fmod.command.get.coord", name, biome, strX, strY, strZ).withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
                 ));
-                context.getSource().sendFeedback(() -> text, false);
+                context.getSource().sendSuccess(() -> text, false);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
     }
 
-    private int runShareCoordCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareCoordCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            Text name = player.getDisplayName();
-            MutableText biome = Util.getBiomeText(player);
+            ServerPlayer player = getShareCommandExecutor(context);
+            Component name = player.getDisplayName();
+            MutableComponent biome = Util.getBiomeText(player);
             String strX = String.format("%.2f", player.getX());
             String strY = String.format("%.2f", player.getY());
             String strZ = String.format("%.2f", player.getZ());
-            MutableText text = Util.parseTranslateableText("fmod.command.share.coord", name, biome, strX, strY, strZ).styled(style -> style.withClickEvent(
+            MutableComponent text = Util.parseTranslateableText("fmod.command.share.coord", name, biome, strX, strY, strZ).withStyle(style -> style.withClickEvent(
                 new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
             ).withHoverEvent(
                 new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
             ));
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private MutableText getDirectionText(Vec3d source, Vec3d target) {
+    private static MutableComponent getDirectionText(Vec3 source, Vec3 target) {
         double pitch = GameMath.getPitch(source, target);
         double yaw = GameMath.getYaw(source, target);
-        MutableText direction = Text.empty();
+        MutableComponent direction = Component.empty();
         if (pitch > 60.0) {
             direction = Util.parseTranslateableText("fmod.misc.diru");
         } else if (pitch < -60.0) {
@@ -697,17 +694,17 @@ public class CommandRegistrater {
         return direction;
     }
 
-    private int runGetDistanceCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetDistanceCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
-            Vec3d source = context.getSource().getPosition();
+            Vec3 source = context.getSource().getPosition();
             for (Entity entity : entities) {
-                if (context.getSource().getWorld() != entity.getWorld()) {
-                    final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.dimdistance", name), false);
+                if (context.getSource().getLevel() != entity.level()) {
+                    final Component name = entity.getDisplayName();
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.dimdistance", name), false);
                     continue;
                 }
-                Vec3d target = entity.getPos();
+                Vec3 target = entity.position();
                 double distance = GameMath.getEuclideanDistance(source, target);
                 double pitch = GameMath.getPitch(source, target);
                 double yaw = GameMath.getYaw(source, target);
@@ -720,39 +717,39 @@ public class CommandRegistrater {
                 if (degree > 180.0) {
                     degree -= 360.0;
                 }
-                final Text name = entity.getDisplayName();
+                final Component name = entity.getDisplayName();
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
-                final MutableText dirTxt = getDirectionText(source, target);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
+                final MutableComponent dirTxt = getDirectionText(source, target);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private int runShareDistanceCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareDistanceCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            Vec3d target = player.getPos();
-            List<ServerPlayerEntity> onlinePlayers = Util.getOnlinePlayers(context.getSource().getServer());
-            for (ServerPlayerEntity onlinePlayer : onlinePlayers) {
-                if (onlinePlayer.getUuid() == player.getUuid()) {
+            ServerPlayer player = getShareCommandExecutor(context);
+            Vec3 target = player.position();
+            List<ServerPlayer> onlinePlayers = Util.getOnlinePlayers(context.getSource().getServer());
+            for (ServerPlayer onlinePlayer : onlinePlayers) {
+                if (onlinePlayer.getUUID() == player.getUUID()) {
                     Util.sendTextMessage(onlinePlayer, Util.parseTranslateableText("fmod.command.share.selfdistance"));
                     continue;
                 }
-                if (player.getWorld() != onlinePlayer.getWorld()) {
-                    final Text name = player.getDisplayName();
+                if (player.level() != onlinePlayer.level()) {
+                    final Component name = player.getDisplayName();
                     Util.sendTextMessage(onlinePlayer, Util.parseTranslateableText("fmod.command.share.dimdistance", name));
                     continue;
                 }
-                Vec3d source = onlinePlayer.getPos();
+                Vec3 source = onlinePlayer.position();
                 double distance = GameMath.getEuclideanDistance(source, target);
                 double pitch = GameMath.getPitch(source, target);
                 double yaw = GameMath.getYaw(source, target);
@@ -765,425 +762,425 @@ public class CommandRegistrater {
                 if (degree > 180.0) {
                     degree -= 360.0;
                 }
-                final Text name = player.getDisplayName();
+                final Component name = player.getDisplayName();
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
-                final MutableText dirTxt = getDirectionText(source, target);
-                final MutableText text = Util.parseTranslateableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
+                final MutableComponent dirTxt = getDirectionText(source, target);
+                final MutableComponent text = Util.parseTranslateableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
                 Util.sendTextMessage(onlinePlayer, text);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGetHealthCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetHealthCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         try {
             for (Entity entity : entities) {
-                final Text name = entity.getDisplayName();
+                final Component name = entity.getDisplayName();
                 double hp = Util.getHealth(entity);
                 double maxhp = Util.getMaxHealth(entity);
                 final String hpStr = String.format("%.2f", hp);
                 final String maxhpStr = String.format("%.2f", maxhp);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return entities.size();
     }
 
-    private int runShareHealthCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareHealthCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
+            ServerPlayer player = getShareCommandExecutor(context);
             double hp = Util.getHealth(player);
             double maxhp = Util.getMaxHealth(player);
-            final Text name = player.getDisplayName();
+            final Component name = player.getDisplayName();
             final String hpStr = String.format("%.2f", hp);
             final String maxhpStr = String.format("%.2f", maxhp);
-            MutableText text = Util.parseTranslateableText("fmod.command.share.health", name, hpStr, maxhpStr);
+            MutableComponent text = Util.parseTranslateableText("fmod.command.share.health", name, hpStr, maxhpStr);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGetStatusCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+    private static int runGetStatusCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
-            for (ServerPlayerEntity player : players) {
+            for (ServerPlayer player : players) {
                 double hp = player.getHealth();
-                int hunger = player.getHungerManager().getFoodLevel();
-                double saturation = player.getHungerManager().getSaturationLevel();
+                int hunger = player.getFoodData().getFoodLevel();
+                double saturation = player.getFoodData().getSaturationLevel();
                 int level = player.experienceLevel;
-                final Text name = player.getDisplayName();
+                final Component name = player.getDisplayName();
                 final String hpStr = String.format("%.2f", hp);
                 final String hungerStr = String.valueOf(hunger);
                 final String saturationStr = String.format("%.2f", saturation);
                 final String levelStr = String.valueOf(level);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return players.size();
     }
 
-    private int runShareStatusCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareStatusCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
+            ServerPlayer player = getShareCommandExecutor(context);
             double hp = player.getHealth();
-            int hunger = player.getHungerManager().getFoodLevel();
-            double saturation = player.getHungerManager().getSaturationLevel();
+            int hunger = player.getFoodData().getFoodLevel();
+            double saturation = player.getFoodData().getSaturationLevel();
             int level = player.experienceLevel;
-            final Text name = player.getDisplayName();
+            final Component name = player.getDisplayName();
             final String hpStr = String.format("%.2f", hp);
             final String hungerStr = String.valueOf(hunger);
             final String saturationStr = String.format("%.2f", saturation);
             final String levelStr = String.valueOf(level);
-            MutableText text = Util.parseTranslateableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
+            MutableComponent text = Util.parseTranslateableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private MutableText formatInventoryItemStack(ItemStack item) {
-        MutableText itemText = Text.empty();
+    private static MutableComponent formatInventoryItemStack(ItemStack item) {
+        MutableComponent itemText = Component.empty();
         try {
             if (item == null || item.isEmpty()) {
-                itemText = Text.literal("00").formatted(Formatting.GRAY).styled(s -> s
+                itemText = Component.literal("00").withStyle(ChatFormatting.GRAY).withStyle(s -> s
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.command.get.emptyslot")))
                 );
             } else if (item.getCount() < 100) {
                 String itemCount = String.format("%02d", item.getCount());
-                itemText = Text.literal(itemCount).formatted(Formatting.AQUA).styled(s -> s
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
+                itemText = Component.literal(itemCount).withStyle(ChatFormatting.AQUA).withStyle(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item)))
                 );
             } else {
-                itemText = Text.literal("9+").formatted(Formatting.AQUA).styled(s -> s
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
+                itemText = Component.literal("9+").withStyle(ChatFormatting.AQUA).withStyle(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item)))
                 );
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when formatting item stack", e);
-            itemText = Text.literal("??").formatted(Formatting.RED);
+            itemText = Component.literal("??").withStyle(ChatFormatting.RED);
         }
         return itemText;
     }
 
-    private List<MutableText> getInventoryTexts(ServerPlayerEntity player) {
-        PlayerInventory inventory = player.getInventory();
+    private static List<MutableComponent> getInventoryTexts(ServerPlayer player) {
+        Inventory inventory = player.getInventory();
         // Text Structure:
         // [x] [x] [x] [x] [-] [-] [S] [+] [1]   (x: Armor, -: Placeholder, +: Offhand, 1: Current Chosen Slot Index)
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, S: Survival Gamemode [S: Survival, C: Creative, A: Adventure, V: Spectator])
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
-        MutableText armorText = Text.empty();
+        MutableComponent armorText = Component.empty();
         for (int i = 0; i < 4; i++) {
-            ItemStack item = inventory.getArmorStack(i);
-            armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+            ItemStack item = inventory.getArmor(i);
+            armorText.append(Component.literal("[").withStyle(ChatFormatting.LIGHT_PURPLE));
             armorText.append(formatInventoryItemStack(item));
-            armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(Component.literal("]").withStyle(ChatFormatting.LIGHT_PURPLE));
+            armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         }
         // Placeholder
         for (int i = 0; i < 2; i++) {
-            armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(Component.literal("[--]").withStyle(ChatFormatting.GRAY));
+            armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         }
         // Gamemode
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-        GameMode gamemode = player.interactionManager.getGameMode();
-        MutableText gamemodeText = Text.literal("+S");
-        if (gamemode == GameMode.CREATIVE) {
-            gamemodeText = Text.literal("+C");
-        } else if (gamemode == GameMode.ADVENTURE) {
-            gamemodeText = Text.literal("+A");
-        } else if (gamemode == GameMode.SPECTATOR) {
-            gamemodeText = Text.literal("+V");
+        armorText.append(Component.literal("[").withStyle(ChatFormatting.GOLD));
+        GameType gamemode = player.gameMode.getGameModeForPlayer();
+        MutableComponent gamemodeText = Component.literal("+S");
+        if (gamemode == GameType.CREATIVE) {
+            gamemodeText = Component.literal("+C");
+        } else if (gamemode == GameType.ADVENTURE) {
+            gamemodeText = Component.literal("+A");
+        } else if (gamemode == GameType.SPECTATOR) {
+            gamemodeText = Component.literal("+V");
         }
-        gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
-            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
+        gamemodeText = gamemodeText.withStyle(ChatFormatting.RED).withStyle(s -> s
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("gameMode." + gamemode.getName())))
         );
         armorText.append(gamemodeText);
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(Component.literal("]").withStyle(ChatFormatting.GOLD));
+        armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         // Offhand
-        ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
-        armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+        ItemStack offhandItem = inventory.getItem(Inventory.SLOT_OFFHAND);
+        armorText.append(Component.literal("[").withStyle(ChatFormatting.LIGHT_PURPLE));
         armorText.append(formatInventoryItemStack(offhandItem));
-        armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(Component.literal("]").withStyle(ChatFormatting.LIGHT_PURPLE));
+        armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         // Selected Slot
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-        armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(Component.literal("[").withStyle(ChatFormatting.GOLD));
+        armorText.append(Component.literal("0" + String.valueOf(inventory.selected + 1)).withStyle(ChatFormatting.RED));
+        armorText.append(Component.literal("]").withStyle(ChatFormatting.GOLD));
+        armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         // Inventory
-        MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
+        MutableComponent[] inventoryText = {Component.empty(), Component.empty(), Component.empty()};
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {
                 // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
                 int index = (i + 1) * 9 + j;
-                ItemStack item = inventory.getStack(index);
-                inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
+                ItemStack item = inventory.getItem(index);
+                inventoryText[i].append(Component.literal("[").withStyle(ChatFormatting.GREEN));
                 inventoryText[i].append(formatInventoryItemStack(item));
-                inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
-                inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
+                inventoryText[i].append(Component.literal("]").withStyle(ChatFormatting.GREEN));
+                inventoryText[i].append(Component.literal(" ").withStyle(ChatFormatting.RESET));
             }
         }
         // Hotbar
-        MutableText hotbarText = Text.empty();
+        MutableComponent hotbarText = Component.empty();
         for (int i = 0; i < 9; i++) {
-            ItemStack item = inventory.getStack(i);
-            if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
+            ItemStack item = inventory.getItem(i);
+            if (i == inventory.selected) {
+                hotbarText.append(Component.literal("[").withStyle(ChatFormatting.GOLD));
             } else {
-                hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+                hotbarText.append(Component.literal("[").withStyle(ChatFormatting.LIGHT_PURPLE));
             }
             hotbarText.append(formatInventoryItemStack(item));
-            if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
+            if (i == inventory.selected) {
+                hotbarText.append(Component.literal("]").withStyle(ChatFormatting.GOLD));
             } else {
-                hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+                hotbarText.append(Component.literal("]").withStyle(ChatFormatting.LIGHT_PURPLE));
             }
-            hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
+            hotbarText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         }
         // Feedback
-        final MutableText linea = armorText;
-        final MutableText lineb = inventoryText[0];
-        final MutableText linec = inventoryText[1];
-        final MutableText lined = inventoryText[2];
-        final MutableText linee = hotbarText;
+        final MutableComponent linea = armorText;
+        final MutableComponent lineb = inventoryText[0];
+        final MutableComponent linec = inventoryText[1];
+        final MutableComponent lined = inventoryText[2];
+        final MutableComponent linee = hotbarText;
         return Arrays.asList(linea, lineb, linec, lined, linee);
     }
 
-    private int runGetInventoryCommand(ServerPlayerEntity player, CommandContext<ServerCommandSource> context) {
+    private static int runGetInventoryCommand(ServerPlayer player, CommandContext<CommandSourceStack> context) {
         try {
-            List<MutableText> inventoryText = getInventoryTexts(player);
-            final Text name = player.getDisplayName();
-            final Text title = Util.parseTranslateableText("fmod.command.get.inventory", name);
-            context.getSource().sendFeedback(() -> title, false);
-            for (MutableText text : inventoryText) {
-                context.getSource().sendFeedback(() -> text, false);
+            List<MutableComponent> inventoryText = getInventoryTexts(player);
+            final Component name = player.getDisplayName();
+            final Component title = Util.parseTranslateableText("fmod.command.get.inventory", name);
+            context.getSource().sendSuccess(() -> title, false);
+            for (MutableComponent text : inventoryText) {
+                context.getSource().sendSuccess(() -> text, false);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runShareInventoryCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareInventoryCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            List<MutableText> inventoryText = getInventoryTexts(player);
-            final Text name = player.getDisplayName();
-            final Text title = Util.parseTranslateableText("fmod.command.share.inventory", name);
+            ServerPlayer player = getShareCommandExecutor(context);
+            List<MutableComponent> inventoryText = getInventoryTexts(player);
+            final Component name = player.getDisplayName();
+            final Component title = Util.parseTranslateableText("fmod.command.share.inventory", name);
             Util.broadcastTextMessage(context.getSource().getServer(), title);
-            for (MutableText text : inventoryText) {
+            for (MutableComponent text : inventoryText) {
                 Util.broadcastTextMessage(context.getSource().getServer(), text);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGetItemCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetItemCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             for (Entity entity : entities) {
-                Iterable<ItemStack> items = entity.getHandItems();
+                Iterable<ItemStack> items = entity.getHandSlots();
                 if (items == null || items.iterator().hasNext() == false) {
-                    final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
+                    final Component name = entity.getDisplayName();
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                     continue;
                 }
-                MutableText itemList = Text.empty();
+                MutableComponent itemList = Component.empty();
                 int itemCountSum = 0;
                 for (ItemStack item : items) {
                     if (item.isEmpty()) {
                         continue;
                     }
-                    Text itemText = item.toHoverableText();
+                    Component itemText = item.getDisplayName();
                     int itemCount = item.getCount();
                     result += itemCount;
                     itemCountSum += itemCount;
                     itemList.append(itemText);
                     if (itemCount > 1) {
-                        itemList.append(Text.literal("x" + itemCount + " "));
+                        itemList.append(Component.literal("x" + itemCount + " "));
                     } else {
-                        itemList.append(Text.literal(" "));
+                        itemList.append(Component.literal(" "));
                     }
                 }
-                final Text name = entity.getDisplayName();
-                final MutableText itemTxt = itemList;
+                final Component name = entity.getDisplayName();
+                final MutableComponent itemTxt = itemList;
                 if (itemCountSum <= 0) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name).append(itemTxt), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.item", name).append(itemTxt), false);
                 }
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
-    private int runShareItemCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareItemCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            Iterable<ItemStack> items = player.getHandItems();
+            ServerPlayer player = getShareCommandExecutor(context);
+            Iterable<ItemStack> items = player.getHandSlots();
             if (items == null || items.iterator().hasNext() == false) {
-                final Text name = player.getDisplayName();
+                final Component name = player.getDisplayName();
                 Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
                 return Command.SINGLE_SUCCESS;
             }
-            MutableText itemList = Text.empty();
+            MutableComponent itemList = Component.empty();
             int itemCountSum = 0;
             for (ItemStack item : items) {
                 if (item.isEmpty()) {
                     continue;
                 }
-                Text itemText = item.toHoverableText();
+                Component itemText = item.getDisplayName();
                 int itemCount = item.getCount();
                 itemCountSum += itemCount;
                 itemList.append(itemText);
                 if (itemCount > 1) {
-                    itemList.append(Text.literal("x" + itemCount + " "));
+                    itemList.append(Component.literal("x" + itemCount + " "));
                 } else {
-                    itemList.append(Text.literal(" "));
+                    itemList.append(Component.literal(" "));
                 }
             }
-            final Text name = player.getDisplayName();
-            final MutableText itemTxt = itemList;
+            final Component name = player.getDisplayName();
+            final MutableComponent itemTxt = itemList;
             if (itemCountSum <= 0) {
                 Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
             } else {
                 Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.item", name).append(itemTxt));
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runSayCommand(String message, CommandContext<ServerCommandSource> context) {
+    private static int runSayCommand(String message, CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = context.getSource().getPlayer();
-            MutableText text = Text.literal("<").append(player.getDisplayName()).append(Text.literal("> ")).append(
+            ServerPlayer player = context.getSource().getPlayer();
+            MutableComponent text = Component.literal("<").append(player.getDisplayName()).append(Component.literal("> ")).append(
                 TextPlaceholderFactory.ofDefault().parse(message, player)
             );
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f say", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runCreateFlowCommand(String name, String eventNode, String eventNodeName, CommandContext<ServerCommandSource> context) {
+    private static int runCreateFlowCommand(String name, String eventNode, String eventNodeName, CommandContext<CommandSourceStack> context) {
         try {
             ServerData data = Util.getServerData(context.getSource().getServer());
             if (data.logicFlows.get(name) != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.exists", name));
             }
             Collection<String> validEventNodes = NodeRegistry.getEventNodeList();
             if (!validEventNodes.contains(eventNode)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.event.unknown", eventNode));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.event.unknown", eventNode));
             }
             FlowManager flowManager = new FlowManager(name, eventNode, eventNodeName);
             data.logicFlows.put(name, flowManager);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.create.success", eventNode, name), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.create.success", eventNode, name), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow create", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runCopyFlowCommand(String sourceName, String targetName, CommandContext<ServerCommandSource> context) {
+    private static int runCopyFlowCommand(String sourceName, String targetName, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager sourceFlow = data.logicFlows.get(sourceName);
             if (sourceFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", sourceName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", sourceName));
             }
             FlowManager targetFlow = data.logicFlows.get(targetName);
             if (targetFlow != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", targetName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.exists", targetName));
             }
             FlowManager copiedFlow = new FlowManager(sourceFlow.flow.copy());
             copiedFlow.flow.name = targetName;
             data.logicFlows.put(targetName, copiedFlow);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.copy.success", sourceName, targetName), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.copy.success", sourceName, targetName), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow copy", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runLoadFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+    private static int runLoadFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             if (FlowFileSuggestion.getAvailableFlows() == 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.hint"), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.hint"), false);
             }
-            Path flowFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            Path flowFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
             ServerData data = Util.getServerData(context.getSource().getServer());
             if ("*".equals(name)) {
                 // Load all flow files
@@ -1191,16 +1188,16 @@ public class CommandRegistrater {
                 for (String flowFileName : FlowFileSuggestion.cachedFlowList) {
                     Path flowPath = flowFolder.resolve(flowFileName).normalize();
                     if (!flowPath.startsWith(flowFolder)) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.filenotfound", flowFileName), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.load.filenotfound", flowFileName), false);
                         continue;
                     }
                     LogicFlow flow = FlowSerializer.loadFile(flowPath);
                     if (flow == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.ioexception", flowFileName), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.load.ioexception", flowFileName), false);
                         continue;
                     }
                     if (data.logicFlows.get(flow.name) != null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.exists", flow.name), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.exists", flow.name), false);
                         continue;
                     }
                     FlowManager flowManager = new FlowManager(flow);
@@ -1208,36 +1205,36 @@ public class CommandRegistrater {
                     loadedCount++;
                 }
                 int loadedCountFinal = loadedCount;
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.all", String.valueOf(loadedCountFinal)), true);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.load.all", String.valueOf(loadedCountFinal)), true);
                 return loadedCountFinal;
             }
             Path flowPath = flowFolder.resolve(name).normalize();
             if (!flowPath.startsWith(flowFolder)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.load.filenotfound", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.load.filenotfound", name));
             }
             LogicFlow flow = FlowSerializer.loadFile(flowPath);
             if (flow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.load.ioexception", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.load.ioexception", name));
             }
             if (data.logicFlows.get(flow.name) != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", flow.name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.exists", flow.name));
             }
             FlowManager flowManager = new FlowManager(flow);
             data.logicFlows.put(flow.name, flowManager);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.success", flow.name), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.load.success", flow.name), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow load", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runSaveFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+    private static int runSaveFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
-            Path flowFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            Path flowFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
             ServerData data = Util.getServerData(context.getSource().getServer());
             if ("*".equals(name)) {
                 // Save all flows
@@ -1245,58 +1242,58 @@ public class CommandRegistrater {
                 for (FlowManager flowManager : data.logicFlows.values()) {
                     Path flowPath = flowFolder.resolve(flowManager.flow.name + ".flow").normalize();
                     if (!flowPath.startsWith(flowFolder)) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.notavailable", flowManager.flow.name), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.save.notavailable", flowManager.flow.name), false);
                         continue;
                     }
                     boolean success = FlowSerializer.saveFile(flowManager.flow, flowPath, true);
                     if (success) {
                         savedCount++;
                     } else {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.ioexception", flowManager.flow.name), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.save.ioexception", flowManager.flow.name), false);
                     }
                 }
                 int savedCountFinal = savedCount;
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.all", String.valueOf(savedCountFinal)), true);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.save.all", String.valueOf(savedCountFinal)), true);
                 FlowFileSuggestion.suggest();
                 return savedCountFinal;
             }
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
             Path flowPath = flowFolder.resolve(targetFlow.flow.name + ".flow").normalize();
             if (!flowPath.startsWith(flowFolder)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.save.notavailable", targetFlow.flow.name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.save.notavailable", targetFlow.flow.name));
             }
             boolean success = FlowSerializer.saveFile(targetFlow.flow, flowPath, true);
             if (!success) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.save.ioexception", targetFlow.flow.name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.save.ioexception", targetFlow.flow.name));
             }
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.success", targetFlow.flow.name), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.save.success", targetFlow.flow.name), true);
             FlowFileSuggestion.suggest();
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow save", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runListFlowCommand(CommandContext<ServerCommandSource> context) {
+    private static int runListFlowCommand(CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             if (data.logicFlows.isEmpty()) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.list.empty"), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.list.empty"), false);
                 return Command.SINGLE_SUCCESS;
             }
-            List<MutableText> flowLines = new ArrayList<>();
+            List<MutableComponent> flowLines = new ArrayList<>();
             int enabledCount = 0;
             int totalCount = 0;
             for (FlowManager flowManager : data.logicFlows.values()) {
-                MutableText line = null;
+                MutableComponent line = null;
                 String numNodesStr = String.valueOf(flowManager.flow.getNodes().size());
                 FlowNode startNode = flowManager.flow.getFirstNode();
                 if (startNode == null) {
@@ -1304,13 +1301,13 @@ public class CommandRegistrater {
                 }
                 String startNodeStr = startNode.name;
                 if (flowManager.isEnabled) {
-                    line = Util.parseTranslateableText("fmod.command.flow.list.enabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
+                    line = Util.parseTranslateableText("fmod.command.flow.list.enabled", flowManager.flow.name, numNodesStr, startNodeStr).withStyle(s -> s
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
                     );
                     enabledCount++;
                 } else {
-                    line = Util.parseTranslateableText("fmod.command.flow.list.disabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
+                    line = Util.parseTranslateableText("fmod.command.flow.list.disabled", flowManager.flow.name, numNodesStr, startNodeStr).withStyle(s -> s
                         .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
                     );
@@ -1320,140 +1317,140 @@ public class CommandRegistrater {
             }
             String enabledCountStr = String.valueOf(enabledCount);
             String totalCountStr = String.valueOf(totalCount);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.list.title", totalCountStr, enabledCountStr), false);
-            for (MutableText line : flowLines) {
-                context.getSource().sendFeedback(() -> line, false);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.list.title", totalCountStr, enabledCountStr), false);
+            for (MutableComponent line : flowLines) {
+                context.getSource().sendSuccess(() -> line, false);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow list", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runRenameFlowCommand(String oldName, String newName, CommandContext<ServerCommandSource> context) {
+    private static int runRenameFlowCommand(String oldName, String newName, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(oldName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", oldName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", oldName));
             }
             if (data.logicFlows.get(newName) != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", newName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.exists", newName));
             }
             data.logicFlows.remove(oldName);
             targetFlow.flow.name = newName;
             data.logicFlows.put(newName, targetFlow);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.rename.success", oldName, newName), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.rename.success", oldName, newName), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow rename", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runGetEnableFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+    private static int runGetEnableFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
             if (targetFlow.isEnabled) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.true", name), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.true", name), false);
             } else {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.false", name), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.false", name), false);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runSetEnableFlowCommand(String name, boolean enable, CommandContext<ServerCommandSource> context) {
+    private static int runSetEnableFlowCommand(String name, boolean enable, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
             targetFlow.isEnabled = enable;
             if (enable) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.true", name), true);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.true", name), true);
             } else {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.false", name), true);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.false", name), true);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runExecuteFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+    private static int runExecuteFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
             if (targetFlow.isEnabled == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.disabled", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.disabled", name));
             }
             ExecutionContext ctx = new ExecutionContext(targetFlow.flow, context.getSource().getServer());
             ctx.execute(Util.serverConfig.getMaxFlowLength(), null, null);
             data.executeHistory.add(ctx);
             if (ctx.getException() != null) {
-                throw new CommandException(ctx.getException().getMessageText());
+                throw new CommandRuntimeException(ctx.getException().getMessageText());
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow execute", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runDeleteFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+    private static int runDeleteFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
             data.logicFlows.remove(name);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.delete.success", name), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.delete.success", name), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow delete", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runFlowHistoryCommand(int pageIndex, CommandContext<ServerCommandSource> context) {
+    private static int runFlowHistoryCommand(int pageIndex, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
@@ -1461,7 +1458,7 @@ public class CommandRegistrater {
             // 5 entries per page
             int maxPage = (history.size() + 4) / 5;
             if (maxPage <= 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.history.null"), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.history.null"), false);
                 return Command.SINGLE_SUCCESS;
             }
             int index = pageIndex;
@@ -1469,1301 +1466,1296 @@ public class CommandRegistrater {
                 index = maxPage;
             }
             if (index > maxPage) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.history.indexerror", pageIndex, maxPage));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.history.indexerror", pageIndex, maxPage));
             }
             int start = (index - 1) * 5;
             int end = Math.min(start + 5, history.size());
             String indexStr = String.valueOf(index);
             String maxPageStr = String.valueOf(maxPage);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.history.title", indexStr, maxPageStr), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.history.title", indexStr, maxPageStr), false);
             for (int i = start; i < end; i++) {
                 ExecutionContext entry = history.get(i);
                 String iStr = String.valueOf(i + 1);
-                MutableText entryText =  Util.parseTranslateableText("fmod.command.flow.history.entry", iStr, entry.getFlow().name).styled(s -> s
+                MutableComponent entryText =  Util.parseTranslateableText("fmod.command.flow.history.entry", iStr, entry.getFlow().name).withStyle(s -> s
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow log " + iStr))
                 );
-                context.getSource().sendFeedback(() -> entryText, false);
+                context.getSource().sendSuccess(() -> entryText, false);
             }
-            MutableText navigateText = Text.empty();
+            MutableComponent navigateText = Component.empty();
             if (index > 1) {
                 String prevIndexStr = String.valueOf(index - 1);
-                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.prev").styled(s -> s
+                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.prev").withStyle(s -> s
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow history " + prevIndexStr))
                 ));
             }
             if (index < maxPage) {
                 String nextIndexStr = String.valueOf(index + 1);
-                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.next").styled(s -> s
+                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.next").withStyle(s -> s
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow history " + nextIndexStr))
                 ));
             }
             if (maxPage > 1) {
-                context.getSource().sendFeedback(() -> navigateText, false);
+                context.getSource().sendSuccess(() -> navigateText, false);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow history", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runViewFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+    private static int runViewFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
             }
-            Text text = targetFlow.flow.render();
-            context.getSource().sendFeedback(() -> text, false);
+            Component text = targetFlow.flow.render();
+            context.getSource().sendSuccess(() -> text, false);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow view", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runLogFlowCommand(int index, CommandContext<ServerCommandSource> context) {
+    private static int runLogFlowCommand(int index, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             List<ExecutionContext> history = data.executeHistory;
             if (index <= 0 || index > history.size()) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.log.indexerror", String.valueOf(index)));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.log.indexerror", String.valueOf(index)));
             }
             ExecutionContext entry = history.get(index - 1);
-            Text text = entry.render();
-            context.getSource().sendFeedback(() -> text, false);
+            Component text = entry.render();
+            context.getSource().sendSuccess(() -> text, false);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow log", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowNewNodeCommand(String flowName, String type, String name, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowNewNodeCommand(String flowName, String type, String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             Collection<String> validNodeTypes = NodeRegistry.getNodeList();
             if (!validNodeTypes.contains(type)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.unknown", type));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.unknown", type));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.exists", name, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.exists", name, flowName));
             }
             targetFlow.createNode(type, name);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.newnode.success", name, flowName), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.newnode.success", name, flowName), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowRemoveNodeCommand(String flowName, String name, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowRemoveNodeCommand(String flowName, String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (existingNode.isEventNode()) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.delete.event", flowName, name));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.delete.event", flowName, name));
             }
             targetFlow.removeNode(name);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.removenode.success", name, flowName), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.removenode.success", name, flowName), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowRenameNodeCommand(String flowName, String oldName, String newName, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowRenameNodeCommand(String flowName, String oldName, String newName, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(oldName);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", oldName, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", oldName, flowName));
             }
             FlowNode newNode = targetFlow.flow.getNodeByName(newName);
             if (newNode != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.exists", newName, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.exists", newName, flowName));
             }
             targetFlow.renameNode(oldName, newName);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.renamenode.success", oldName, flowName, newName), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.renamenode.success", oldName, flowName, newName), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowConstInputCommand(String flowName, String name, int index, String value, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowConstInputCommand(String flowName, String name, int index, String value, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
             // parse const value
             DataReference ref = FlowSerializer.parseConstDataReference(value);
             Object parsedValue = ref.value;
             String parsedValueStr = String.valueOf(parsedValue);
             targetFlow.setConstInput(name, index - 1, parsedValue);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowRefInputCommand(String flowName, String name, int index, String refNode, int refIndex, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowRefInputCommand(String flowName, String name, int index, String refNode, int refIndex, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
             FlowNode refExistingNode = targetFlow.flow.getNodeByName(refNode);
             if (refExistingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", refNode, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", refNode, flowName));
             }
             if (refIndex <= 0 || refIndex > refExistingNode.getMetadata().outputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.output.indexerror", refNode, String.valueOf(refIndex)));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.edit.output.indexerror", refNode, String.valueOf(refIndex)));
             }
             targetFlow.setReferenceInput(name, index - 1, refNode, refIndex - 1);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowDisconnectInputCommand(String flowName, String name, int index, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowDisconnectInputCommand(String flowName, String name, int index, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
             targetFlow.disconnectInput(name, index - 1);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowNextNodeCommand(String flowName, String name, int index, String next, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowNextNodeCommand(String flowName, String name, int index, String next, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
             }
             FlowNode nextNode = targetFlow.flow.getNodeByName(next);
             if (nextNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", next, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", next, flowName));
             }
             targetFlow.setNextNode(name, index - 1, next);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowFinalBranchCommand(String flowName, String name, int index, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowFinalBranchCommand(String flowName, String name, int index, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
             }
             targetFlow.disconnectNextNode(name, index - 1);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowUndoCommand(String flowName, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowUndoCommand(String flowName, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             if (targetFlow.undoPath.isEmpty()) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.nothing", flowName), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.nothing", flowName), false);
                 return Command.SINGLE_SUCCESS;
             } else {
                 targetFlow.undo();
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.success", flowName), true);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.success", flowName), true);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runEditFlowRedoCommand(String flowName, CommandContext<ServerCommandSource> context) {
+    private static int runEditFlowRedoCommand(String flowName, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
             }
             if (targetFlow.redoPath.isEmpty()) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.nothing", flowName), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.nothing", flowName), false);
                 return Command.SINGLE_SUCCESS;
             } else {
                 targetFlow.redo();
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.success", flowName), true);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.success", flowName), true);
             }
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runReloadCommand(CommandContext<ServerCommandSource> context) {
+    private static int runReloadCommand(CommandContext<CommandSourceStack> context) {
         try {
             SongFileSuggestion.suggest();
             FlowFileSuggestion.suggest();
             Util.loadServerConfig();
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.reload.success"), true);
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
+            if (e instanceof CommandRuntimeException) {
+                throw (CommandRuntimeException) e;
             }
-            throw new CommandException(Util.parseTranslateableText("fmod.command.reload.error"));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.reload.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    public boolean registerCommand() {
+    public static void registerCommand(RegisterCommandsEvent event) {
         try {
-            CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-                final LiteralCommandNode<ServerCommandSource> fModCommandNode = dispatcher.register(CommandManager.literal("fminecraftmod")
-                    .requires(source -> source.hasPermissionLevel(0))
-                    .executes(context -> {return runFModCommand(context);})
-                    .then(CommandManager.literal("dev")
-                        .requires(source -> source.hasPermissionLevel(4))
-                        .executes(context -> {return runDevCommand(context);})
+            final LiteralCommandNode<CommandSourceStack> fModCommandNode = event.getDispatcher().register(Commands.literal("fminecraftmod")
+                .requires(source -> source.hasPermission(0))
+                .executes(context -> {return runFModCommand(context);})
+                .then(Commands.literal("dev")
+                    .requires(source -> source.hasPermission(4))
+                    .executes(context -> {return runDevCommand(context);})
+                )
+                .then(Commands.literal("gpt")
+                    .requires(source -> source.hasPermission(3))
+                    .then(Commands.literal("new")
+                        .then(Commands.argument("message", StringArgumentType.greedyString())
+                            .executes(context -> {return runGptNewCommand(StringArgumentType.getString(context, "message"), context);})
+                        ))
+                    .then(Commands.literal("reply")
+                        .then(Commands.argument("message", StringArgumentType.greedyString())
+                            .executes(context -> {return runGptReplyCommand(StringArgumentType.getString(context, "message"), context);})
+                        ))
+                    .then(Commands.literal("regenerate").executes(context -> {return runGptRegenerateCommand(context);}))
+                    .then(Commands.literal("edit")
+                        .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                            .then(Commands.argument("message", StringArgumentType.greedyString())
+                                .executes(context -> {return runGptEditCommand(IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "message"), context);})
+                            )
+                        )
                     )
-                    .then(CommandManager.literal("gpt")
-                        .requires(source -> source.hasPermissionLevel(3))
-                        .then(CommandManager.literal("new")
-                            .then(CommandManager.argument("message", StringArgumentType.greedyString())
-                                .executes(context -> {return runGptNewCommand(StringArgumentType.getString(context, "message"), context);})
-                            ))
-                        .then(CommandManager.literal("reply")
-                            .then(CommandManager.argument("message", StringArgumentType.greedyString())
-                                .executes(context -> {return runGptReplyCommand(StringArgumentType.getString(context, "message"), context);})
-                            ))
-                        .then(CommandManager.literal("regenerate").executes(context -> {return runGptRegenerateCommand(context);}))
-                        .then(CommandManager.literal("edit")
-                            .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                .then(CommandManager.argument("message", StringArgumentType.greedyString())
-                                    .executes(context -> {return runGptEditCommand(IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "message"), context);})
+                    .then(Commands.literal("history")
+                        .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runGptHistoryCommand(IntegerArgumentType.getInteger(context, "index"), context);})
+                        )
+                        .executes(context -> {return runGptHistoryCommand(0, context);})
+                    )
+                )
+                .then(Commands.literal("song")
+                    .requires(source -> source.hasPermission(3))
+                    .then(Commands.literal("play")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .then(Commands.argument("song", StringArgumentType.greedyString())
+                                .suggests(SongFileSuggestion.suggest())
+                                .executes(context -> {return runSongPlayCommand(EntityArgument.getPlayers(context, "player"), StringArgumentType.getString(context, "song"), context);})
+                            )
+                        )
+                    )
+                    .then(Commands.literal("cancel")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .executes(context -> {return runSongCancelCommand(EntityArgument.getPlayers(context, "player"), context);})
+                        )
+                    )
+                    .then(Commands.literal("get")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .executes(context -> {return runSongGetCommand(EntityArgument.getPlayers(context, "player"), context);})
+                        )
+                    )
+                    .then(Commands.literal("show")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .then(Commands.argument("enable", BoolArgumentType.bool())
+                                .executes(context -> {return runSongShowInfoCommand(EntityArgument.getPlayers(context, "player"), BoolArgumentType.getBool(context, "enable"), context);})
+                            )
+                            .executes(context -> {return runSongShowInfoCommand(EntityArgument.getPlayers(context, "player"), context);})
+                        )
+                    )
+                    .then(Commands.literal("seek")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .then(Commands.argument("timepoint", DoubleArgumentType.doubleArg(0.0))
+                                .executes(context -> {return runSongSeekCommand(EntityArgument.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "timepoint"), context);})
+                            )
+                        )
+                    )
+                    .then(Commands.literal("speed")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .then(Commands.argument("speed", DoubleArgumentType.doubleArg())
+                                .executes(context -> {return runSongSpeedCommand(EntityArgument.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "speed"), context);})
+                            )
+                        )
+                    )
+                )
+                .then(Commands.literal("get")
+                    .requires(source -> source.hasPermission(2))
+                    .then(Commands.literal("coord")
+                        .then(Commands.argument("entity", EntityArgument.entities())
+                            .executes(context -> {return runGetCoordCommand(EntityArgument.getEntities(context, "entity"), context);})
+                        )
+                    )
+                    .then(Commands.literal("distance")
+                        .then(Commands.argument("entity", EntityArgument.entities())
+                            .executes(context -> {return runGetDistanceCommand(EntityArgument.getEntities(context, "entity"), context);})
+                        )
+                    )
+                    .then(Commands.literal("health")
+                        .then(Commands.argument("entity", EntityArgument.entities())
+                            .executes(context -> {return runGetHealthCommand(EntityArgument.getEntities(context, "entity"), context);})
+                        )
+                    )
+                    .then(Commands.literal("status")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .executes(context -> {return runGetStatusCommand(EntityArgument.getPlayers(context, "player"), context);})
+                        )
+                    )
+                    .then(Commands.literal("inventory")
+                        .then(Commands.argument("player", EntityArgument.player())
+                            .executes(context -> {return runGetInventoryCommand(EntityArgument.getPlayer(context, "player"), context);})
+                        )
+                    )
+                    .then(Commands.literal("item")
+                        .then(Commands.argument("entity", EntityArgument.entities())
+                            .executes(context -> {return runGetItemCommand(EntityArgument.getEntities(context, "entity"), context);})
+                        )
+                    )
+                )
+                .then(Commands.literal("share")
+                    .requires(source -> source.hasPermission(0))
+                    .then(Commands.literal("coord").executes(context -> {return runShareCoordCommand(context);}))
+                    .then(Commands.literal("distance").executes(context -> {return runShareDistanceCommand(context);}))
+                    .then(Commands.literal("health").executes(context -> {return runShareHealthCommand(context);}))
+                    .then(Commands.literal("status").executes(context -> {return runShareStatusCommand(context);}))
+                    .then(Commands.literal("inventory").executes(context -> {return runShareInventoryCommand(context);}))
+                    .then(Commands.literal("item").executes(context -> {return runShareItemCommand(context);}))
+                )
+                .then(Commands.literal("say")
+                    .requires(source -> source.hasPermission(0))
+                    .then(Commands.argument("message", StringArgumentType.greedyString())
+                        .suggests(SayCommandSuggestion.suggestDefault())
+                        .executes(context -> {return runSayCommand(StringArgumentType.getString(context, "message"), context);})
+                    )
+                )
+                .then(Commands.literal("reload")
+                    .requires(source -> source.hasPermission(4))
+                    .executes(context -> {return runReloadCommand(context);})
+                )
+                .then(Commands.literal("flow")
+                    .requires(source -> source.hasPermission(3))
+                    .then(Commands.literal("create")
+                        .then(Commands.argument("name", StringArgumentType.string())
+                            .then(Commands.argument("event", StringArgumentType.string())
+                                .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList(), true))
+                                .then(Commands.argument("node", StringArgumentType.string())
+                                    .executes(context -> {return runCreateFlowCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "event"), StringArgumentType.getString(context, "node"), context);})
                                 )
                             )
                         )
-                        .then(CommandManager.literal("history")
-                            .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                .executes(context -> {return runGptHistoryCommand(IntegerArgumentType.getInteger(context, "index"), context);})
-                            )
-                            .executes(context -> {return runGptHistoryCommand(0, context);})
-                        )
                     )
-                    .then(CommandManager.literal("song")
-                        .requires(source -> source.hasPermissionLevel(3))
-                        .then(CommandManager.literal("play")
-                            .then(CommandManager.argument("player", EntityArgumentType.players())
-                                .then(CommandManager.argument("song", StringArgumentType.greedyString())
-                                    .suggests(SongFileSuggestion.suggest())
-                                    .executes(context -> {return runSongPlayCommand(EntityArgumentType.getPlayers(context, "player"), StringArgumentType.getString(context, "song"), context);})
-                                )
-                            )
-                        )
-                        .then(CommandManager.literal("cancel")
-                            .then(CommandManager.argument("player", EntityArgumentType.players())
-                                .executes(context -> {return runSongCancelCommand(EntityArgumentType.getPlayers(context, "player"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("get")
-                            .then(CommandManager.argument("player", EntityArgumentType.players())
-                                .executes(context -> {return runSongGetCommand(EntityArgumentType.getPlayers(context, "player"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("show")
-                            .then(CommandManager.argument("player", EntityArgumentType.players())
-                                .then(CommandManager.argument("enable", BoolArgumentType.bool())
-                                    .executes(context -> {return runSongShowInfoCommand(EntityArgumentType.getPlayers(context, "player"), BoolArgumentType.getBool(context, "enable"), context);})
-                                )
-                                .executes(context -> {return runSongShowInfoCommand(EntityArgumentType.getPlayers(context, "player"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("seek")
-                            .then(CommandManager.argument("player", EntityArgumentType.players())
-                                .then(CommandManager.argument("timepoint", DoubleArgumentType.doubleArg(0.0))
-                                    .executes(context -> {return runSongSeekCommand(EntityArgumentType.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "timepoint"), context);})
-                                )
-                            )
-                        )
-                        .then(CommandManager.literal("speed")
-                            .then(CommandManager.argument("player", EntityArgumentType.players())
-                                .then(CommandManager.argument("speed", DoubleArgumentType.doubleArg())
-                                    .executes(context -> {return runSongSpeedCommand(EntityArgumentType.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "speed"), context);})
-                                )
-                            )
-                        )
+                    .then(Commands.literal("list")
+                        .executes(context -> {return runListFlowCommand(context);})
                     )
-                    .then(CommandManager.literal("get")
-                        .requires(source -> source.hasPermissionLevel(2))
-                        .then(CommandManager.literal("coord")
-                            .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                                .executes(context -> {return runGetCoordCommand(EntityArgumentType.getEntities(context, "entity"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("distance")
-                            .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                                .executes(context -> {return runGetDistanceCommand(EntityArgumentType.getEntities(context, "entity"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("health")
-                            .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                                .executes(context -> {return runGetHealthCommand(EntityArgumentType.getEntities(context, "entity"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("status")
-                            .then(CommandManager.argument("player", EntityArgumentType.players())
-                                .executes(context -> {return runGetStatusCommand(EntityArgumentType.getPlayers(context, "player"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("inventory")
-                            .then(CommandManager.argument("player", EntityArgumentType.player())
-                                .executes(context -> {return runGetInventoryCommand(EntityArgumentType.getPlayer(context, "player"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("item")
-                            .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                                .executes(context -> {return runGetItemCommand(EntityArgumentType.getEntities(context, "entity"), context);})
-                            )
-                        )
-                    )
-                    .then(CommandManager.literal("share")
-                        .requires(source -> source.hasPermissionLevel(0))
-                        .then(CommandManager.literal("coord").executes(context -> {return runShareCoordCommand(context);}))
-                        .then(CommandManager.literal("distance").executes(context -> {return runShareDistanceCommand(context);}))
-                        .then(CommandManager.literal("health").executes(context -> {return runShareHealthCommand(context);}))
-                        .then(CommandManager.literal("status").executes(context -> {return runShareStatusCommand(context);}))
-                        .then(CommandManager.literal("inventory").executes(context -> {return runShareInventoryCommand(context);}))
-                        .then(CommandManager.literal("item").executes(context -> {return runShareItemCommand(context);}))
-                    )
-                    .then(CommandManager.literal("say")
-                        .requires(source -> source.hasPermissionLevel(0))
-                        .then(CommandManager.argument("message", StringArgumentType.greedyString())
-                            .suggests(SayCommandSuggestion.suggestDefault())
-                            .executes(context -> {return runSayCommand(StringArgumentType.getString(context, "message"), context);})
-                        )
-                    )
-                    .then(CommandManager.literal("reload")
-                        .requires(source -> source.hasPermissionLevel(4))
-                        .executes(context -> {return runReloadCommand(context);})
-                    )
-                    .then(CommandManager.literal("flow")
-                        .requires(source -> source.hasPermissionLevel(3))
-                        .then(CommandManager.literal("create")
-                            .then(CommandManager.argument("name", StringArgumentType.string())
-                                .then(CommandManager.argument("event", StringArgumentType.string())
-                                    .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList(), true))
-                                    .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .executes(context -> {return runCreateFlowCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "event"), StringArgumentType.getString(context, "node"), context);})
+                    .then(Commands.literal("edit")
+                        .then(Commands.argument("name", StringArgumentType.string())
+                            .suggests(LogicFlowSuggestion.suggest(true))
+                            .then(Commands.literal("new")
+                                .then(Commands.argument("type", StringArgumentType.string())
+                                    .suggests(StringSuggestion.suggest(NodeRegistry.getNodeList(), true))
+                                    .then(Commands.argument("node", StringArgumentType.string())
+                                        .executes(context -> {return runEditFlowNewNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context);})
                                     )
                                 )
                             )
-                        )
-                        .then(CommandManager.literal("list")
-                            .executes(context -> {return runListFlowCommand(context);})
-                        )
-                        .then(CommandManager.literal("edit")
-                            .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest(true))
-                                .then(CommandManager.literal("new")
-                                    .then(CommandManager.argument("type", StringArgumentType.string())
-                                        .suggests(StringSuggestion.suggest(NodeRegistry.getNodeList(), true))
-                                        .then(CommandManager.argument("node", StringArgumentType.string())
-                                            .executes(context -> {return runEditFlowNewNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context);})
+                            .then(Commands.literal("remove")
+                                .then(Commands.argument("node", StringArgumentType.string())
+                                    .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                    .executes(context -> {return runEditFlowRemoveNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), context);})
+                                )
+                            )
+                            .then(Commands.literal("rename")
+                                .then(Commands.argument("old", StringArgumentType.string())
+                                    .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                    .then(Commands.argument("new", StringArgumentType.string())
+                                        .executes(context -> {return runEditFlowRenameNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
+                                    )
+                                )
+                            )
+                            .then(Commands.literal("const")
+                                .then(Commands.argument("node", StringArgumentType.string())
+                                    .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                    .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                                        .then(Commands.argument("value", StringArgumentType.greedyString())
+                                            .executes(context -> {return runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context);})
                                         )
                                     )
                                 )
-                                .then(CommandManager.literal("remove")
-                                    .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                        .executes(context -> {return runEditFlowRemoveNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), context);})
-                                    )
-                                )
-                                .then(CommandManager.literal("rename")
-                                    .then(CommandManager.argument("old", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                        .then(CommandManager.argument("new", StringArgumentType.string())
-                                            .executes(context -> {return runEditFlowRenameNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
-                                        )
-                                    )
-                                )
-                                .then(CommandManager.literal("const")
-                                    .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                            .then(CommandManager.argument("value", StringArgumentType.greedyString())
-                                                .executes(context -> {return runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context);})
+                            )
+                            .then(Commands.literal("reference")
+                                .then(Commands.argument("node", StringArgumentType.string())
+                                    .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                    .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                                        .then(Commands.argument("refNode", StringArgumentType.string())
+                                            .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                            .then(Commands.argument("refIndex", IntegerArgumentType.integer(1))
+                                                .executes(context -> {return runEditFlowRefInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "refNode"), IntegerArgumentType.getInteger(context, "refIndex"), context);})
                                             )
                                         )
                                     )
                                 )
-                                .then(CommandManager.literal("reference")
-                                    .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                            .then(CommandManager.argument("refNode", StringArgumentType.string())
-                                                .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                                .then(CommandManager.argument("refIndex", IntegerArgumentType.integer(1))
-                                                    .executes(context -> {return runEditFlowRefInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "refNode"), IntegerArgumentType.getInteger(context, "refIndex"), context);})
-                                                )
-                                            )
+                            )
+                            .then(Commands.literal("disconnect")
+                                .then(Commands.argument("node", StringArgumentType.string())
+                                    .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                    .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                                        .executes(context -> {return runEditFlowDisconnectInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
+                                    )
+                                )
+                            )
+                            .then(Commands.literal("next")
+                                .then(Commands.argument("node", StringArgumentType.string())
+                                    .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                    .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                                        .then(Commands.argument("next", StringArgumentType.string())
+                                            .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                            .executes(context -> {return runEditFlowNextNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "next"), context);})
                                         )
                                     )
                                 )
-                                .then(CommandManager.literal("disconnect")
-                                    .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                            .executes(context -> {return runEditFlowDisconnectInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
-                                        )
+                            )
+                            .then(Commands.literal("final")
+                                .then(Commands.argument("node", StringArgumentType.string())
+                                    .suggests(FlowNodeSuggestion.suggest(true, 3))
+                                    .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                                        .executes(context -> {return runEditFlowFinalBranchCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
                                     )
                                 )
-                                .then(CommandManager.literal("next")
-                                    .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                            .then(CommandManager.argument("next", StringArgumentType.string())
-                                                .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                                .executes(context -> {return runEditFlowNextNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "next"), context);})
-                                            )
-                                        )
-                                    )
-                                )
-                                .then(CommandManager.literal("final")
-                                    .then(CommandManager.argument("node", StringArgumentType.string())
-                                        .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                        .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                            .executes(context -> {return runEditFlowFinalBranchCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
-                                        )
-                                    )
-                                )
-                                .then(CommandManager.literal("redo")
-                                    .executes(context -> {return runEditFlowRedoCommand(StringArgumentType.getString(context, "name"), context);})
-                                )
-                                .then(CommandManager.literal("undo")
-                                    .executes(context -> {return runEditFlowUndoCommand(StringArgumentType.getString(context, "name"), context);})
-                                )
                             )
-                        )
-                        .then(CommandManager.literal("rename")
-                            .then(CommandManager.argument("old", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest(true))
-                                .then(CommandManager.argument("new", StringArgumentType.string())
-                                    .executes(context -> {return runRenameFlowCommand(StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
-                                )
+                            .then(Commands.literal("redo")
+                                .executes(context -> {return runEditFlowRedoCommand(StringArgumentType.getString(context, "name"), context);})
                             )
-                        )
-                        .then(CommandManager.literal("copy")
-                            .then(CommandManager.argument("flow", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest(true))
-                                .then(CommandManager.argument("name", StringArgumentType.string())
-                                    .executes(context -> {return runCopyFlowCommand(StringArgumentType.getString(context, "flow"), StringArgumentType.getString(context, "name"), context);})
-                                )
-                            )
-                        )
-                        .then(CommandManager.literal("save")
-                            .then(CommandManager.argument("name", StringArgumentType.greedyString())
-                                .suggests(LogicFlowSuggestion.suggestSave())
-                                .executes(context -> {return runSaveFlowCommand(StringArgumentType.getString(context, "name"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("load")
-                            .then(CommandManager.argument("name", StringArgumentType.greedyString())
-                                .suggests(FlowFileSuggestion.suggest())
-                                .executes(context -> {return runLoadFlowCommand(StringArgumentType.getString(context, "name"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("enable")
-                            .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest(true))
-                                .then(CommandManager.argument("enabled", BoolArgumentType.bool())
-                                    .executes(context -> {return runSetEnableFlowCommand(StringArgumentType.getString(context, "name"), BoolArgumentType.getBool(context, "enabled"), context);})
-                                )
-                                .executes(context -> {return runGetEnableFlowCommand(StringArgumentType.getString(context, "name"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("execute")
-                            .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest(true))
-                                .executes(context -> {return runExecuteFlowCommand(StringArgumentType.getString(context, "name"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("view")
-                            .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest(true))
-                                .executes(context -> {return runViewFlowCommand(StringArgumentType.getString(context, "name"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("log")
-                            .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                .executes(context -> {return runLogFlowCommand(IntegerArgumentType.getInteger(context, "index"), context);})
-                            )
-                        )
-                        .then(CommandManager.literal("history")
-                            .then(CommandManager.argument("page", IntegerArgumentType.integer(1))
-                                .executes(context -> {return runFlowHistoryCommand(IntegerArgumentType.getInteger(context, "page"), context);})
-                            )
-                            .executes(context -> {return runFlowHistoryCommand(0, context);})
-                        )
-                        .then(CommandManager.literal("delete")
-                            .then(CommandManager.argument("name", StringArgumentType.string())
-                                .suggests(LogicFlowSuggestion.suggest(true))
-                                .executes(context -> {return runDeleteFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                            .then(Commands.literal("undo")
+                                .executes(context -> {return runEditFlowUndoCommand(StringArgumentType.getString(context, "name"), context);})
                             )
                         )
                     )
-                    .then(CommandManager.literal("options")
-                        .requires(source -> source.hasPermissionLevel(4))
-                        .then(CommandManager.literal("serverTranslation")
-                            .then(CommandManager.argument("enable", BoolArgumentType.bool())
-                                .executes(context -> {return runOptionsCommand("serverTranslation", BoolArgumentType.getBool(context, "enable"), context);})
+                    .then(Commands.literal("rename")
+                        .then(Commands.argument("old", StringArgumentType.string())
+                            .suggests(LogicFlowSuggestion.suggest(true))
+                            .then(Commands.argument("new", StringArgumentType.string())
+                                .executes(context -> {return runRenameFlowCommand(StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
                             )
-                            .executes(context -> {return runOptionsCommand("serverTranslation", null, context);})
-                        )
-                        .then(CommandManager.literal("maxFlowLength")
-                            .then(CommandManager.argument("length", IntegerArgumentType.integer(1))
-                                .executes(context -> {return runOptionsCommand("maxFlowLength", IntegerArgumentType.getInteger(context, "length"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("maxFlowLength", null, context);})
-                        )
-                        .then(CommandManager.literal("entityDeathMessage")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.NONE, context);}))
-                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.CHAT, context);}))
-                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.ACTIONBAR, context);}))
-                            .executes(context -> {return runOptionsCommand("entityDeathMessage", null, context);})
-                        )
-                        .then(CommandManager.literal("bossDeathMessage")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageLocation.NONE, context);}))
-                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageLocation.CHAT, context);}))
-                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageLocation.ACTIONBAR, context);}))
-                            .executes(context -> {return runOptionsCommand("bossDeathMessage", null, context);})
-                        )
-                        .then(CommandManager.literal("namedMobDeathMessage")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageLocation.NONE, context);}))
-                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageLocation.CHAT, context);}))
-                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageLocation.ACTIONBAR, context);}))
-                            .executes(context -> {return runOptionsCommand("namedMobDeathMessage", null, context);})
-                        )
-                        .then(CommandManager.literal("killerDeathMessage")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageLocation.NONE, context);}))
-                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageLocation.CHAT, context);}))
-                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageLocation.ACTIONBAR, context);}))
-                            .executes(context -> {return runOptionsCommand("killerDeathMessage", null, context);})
-                        )
-                        .then(CommandManager.literal("bossMaxHealthThreshold")
-                            .then(CommandManager.argument("HP", DoubleArgumentType.doubleArg(0))
-                                .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", DoubleArgumentType.getDouble(context, "HP"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", null, context);})
-                        )
-                        .then(CommandManager.literal("playerDeathCoord")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("playerDeathCoord", null, context);})
-                        )
-                        .then(CommandManager.literal("projectileHitsEntity")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("projectileHitsEntity", null, context);})
-                        )
-                        .then(CommandManager.literal("projectileBeingHit")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("projectileBeingHit", null, context);})
-                        )
-                        .then(CommandManager.literal("informAFK")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("informAFK", null, context);})
-                        )
-                        .then(CommandManager.literal("informAFKThreshold")
-                            .then(CommandManager.argument("seconds", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("informAFKThreshold", IntegerArgumentType.getInteger(context, "seconds"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("informAFKThreshold", null, context);})
-                        )
-                        .then(CommandManager.literal("broadcastAFK")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("broadcastAFK", null, context);})
-                        )
-                        .then(CommandManager.literal("broadcastAFKThreshold")
-                            .then(CommandManager.argument("seconds", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("broadcastAFKThreshold", IntegerArgumentType.getInteger(context, "seconds"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("broadcastAFKThreshold", null, context);})
-                        )
-                        .then(CommandManager.literal("backFromAFK")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("backFromAFK", null, context);})
-                        )
-                        .then(CommandManager.literal("biomeChangeMessage")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("biomeChangeMessage", null, context);})
-                        )
-                        .then(CommandManager.literal("biomeChangeDelay")
-                            .then(CommandManager.argument("seconds", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("biomeChangeDelay", IntegerArgumentType.getInteger(context, "seconds"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("biomeChangeDelay", null, context);})
-                        )
-                        .then(CommandManager.literal("bossFightMessageLocation")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("bossFightMessageLocation", MessageLocation.NONE, context);}))
-                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("bossFightMessageLocation", MessageLocation.CHAT, context);}))
-                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("bossFightMessageLocation", MessageLocation.ACTIONBAR, context);}))
-                            .executes(context -> {return runOptionsCommand("bossFightMessageLocation", null, context);})
-                        )
-                        .then(CommandManager.literal("bossFightMessageReceiver")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("bossFightMessageReceiver", null, context);})
-                        )
-                        .then(CommandManager.literal("bossFightMessageInterval")
-                            .then(CommandManager.argument("seconds", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("bossFightMessageInterval", IntegerArgumentType.getInteger(context, "seconds"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("bossFightMessageInterval", null, context);})
-                        )
-                        .then(CommandManager.literal("monsterSurroundMessageLocation")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", MessageLocation.NONE, context);}))
-                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", MessageLocation.CHAT, context);}))
-                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", MessageLocation.ACTIONBAR, context);}))
-                            .executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", null, context);})
-                        )
-                        .then(CommandManager.literal("monsterSurroundMessageReceiver")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", null, context);})
-                        )
-                        .then(CommandManager.literal("monsterSurroundMessageInterval")
-                            .then(CommandManager.argument("seconds", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("monsterSurroundMessageInterval", IntegerArgumentType.getInteger(context, "seconds"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("monsterSurroundMessageInterval", null, context);})
-                        )
-                        .then(CommandManager.literal("monsterNumberThreshold")
-                            .then(CommandManager.argument("num", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("monsterNumberThreshold", IntegerArgumentType.getInteger(context, "num"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("monsterNumberThreshold", null, context);})
-                        )
-                        .then(CommandManager.literal("monsterDistanceThreshold")
-                            .then(CommandManager.argument("meters", DoubleArgumentType.doubleArg(0))
-                                .executes(context -> {return runOptionsCommand("monsterDistanceThreshold", DoubleArgumentType.getDouble(context, "meters"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("monsterDistanceThreshold", null, context);})
-                        )
-                        .then(CommandManager.literal("entityNumberWarning")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("entityNumberWarning", MessageLocation.NONE, context);}))
-                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("entityNumberWarning", MessageLocation.CHAT, context);}))
-                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("entityNumberWarning", MessageLocation.ACTIONBAR, context);}))
-                            .executes(context -> {return runOptionsCommand("entityNumberWarning", null, context);})
-                        )
-                        .then(CommandManager.literal("entityNumberThreshold")
-                            .then(CommandManager.argument("num", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("entityNumberThreshold", IntegerArgumentType.getInteger(context, "num"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("entityNumberThreshold", null, context);})
-                        )
-                        .then(CommandManager.literal("entityNumberCheckInterval")
-                            .then(CommandManager.argument("ticks", IntegerArgumentType.integer(1))
-                                .executes(context -> {return runOptionsCommand("entityNumberCheckInterval", IntegerArgumentType.getInteger(context, "ticks"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("entityNumberCheckInterval", null, context);})
-                        )
-                        .then(CommandManager.literal("playerHurtMessage")
-                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.NONE, context);}))
-                            .then(CommandManager.literal("all").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.ALL, context);}))
-                            .then(CommandManager.literal("ops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.OP, context);}))
-                            .then(CommandManager.literal("selfops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.SELFOP, context);}))
-                            .then(CommandManager.literal("teamops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.TEAMOP, context);}))
-                            .then(CommandManager.literal("team").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.TEAM, context);}))
-                            .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.SELF, context);}))
-                            .executes(context -> {return runOptionsCommand("playerHurtMessage", null, context);})
-                        )
-                        .then(CommandManager.literal("hugeDamageThreshold")
-                            .then(CommandManager.argument("percentage", DoubleArgumentType.doubleArg(0, 100))
-                                .executes(context -> {return runOptionsCommand("hugeDamageThreshold", DoubleArgumentType.getDouble(context, "percentage"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("hugeDamageThreshold", null, context);})
-                        )
-                        .then(CommandManager.literal("gptUrl")
-                            .then(CommandManager.argument("url", StringArgumentType.greedyString())
-                                .executes(context -> {return runOptionsCommand("gptUrl", StringArgumentType.getString(context, "url"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("gptUrl", null, context);})
-                        )
-                        .then(CommandManager.literal("gptAccessTokens")
-                            .then(CommandManager.argument("tokens", StringArgumentType.greedyString())
-                                .executes(context -> {return runOptionsCommand("gptAccessTokens", StringArgumentType.getString(context, "tokens"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("gptAccessTokens", null, context);})
-                        )
-                        .then(CommandManager.literal("gptModel")
-                            .then(CommandManager.argument("model", StringArgumentType.greedyString())
-                                .executes(context -> {return runOptionsCommand("gptModel", StringArgumentType.getString(context, "model"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("gptModel", null, context);})
-                        )
-                        .then(CommandManager.literal("gptSystemPrompts")
-                            .then(CommandManager.argument("prompt", StringArgumentType.greedyString())
-                                .executes(context -> {return runOptionsCommand("gptSystemPrompts", StringArgumentType.getString(context, "prompt"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("gptSystemPrompts", null, context);})
-                        )
-                        .then(CommandManager.literal("gptTemperature")
-                            .then(CommandManager.argument("temperature", DoubleArgumentType.doubleArg(0, 1))
-                                .executes(context -> {return runOptionsCommand("gptTemperature", DoubleArgumentType.getDouble(context, "temperature"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("gptTemperature", null, context);})
-                        )
-                        .then(CommandManager.literal("gptTimeout")
-                            .then(CommandManager.argument("seconds", IntegerArgumentType.integer(0))
-                                .executes(context -> {return runOptionsCommand("gptTimeout", IntegerArgumentType.getInteger(context, "seconds"), context);})
-                            )
-                            .executes(context -> {return runOptionsCommand("gptTimeout", null, context);})
                         )
                     )
-                );
-                dispatcher.register(CommandManager.literal("f")
-                    .requires(source -> source.hasPermissionLevel(0))
-                    .executes(context -> {return runFModCommand(context);})
-                    .redirect(fModCommandNode)
-                );
-            });
-
-            return true;
+                    .then(Commands.literal("copy")
+                        .then(Commands.argument("flow", StringArgumentType.string())
+                            .suggests(LogicFlowSuggestion.suggest(true))
+                            .then(Commands.argument("name", StringArgumentType.string())
+                                .executes(context -> {return runCopyFlowCommand(StringArgumentType.getString(context, "flow"), StringArgumentType.getString(context, "name"), context);})
+                            )
+                        )
+                    )
+                    .then(Commands.literal("save")
+                        .then(Commands.argument("name", StringArgumentType.greedyString())
+                            .suggests(LogicFlowSuggestion.suggestSave())
+                            .executes(context -> {return runSaveFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                        )
+                    )
+                    .then(Commands.literal("load")
+                        .then(Commands.argument("name", StringArgumentType.greedyString())
+                            .suggests(FlowFileSuggestion.suggest())
+                            .executes(context -> {return runLoadFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                        )
+                    )
+                    .then(Commands.literal("enable")
+                        .then(Commands.argument("name", StringArgumentType.string())
+                            .suggests(LogicFlowSuggestion.suggest(true))
+                            .then(Commands.argument("enabled", BoolArgumentType.bool())
+                                .executes(context -> {return runSetEnableFlowCommand(StringArgumentType.getString(context, "name"), BoolArgumentType.getBool(context, "enabled"), context);})
+                            )
+                            .executes(context -> {return runGetEnableFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                        )
+                    )
+                    .then(Commands.literal("execute")
+                        .then(Commands.argument("name", StringArgumentType.string())
+                            .suggests(LogicFlowSuggestion.suggest(true))
+                            .executes(context -> {return runExecuteFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                        )
+                    )
+                    .then(Commands.literal("view")
+                        .then(Commands.argument("name", StringArgumentType.string())
+                            .suggests(LogicFlowSuggestion.suggest(true))
+                            .executes(context -> {return runViewFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                        )
+                    )
+                    .then(Commands.literal("log")
+                        .then(Commands.argument("index", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runLogFlowCommand(IntegerArgumentType.getInteger(context, "index"), context);})
+                        )
+                    )
+                    .then(Commands.literal("history")
+                        .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runFlowHistoryCommand(IntegerArgumentType.getInteger(context, "page"), context);})
+                        )
+                        .executes(context -> {return runFlowHistoryCommand(0, context);})
+                    )
+                    .then(Commands.literal("delete")
+                        .then(Commands.argument("name", StringArgumentType.string())
+                            .suggests(LogicFlowSuggestion.suggest(true))
+                            .executes(context -> {return runDeleteFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                        )
+                    )
+                )
+                .then(Commands.literal("options")
+                    .requires(source -> source.hasPermission(4))
+                    .then(Commands.literal("serverTranslation")
+                        .then(Commands.argument("enable", BoolArgumentType.bool())
+                            .executes(context -> {return runOptionsCommand("serverTranslation", BoolArgumentType.getBool(context, "enable"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("serverTranslation", null, context);})
+                    )
+                    .then(Commands.literal("maxFlowLength")
+                        .then(Commands.argument("length", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runOptionsCommand("maxFlowLength", IntegerArgumentType.getInteger(context, "length"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("maxFlowLength", null, context);})
+                    )
+                    .then(Commands.literal("entityDeathMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("entityDeathMessage", null, context);})
+                    )
+                    .then(Commands.literal("bossDeathMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("bossDeathMessage", null, context);})
+                    )
+                    .then(Commands.literal("namedMobDeathMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("namedMobDeathMessage", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("namedMobDeathMessage", null, context);})
+                    )
+                    .then(Commands.literal("killerDeathMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("killerDeathMessage", null, context);})
+                    )
+                    .then(Commands.literal("bossMaxHealthThreshold")
+                        .then(Commands.argument("HP", DoubleArgumentType.doubleArg(0))
+                            .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", DoubleArgumentType.getDouble(context, "HP"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", null, context);})
+                    )
+                    .then(Commands.literal("playerDeathCoord")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("playerDeathCoord", null, context);})
+                    )
+                    .then(Commands.literal("projectileHitsEntity")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("projectileHitsEntity", null, context);})
+                    )
+                    .then(Commands.literal("projectileBeingHit")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("projectileBeingHit", null, context);})
+                    )
+                    .then(Commands.literal("informAFK")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("informAFK", null, context);})
+                    )
+                    .then(Commands.literal("informAFKThreshold")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("informAFKThreshold", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("informAFKThreshold", null, context);})
+                    )
+                    .then(Commands.literal("broadcastAFK")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("broadcastAFK", null, context);})
+                    )
+                    .then(Commands.literal("broadcastAFKThreshold")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("broadcastAFKThreshold", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("broadcastAFKThreshold", null, context);})
+                    )
+                    .then(Commands.literal("backFromAFK")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("backFromAFK", null, context);})
+                    )
+                    .then(Commands.literal("biomeChangeMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("biomeChangeMessage", null, context);})
+                    )
+                    .then(Commands.literal("biomeChangeDelay")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("biomeChangeDelay", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("biomeChangeDelay", null, context);})
+                    )
+                    .then(Commands.literal("bossFightMessageLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("bossFightMessageLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("bossFightMessageLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("bossFightMessageLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("bossFightMessageLocation", null, context);})
+                    )
+                    .then(Commands.literal("bossFightMessageReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("bossFightMessageReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("bossFightMessageReceiver", null, context);})
+                    )
+                    .then(Commands.literal("bossFightMessageInterval")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("bossFightMessageInterval", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("bossFightMessageInterval", null, context);})
+                    )
+                    .then(Commands.literal("monsterSurroundMessageLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("monsterSurroundMessageLocation", null, context);})
+                    )
+                    .then(Commands.literal("monsterSurroundMessageReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("monsterSurroundMessageReceiver", null, context);})
+                    )
+                    .then(Commands.literal("monsterSurroundMessageInterval")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("monsterSurroundMessageInterval", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("monsterSurroundMessageInterval", null, context);})
+                    )
+                    .then(Commands.literal("monsterNumberThreshold")
+                        .then(Commands.argument("num", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("monsterNumberThreshold", IntegerArgumentType.getInteger(context, "num"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("monsterNumberThreshold", null, context);})
+                    )
+                    .then(Commands.literal("monsterDistanceThreshold")
+                        .then(Commands.argument("meters", DoubleArgumentType.doubleArg(0))
+                            .executes(context -> {return runOptionsCommand("monsterDistanceThreshold", DoubleArgumentType.getDouble(context, "meters"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("monsterDistanceThreshold", null, context);})
+                    )
+                    .then(Commands.literal("entityNumberWarning")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("entityNumberWarning", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("entityNumberWarning", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("entityNumberWarning", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("entityNumberWarning", null, context);})
+                    )
+                    .then(Commands.literal("entityNumberThreshold")
+                        .then(Commands.argument("num", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("entityNumberThreshold", IntegerArgumentType.getInteger(context, "num"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("entityNumberThreshold", null, context);})
+                    )
+                    .then(Commands.literal("entityNumberCheckInterval")
+                        .then(Commands.argument("ticks", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runOptionsCommand("entityNumberCheckInterval", IntegerArgumentType.getInteger(context, "ticks"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("entityNumberCheckInterval", null, context);})
+                    )
+                    .then(Commands.literal("playerHurtMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("playerHurtMessage", null, context);})
+                    )
+                    .then(Commands.literal("hugeDamageThreshold")
+                        .then(Commands.argument("percentage", DoubleArgumentType.doubleArg(0, 100))
+                            .executes(context -> {return runOptionsCommand("hugeDamageThreshold", DoubleArgumentType.getDouble(context, "percentage"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("hugeDamageThreshold", null, context);})
+                    )
+                    .then(Commands.literal("gptUrl")
+                        .then(Commands.argument("url", StringArgumentType.greedyString())
+                            .executes(context -> {return runOptionsCommand("gptUrl", StringArgumentType.getString(context, "url"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("gptUrl", null, context);})
+                    )
+                    .then(Commands.literal("gptAccessTokens")
+                        .then(Commands.argument("tokens", StringArgumentType.greedyString())
+                            .executes(context -> {return runOptionsCommand("gptAccessTokens", StringArgumentType.getString(context, "tokens"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("gptAccessTokens", null, context);})
+                    )
+                    .then(Commands.literal("gptModel")
+                        .then(Commands.argument("model", StringArgumentType.greedyString())
+                            .executes(context -> {return runOptionsCommand("gptModel", StringArgumentType.getString(context, "model"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("gptModel", null, context);})
+                    )
+                    .then(Commands.literal("gptSystemPrompts")
+                        .then(Commands.argument("prompt", StringArgumentType.greedyString())
+                            .executes(context -> {return runOptionsCommand("gptSystemPrompts", StringArgumentType.getString(context, "prompt"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("gptSystemPrompts", null, context);})
+                    )
+                    .then(Commands.literal("gptTemperature")
+                        .then(Commands.argument("temperature", DoubleArgumentType.doubleArg(0, 1))
+                            .executes(context -> {return runOptionsCommand("gptTemperature", DoubleArgumentType.getDouble(context, "temperature"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("gptTemperature", null, context);})
+                    )
+                    .then(Commands.literal("gptTimeout")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("gptTimeout", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("gptTimeout", null, context);})
+                    )
+                )
+            );
+            event.getDispatcher().register(Commands.literal("f")
+                .requires(source -> source.hasPermission(0))
+                .executes(context -> {return runFModCommand(context);})
+                .redirect(fModCommandNode)
+            );
         } catch (Exception e) {
             logger.error("FMinecraftMod: Unable to register command.", e);
-            return false;
         }
     }
 
-    private int runOptionsCommand(String options, Object value, CommandContext<ServerCommandSource> context) {
+    private static int runOptionsCommand(String options, Object value, CommandContext<CommandSourceStack> context) {
         try {
             switch (options) {
                 case "serverTranslation":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.translate", value), true);
                     }
                     break;
                 case "maxFlowLength":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.flowlength", Util.serverConfig.getMaxFlowLength()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.flowlength", Util.serverConfig.getMaxFlowLength()), false);
                     } else {
                         Util.serverConfig.setMaxFlowLength((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.flowlength", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.flowlength", value), true);
                     }
                     break;
                 case "entityDeathMessage":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", text), false);
                     } else {
                         Util.serverConfig.setEntityDeathMessage((MessageLocation) value);
-                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", text), true);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", text), true);
                     }
                     break;
                 case "bossDeathMessage":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossDeathMessage());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", text), false);
                     } else {
                         Util.serverConfig.setBossDeathMessage((MessageLocation) value);
-                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", text), true);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", text), true);
                     }
                     break;
                 case "namedMobDeathMessage":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getNamedEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getNamedEntityDeathMessage());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", text), false);
                     } else {
                         Util.serverConfig.setNamedEntityDeathMessage((MessageLocation) value);
-                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", text), true);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", text), true);
                     }
                     break;
                 case "killerDeathMessage":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getKillerEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getKillerEntityDeathMessage());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", text), false);
                     } else {
                         Util.serverConfig.setKillerEntityDeathMessage((MessageLocation) value);
-                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bckillerdeath", text), true);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bckillerdeath", text), true);
                     }
                     break;
                 case "bossMaxHealthThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
                     } else {
                         Util.serverConfig.setBossMaxHpThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
                     }
                     break;
                 case "playerDeathCoord":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", text), false);
                     } else {
                         Util.serverConfig.setPlayerDeathCoord((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", text), true);
                     }
                     break;
                 case "projectileHitsEntity":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthers());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projhitting", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthers());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.projhitting", text), false);
                     } else {
                         Util.serverConfig.setProjectileHitOthers((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projhitting", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.projhitting", text), true);
                     }
                     break;
                 case "projectileBeingHit":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHit());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projbeinghit", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHit());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.projbeinghit", text), false);
                     } else {
                         Util.serverConfig.setProjectileBeingHit((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projbeinghit", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.projbeinghit", text), true);
                     }
                     break;
                 case "informAFK":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.informafk", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfking());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.informafk", text), false);
                     } else {
                         Util.serverConfig.setInformAfking((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.informafk", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.informafk", text), true);
                     }
                     break;
                 case "informAFKThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.informafkthres", String.format("%.2f", Util.serverConfig.getInformAfkingThreshold() / 20.0)), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.informafkthres", String.format("%.2f", Util.serverConfig.getInformAfkingThreshold() / 20.0)), false);
                     } else {
                         Util.serverConfig.setInformAfkingThreshold((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.informafkthres", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.informafkthres", value), true);
                     }
                     break;
                 case "broadcastAFK":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcafk", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfking());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bcafk", text), false);
                     } else {
                         Util.serverConfig.setBroadcastAfking((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcafk", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bcafk", text), true);
                     }
                     break;
                 case "broadcastAFKThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcafkthres", String.format("%.2f", Util.serverConfig.getBroadcastAfkingThreshold() / 20.0)), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bcafkthres", String.format("%.2f", Util.serverConfig.getBroadcastAfkingThreshold() / 20.0)), false);
                     } else {
                         Util.serverConfig.setBroadcastAfkingThreshold((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcafkthres", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bcafkthres", value), true);
                     }
                     break;
                 case "backFromAFK":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.stopafk", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfking());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.stopafk", text), false);
                     } else {
                         Util.serverConfig.setStopAfking((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.stopafk", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.stopafk", text), true);
                     }
                     break;
                 case "biomeChangeMessage":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiome());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.changebiome", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiome());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.changebiome", text), false);
                     } else {
                         Util.serverConfig.setChangeBiome((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.changebiome", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.changebiome", text), true);
                     }
                     break;
                 case "biomeChangeDelay":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.biomedelay", String.format("%.2f", Util.serverConfig.getChangeBiomeDelay() / 20.0)), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.biomedelay", String.format("%.2f", Util.serverConfig.getChangeBiomeDelay() / 20.0)), false);
                     } else {
                         Util.serverConfig.setChangeBiomeDelay((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.biomedelay", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.biomedelay", value), true);
                     }
                     break;
                 case "bossFightMessageLocation":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossFightMessageLocation());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightloc", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossFightMessageLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightloc", text), false);
                     } else {
                         Util.serverConfig.setBossFightMessageLocation((MessageLocation) value);
-                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightloc", text), true);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bossfightloc", text), true);
                     }
                     break;
                 case "bossFightMessageReceiver":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBossFightMessageReceiver());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightreceiver", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBossFightMessageReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightreceiver", text), false);
                     } else {
                         Util.serverConfig.setBossFightMessageReceiver((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightreceiver", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bossfightreceiver", text), true);
                     }
                     break;
                 case "bossFightMessageInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightinterval", String.format("%.2f", Util.serverConfig.getBossFightInterval() / 20.0)), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightinterval", String.format("%.2f", Util.serverConfig.getBossFightInterval() / 20.0)), false);
                     } else {
                         Util.serverConfig.setBossFightInterval((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightinterval", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.bossfightinterval", value), true);
                     }
                     break;
                 case "monsterSurroundMessageLocation":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getMonsterSurroundMessageLocation());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterloc", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getMonsterSurroundMessageLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.monsterloc", text), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundMessageLocation((MessageLocation) value);
-                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterloc", text), true);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.monsterloc", text), true);
                     }
                     break;
                 case "monsterSurroundMessageReceiver":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getMonsterSurroundMessageReceiver());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterreceiver", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getMonsterSurroundMessageReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.monsterreceiver", text), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundMessageReceiver((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterreceiver", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.monsterreceiver", text), true);
                     }
                     break;
                 case "monsterSurroundMessageInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterinterval", String.format("%.2f", Util.serverConfig.getMonsterSurroundInterval() / 20.0)), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.monsterinterval", String.format("%.2f", Util.serverConfig.getMonsterSurroundInterval() / 20.0)), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundInterval((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterinterval", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.monsterinterval", value), true);
                     }
                     break;
                 case "monsterNumberThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsternumber", Util.serverConfig.getMonsterNumberThreshold()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.monsternumber", Util.serverConfig.getMonsterNumberThreshold()), false);
                     } else {
                         Util.serverConfig.setMonsterNumberThreshold((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsternumber", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.monsternumber", value), true);
                     }
                     break;
                 case "monsterDistanceThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterdistance", Util.serverConfig.getMonsterDistanceThreshold()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.monsterdistance", Util.serverConfig.getMonsterDistanceThreshold()), false);
                     } else {
                         Util.serverConfig.setMonsterDistanceThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterdistance", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.monsterdistance", value), true);
                     }
                     break;
                 case "entityNumberWarning":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityNumberWarning());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entitywarning", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityNumberWarning());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.entitywarning", text), false);
                     } else {
                         Util.serverConfig.setEntityNumberWarning((MessageLocation) value);
-                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entitywarning", text), true);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.entitywarning", text), true);
                     }
                     break;
                 case "entityNumberThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entitynumber", Util.serverConfig.getEntityNumberThreshold()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.entitynumber", Util.serverConfig.getEntityNumberThreshold()), false);
                     } else {
                         Util.serverConfig.setEntityNumberThreshold((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entitynumber", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.entitynumber", value), true);
                     }
                     break;
                 case "entityNumberCheckInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entityinterval", Util.serverConfig.getEntityNumberInterval()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.entityinterval", Util.serverConfig.getEntityNumberInterval()), false);
                     } else {
                         Util.serverConfig.setEntityNumberInterval((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entityinterval", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.entityinterval", value), true);
                     }
                     break;
                 case "playerHurtMessage":
                     if (value == null) {
-                        final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurt());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.playerhurt", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurt());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.playerhurt", text), false);
                     } else {
                         Util.serverConfig.setPlayerSeriousHurt((MessageReceiver) value);
-                        final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.playerhurt", text), true);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.playerhurt", text), true);
                     }
                     break;
                 case "hugeDamageThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.damagethres", Util.serverConfig.getPlayerHurtThreshold() * 100.0), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.damagethres", Util.serverConfig.getPlayerHurtThreshold() * 100.0), false);
                     } else {
                         Util.serverConfig.setPlayerHurtThreshold((double) value / 100.0);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.damagethres", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.damagethres", value), true);
                     }
                     break;
                 case "gptUrl":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpturl", Util.serverConfig.getGptUrl()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.gpturl", Util.serverConfig.getGptUrl()), false);
                     } else {
                         try {
                             new URI((String) value).toURL();
                         } catch (Exception e) {
-                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.invalidurl", value));
+                            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.options.invalidurl", value));
                         }
                         Util.serverConfig.setGptUrl((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpturl", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.gpturl", value), true);
                     }
                     break;
                 case "gptAccessTokens":
                     if (value == null) {
                         final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptkey", secureTokens), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.gptkey", secureTokens), false);
                     } else {
                         String token = (String) value;
                         Util.serverConfig.setGptAccessTokens(token);
                         // For security reasons, we don't want to show the full token in the log, only show the first 5 and the last 5 characters
                         final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), true);
                     }
                     break;
                 case "gptModel":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
                     } else {
                         Util.serverConfig.setGptModel((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), true);
                     }
                     break;
                 case "gptSystemPrompts":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptsysprompt", Util.serverConfig.getGptSystemPrompt()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.gptsysprompt", Util.serverConfig.getGptSystemPrompt()), false);
                     } else {
                         Util.serverConfig.setGptSystemPrompt((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptsysprompt", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.gptsysprompt", value), true);
                     }
                     break;
                 case "gptTemperature":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
                     } else {
                         double temperature = (double) value;
                         Util.serverConfig.setGptTemperature(temperature);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), true);
                     }
                     break;
                 case "gptTimeout":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
                     } else {
                         int timeout = (int) value;
                         Util.serverConfig.setGptServerTimeout(timeout * 1000);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), true);
                     }
                     break;
                 default:
-                    throw new CommandException(Util.parseTranslateableText("fmod.command.options.unknownoption", options));
+                    throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.options.unknownoption", options));
             }
             if (value != null) {
                 Util.saveServerConfig();
             }
         } catch (ClassCastException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.options.classcast", value, options, e.getMessage()));
+            throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.options.classcast", value, options, e.getMessage()));
         }
         return Command.SINGLE_SUCCESS;
     }

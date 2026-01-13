@@ -10,8 +10,8 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 
 public class EntityDeath {
 
@@ -50,27 +50,27 @@ public class EntityDeath {
 
         if (this.livingEntity.hasCustomName()) {
             MessageLocation type = Util.serverConfig.getNamedEntityDeathMessage();
-            Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
+            Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
             isAlreadyBroadcasted.put(type, true);
         }
         if (this.livingEntity.getMaxHealth() > Util.serverConfig.getBossMaxHpThreshold()) {
             MessageLocation type = Util.serverConfig.getBossDeathMessage();
             if (!isAlreadyBroadcasted.get(type)) {
-                Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
+                Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
                 isAlreadyBroadcasted.put(type, true);
             }
         }
         if (Util.getServerData(livingEntity.getServer()).isKillerEntity(livingEntity)) {
             MessageLocation type = Util.serverConfig.getKillerEntityDeathMessage();
             if (!isAlreadyBroadcasted.get(type)) {
-                Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
+                Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
                 isAlreadyBroadcasted.put(type, true);
             }
             Util.getServerData(livingEntity.getServer()).removeKillerEntity(livingEntity);
         }
         MessageLocation type = Util.serverConfig.getEntityDeathMessage();
         if (!isAlreadyBroadcasted.get(type)) {
-            Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
+            Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
             isAlreadyBroadcasted.put(type, true);
         }
 
@@ -80,11 +80,11 @@ public class EntityDeath {
             ExecutionContext executionContext = new ExecutionContext(flow.flow, this.livingEntity.getServer());
             List<Object> eventOutput = new ArrayList<>();
             eventOutput.add(this.livingEntity);
-            eventOutput.add(this.damageSource.getType());
-            eventOutput.add(this.damageSource.getAttacker());
-            eventOutput.add(this.damageSource.getSource());
-            eventOutput.add(this.damageSource.getPosition());
-            eventOutput.add(this.livingEntity.getDamageTracker().getDeathMessage());
+            eventOutput.add(this.damageSource.type());
+            eventOutput.add(this.damageSource.getEntity());
+            eventOutput.add(this.damageSource.getDirectEntity());
+            eventOutput.add(this.damageSource.getSourcePosition());
+            eventOutput.add(this.livingEntity.getCombatTracker().getDeathMessage());
             executionContext.execute(Util.serverConfig.getMaxFlowLength(), eventOutput, null);
             data.executeHistory.add(executionContext);
         }

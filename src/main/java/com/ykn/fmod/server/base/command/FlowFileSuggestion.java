@@ -14,17 +14,17 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraftforge.fml.loading.FMLPaths;
 
-public class FlowFileSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     public static ArrayList<String> cachedFlowList = new ArrayList<>();
 
     public FlowFileSuggestion() {
         // Refresh the list of .flow files in the config directory
         cachedFlowList = new ArrayList<>();
-        Path absPath = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
+        Path absPath = FMLPaths.CONFIGDIR.get().resolve(Util.MODID);
         try {
             if (!Files.exists(absPath)) {
                 Files.createDirectories(absPath);
@@ -38,7 +38,7 @@ public class FlowFileSuggestion implements SuggestionProvider<ServerCommandSourc
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String flow : cachedFlowList) {
             if (flow.startsWith(builder.getRemaining())) {
                 builder.suggest(flow);

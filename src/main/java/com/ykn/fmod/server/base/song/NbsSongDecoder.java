@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import net.minecraft.block.enums.Instrument;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 
 /**
  * The {@code NbsSongDecoder} class is responsible for decoding Note Block Studio (NBS) song files
@@ -83,7 +83,7 @@ public class NbsSongDecoder {
                     readShort(dataInputStream); // note block pitch
                 }
 
-                Instrument inst = fromNBSInstrument(instrument);
+                NoteBlockInstrument inst = fromNBSInstrument(instrument);
 
                 // Ignore custom instruments
                 if (inst == null) {
@@ -142,24 +142,24 @@ public class NbsSongDecoder {
         return builder.toString();
     }
 
-    private static Instrument fromNBSInstrument(int instrument) {
+    private static NoteBlockInstrument fromNBSInstrument(int instrument) {
         return switch (instrument) {
-            case 0 -> Instrument.HARP;
-            case 1 -> Instrument.BASS;
-            case 2 -> Instrument.BASEDRUM;
-            case 3 -> Instrument.SNARE;
-            case 4 -> Instrument.HAT;
-            case 5 -> Instrument.GUITAR;
-            case 6 -> Instrument.FLUTE;
-            case 7 -> Instrument.BELL;
-            case 8 -> Instrument.CHIME;
-            case 9 -> Instrument.XYLOPHONE;
-            case 10 -> Instrument.IRON_XYLOPHONE;
-            case 11 -> Instrument.COW_BELL;
-            case 12 -> Instrument.DIDGERIDOO;
-            case 13 -> Instrument.BIT;
-            case 14 -> Instrument.BANJO;
-            case 15 -> Instrument.PLING;
+            case 0 -> NoteBlockInstrument.HARP;
+            case 1 -> NoteBlockInstrument.BASS;
+            case 2 -> NoteBlockInstrument.BASEDRUM;
+            case 3 -> NoteBlockInstrument.SNARE;
+            case 4 -> NoteBlockInstrument.HAT;
+            case 5 -> NoteBlockInstrument.GUITAR;
+            case 6 -> NoteBlockInstrument.FLUTE;
+            case 7 -> NoteBlockInstrument.BELL;
+            case 8 -> NoteBlockInstrument.CHIME;
+            case 9 -> NoteBlockInstrument.XYLOPHONE;
+            case 10 -> NoteBlockInstrument.IRON_XYLOPHONE;
+            case 11 -> NoteBlockInstrument.COW_BELL;
+            case 12 -> NoteBlockInstrument.DIDGERIDOO;
+            case 13 -> NoteBlockInstrument.BIT;
+            case 14 -> NoteBlockInstrument.BANJO;
+            case 15 -> NoteBlockInstrument.PLING;
             default -> null;
         };
     }

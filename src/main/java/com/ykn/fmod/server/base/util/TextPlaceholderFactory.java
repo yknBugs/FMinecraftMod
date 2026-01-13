@@ -13,12 +13,12 @@ import java.util.regex.Pattern;
 
 import org.slf4j.LoggerFactory;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * A utility class for managing and parsing text placeholders. This class allows
@@ -27,7 +27,7 @@ import net.minecraft.text.Text;
  *
  * <p>Placeholders are defined as key-value pairs, where the key is a string
  * representing the placeholder, and the value is a function that generates a
- * {@link Text} object based on the input object of type T.</p>
+ * {@link Component} object based on the input object of type T.</p>
  *
  * <p>The class provides methods for adding, removing, and clearing placeholders,
  * as well as for parsing text strings to replace placeholders with their resolved
@@ -38,32 +38,32 @@ import net.minecraft.text.Text;
  */
 public class TextPlaceholderFactory<T> {
 
-    private HashMap<String, Function<T, Text>> placeholders;
+    private HashMap<String, Function<T, Component>> placeholders;
 
     public TextPlaceholderFactory() {
         this.placeholders = new HashMap<>();
     }
 
-    public TextPlaceholderFactory(HashMap<String, Function<T, Text>> placeholders) {
+    public TextPlaceholderFactory(HashMap<String, Function<T, Component>> placeholders) {
         this.placeholders = placeholders;
     }
 
-    public TextPlaceholderFactory<T> add(String key, Function<T, Text> value) {
+    public TextPlaceholderFactory<T> add(String key, Function<T, Component> value) {
         this.placeholders.put(key, value);
         return this;
     }
 
-    public TextPlaceholderFactory<T> add(String key, Text value) {
+    public TextPlaceholderFactory<T> add(String key, Component value) {
         this.placeholders.put(key, t -> value);
         return this;
     }
 
     public TextPlaceholderFactory<T> add(String key, String value) {
-        this.placeholders.put(key, t -> Text.literal(value));
+        this.placeholders.put(key, t -> Component.literal(value));
         return this;
     }
 
-    public TextPlaceholderFactory<T> append(HashMap<String, Function<T, Text>> placeholders) {
+    public TextPlaceholderFactory<T> append(HashMap<String, Function<T, Component>> placeholders) {
         this.placeholders.putAll(placeholders);
         return this;
     }
@@ -121,9 +121,9 @@ public class TextPlaceholderFactory<T> {
      *
      * @param text The input text containing placeholders to be replaced.
      * @param t    The object of type T used to resolve placeholder values.
-     * @return A {@link MutableText} object representing the parsed and resolved text.
+     * @return A {@link MutableComponent} object representing the parsed and resolved text.
      */
-    public MutableText parse(String text, T t) {
+    public MutableComponent parse(String text, T t) {
         List<String> keys = new ArrayList<>(this.placeholders.keySet());
         // We must sort the keys by length in descending order to avoid replacing smaller keys first
         keys.sort((a, b) -> Integer.compare(b.length(), a.length()));
@@ -145,32 +145,32 @@ public class TextPlaceholderFactory<T> {
             splitText = currentParts;
         }
 
-        List<Text> finalText = new ArrayList<>();
+        List<Component> finalText = new ArrayList<>();
         for (int i = 0; i < splitText.size(); i++) {
             String part = splitText.get(i);
             if (i % 2 == 0) {
                 // Even indexes are the strings that should be splited
-                finalText.add(Text.literal(part));
+                finalText.add(Component.literal(part));
             } else {
                 // Odd indexes are the delimiters that should be kept
-                Function<T, Text> placeholderFunction = this.placeholders.get(part);
+                Function<T, Component> placeholderFunction = this.placeholders.get(part);
                 if (placeholderFunction == null) {
                     // Unlikely to happen
                     LoggerFactory.getLogger(Util.LOGGERNAME).warn("Missing placeholder: " + part);
-                    finalText.add(Text.literal(part));
+                    finalText.add(Component.literal(part));
                 } else {
                     try {
                         finalText.add(placeholderFunction.apply(t));
                     } catch (Exception e) {
                         LoggerFactory.getLogger(Util.LOGGERNAME).error("Error while parsing placeholder: " + part, e);
-                        finalText.add(Text.literal(part));
+                        finalText.add(Component.literal(part));
                     }
                 }
             }
         }
         
-        MutableText result = Text.empty();
-        for (Text part : finalText) {
+        MutableComponent result = Component.empty();
+        for (Component part : finalText) {
             result.append(part);
         }
         return result;
@@ -180,15 +180,15 @@ public class TextPlaceholderFactory<T> {
         return new TextPlaceholderFactory<U>();
     }
 
-    public static <U> TextPlaceholderFactory<U> of(HashMap<String, Function<U, Text>> placeholders) {
+    public static <U> TextPlaceholderFactory<U> of(HashMap<String, Function<U, Component>> placeholders) {
         return new TextPlaceholderFactory<U>(placeholders);
     }
 
-    public static <U> TextPlaceholderFactory<U> of(String key, Function<U, Text> value) {
+    public static <U> TextPlaceholderFactory<U> of(String key, Function<U, Component> value) {
         return new TextPlaceholderFactory<U>().add(key, value);
     }
 
-    public static <U> TextPlaceholderFactory<U> of(String key, Text value) {
+    public static <U> TextPlaceholderFactory<U> of(String key, Component value) {
         return new TextPlaceholderFactory<U>().add(key, value);
     }
 
@@ -197,37 +197,37 @@ public class TextPlaceholderFactory<T> {
     }
 
     /**
-     * Creates a default {@link TextPlaceholderFactory} for {@link ServerPlayerEntity} with predefined placeholders.
+     * Creates a default {@link TextPlaceholderFactory} for {@link ServerPlayer} with predefined placeholders.
      * 
-     * @return A {@link TextPlaceholderFactory} instance with the default placeholders for {@link ServerPlayerEntity}.
+     * @return A {@link TextPlaceholderFactory} instance with the default placeholders for {@link ServerPlayer}.
      */
-    public static TextPlaceholderFactory<ServerPlayerEntity> ofDefault() {
-        return new TextPlaceholderFactory<ServerPlayerEntity>()
-            .add("&", t -> Text.literal("\u00a7"))
+    public static TextPlaceholderFactory<ServerPlayer> ofDefault() {
+        return new TextPlaceholderFactory<ServerPlayer>()
+            .add("&", t -> Component.literal("\u00a7"))
             .add("${player}", t -> t.getDisplayName())
-            .add("${health}", t -> Text.literal(String.format("%.2f", t.getHealth())))
-            .add("${hp}", t -> Text.literal(String.format("%.2f", t.getHealth())))
-            .add("${maxhealth}", t -> Text.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${maxhp}", t -> Text.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${level}", t -> Text.literal(String.valueOf(t.experienceLevel)))
-            .add("${hunger}", t -> Text.literal(String.valueOf(t.getHungerManager().getFoodLevel())))
-            .add("${saturation}", t -> Text.literal(String.format("%.2f", t.getHungerManager().getSaturationLevel())))
-            .add("${x}", t -> Text.literal(String.format("%.2f", t.getX())))
-            .add("${y}", t -> Text.literal(String.format("%.2f", t.getY())))
-            .add("${z}", t -> Text.literal(String.format("%.2f", t.getZ())))
-            .add("${pitch}", t -> Text.literal(String.format("%.2f", t.getPitch())))
-            .add("${yaw}", t -> Text.literal(String.format("%.2f", t.getYaw())))
+            .add("${health}", t -> Component.literal(String.format("%.2f", t.getHealth())))
+            .add("${hp}", t -> Component.literal(String.format("%.2f", t.getHealth())))
+            .add("${maxhealth}", t -> Component.literal(String.format("%.2f", t.getMaxHealth())))
+            .add("${maxhp}", t -> Component.literal(String.format("%.2f", t.getMaxHealth())))
+            .add("${level}", t -> Component.literal(String.valueOf(t.experienceLevel)))
+            .add("${hunger}", t -> Component.literal(String.valueOf(t.getFoodData().getFoodLevel())))
+            .add("${saturation}", t -> Component.literal(String.format("%.2f", t.getFoodData().getSaturationLevel())))
+            .add("${x}", t -> Component.literal(String.format("%.2f", t.getX())))
+            .add("${y}", t -> Component.literal(String.format("%.2f", t.getY())))
+            .add("${z}", t -> Component.literal(String.format("%.2f", t.getZ())))
+            .add("${pitch}", t -> Component.literal(String.format("%.2f", t.getXRot())))
+            .add("${yaw}", t -> Component.literal(String.format("%.2f", t.getYRot())))
             .add("${biome}", t -> Util.getBiomeText(t))
             .add("${coord}", t -> {
-                Text biomeText = Util.getBiomeText(t);
+                Component biomeText = Util.getBiomeText(t);
                 String strX = String.format("%.2f", t.getX());
                 String strY = String.format("%.2f", t.getY());
                 String strZ = String.format("%.2f", t.getZ());
-                Text x = Text.literal(strX);
-                Text y = Text.literal(strY);
-                Text z = Text.literal(strZ);
-                MutableText result = Text.literal("[").append(biomeText).append("] (").append(x).append(", ").append(y).append(", ").append(z).append(")");
-                result = result.styled(style -> style.withClickEvent(
+                Component x = Component.literal(strX);
+                Component y = Component.literal(strY);
+                Component z = Component.literal(strZ);
+                MutableComponent result = Component.literal("[").append(biomeText).append("] (").append(x).append(", ").append(y).append(", ").append(z).append(")");
+                result = result.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
@@ -235,26 +235,26 @@ public class TextPlaceholderFactory<T> {
                 return result;
             })
             .add("${mainhand}", t -> {
-                ItemStack item = t.getMainHandStack();
+                ItemStack item = t.getMainHandItem();
                 if (item == null || item.isEmpty()) {
-                    return Text.translatable("fmod.command.get.emptyslot");
+                    return Component.translatable("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
-                        return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
+                        return Component.empty().append(item.getDisplayName()).append("x").append(Component.literal(String.valueOf(item.getCount())));
                     } else {
-                        return item.toHoverableText();
+                        return item.getDisplayName();
                     }
                 }
             })
             .add("${offhand}", t -> {
-                ItemStack item = t.getOffHandStack();
+                ItemStack item = t.getOffhandItem();
                 if (item == null || item.isEmpty()) {
-                    return Text.translatable("fmod.command.get.emptyslot");
+                    return Component.translatable("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
-                        return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
+                        return Component.empty().append(item.getDisplayName()).append("x").append(Component.literal(String.valueOf(item.getCount())));
                     } else {
-                        return item.toHoverableText();
+                        return item.getDisplayName();
                     }
                 }
             });

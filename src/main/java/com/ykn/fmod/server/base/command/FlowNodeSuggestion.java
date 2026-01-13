@@ -12,9 +12,9 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
-public class FlowNodeSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class FlowNodeSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     private final boolean needQuote;
     private final int flowNameIndex; // /f flow edit "<flowName>" ...: index 3
@@ -44,7 +44,7 @@ public class FlowNodeSuggestion implements SuggestionProvider<ServerCommandSourc
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         String flowName = extractFlowName(builder.getInput());
         FlowManager flow = Util.getServerData(context.getSource().getServer()).logicFlows.get(flowName);
         if (flow != null) {

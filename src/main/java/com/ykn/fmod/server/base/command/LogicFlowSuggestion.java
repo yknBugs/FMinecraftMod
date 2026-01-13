@@ -10,9 +10,9 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
-public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class LogicFlowSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     private final boolean needQuote;
     private final boolean allowAll;
@@ -23,7 +23,7 @@ public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSour
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         Collection<String> flows = Util.getServerData(context.getSource().getServer()).logicFlows.keySet();
         for (String flow : flows) {
             String suggestion = flow;

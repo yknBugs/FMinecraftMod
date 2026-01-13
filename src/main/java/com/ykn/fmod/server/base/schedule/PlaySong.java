@@ -12,23 +12,23 @@ import com.ykn.fmod.server.base.song.NoteBlockNote;
 import com.ykn.fmod.server.base.song.NoteBlockSong;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.server.level.ServerPlayer;
 
 public class PlaySong extends ScheduledTask {
 
     private NoteBlockSong song;
     private String songName;
-    private ServerPlayerEntity target;
-    private CommandContext<ServerCommandSource> context;
+    private ServerPlayer target;
+    private CommandContext<CommandSourceStack> context;
     private int tick;
     private boolean showInfo;
     private int lastShowInfoSeconds;
     private int lastShowInfoTicks;
     private double lastShowInfoSpeed;
 
-    public PlaySong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
+    public PlaySong(NoteBlockSong song, String songName, ServerPlayer target, CommandContext<CommandSourceStack> context) {
         super(1, song.getMaxRealTick() == 2147483647 ? 2147483647 : song.getMaxRealTick() + 1);
         this.song = song;
         this.songName = songName;
@@ -47,7 +47,7 @@ public class PlaySong extends ScheduledTask {
         if (notes != null) {
             for (NoteBlockNote note : notes) {
                 // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0));
-                target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
+                target.connection.send(new ClientboundSoundPacket(note.instrument.getSoundEvent(), target.getSoundSource(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
             }
         }
         int currentSeconds = (int) (this.song.getVirtualTick(this.tick) / 20.0);
@@ -70,17 +70,17 @@ public class PlaySong extends ScheduledTask {
     @Override
     public void onCancel() {
         this.tick = song.getMaxRealTick();
-        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
+        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
     }
 
     @Override
     public void onFinish() {
-        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
+        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
     }
 
     @Override
     public boolean shouldCancel() {
-        return target == null || target.isDisconnected() || target.isRemoved();
+        return target == null || target.hasDisconnected() || target.isRemoved();
     }
 
     public NoteBlockSong getSong() {
@@ -91,7 +91,7 @@ public class PlaySong extends ScheduledTask {
         return songName;
     }
 
-    public ServerPlayerEntity getTarget() {
+    public ServerPlayer getTarget() {
         return target;
     }
 

@@ -24,6 +24,13 @@ bin/
 .classpath
 .project
 
+*.launch
+.metadata
+.classpath
+.project
+
+eclipse
+
 # macos
 
 *.DS_Store
@@ -31,6 +38,8 @@ bin/
 # fabric
 
 run/
+
+forge*changelog.txt
 
 # java
 

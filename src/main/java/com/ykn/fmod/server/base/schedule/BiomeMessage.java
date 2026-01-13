@@ -3,17 +3,17 @@ package com.ykn.fmod.server.base.schedule;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 
 public class BiomeMessage extends ScheduledTask {
 
-    private ServerPlayerEntity player;
-    private Identifier biomeId;
+    private ServerPlayer player;
+    private ResourceLocation biomeId;
     
-    public BiomeMessage(ServerPlayerEntity player, Identifier biomeId) {
+    public BiomeMessage(ServerPlayer player, ResourceLocation biomeId) {
         super(Util.serverConfig.getChangeBiomeDelay(), 0);
         this.player = player;
         this.biomeId = biomeId;
@@ -21,21 +21,21 @@ public class BiomeMessage extends ScheduledTask {
 
     @Override
     public void onTrigger() {
-        MutableText biomeText = null;
+        MutableComponent biomeText = null;
         if (biomeId == null) {
             biomeText = Util.parseTranslateableText("fmod.misc.unknown");
         } else {
-            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
+            biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
         }
         Util.postMessage(player, Util.serverConfig.getChangeBiome(), MessageLocation.ACTIONBAR, Util.parseTranslateableText("fmod.message.biome.change", player.getDisplayName(), biomeText));
     }
 
     @Override
     public boolean shouldCancel() {
-        if (player.isDisconnected() || player.isRemoved()) {
+        if (player.hasDisconnected() || player.isRemoved()) {
             return true;
         }
-        Identifier currentBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         if (currentBiomeId.equals(biomeId)) {
             return false;
         } else {

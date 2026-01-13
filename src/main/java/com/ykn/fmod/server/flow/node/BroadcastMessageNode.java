@@ -12,8 +12,8 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 
 /**
  * A flow node that broadcasts a message to all players on the server.
@@ -32,22 +32,22 @@ public class BroadcastMessageNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.bcmessage.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.bcmessage.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
+        Component displayName = Util.parseTranslateableText("fmod.node.bcmessage.title.name");
+        Component description = Util.parseTranslateableText("fmod.node.bcmessage.title.feat");
+        List<Component> inputNames = new ArrayList<>();
+        List<Component> inputDescriptions = new ArrayList<>();
+        List<Component> inputDataTypes = new ArrayList<>();
         inputNames.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.name"));
         inputDescriptions.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.feat"));
         inputDataTypes.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.type"));
         inputNames.add(Util.parseTranslateableText("fmod.node.bcmessage.input.message.name"));
         inputDescriptions.add(Util.parseTranslateableText("fmod.node.bcmessage.input.message.feat"));
         inputDataTypes.add(Util.parseTranslateableText("fmod.node.bcmessage.input.message.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
+        List<Component> outputNames = new ArrayList<>();
+        List<Component> outputDescriptions = new ArrayList<>();
+        List<Component> outputDataTypes = new ArrayList<>();
+        List<Component> branchNames = new ArrayList<>();
+        List<Component> branchDescriptions = new ArrayList<>();
         branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
         branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
@@ -58,7 +58,7 @@ public class BroadcastMessageNode extends FlowNode {
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         MinecraftServer server = context.getServer();
         MessageLocation messageType = parseMessageType(resolvedInputs.get(0));
-        Text message = parseMessage(resolvedInputs.get(1));
+        Component message = parseMessage(resolvedInputs.get(1));
         Util.broadcastMessage(server, messageType, message);
     }
 
@@ -79,14 +79,14 @@ public class BroadcastMessageNode extends FlowNode {
         }
     }
 
-    private Text parseMessage(Object messageObj) throws LogicException {
+    private Component parseMessage(Object messageObj) throws LogicException {
         if (messageObj == null) {
             throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
-        } else if (messageObj instanceof Text) {
-            return (Text) messageObj;
+        } else if (messageObj instanceof Component) {
+            return (Component) messageObj;
         } else {
             String messageStr = TypeAdaptor.parse(messageObj).asString();
-            return Text.literal(messageStr);
+            return Component.literal(messageStr);
         }
     }
 }

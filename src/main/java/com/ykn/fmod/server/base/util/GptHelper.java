@@ -17,15 +17,15 @@ import com.google.gson.Gson;
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.data.GptData;
 
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 
 public class GptHelper implements Runnable {
 
     private GptData gptData;
-    private CommandContext<ServerCommandSource> context;
+    private CommandContext<CommandSourceStack> context;
 
-    public GptHelper(GptData gptData, CommandContext<ServerCommandSource> context) {
+    public GptHelper(GptData gptData, CommandContext<CommandSourceStack> context) {
         this.gptData = gptData;
         this.context = context;
     }
@@ -65,10 +65,10 @@ public class GptHelper implements Runnable {
                 final String responseJson = responseBuilder.toString();
                 final String response = gson.fromJson(responseJson, ChatResponse.class).getMessageContent().trim();
                 final String responseModel = gptData.getCachedGptModel();
-                final Text formattedText = MarkdownToTextConverter.parseMarkdownToText(response);
+                final Component formattedText = MarkdownToTextConverter.parseMarkdownToText(response);
                 gptData.receiveMessage(response, formattedText, responseJson);
                 context.getSource().getServer().execute(() -> {
-                    context.getSource().sendFeedback(() -> Text.literal("<").append(responseModel.isBlank() ? "GPT" : responseModel).append("> ").append(formattedText), false);
+                    context.getSource().sendSuccess(() -> Component.literal("<").append(responseModel.isBlank() ? "GPT" : responseModel).append("> ").append(formattedText), false);
                     if (context.getSource().getPlayer() != null) {
                         LoggerFactory.getLogger(Util.LOGGERNAME).info("<" + (responseModel.isBlank() ? "GPT" : responseModel) + "> " + response);
                     }
@@ -76,7 +76,7 @@ public class GptHelper implements Runnable {
             } else {
                 gptData.cancel();
                 context.getSource().getServer().execute(() -> {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode), false);
                 });
                 LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response code: " + responseCode);
                 // BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
@@ -90,13 +90,13 @@ public class GptHelper implements Runnable {
         } catch (SocketTimeoutException e) {
             gptData.cancel();
             context.getSource().getServer().execute(() -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.timeout"), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.gpt.timeout"), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Connect to the GPT server timeout", e);
         } catch (Exception e) {
             gptData.cancel();
             context.getSource().getServer().execute(() -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.error"), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.gpt.error"), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Exception while connecting to the GPT server", e);
         } finally {

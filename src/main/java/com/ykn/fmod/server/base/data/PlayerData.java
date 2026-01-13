@@ -1,13 +1,13 @@
 package com.ykn.fmod.server.base.data;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 public class PlayerData {
 
     public int afkTicks;
     public float lastPitch;
     public float lastYaw;
-    public Identifier lastBiomeId;
+    public ResourceLocation lastBiomeId;
 
     public int lastBossFightTick;
     public int lastMonsterSurroundTick;

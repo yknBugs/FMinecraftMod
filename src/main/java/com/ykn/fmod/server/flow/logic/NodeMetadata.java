@@ -2,7 +2,7 @@ package com.ykn.fmod.server.flow.logic;
 
 import java.util.List;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Metadata about a node type.
@@ -30,58 +30,58 @@ public class NodeMetadata {
     /**
      * The official name of this node type.
      */
-    public final Text displayName;
+    public final Component displayName;
 
     /**
      * The description about the functionality of this node type.
      */
-    public final Text description;
+    public final Component description;
 
     /**
      * The official name of the inputs
      */
-    public final List<Text> inputNames;
+    public final List<Component> inputNames;
 
     /**
      * The description about the inputs
      */
-    public final List<Text> inputDescriptions;
+    public final List<Component> inputDescriptions;
 
     /**
      * The data types of the inputs
      */
-    public final List<Text> inputDataTypes;
+    public final List<Component> inputDataTypes;
 
     /**
      * The official name of the outputs
      */
-    public final List<Text> outputNames;
+    public final List<Component> outputNames;
 
     /**
      * The description about the outputs
      */
-    public final List<Text> outputDescriptions;
+    public final List<Component> outputDescriptions;
 
     /**
      * The data types of the outputs
      */
-    public final List<Text> outputDataTypes;
+    public final List<Component> outputDataTypes;
 
     /**
      * The official name of the branches
      */
-    public final List<Text> branchNames;
+    public final List<Component> branchNames;
     
     /**
      * The description about the branches
      */
-    public final List<Text> branchDescriptions;
+    public final List<Component> branchDescriptions;
 
     public NodeMetadata(int inputNumber, int outputNumber, int branchNumber,
-                        Text displayName, Text description,
-                        List<Text> inputNames, List<Text> inputDescriptions, List<Text> inputDataTypes,
-                        List<Text> outputNames, List<Text> outputDescriptions, List<Text> outputDataTypes,
-                        List<Text> branchNames, List<Text> branchDescriptions) {
+                        Component displayName, Component description,
+                        List<Component> inputNames, List<Component> inputDescriptions, List<Component> inputDataTypes,
+                        List<Component> outputNames, List<Component> outputDescriptions, List<Component> outputDataTypes,
+                        List<Component> branchNames, List<Component> branchDescriptions) {
         this.inputNumber = inputNumber;
         this.outputNumber = outputNumber;
         this.branchNumber = branchNumber;

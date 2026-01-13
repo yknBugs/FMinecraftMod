@@ -1,15 +1,15 @@
 package com.ykn.fmod.server.base.util;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Utility class for adapting and parsing different object types.
@@ -34,21 +34,21 @@ public class TypeAdaptor {
      * Parses an object into a string representation.
      * @return the string representation of the object; returns an empty string if the object is null
      */
-    @NotNull
+    @Nonnull
     public String asString() {
         if (o == null) {
             return "";
         } else if (o instanceof String) {
             return (String) o;
-        } else if (o instanceof Text) {
-            Text textObj = (Text) o;
-            return textObj.getString();
+        } else if (o instanceof Component) {
+            Component component = (Component) o;
+            return component.getString();
         } else if (o instanceof Entity) {
             Entity entity = (Entity) o;
             return entity.getDisplayName().getString();
         } else if (o instanceof ItemStack) {
             ItemStack itemStack = (ItemStack) o;
-            return itemStack.getName().getString();
+            return itemStack.getHoverName().getString();
         } else if (o instanceof Block) {
             Block block = (Block) o;
             return block.getName().getString();
@@ -111,16 +111,16 @@ public class TypeAdaptor {
      * @return the Vec3d representation of the object; returns null if parsing fails
      */
     @Nullable
-    public Vec3d asVec3d() {
-        if (o instanceof Vec3d) {
-            return (Vec3d) o;
+    public Vec3 asVec3d() {
+        if (o instanceof Vec3) {
+            return (Vec3) o;
         } else if (o instanceof Vec3i) {
             Vec3i vec3i = (Vec3i) o;
-            Vec3d vec3d = new Vec3d(vec3i.getX(), vec3i.getY(), vec3i.getZ());
+            Vec3 vec3d = new Vec3(vec3i.getX(), vec3i.getY(), vec3i.getZ());
             return vec3d;
         } else if (o instanceof Entity) {
             Entity entity = (Entity) o;
-            return entity.getPos();
+            return entity.position();
         } else {
             // String will usually be in format (x, y, z) in Minecraft
             String str = this.asString().trim();
@@ -131,7 +131,7 @@ public class TypeAdaptor {
                     double x = Double.parseDouble(parts[0].trim());
                     double y = Double.parseDouble(parts[1].trim());
                     double z = Double.parseDouble(parts[2].trim());
-                    return new Vec3d(x, y, z);
+                    return new Vec3(x, y, z);
                 } catch (NumberFormatException e) {
                     return null;
                 }
@@ -145,9 +145,9 @@ public class TypeAdaptor {
      * @return the Vec2f representation of the object; returns null if parsing fails
      */
     @Nullable
-    public Vec2f asVec2f() {
-        if (o instanceof Vec2f) {
-            return (Vec2f) o;
+    public Vec2 asVec2f() {
+        if (o instanceof Vec2) {
+            return (Vec2) o;
         } else {
             String str = this.asString().trim();
             str = str.replace("(", "").replace(")", "");
@@ -156,7 +156,7 @@ public class TypeAdaptor {
                 try {
                     float x = Float.parseFloat(parts[0].trim());
                     float y = Float.parseFloat(parts[1].trim());
-                    return new Vec2f(x, y);
+                    return new Vec2(x, y);
                 } catch (NumberFormatException e) {
                     return null;
                 }

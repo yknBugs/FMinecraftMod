@@ -11,15 +11,15 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.Monster;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Box;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.phys.AABB;
 
 public class LivingEntityDamage {
 
@@ -46,12 +46,12 @@ public class LivingEntityDamage {
         }
 
         MinecraftServer server = entity.getServer();
-        Entity attacker = damageSource.getSource();
+        Entity attacker = damageSource.getDirectEntity();
         ServerData serverData = Util.getServerData(server);
 
         // Send boss fight message
-        if (attacker != null && attacker.isPlayer() && attacker instanceof ServerPlayerEntity) {
-            ServerPlayerEntity player = (ServerPlayerEntity) attacker;
+        if (attacker != null && attacker.isAlwaysTicking() && attacker instanceof ServerPlayer) {
+            ServerPlayer player = (ServerPlayer) attacker;
             PlayerData data = serverData.getPlayerData(player);
             if (entity.getMaxHealth() > Util.serverConfig.getBossMaxHpThreshold() && serverData.getTickPassed(data.lastBossFightTick) > Util.serverConfig.getBossFightInterval() && amount > 0) {
                 data.lastBossFightTick = serverData.getServerTick();
@@ -60,17 +60,17 @@ public class LivingEntityDamage {
         }
 
         // Send monster surround message
-        if (entity.isPlayer() && entity instanceof ServerPlayerEntity) {
-            ServerPlayerEntity player = (ServerPlayerEntity) entity;
+        if (entity.isAlwaysTicking() && entity instanceof ServerPlayer) {
+            ServerPlayer player = (ServerPlayer) entity;
             PlayerData data = serverData.getPlayerData(player);
             if (attacker != null && attacker instanceof Monster && serverData.getTickPassed(data.lastMonsterSurroundTick) > Util.serverConfig.getMonsterSurroundInterval() && amount > 0) {
                 double distance = Util.serverConfig.getMonsterDistanceThreshold();
-                Box box = new Box(player.getX() - distance, player.getY() - distance, player.getZ() - distance, player.getX() + distance, player.getY() + distance, player.getZ() + distance);
-                List<Entity> nearestEntities = player.getWorld().getEntitiesByClass(Entity.class, box, monster -> (monster != null && (monster instanceof Monster)));
+                AABB box = new AABB(player.getX() - distance, player.getY() - distance, player.getZ() - distance, player.getX() + distance, player.getY() + distance, player.getZ() + distance);
+                List<Entity> nearestEntities = player.level().getEntitiesOfClass(Entity.class, box, monster -> (monster != null && (monster instanceof Monster)));
                 if (nearestEntities.size() >= Util.serverConfig.getMonsterNumberThreshold() && player.getHealth() > 0) {
-                    Text playerName = player.getDisplayName();
-                    Text entityName = attacker.getDisplayName();
-                    MutableText text = Util.parseTranslateableText("fmod.message.monsterattack", playerName, entityName, Integer.toString(nearestEntities.size()));
+                    Component playerName = player.getDisplayName();
+                    Component entityName = attacker.getDisplayName();
+                    MutableComponent text = Util.parseTranslateableText("fmod.message.monsterattack", playerName, entityName, Integer.toString(nearestEntities.size()));
                     Util.postMessage(player, Util.serverConfig.getMonsterSurroundMessageReceiver(), Util.serverConfig.getMonsterSurroundMessageLocation(), text);
                     data.lastMonsterSurroundTick = serverData.getServerTick();
                 }
@@ -85,10 +85,10 @@ public class LivingEntityDamage {
             List<Object> eventOutput = new ArrayList<>();
             eventOutput.add(this.entity);
             eventOutput.add((double)this.amount);
-            eventOutput.add(this.damageSource.getType());
-            eventOutput.add(this.damageSource.getAttacker());
-            eventOutput.add(this.damageSource.getSource());
-            eventOutput.add(this.damageSource.getPosition());
+            eventOutput.add(this.damageSource.type());
+            eventOutput.add(this.damageSource.getEntity());
+            eventOutput.add(this.damageSource.getDirectEntity());
+            eventOutput.add(this.damageSource.getSourcePosition());
             executionContext.execute(Util.serverConfig.getMaxFlowLength(), eventOutput, null);
             serverData.executeHistory.add(executionContext);
         }

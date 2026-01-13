@@ -1,11 +1,11 @@
 package com.ykn.fmod.server.base.util;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Component;
 
 public class EnumI18n {
 
-    public static MutableText getMessageLocationI18n(MessageLocation type) {
+    public static MutableComponent getMessageLocationI18n(MessageLocation type) {
         switch (type) {
             case NONE:
                 return Util.parseTranslateableText("fmod.message.type.none");
@@ -14,11 +14,11 @@ public class EnumI18n {
             case ACTIONBAR:
                 return Util.parseTranslateableText("fmod.message.type.actionbar");
             default:
-                return Text.literal(type.toString());
+                return Component.literal(type.toString());
         }
     }
 
-    public static MutableText getMessageReceiverI18n(MessageReceiver method) {
+    public static MutableComponent getMessageReceiverI18n(MessageReceiver method) {
         switch (method) {
             case ALL:
                 return Util.parseTranslateableText("fmod.message.type.toall");
@@ -35,11 +35,11 @@ public class EnumI18n {
             case NONE:
                 return Util.parseTranslateableText("fmod.message.type.none");
             default:
-                return Text.literal(method.toString());
+                return Component.literal(method.toString());
         }
     }
 
-    public static MutableText getBooleanValueI18n(boolean value) {
+    public static MutableComponent getBooleanValueI18n(boolean value) {
         if (value) {
             return Util.parseTranslateableText("options.on");
         } else {

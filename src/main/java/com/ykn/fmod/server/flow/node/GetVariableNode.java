@@ -11,7 +11,7 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A flow node that retrieves the value of a variable from the execution context.
@@ -30,22 +30,22 @@ public class GetVariableNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.getvar.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.getvar.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
+        Component displayName = Util.parseTranslateableText("fmod.node.getvar.title.name");
+        Component description = Util.parseTranslateableText("fmod.node.getvar.title.feat");
+        List<Component> inputNames = new ArrayList<>();
+        List<Component> inputDescriptions = new ArrayList<>();
+        List<Component> inputDataTypes = new ArrayList<>();
         inputNames.add(Util.parseTranslateableText("fmod.node.getvar.input.name"));
         inputDescriptions.add(Util.parseTranslateableText("fmod.node.getvar.input.feat"));
         inputDataTypes.add(Util.parseTranslateableText("fmod.node.getvar.input.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
+        List<Component> outputNames = new ArrayList<>();
+        List<Component> outputDescriptions = new ArrayList<>();
+        List<Component> outputDataTypes = new ArrayList<>();
         outputNames.add(Util.parseTranslateableText("fmod.node.getvar.output.name"));
         outputDescriptions.add(Util.parseTranslateableText("fmod.node.getvar.output.feat"));
         outputDataTypes.add(Util.parseTranslateableText("fmod.node.getvar.output.type"));
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
+        List<Component> branchNames = new ArrayList<>();
+        List<Component> branchDescriptions = new ArrayList<>();
         branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
         branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 

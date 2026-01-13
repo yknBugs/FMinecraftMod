@@ -1,8 +1,8 @@
 package com.ykn.fmod.server.flow.logic;
 
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Thrown when an exception occurs when executing a logic flow
@@ -18,10 +18,10 @@ public class LogicException extends Exception {
     /**
      * The message text to be sent to users. Can be a translatable text.
      */
-    private Text messageText;
+    private Component messageText;
 
     
-    public LogicException(@Nullable Exception reason, @Nullable Text messageText, @Nullable String message) {
+    public LogicException(@Nullable Exception reason, @Nullable Component messageText, @Nullable String message) {
         super((message == null && messageText != null) ? messageText.getString() : message);
         this.reason = reason;
         this.messageText = messageText;
@@ -33,7 +33,7 @@ public class LogicException extends Exception {
     }
 
     @Nullable
-    public Text getMessageText() {
+    public Component getMessageText() {
         return messageText;
     }
 }

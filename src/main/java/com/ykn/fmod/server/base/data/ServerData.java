@@ -10,16 +10,16 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * WARNING: This class is not thread-safe.
@@ -61,22 +61,22 @@ public class ServerData {
      * @param player the ServerPlayerEntity for which to retrieve the PlayerData
      * @return the PlayerData associated with the given player, never null
      */
-    @NotNull
-    public PlayerData getPlayerData(@NotNull ServerPlayerEntity player) {
-        PlayerData data = playerData.get(player.getUuid());
+    @Nonnull
+    public PlayerData getPlayerData(@Nonnull ServerPlayer player) {
+        PlayerData data = playerData.get(player.getUUID());
         if (data == null) {
             data = new PlayerData();
-            playerData.put(player.getUuid(), data);
+            playerData.put(player.getUUID(), data);
         }
         return data;
     }
 
-    @NotNull
+    @Nonnull
     public List<ScheduledTask> getScheduledTasks() {
         return scheduledTasks;
     }
 
-    public void submitScheduledTask(@NotNull ScheduledTask task) {
+    public void submitScheduledTask(@Nonnull ScheduledTask task) {
         if (scheduledTasks.contains(task)) {
             return;
         }
@@ -87,21 +87,21 @@ public class ServerData {
         if (entity == null) {
             return;
         }
-        killerEntities.add(entity.getUuid());
+        killerEntities.add(entity.getUUID());
     }
 
     public boolean isKillerEntity(@Nullable LivingEntity entity) {
         if (entity == null) {
             return false;
         }
-        return killerEntities.contains(entity.getUuid());
+        return killerEntities.contains(entity.getUUID());
     }
 
     public boolean removeKillerEntity(@Nullable LivingEntity entity) {
         if (entity == null) {
             return false;
         }
-        return killerEntities.remove(entity.getUuid());
+        return killerEntities.remove(entity.getUUID());
     }
 
     /**
@@ -112,8 +112,8 @@ public class ServerData {
      * @param source the name of the source for which to retrieve the GptData
      * @return the GptData associated with the given source
      */
-    @NotNull
-    public GptData getGptData(@NotNull String source) {
+    @Nonnull
+    public GptData getGptData(@Nonnull String source) {
         return gptRequestStatus.computeIfAbsent(source, k -> new GptData());
     }
 

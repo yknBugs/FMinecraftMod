@@ -1,24 +1,25 @@
 package com.ykn.fmod.server.mixin;
 
 import org.slf4j.LoggerFactory;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+// import org.spongepowered.asm.mixin.Mixin;
+// import org.spongepowered.asm.mixin.injection.At;
+// import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.ykn.fmod.server.base.event.PlayerDeath;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
 
-@Mixin(ServerPlayerEntity.class)
+// @Mixin(ServerPlayer.class)
 public class PlayerDeathMixin {
 
-    @Inject(method = "onDeath(Lnet/minecraft/entity/damage/DamageSource;)V", at = @At("HEAD"))
-    private void onDeath(final DamageSource damageSource, CallbackInfo info) {
+    // @Inject(method = "die(Lnet/minecraft/world/damagesource/DamageSource;)V", at = @At("HEAD"))
+    @Deprecated
+    public void onDeath(final DamageSource damageSource, CallbackInfo info) {
         try {
-            ServerPlayerEntity player = (ServerPlayerEntity) (Object) this;
+            ServerPlayer player = (ServerPlayer) (Object) this;
             if (player.isRemoved() == false) {
                 PlayerDeath playerDeath = new PlayerDeath(player, damageSource);
                 playerDeath.onPlayerDeath();

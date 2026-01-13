@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.config.ConfigReader;
@@ -20,19 +20,18 @@ import com.ykn.fmod.server.base.config.ServerConfig;
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.metadata.Person;
 import net.minecraft.SharedConstants;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.TypeFilter;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.minecraftforge.fml.ModList;
 
 public class Util {
 
@@ -42,11 +41,11 @@ public class Util {
     public static final String MODID = "fminecraftmod";
 
     /**
-     * A static instance of the {@link TypeFilter} class that is used to get all the entities that are loaded and not removed in the world.
+     * A static instance of the {@link EntityTypeTest} class that is used to get all the entities that are loaded and not removed in the world.
      */
-    public static final TypeFilter<Entity, Entity> PASSTHROUGH_FILTER = new TypeFilter<Entity, Entity>(){
+    public static final EntityTypeTest<Entity, Entity> PASSTHROUGH_FILTER = new EntityTypeTest<Entity, Entity>(){
         @Override
-        public Entity downcast(Entity entity) {
+        public Entity tryCast(@Nonnull Entity entity) {
             return entity;
         }
         @Override
@@ -74,7 +73,7 @@ public class Util {
      * @throws IllegalStateException If the mod container cannot be found.
      */
     public static String getModVersion() {
-        return FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getMetadata().getVersion().toString();
+        return ModList.get().getModContainerById(MODID).orElseThrow(IllegalStateException::new).getModInfo().getVersion().toString();
     }
 
     /**
@@ -84,17 +83,17 @@ public class Util {
      * @throws IllegalStateException If the mod container cannot be found.
      */
     public static String getModAuthors() {
-        Collection<Person> authors = FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getMetadata().getAuthors();
-        StringBuilder authorsString = new StringBuilder();
-        int index = 0;
-        for (Person author : authors) {
-            if (index > 0) {
-                authorsString.append(", ");
-            }
-            authorsString.append(author.getName());
-            index++;
-        }
-        return authorsString.toString();
+        // Collection<String> authors = ModList.get().getModContainerById(MODID).orElseThrow(IllegalStateException::new).getModInfo().getAuthors();
+        // StringBuilder authorsString = new StringBuilder();
+        // int index = 0;
+        // for (String author : authors) {
+        //     if (index > 0) {
+        //         authorsString.append(", ");
+        //     }
+        //     authorsString.append(author);
+        //     index++;
+        // }
+        return "ykn, Xenapte";
     }
 
     /**
@@ -103,7 +102,7 @@ public class Util {
      * @return A string representing the Minecraft version.
      */
     public static String getMinecraftVersion() {
-        return SharedConstants.getGameVersion().getName();
+        return SharedConstants.getCurrentVersion().getName();
     }
 
     /**
@@ -111,27 +110,27 @@ public class Util {
      * If the server is null, an empty list is returned.
      *
      * @param server The Minecraft server instance, or null if unavailable.
-     * @return A list of {@link ServerPlayerEntity} representing the online players.
+     * @return A list of {@link ServerPlayer} representing the online players.
      *         Returns an empty list if the server is null.
      */
-    @NotNull
-    public static List<ServerPlayerEntity> getOnlinePlayers(@Nullable MinecraftServer server) {
+    @Nonnull
+    public static List<ServerPlayer> getOnlinePlayers(@Nullable MinecraftServer server) {
         if (server == null) {
             return new ArrayList<>();
         }
-        List<ServerPlayerEntity> original = server.getPlayerManager().getPlayerList();
-        List<ServerPlayerEntity> copy = new ArrayList<>(original);
+        List<ServerPlayer> original = server.getPlayerList().getPlayers();
+        List<ServerPlayer> copy = new ArrayList<>(original);
         return copy;
     }
 
     /**
      * Sends an action bar message to the specified player.
      *
-     * @param player  The {@link ServerPlayerEntity} to whom the message will be sent. Must not be null.
-     * @param message The {@link Text} message to display in the action bar. Must not be null.
+     * @param player  The {@link ServerPlayer} to whom the message will be sent. Must not be null.
+     * @param message The {@link Component} message to display in the action bar. Must not be null.
      */
-    public static void sendActionBarMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
-        player.networkHandler.sendPacket(new OverlayMessageS2CPacket(message));
+    public static void sendActionBarMessage(@Nonnull ServerPlayer player, @Nonnull Component message) {
+        player.connection.send(new ClientboundSetActionBarTextPacket(message));
     }
 
     /**
@@ -140,12 +139,12 @@ public class Util {
      * @param server  The Minecraft server instance. If null, the method will return without performing any action.
      * @param message The message to be displayed in the action bar. Must not be null.
      */
-    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @NotNull Text message) {
+    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @Nonnull Component message) {
         if (server == null) {
             return;
         }
-        List<ServerPlayerEntity> players = getOnlinePlayers(server);
-        for (ServerPlayerEntity player : players) {
+        List<ServerPlayer> players = getOnlinePlayers(server);
+        for (ServerPlayer player : players) {
             sendActionBarMessage(player, message);
         }
     }
@@ -156,8 +155,8 @@ public class Util {
      * @param player  The server player to whom the message will be sent. Must not be null.
      * @param message The text message to send to the player. Must not be null.
      */
-    public static void sendTextMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
-        player.sendMessage(message, false);
+    public static void sendTextMessage(@Nonnull ServerPlayer player, @Nonnull Component message) {
+        player.displayClientMessage(message, false);
     }
 
     /**
@@ -167,12 +166,12 @@ public class Util {
      * @param server The Minecraft server instance. If null, the method will return without doing anything.
      * @param message The text message to broadcast. Must not be null.
      */
-    public static void broadcastTextMessage(@Nullable MinecraftServer server, @NotNull Text message) {
+    public static void broadcastTextMessage(@Nullable MinecraftServer server, @Nonnull Component message) {
         if (server == null) {
             return;
         }
-        List<ServerPlayerEntity> players = getOnlinePlayers(server);
-        for (ServerPlayerEntity player : players) {
+        List<ServerPlayer> players = getOnlinePlayers(server);
+        for (ServerPlayer player : players) {
             sendTextMessage(player, message);
         }
         // Also broadcast the message to the server console.
@@ -182,11 +181,11 @@ public class Util {
     /**
      * Sends a message to the specified player based on the provided message location type.
      *
-     * @param player The {@link ServerPlayerEntity} to whom the message will be sent. Must not be null.
+     * @param player The {@link ServerPlayer} to whom the message will be sent. Must not be null.
      * @param type   The {@link MessageLocation} indicating where the message should be displayed (e.g., CHAT, ACTIONBAR, NONE). Must not be null.
-     * @param message The {@link Text} message to be sent. Must not be null.
+     * @param message The {@link Component} message to be sent. Must not be null.
      */
-    public static void sendMessage(@NotNull ServerPlayerEntity player, @NotNull MessageLocation type, @NotNull Text message) {
+    public static void sendMessage(@Nonnull ServerPlayer player, @Nonnull MessageLocation type, @Nonnull Component message) {
         switch (type) {
             case NONE:
                 break;
@@ -209,7 +208,7 @@ public class Util {
      * @param type   The location type where the message should be broadcasted. Must not be null.
      * @param message The message to broadcast. Must not be null.
      */
-    public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageLocation type, @NotNull Text message) {
+    public static void broadcastMessage(@Nullable MinecraftServer server, @Nonnull MessageLocation type, @Nonnull Component message) {
         switch (type) {
             case NONE:
                 break;
@@ -233,7 +232,7 @@ public class Util {
      * @param type    The location type of the message (e.g., chat, action bar). Must not be null.
      * @param message The message content to be sent. Must not be null.
      */
-    public static void postMessage(@NotNull ServerPlayerEntity player, @NotNull MessageReceiver method, @NotNull MessageLocation type, @NotNull Text message) {
+    public static void postMessage(@Nonnull ServerPlayer player, @Nonnull MessageReceiver method, @Nonnull MessageLocation type, @Nonnull Component message) {
         switch (method) {
             case ALL:
                 {
@@ -242,9 +241,9 @@ public class Util {
                 }
             case OP:
                 {
-                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayerEntity p : players) {
-                        if (p.hasPermissionLevel(2)) {
+                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayer p : players) {
+                        if (p.hasPermissions(2)) {
                             sendMessage(p, type, message);
                         }
                     }
@@ -252,9 +251,9 @@ public class Util {
                 }
             case SELFOP:
                 {
-                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayerEntity p : players) {
-                        if (p.hasPermissionLevel(2) || p == player) {
+                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayer p : players) {
+                        if (p.hasPermissions(2) || p == player) {
                             sendMessage(p, type, message);
                         }
                     }
@@ -262,9 +261,9 @@ public class Util {
                 }
             case TEAM:
                 {
-                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayerEntity p : players) {
-                        if (p.isTeammate(player) || p == player) {
+                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayer p : players) {
+                        if (p.isAlliedTo(player) || p == player) {
                             sendMessage(p, type, message);
                         }
                     }
@@ -272,9 +271,9 @@ public class Util {
                 }
             case TEAMOP:
                 {
-                    List<ServerPlayerEntity> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayerEntity p : players) {
-                        if (p.hasPermissionLevel(2) || p.isTeammate(player) || p == player) {
+                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
+                    for (ServerPlayer p : players) {
+                        if (p.hasPermissions(2) || p.isAlliedTo(player) || p == player) {
                             sendMessage(p, type, message);
                         }
                     }
@@ -294,22 +293,22 @@ public class Util {
     }
 
     /**
-     * Parses a translatable text key into a {@link MutableText} object, optionally translating it
+     * Parses a translatable text key into a {@link MutableComponent} object, optionally translating it
      * based on the server configuration.
      *
      * @param key  The translation key to be parsed. Must not be null.
      * @param args Optional arguments to format the translatable text.
-     * @return A {@link MutableText} object representing the parsed text. If server translation
+     * @return A {@link MutableComponent} object representing the parsed text. If server translation
      *         is enabled, the text is translated and returned as a literal text. Otherwise,
      *         it is returned as a translatable text.
      */
-    @NotNull
-    public static MutableText parseTranslateableText(@NotNull String key, Object... args) {
+    @Nonnull
+    public static MutableComponent parseTranslateableText(@Nonnull String key, Object... args) {
         if (serverConfig.isEnableServerTranslation()) {
-            String translatedText = Text.translatable(key, args).getString();
-            return Text.literal(translatedText);
+            String translatedText = Component.translatable(key, args).getString();
+            return Component.literal(translatedText);
         } else {
-            return Text.translatable(key, args);
+            return Component.translatable(key, args);
         }
     }
 
@@ -348,8 +347,8 @@ public class Util {
      * @param server the {@link MinecraftServer} instance for which the {@link ServerData} is requested
      * @return the {@link ServerData} associated with the given server
      */
-    @NotNull
-    public static ServerData getServerData(@NotNull MinecraftServer server) {
+    @Nonnull
+    public static ServerData getServerData(@Nonnull MinecraftServer server) {
         ServerData data = worldData.get(server);
         if (data == null) {
             data = new ServerData();
@@ -365,8 +364,8 @@ public class Util {
      * @param player The ServerPlayerEntity for which the PlayerData is to be retrieved. Must not be null.
      * @return The PlayerData object associated with the specified player.
      */
-    @NotNull
-    public static PlayerData getPlayerData(@NotNull ServerPlayerEntity player) {
+    @Nonnull
+    public static PlayerData getPlayerData(@Nonnull ServerPlayer player) {
         return getServerData(player.getServer()).getPlayerData(player);
     }
 
@@ -422,10 +421,10 @@ public class Util {
      * @param world the ServerWorld instance from which to collect entities.
      * @return a list of all entities in the specified world that meet the criteria.
      */
-    @NotNull
-    public static List<Entity> getAllEntities(@NotNull ServerWorld world) {
+    @Nonnull
+    public static List<Entity> getAllEntities(@Nonnull ServerLevel world) {
         List<Entity> entities = new ArrayList<>();
-        world.collectEntitiesByType(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
+        world.getEntities(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
         return entities;
     }
 
@@ -433,18 +432,18 @@ public class Util {
      * Retrieves the biome name as a localized text for the given entity's current position.
      *
      * @param entity The entity whose current biome is to be determined. Must not be null.
-     * @return A {@link MutableText} representing the localized name of the biome. If the biome
+     * @return A {@link MutableComponent} representing the localized name of the biome. If the biome
      *         cannot be determined, a default "unknown" text is returned.
      */
-    @NotNull
-    public static MutableText getBiomeText(@NotNull Entity entity) {
-        Identifier biomeId = entity.getWorld().getBiome(entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
-        MutableText biomeText = null;
+    @Nonnull
+    public static MutableComponent getBiomeText(@Nonnull Entity entity) {
+        ResourceLocation biomeId = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        MutableComponent biomeText = null;
         if (biomeId == null) {
             biomeText = Util.parseTranslateableText("fmod.misc.unknown");
         } else {
             // Vanilla should contain this translation key.
-            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
+            biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
         }
         return biomeText;
     }
@@ -455,16 +454,16 @@ public class Util {
      *
      * @param entities A collection of entities whose display names will be included in the text.
      *                 The collection must not be null and may contain any subclass of {@link Entity}.
-     * @return A {@link MutableText} object containing the concatenated display names of the entities.
+     * @return A {@link MutableComponent} object containing the concatenated display names of the entities.
      *         If the collection is empty, an empty text is returned.
      */
-    @NotNull
-    public static MutableText getEntityListText(@NotNull Collection<? extends Entity> entities) {
-        MutableText entityListText = Text.literal("");
+    @Nonnull
+    public static MutableComponent getEntityListText(@Nonnull Collection<? extends Entity> entities) {
+        MutableComponent entityListText = Component.literal("");
         int index = 0;
         for (Entity entity : entities) {
             if (index > 0) {
-                entityListText.append(Text.literal(", "));
+                entityListText.append(Component.literal(", "));
             }
             entityListText.append(entity.getDisplayName());
             index++;
@@ -478,11 +477,11 @@ public class Util {
      * @param server the Minecraft server whose data is to be overridden, must not be null.
      * @param data   the new server data to associate with the specified server, must not be null.
      */
-    public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
+    public static void overrideServerData(@Nonnull MinecraftServer server, @Nonnull ServerData data) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.globalRequestPool.shutdown();
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the glodal thread pool.");
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the global thread pool.");
         }
         worldData.put(server, data);
     }
@@ -492,7 +491,7 @@ public class Util {
      *
      * @param server the Minecraft server whose data is to be reset; must not be null
      */
-    public static void resetServerData(@NotNull MinecraftServer server) {
+    public static void resetServerData(@Nonnull MinecraftServer server) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.globalRequestPool.shutdown();

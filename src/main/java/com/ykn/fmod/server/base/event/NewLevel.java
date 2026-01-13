@@ -3,14 +3,14 @@ package com.ykn.fmod.server.base.event;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.world.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
 
 public class NewLevel {
 
     private MinecraftServer server;
-    private ServerWorld world;
+    private ServerLevel world;
 
-    public NewLevel(MinecraftServer server, ServerWorld world) {
+    public NewLevel(MinecraftServer server, ServerLevel world) {
         this.server = server;
         this.world = world;
     }

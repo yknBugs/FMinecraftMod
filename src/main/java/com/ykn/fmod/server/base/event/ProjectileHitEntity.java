@@ -10,21 +10,21 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.EntityHitResult;
 
 public class ProjectileHitEntity {
 
-    private ProjectileEntity projectile;
+    private Projectile projectile;
     private EntityHitResult entityHitResult;
 
-    public ProjectileHitEntity(ProjectileEntity projectile, EntityHitResult entityHitResult) {
+    public ProjectileHitEntity(Projectile projectile, EntityHitResult entityHitResult) {
         this.projectile = projectile;
         this.entityHitResult = entityHitResult;
     }
 
-    public ProjectileEntity getProjectile() {
+    public Projectile getProjectile() {
         return projectile;
     }
 
@@ -44,7 +44,7 @@ public class ProjectileHitEntity {
         if (victim == null) {
             return;
         }
-        Entity shooter = projectile.getEffectCause();
+        Entity shooter = projectile.getEffectSource();
         if (shooter == null) {
             return;
         }
@@ -62,7 +62,7 @@ public class ProjectileHitEntity {
             eventOutput.add(this.projectile);
             eventOutput.add(shooter);
             eventOutput.add(victim);
-            eventOutput.add(entityHitResult.getPos());
+            eventOutput.add(entityHitResult.getLocation());
             eventOutput.add(distance);
             executionContext.execute(Util.serverConfig.getMaxFlowLength(), eventOutput, null);
             data.executeHistory.add(executionContext);

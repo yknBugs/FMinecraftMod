@@ -1,7 +1,7 @@
 package com.ykn.fmod.server.flow.logic;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.ykn.fmod.server.base.util.Util;
 
@@ -83,7 +83,7 @@ public class DataReference implements Cloneable {
      * @throws LogicException If an error occurs during resolution
      */
     @Nullable
-    public Object resolve(@NotNull ExecutionContext context) throws LogicException {
+    public Object resolve(@Nonnull ExecutionContext context) throws LogicException {
         if (this.type == ReferenceType.CONSTANT) {
             return this.value;
         } else if (this.type == ReferenceType.NODE_OUTPUT) {
@@ -103,7 +103,7 @@ public class DataReference implements Cloneable {
      * Will NOT deep copy the value object
      * @return The copied data reference
      */
-    @NotNull
+    @Nonnull
     public DataReference copy() {
         DataReference ref = new DataReference();
         ref.type = this.type;

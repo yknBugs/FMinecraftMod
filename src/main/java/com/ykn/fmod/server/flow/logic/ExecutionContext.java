@@ -6,15 +6,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.util.Util;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
 
 /**
  * Since one LogicFlow can be executed multiple times simultaneously,
@@ -182,13 +182,13 @@ public class ExecutionContext {
      * To render the static information about this flow, use {@link LogicFlow#render()} instead.
      * @return A text representation of this execution status.
      */
-    public Text render() {
-        MutableText title = Text.literal(this.flow.name).append(" ");
+    public Component render() {
+        MutableComponent title = Component.literal(this.flow.name).append(" ");
         for (int i = 0; i < this.executedSequence.size(); i++) { 
             NodeStatus node = this.executedSequence.get(i);
-            Text nodeText = node.render(i + 1, this.flow);
-            MutableText nodeEntry = Text.literal("[").append(node.node.name).append("] ");
-            nodeEntry = nodeEntry.styled(s -> s
+            Component nodeText = node.render(i + 1, this.flow);
+            MutableComponent nodeEntry = Component.literal("[").append(node.node.name).append("] ");
+            nodeEntry = nodeEntry.withStyle(s -> s
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, nodeText))
             );
             title = title.append(nodeEntry);

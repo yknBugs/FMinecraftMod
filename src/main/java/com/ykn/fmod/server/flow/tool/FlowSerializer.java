@@ -19,8 +19,8 @@ import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
 
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * LogicFlow Serializer
@@ -50,8 +50,8 @@ import net.minecraft.util.math.Vec3d;
 public class FlowSerializer {
 
     public static DataReference parseConstDataReference(String valueStr) {
-        Vec3d valueVec3d = TypeAdaptor.parse(valueStr).asVec3d();
-        Vec2f valueVec2f = TypeAdaptor.parse(valueStr).asVec2f();
+        Vec3 valueVec3d = TypeAdaptor.parse(valueStr).asVec3d();
+        Vec2 valueVec2f = TypeAdaptor.parse(valueStr).asVec2f();
         Double valueDouble = TypeAdaptor.parse(valueStr).asDouble();
         Boolean boolValue = TypeAdaptor.parse(valueStr).asBoolean();
         if (valueStr == null || "null".equals(valueStr)) {

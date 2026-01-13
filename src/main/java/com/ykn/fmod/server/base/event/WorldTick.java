@@ -8,15 +8,15 @@ import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.Entity;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 
 public class WorldTick {
 
@@ -34,8 +34,8 @@ public class WorldTick {
             checkEntityNumber();
         }   
 
-        List<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
-        for (ServerPlayerEntity player : players) {
+        List<ServerPlayer> players = server.getPlayerList().getPlayers();
+        for (ServerPlayer player : players) {
             PlayerData playerData = Util.getServerData(server).getPlayerData(player);
             handleAfkPlayers(player, playerData);
             handleChangeBiomePlayer(player, playerData);
@@ -50,7 +50,7 @@ public class WorldTick {
 
     private void checkEntityNumber() {
         int entityNumber = 0;
-        for (ServerWorld world : server.getWorlds()) {
+        for (ServerLevel world : server.getAllLevels()) {
             List<Entity> entities = Util.getAllEntities(world);
             entityNumber += entities.size();
         }
@@ -59,9 +59,9 @@ public class WorldTick {
         }
     }
 
-    private void handleAfkPlayers(ServerPlayerEntity player, PlayerData playerData) {
-        float pitch = player.getPitch();
-        float yaw = player.getYaw();
+    private void handleAfkPlayers(ServerPlayer player, PlayerData playerData) {
+        float pitch = player.getXRot();
+        float yaw = player.getYRot();
         if (Math.abs(pitch - playerData.lastPitch) < 0.01 && Math.abs(yaw - playerData.lastYaw) < 0.01) {
             playerData.afkTicks++;
             postMessageToAfkingPlayer(player, playerData);
@@ -73,20 +73,20 @@ public class WorldTick {
         }
     }
 
-    private void postMessageToAfkingPlayer(ServerPlayerEntity player, PlayerData playerData) {
+    private void postMessageToAfkingPlayer(ServerPlayer player, PlayerData playerData) {
         if (playerData.afkTicks > Util.serverConfig.getInformAfkingThreshold() && playerData.afkTicks % 20 == 0) {
             Util.postMessage(player, Util.serverConfig.getInformAfking(), MessageLocation.ACTIONBAR, Util.parseTranslateableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
         if (playerData.afkTicks == Util.serverConfig.getBroadcastAfkingThreshold()) {
-            Text playerName = player.getDisplayName();
+            Component playerName = player.getDisplayName();
             double x = player.getX();
             double y = player.getY();
             double z = player.getZ();
             String strX = String.format("%.2f", x);
             String strY = String.format("%.2f", y);
             String strZ = String.format("%.2f", z);
-            MutableText biomeText = Util.getBiomeText(player);
-            MutableText text = Util.parseTranslateableText("fmod.message.afk.broadcast", playerName, biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
+            MutableComponent biomeText = Util.getBiomeText(player);
+            MutableComponent text = Util.parseTranslateableText("fmod.message.afk.broadcast", playerName, biomeText, strX, strY, strZ).withStyle(style -> style.withClickEvent(
                 new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
             ).withHoverEvent(
                 new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
@@ -95,14 +95,14 @@ public class WorldTick {
         }
     }
 
-    private void postMessageToBackPlayer(ServerPlayerEntity player, PlayerData playerData) {
+    private void postMessageToBackPlayer(ServerPlayer player, PlayerData playerData) {
         if (playerData.afkTicks >= Util.serverConfig.getBroadcastAfkingThreshold()) {
             Util.postMessage(player, Util.serverConfig.getStopAfking(), MessageLocation.CHAT, Util.parseTranslateableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
     }
 
-    private void handleChangeBiomePlayer(ServerPlayerEntity player, PlayerData playerData) {
-        Identifier biomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+    private void handleChangeBiomePlayer(ServerPlayer player, PlayerData playerData) {
+        ResourceLocation biomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         if (!biomeId.equals(playerData.lastBiomeId)) {
             Util.getServerData(server).submitScheduledTask(new BiomeMessage(player, biomeId));
             playerData.lastBiomeId = biomeId;

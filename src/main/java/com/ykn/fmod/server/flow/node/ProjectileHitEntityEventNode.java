@@ -7,7 +7,7 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.EventNode;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A flow node that triggers when a projectile hits an entity.
@@ -29,14 +29,14 @@ public class ProjectileHitEntityEventNode extends EventNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.pentityevt.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.pentityevt.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
+        Component displayName = Util.parseTranslateableText("fmod.node.pentityevt.title.name");
+        Component description = Util.parseTranslateableText("fmod.node.pentityevt.title.feat");
+        List<Component> inputNames = new ArrayList<>();
+        List<Component> inputDescriptions = new ArrayList<>();
+        List<Component> inputDataTypes = new ArrayList<>();
+        List<Component> outputNames = new ArrayList<>();
+        List<Component> outputDescriptions = new ArrayList<>();
+        List<Component> outputDataTypes = new ArrayList<>();
         outputNames.add(Util.parseTranslateableText("fmod.node.pentityevt.output.projectile.name"));
         outputDescriptions.add(Util.parseTranslateableText("fmod.node.pentityevt.output.projectile.feat"));
         outputDataTypes.add(Util.parseTranslateableText("fmod.node.pentityevt.output.projectile.type"));
@@ -52,8 +52,8 @@ public class ProjectileHitEntityEventNode extends EventNode {
         outputNames.add(Util.parseTranslateableText("fmod.node.pentityevt.output.distance.name"));
         outputDescriptions.add(Util.parseTranslateableText("fmod.node.pentityevt.output.distance.feat"));
         outputDataTypes.add(Util.parseTranslateableText("fmod.node.pentityevt.output.distance.type"));
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
+        List<Component> branchNames = new ArrayList<>();
+        List<Component> branchDescriptions = new ArrayList<>();
         branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
         branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 

@@ -11,7 +11,7 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A flow node that evaluates a boolean condition and branches accordingly.
@@ -31,19 +31,19 @@ public class IfConditionNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.if.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.if.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
+        Component displayName = Util.parseTranslateableText("fmod.node.if.title.name");
+        Component description = Util.parseTranslateableText("fmod.node.if.title.feat");
+        List<Component> inputNames = new ArrayList<>();
+        List<Component> inputDescriptions = new ArrayList<>();
+        List<Component> inputDataTypes = new ArrayList<>();
         inputNames.add(Util.parseTranslateableText("fmod.node.if.input.name"));
         inputDescriptions.add(Util.parseTranslateableText("fmod.node.if.input.feat"));
         inputDataTypes.add(Util.parseTranslateableText("fmod.node.if.input.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
+        List<Component> outputNames = new ArrayList<>();
+        List<Component> outputDescriptions = new ArrayList<>();
+        List<Component> outputDataTypes = new ArrayList<>();
+        List<Component> branchNames = new ArrayList<>();
+        List<Component> branchDescriptions = new ArrayList<>();
         branchNames.add(Util.parseTranslateableText("fmod.node.if.branch.true.name"));
         branchDescriptions.add(Util.parseTranslateableText("fmod.node.if.branch.true.feat"));
         branchNames.add(Util.parseTranslateableText("fmod.node.if.branch.false.name"));

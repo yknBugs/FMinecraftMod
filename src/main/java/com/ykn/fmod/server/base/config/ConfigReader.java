@@ -22,7 +22,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.fabricmc.loader.api.FabricLoader;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 /**
  * The ConfigReader class provides utility methods for reading and writing configuration files
@@ -67,7 +67,8 @@ import net.fabricmc.loader.api.FabricLoader;
  */
 public class ConfigReader {
 
-    protected static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
+    // protected static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
+    protected static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve(Util.MODID);
     protected static final Gson GSON = createGson();
     protected final String FILE_NAME;
     protected final Path FILE_PATH;

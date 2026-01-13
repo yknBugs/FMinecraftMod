@@ -1,23 +1,24 @@
 package com.ykn.fmod.server.mixin;
 
 import org.slf4j.LoggerFactory;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+// import org.spongepowered.asm.mixin.Mixin;
+// import org.spongepowered.asm.mixin.injection.At;
+// import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.ykn.fmod.server.base.event.ProjectileHitEntity;
 
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.EntityHitResult;
 
-@Mixin(ProjectileEntity.class)
+// @Mixin(Projectile.class)
 public class ProjectileHitEntityMixin {
 
-    @Inject(method = "onEntityHit(Lnet/minecraft/util/hit/EntityHitResult;)V", at = @At("HEAD"))
-    private void onEntityHit(final EntityHitResult entityHitResult, CallbackInfo info) {
+    // @Inject(method = "onHitEntity(Lnet/minecraft/world/phys/EntityHitResult;)V", at = @At("HEAD"))
+    @Deprecated
+    public void onEntityHit(final EntityHitResult entityHitResult, CallbackInfo info) {
         try {
-            ProjectileEntity projectile = (ProjectileEntity) (Object) this;
+            Projectile projectile = (Projectile) (Object) this;
             ProjectileHitEntity projectileHitEntity = new ProjectileHitEntity(projectile, entityHitResult);
             projectileHitEntity.onProjectileHitEntity();
         } catch (Exception e) {

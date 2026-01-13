@@ -15,9 +15,9 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
-public class SayCommandSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class SayCommandSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     private Map<String, List<String>> suggestionsMap;
 
@@ -26,7 +26,7 @@ public class SayCommandSuggestion implements SuggestionProvider<ServerCommandSou
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String input = builder.getRemaining();
         List<String> suggestions = generateSuggestionList(input);
         suggestions.forEach(suggestion -> builder.suggest(input + suggestion));
