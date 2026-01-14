@@ -8,6 +8,7 @@ import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
+import net.minecraft.block.BedBlock;
 import net.minecraft.entity.Entity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -39,6 +40,7 @@ public class WorldTick {
             PlayerData playerData = Util.getServerData(server).getPlayerData(player);
             handleAfkPlayers(player, playerData);
             handleChangeBiomePlayer(player, playerData);
+            handlePlayerCanSleepStatus(player, playerData);
         }
 
         List<ScheduledTask> scheduledTasks = Util.getServerData(server).getScheduledTasks();
@@ -107,5 +109,24 @@ public class WorldTick {
             Util.getServerData(server).submitScheduledTask(new BiomeMessage(player, biomeId));
             playerData.lastBiomeId = biomeId;
         }
+    }
+
+    private void handlePlayerCanSleepStatus(ServerPlayerEntity player, PlayerData playerData) {
+        boolean canSleep = player.getWorld().getDimension().natural() && !player.getWorld().isDay() && BedBlock.isBedWorking(player.getWorld());
+        boolean cannotSleep = player.getWorld().getDimension().natural() && player.getWorld().isDay() && BedBlock.isBedWorking(player.getWorld());
+        Boolean currentCanSleepStatus = null;
+        if (canSleep != cannotSleep) {
+            // We know the information
+            currentCanSleepStatus = canSleep;
+        }
+        // Show message if status changed
+        if (currentCanSleepStatus != null && !currentCanSleepStatus.equals(playerData.lastCanSleep)) {
+            if (currentCanSleepStatus) {
+                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslateableText("fmod.message.sleep.can", player.getDisplayName()));
+            } else {
+                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslateableText("fmod.message.sleep.cannot", player.getDisplayName()));
+            }
+        }
+        playerData.lastCanSleep = currentCanSleepStatus;
     }
 }

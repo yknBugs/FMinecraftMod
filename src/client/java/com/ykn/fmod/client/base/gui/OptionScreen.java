@@ -177,6 +177,18 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.bossmaxhp"),
                 Text.translatable("fmod.options.hint.bossmaxhp")
             ));
+            // Can Sleep Message
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getPlayerCanSleepMessage()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getPlayerCanSleepMessage());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setPlayerCanSleepMessage((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getPlayerCanSleepMessage()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.cansleepmsg"),
+                Text.translatable("fmod.options.hint.cansleepmsg")
+            ));
             // Player Death Coord
             this.addEntry(new ButtonConfigEntry(
                 ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord()), button -> {

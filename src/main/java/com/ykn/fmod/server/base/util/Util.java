@@ -482,7 +482,7 @@ public class Util {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.globalRequestPool.shutdown();
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the glodal thread pool.");
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the global thread pool.");
         }
         worldData.put(server, data);
     }
@@ -496,7 +496,7 @@ public class Util {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.globalRequestPool.shutdown();
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the glodal thread pool.");
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the global thread pool.");
         }
         ServerData data = new ServerData();
         worldData.put(server, data);

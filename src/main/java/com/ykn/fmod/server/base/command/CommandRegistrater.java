@@ -2184,6 +2184,12 @@ public class CommandRegistrater {
                             .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("killerDeathMessage", MessageLocation.ACTIONBAR, context);}))
                             .executes(context -> {return runOptionsCommand("killerDeathMessage", null, context);})
                         )
+                        .then(CommandManager.literal("canSleepMessage")
+                            .then(CommandManager.literal("off").executes(context -> {return runOptionsCommand("canSleepMessage", MessageLocation.NONE, context);}))
+                            .then(CommandManager.literal("chat").executes(context -> {return runOptionsCommand("canSleepMessage", MessageLocation.CHAT, context);}))
+                            .then(CommandManager.literal("actionbar").executes(context -> {return runOptionsCommand("canSleepMessage", MessageLocation.ACTIONBAR, context);}))
+                            .executes(context -> {return runOptionsCommand("canSleepMessage", null, context);})
+                        )
                         .then(CommandManager.literal("bossMaxHealthThreshold")
                             .then(CommandManager.argument("HP", DoubleArgumentType.doubleArg(0))
                                 .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", DoubleArgumentType.getDouble(context, "HP"), context);})
@@ -2485,6 +2491,16 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setBossMaxHpThreshold((double) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
+                    }
+                    break;
+                case "canSleepMessage":
+                    if (value == null) {
+                        final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getPlayerCanSleepMessage());
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.cansleepmsg", text), false);
+                    } else {
+                        Util.serverConfig.setPlayerCanSleepMessage((MessageLocation) value);
+                        final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.cansleepmsg", text), true);
                     }
                     break;
                 case "playerDeathCoord":
