@@ -50,6 +50,12 @@ public class ServerConfig extends ConfigReader {
     protected MessageLocation killerDeathMessage;
 
     /**
+     * The message sent to the player when the player can sleep or cannot sleep.
+     * Default: NONE
+     */
+    protected MessageLocation playerCanSleepMessage;
+
+    /**
      * If an entity has a health greater than this value, it will be considered as a boss.
      * Default: 150
      */
@@ -243,9 +249,11 @@ public class ServerConfig extends ConfigReader {
     public ServerConfig() {
         super("server.json");
         this.serverTranslation = false;
+        this.maxFlowLength = 32767;
         this.entityDeathMessage = MessageLocation.NONE;
         this.bossDeathMessage = MessageLocation.NONE;
         this.namedEntityDeathMessage = MessageLocation.NONE;
+        this.playerCanSleepMessage = MessageLocation.NONE;
         this.killerDeathMessage = MessageLocation.NONE;
         this.bossMaxHpThreshold = 150;
         this.playerDeathCoord = MessageReceiver.NONE;
@@ -389,6 +397,24 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.killerDeathMessage = killerDeathMessage;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getPlayerCanSleepMessage() {
+        lock.readLock().lock();
+        try {
+            return playerCanSleepMessage;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setPlayerCanSleepMessage(MessageLocation playerCanSleepMessage) {
+        lock.writeLock().lock();
+        try {
+            this.playerCanSleepMessage = playerCanSleepMessage;
         } finally {
             lock.writeLock().unlock();
         }

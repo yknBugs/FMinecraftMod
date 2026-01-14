@@ -17,6 +17,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.BedBlock;
 
 public class WorldTick {
 
@@ -39,6 +40,7 @@ public class WorldTick {
             PlayerData playerData = Util.getServerData(server).getPlayerData(player);
             handleAfkPlayers(player, playerData);
             handleChangeBiomePlayer(player, playerData);
+            handlePlayerCanSleepStatus(player, playerData);
         }
 
         List<ScheduledTask> scheduledTasks = Util.getServerData(server).getScheduledTasks();
@@ -107,5 +109,24 @@ public class WorldTick {
             Util.getServerData(server).submitScheduledTask(new BiomeMessage(player, biomeId));
             playerData.lastBiomeId = biomeId;
         }
+    }
+
+    private void handlePlayerCanSleepStatus(ServerPlayer player, PlayerData playerData) {
+        boolean canSleep = player.level().dimensionType().natural() && !player.level().isDay() && BedBlock.canSetSpawn(player.level());
+        boolean cannotSleep = player.level().dimensionType().natural() && player.level().isDay() && BedBlock.canSetSpawn(player.level());
+        Boolean currentCanSleepStatus = null;
+        if (canSleep != cannotSleep) {
+            // We know the information
+            currentCanSleepStatus = canSleep;
+        }
+        // Show message if status changed
+        if (currentCanSleepStatus != null && !currentCanSleepStatus.equals(playerData.lastCanSleep)) {
+            if (currentCanSleepStatus) {
+                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslateableText("fmod.message.sleep.can", player.getDisplayName()));
+            } else {
+                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslateableText("fmod.message.sleep.cannot", player.getDisplayName()));
+            }
+        }
+        playerData.lastCanSleep = currentCanSleepStatus;
     }
 }

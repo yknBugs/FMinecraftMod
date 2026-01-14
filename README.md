@@ -61,6 +61,11 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.1
+
+- Show message to player when it is the time to sleep
+- Add some flow nodes
+
 ### Version 0.2.0
 
 Important Update: Custom Logic Flow
