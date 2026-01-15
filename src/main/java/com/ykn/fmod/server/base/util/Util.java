@@ -305,8 +305,11 @@ public class Util {
     @Nonnull
     public static MutableComponent parseTranslateableText(@Nonnull String key, Object... args) {
         if (serverConfig.isEnableServerTranslation()) {
-            String translatedText = Component.translatable(key, args).getString();
-            return Component.literal(translatedText);
+            // A trick, by intentionally not passing args to translatable(), we still keep the "%" patterns here.
+            String translatedText = Component.translatable(key).getString();
+            // A trick, by intentionally using a non-existent translation key, 
+            // we can make sure it always triggers the fallback, which is already the translated text.
+            return Component.translatableWithFallback("fmod.a.nonexistent.translation.key", translatedText, args);
         } else {
             return Component.translatable(key, args);
         }

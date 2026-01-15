@@ -61,6 +61,12 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.2
+
+- Now say command supports more custom placeholders
+- Now even server translation is enabled, the mod will only translate its own text
+- Fix the bug that say command cannot render colored text
+
 ### Version 0.2.1
 
 - Show message to player when it is the time to sleep

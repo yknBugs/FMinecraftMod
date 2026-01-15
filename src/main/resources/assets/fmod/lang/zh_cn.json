@@ -15,7 +15,7 @@
     "fmod.message.afk.stop": "%s 在挂机 %s 秒后回来了",
     "fmod.message.biome.change": "%s 进入了 %s",
     "fmod.message.bossfight": "%s 正在与 %s (生命值: %s) 战斗",
-    "fmod.message.monsterattack": "%s 可能正在被 %s 等 %s 只怪物围攻",
+    "fmod.message.monsterattack": "%s 附近有 %s 等 %s 只怪物",
     "fmod.message.entitywarning": "当前世界上已加载 %s 个实体",
     "fmod.message.playerhurt": "%s 刚刚受到了 %s 点伤害 (生命值: %s -> %s)",
     "fmod.message.sleep.can": "到了可以睡觉的时间了",

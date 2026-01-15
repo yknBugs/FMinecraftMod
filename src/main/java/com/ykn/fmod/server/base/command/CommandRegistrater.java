@@ -622,11 +622,14 @@ public class CommandRegistrater {
             for (Entity entity : entities) {
                 Component name = entity.getDisplayName();
                 MutableComponent biome = Util.getBiomeText(entity);
+                String strDim = entity.level().dimension().location().toString();
                 String strX = String.format("%.2f", entity.getX());
                 String strY = String.format("%.2f", entity.getY());
                 String strZ = String.format("%.2f", entity.getZ());
+                String strPitch = String.format("%.2f", entity.getXRot());
+                String strYaw = String.format("%.2f", entity.getYRot());
                 MutableComponent text = Util.parseTranslateableText("fmod.command.get.coord", name, biome, strX, strY, strZ).withStyle(style -> style.withClickEvent(
-                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
                 ));
@@ -647,11 +650,14 @@ public class CommandRegistrater {
             ServerPlayer player = getShareCommandExecutor(context);
             Component name = player.getDisplayName();
             MutableComponent biome = Util.getBiomeText(player);
+            String strDim = player.level().dimension().location().toString();
             String strX = String.format("%.2f", player.getX());
             String strY = String.format("%.2f", player.getY());
             String strZ = String.format("%.2f", player.getZ());
-            MutableComponent text = Util.parseTranslateableText("fmod.command.share.coord", name, biome, strX, strY, strZ).withStyle(style -> style.withClickEvent(
-                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+            String strPitch = String.format("%.2f", player.getXRot());
+            String strYaw = String.format("%.2f", player.getYRot());
+            Component text = Util.parseTranslateableText("fmod.command.share.coord", name, biome, strX, strY, strZ).withStyle(style -> style.withClickEvent(
+                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
             ).withHoverEvent(
                 new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
             ));

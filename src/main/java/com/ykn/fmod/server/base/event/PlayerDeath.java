@@ -47,12 +47,17 @@ public class PlayerDeath {
         double x = player.getX();
         double y = player.getY();
         double z = player.getZ();
+        double pitch = player.getXRot();
+        double yaw = player.getYRot();
+        String strDim = player.level().dimension().location().toString();
         String strX = String.format("%.2f", x);
         String strY = String.format("%.2f", y);
         String strZ = String.format("%.2f", z);
+        String strPitch = String.format("%.2f", pitch);
+        String strYaw = String.format("%.2f", yaw);
         MutableComponent biomeText = Util.getBiomeText(player);
         MutableComponent text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, biomeText, strX, strY, strZ).withStyle(style -> style.withClickEvent(
-            new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+            new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
         ).withHoverEvent(
             new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
         ));
