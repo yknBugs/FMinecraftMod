@@ -306,8 +306,11 @@ public class Util {
     @NotNull
     public static MutableText parseTranslateableText(@NotNull String key, Object... args) {
         if (serverConfig.isEnableServerTranslation()) {
-            String translatedText = Text.translatable(key, args).getString();
-            return Text.literal(translatedText);
+            // A trick, by intentionally not passing args to translatable(), we still keep the "%" patterns here.
+            String translatedText = Text.translatable(key).getString();
+            // A trick, by intentionally using a non-existent translation key, 
+            // we can make sure it always triggers the fallback, which is already the translated text.
+            return Text.translatableWithFallback("fmod.a.nonexistent.translation.key", translatedText, args);
         } else {
             return Text.translatable(key, args);
         }

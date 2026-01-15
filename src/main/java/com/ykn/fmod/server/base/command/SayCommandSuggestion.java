@@ -151,8 +151,8 @@ public class SayCommandSuggestion implements SuggestionProvider<ServerCommandSou
 
     public static SayCommandSuggestion suggestDefault() {
         return new SayCommandSuggestion()
-                .add("&", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a", "b", "c", "d", "e", "f", "r", "l", "k")
+                .add("&", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a", "b", "c", "d", "e", "f", "r", "l", "k", "m", "n", "o")
                 .add("${", "player}", "health}", "hp}", "maxhealth}", "maxhp}", "level}", "hunger}", "saturation}",
-                     "x}", "y}", "z}", "biome}", "pitch}", "yaw}", "coord}", "mainhand}", "offhand}");
+                     "x}", "y}", "z}", "biome}", "pitch}", "yaw}", "coord}", "mainhand}", "offhand}", "color:", "link:", "copy:", "hint:");
     }
 }

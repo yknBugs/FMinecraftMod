@@ -625,11 +625,14 @@ public class CommandRegistrater {
             for (Entity entity : entities) {
                 Text name = entity.getDisplayName();
                 MutableText biome = Util.getBiomeText(entity);
+                String strDim = entity.getWorld().getRegistryKey().getValue().toString();
                 String strX = String.format("%.2f", entity.getX());
                 String strY = String.format("%.2f", entity.getY());
                 String strZ = String.format("%.2f", entity.getZ());
+                String strPitch = String.format("%.2f", entity.getPitch());
+                String strYaw = String.format("%.2f", entity.getYaw());
                 MutableText text = Util.parseTranslateableText("fmod.command.get.coord", name, biome, strX, strY, strZ).styled(style -> style.withClickEvent(
-                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
                 ));
@@ -650,11 +653,14 @@ public class CommandRegistrater {
             ServerPlayerEntity player = getShareCommandExecutor(context);
             Text name = player.getDisplayName();
             MutableText biome = Util.getBiomeText(player);
+            String strDim = player.getWorld().getRegistryKey().getValue().toString();
             String strX = String.format("%.2f", player.getX());
             String strY = String.format("%.2f", player.getY());
             String strZ = String.format("%.2f", player.getZ());
+            String strPitch = String.format("%.2f", player.getPitch());
+            String strYaw = String.format("%.2f", player.getYaw());
             MutableText text = Util.parseTranslateableText("fmod.command.share.coord", name, biome, strX, strY, strZ).styled(style -> style.withClickEvent(
-                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/tp @s " + strX + " " + strY + " " + strZ)
+                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
             ).withHoverEvent(
                 new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
             ));
