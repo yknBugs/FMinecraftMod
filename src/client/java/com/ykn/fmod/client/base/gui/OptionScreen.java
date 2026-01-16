@@ -545,6 +545,130 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.damagethres"),
                 Text.translatable("fmod.options.hint.damagethres")
             ));
+            // Travel Message Location
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLocation()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getTravelMessageLocation());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setTravelMessageLocation((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLocation()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.travelmsg.loc"),
+                Text.translatable("fmod.options.hint.travelmsg.loc")
+            ));
+            // Travel Message Receiver
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTravelMessageReceiver()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getTravelMessageReceiver());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setTravelMessageReceiver((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTravelMessageReceiver()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.travelmsg.receiver"),
+                Text.translatable("fmod.options.hint.travelmsg.receiver")
+            ));
+            // Travel Window (ticks, shown in seconds)
+            SliderWidget travelWindowSlider = new SliderWidget(0, 0, 400, 20,
+                Text.literal(String.format("%.2f", Util.serverConfig.getTravelWindowTicks() / 20.0)),
+                ((double) Util.serverConfig.getTravelWindowTicks() - 1.0) / 11999.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", (this.value * 11999.0 + 1.0) / 20.0)));
+                }
+
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setTravelWindowTicks((int) (this.value * 11999.0 + 1.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                travelWindowSlider,
+                Text.translatable("fmod.options.travelmsg.window"),
+                Text.translatable("fmod.options.hint.travelmsg.window")
+            ));
+            // Travel Total Distance
+            SliderWidget travelTotalDistSlider = new SliderWidget(0, 0, 400, 20,
+                Text.literal(String.format("%.1f", Util.serverConfig.getTravelTotalDistanceThreshold())),
+                Util.serverConfig.getTravelTotalDistanceThreshold() / 1000.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.1f", this.value * 1000.0)));
+                }
+
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setTravelTotalDistanceThreshold(this.value * 1000.0);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                travelTotalDistSlider,
+                Text.translatable("fmod.options.travelmsg.total"),
+                Text.translatable("fmod.options.hint.travelmsg.total")
+            ));
+            // Travel Teleport Threshold
+            SliderWidget travelTeleportSlider = new SliderWidget(0, 0, 400, 20,
+                Text.literal(String.format("%.1f", Util.serverConfig.getTravelTeleportThreshold())),
+                Util.serverConfig.getTravelTeleportThreshold() / 300.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.1f", this.value * 300.0)));
+                }
+
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setTravelTeleportThreshold(this.value * 300.0);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                travelTeleportSlider,
+                Text.translatable("fmod.options.travelmsg.teleport"),
+                Text.translatable("fmod.options.hint.travelmsg.teleport")
+            ));
+            // Travel Partial Interval (ticks)
+            SliderWidget travelPartialIntervalSlider = new SliderWidget(0, 0, 400, 20,
+                Text.literal(String.format("%.2f", Util.serverConfig.getTravelPartialInterval() / 20.0)),
+                ((double) Util.serverConfig.getTravelPartialInterval() - 1.0) / 11999.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", (this.value * 11999.0 + 1.0) / 20.0)));
+                }
+
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setTravelPartialInterval((int) (this.value * 11999.0 + 1.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                travelPartialIntervalSlider,
+                Text.translatable("fmod.options.travelmsg.interval"),
+                Text.translatable("fmod.options.hint.travelmsg.interval")
+            ));
+            // Travel Partial Distance
+            SliderWidget travelPartialDistSlider = new SliderWidget(0, 0, 400, 20,
+                Text.literal(String.format("%.1f", Util.serverConfig.getTravelPartialDistanceThreshold())),
+                Util.serverConfig.getTravelPartialDistanceThreshold() / 1000.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.1f", this.value * 1000.0)));
+                }
+
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setTravelPartialDistanceThreshold(this.value * 1000.0);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                travelPartialDistSlider,
+                Text.translatable("fmod.options.travelmsg.partial"),
+                Text.translatable("fmod.options.hint.travelmsg.partial")
+            )); 
             // GPT Server
             TextFieldWidget gptUrlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
             gptUrlTxtWgt.setMaxLength(1024);

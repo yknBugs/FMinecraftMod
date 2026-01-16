@@ -208,6 +208,48 @@ public class ServerConfig extends ConfigReader {
     protected double playerHurtThreshold;
 
     /**
+     * Controls where to show the message when a player travels a long distance in a short time.
+     * Default: NONE
+     */
+    protected MessageLocation travelMessageLocation;
+
+    /**
+     * Controls who can receive the message when a player travels a long distance in a short time.
+     * Default: NONE
+     */
+    protected MessageReceiver travelMessageReceiver;
+
+    /**
+     * How many recent ticks to track for long-distance travel detection.
+     * Default: 600 ticks (30 seconds)
+     */
+    protected int travelWindowTicks;
+
+    /**
+     * The total horizontal distance required within the tracked window to consider it long-distance travel.
+     * Default: 100 blocks
+     */
+    protected double travelTotalDistanceThreshold;
+
+    /**
+     * The maximum allowed single-tick horizontal distance before it is considered a teleport (and ignored).
+     * Default: 75 blocks
+     */
+    protected double travelTeleportThreshold;
+
+    /**
+     * Interval in ticks for partial distance checks within the travel window.
+     * Default: 200 ticks (10 seconds)
+     */
+    protected int travelPartialInterval;
+
+    /**
+     * The minimum horizontal distance required between two positions separated by the partial interval.
+     * Default: 40 blocks
+     */
+    protected double travelPartialDistanceThreshold;
+
+    /**
      * The URL of the target GPT server.
      * This mod will use the OpenAI API.
      * So if you want to deploy a local LLM, you must make sure it is compatible with the OpenAI API.
@@ -279,6 +321,13 @@ public class ServerConfig extends ConfigReader {
         this.entityNumberInterval = 20;
         this.playerSeriousHurt = MessageReceiver.NONE;
         this.playerHurtThreshold = 0.8;
+        this.travelMessageLocation = MessageLocation.NONE;
+        this.travelMessageReceiver = MessageReceiver.NONE;
+        this.travelWindowTicks = 600;
+        this.travelTotalDistanceThreshold = 100.0;
+        this.travelTeleportThreshold = 75.0;
+        this.travelPartialInterval = 200;
+        this.travelPartialDistanceThreshold = 40.0;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -928,6 +977,167 @@ public class ServerConfig extends ConfigReader {
                 this.playerHurtThreshold = 1;
             } else {
                 this.playerHurtThreshold = playerHurtThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getTravelMessageLocation() {
+        lock.readLock().lock();
+        try {
+            return travelMessageLocation;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelMessageLocation(MessageLocation travelMessageLocation) {
+        lock.writeLock().lock();
+        try {
+            this.travelMessageLocation = travelMessageLocation;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageReceiver getTravelMessageReceiver() {
+        lock.readLock().lock();
+        try {
+            return travelMessageReceiver;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelMessageReceiver(MessageReceiver travelMessageReceiver) {
+        lock.writeLock().lock();
+        try {
+            this.travelMessageReceiver = travelMessageReceiver;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getTravelWindowTicks() {
+        lock.readLock().lock();
+        try {
+            if (travelWindowTicks <= 0) {
+                return 1;
+            }
+            return travelWindowTicks;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelWindowTicks(int travelWindowTicks) {
+        lock.writeLock().lock();
+        try {
+            if (travelWindowTicks <= 0) {
+                this.travelWindowTicks = 1;
+            } else {
+                this.travelWindowTicks = travelWindowTicks;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getTravelTotalDistanceThreshold() {
+        lock.readLock().lock();
+        try {
+            if (travelTotalDistanceThreshold < 0) {
+                return 0;
+            }
+            return travelTotalDistanceThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelTotalDistanceThreshold(double travelTotalDistanceThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (travelTotalDistanceThreshold < 0) {
+                this.travelTotalDistanceThreshold = 0;
+            } else {
+                this.travelTotalDistanceThreshold = travelTotalDistanceThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getTravelTeleportThreshold() {
+        lock.readLock().lock();
+        try {
+            if (travelTeleportThreshold < 0) {
+                return 0;
+            }
+            return travelTeleportThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelTeleportThreshold(double travelTeleportThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (travelTeleportThreshold < 0) {
+                this.travelTeleportThreshold = 0;
+            } else {
+                this.travelTeleportThreshold = travelTeleportThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getTravelPartialInterval() {
+        lock.readLock().lock();
+        try {
+            if (travelPartialInterval <= 0) {
+                return 1;
+            }
+            return travelPartialInterval;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelPartialInterval(int travelPartialInterval) {
+        lock.writeLock().lock();
+        try {
+            if (travelPartialInterval <= 0) {
+                this.travelPartialInterval = 1;
+            } else {
+                this.travelPartialInterval = travelPartialInterval;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getTravelPartialDistanceThreshold() {
+        lock.readLock().lock();
+        try {
+            if (travelPartialDistanceThreshold < 0) {
+                return 0;
+            }
+            return travelPartialDistanceThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelPartialDistanceThreshold(double travelPartialDistanceThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (travelPartialDistanceThreshold < 0) {
+                this.travelPartialDistanceThreshold = 0;
+            } else {
+                this.travelPartialDistanceThreshold = travelPartialDistanceThreshold;
             }
         } finally {
             lock.writeLock().unlock();

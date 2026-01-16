@@ -61,6 +61,11 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.3
+
+- Player Travel Message
+- Fix NullPointerException issue when console execute /f say
+
 ### Version 0.2.2
 
 - Now say command supports more custom placeholders

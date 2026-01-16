@@ -1,5 +1,6 @@
 package com.ykn.fmod.server.base.event;
 
+import java.util.Deque;
 import java.util.List;
 
 import com.ykn.fmod.server.base.data.PlayerData;
@@ -7,6 +8,7 @@ import com.ykn.fmod.server.base.schedule.BiomeMessage;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.base.util.GameMath;
 
 import net.minecraft.block.BedBlock;
 import net.minecraft.entity.Entity;
@@ -18,6 +20,7 @@ import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec3d;
 
 public class WorldTick {
 
@@ -41,6 +44,7 @@ public class WorldTick {
             handleAfkPlayers(player, playerData);
             handleChangeBiomePlayer(player, playerData);
             handlePlayerCanSleepStatus(player, playerData);
+            handlePlayerTravelStatus(player, playerData);
         }
 
         List<ScheduledTask> scheduledTasks = Util.getServerData(server).getScheduledTasks();
@@ -133,5 +137,67 @@ public class WorldTick {
             }
         }
         playerData.lastCanSleep = currentCanSleepStatus;
+    }
+
+    private void handlePlayerTravelStatus(ServerPlayerEntity player, PlayerData playerData) {
+        int window = Util.serverConfig.getTravelWindowTicks();
+
+        Deque<Vec3d> positions = playerData.recentPositions;
+        Identifier currentDim = player.getWorld().getRegistryKey().getValue();
+
+        // Check if player changed dimensions
+        if (!currentDim.equals(playerData.lastDimensionId)) {
+            positions.clear();
+            positions.addLast(player.getPos());
+            playerData.lastDimensionId = currentDim;
+            return;
+        }
+
+        // Update positions history
+        playerData.lastDimensionId = currentDim;
+        positions.addLast(player.getPos());
+        int maxSamples = window + 1;
+        while (positions.size() > maxSamples) {
+            positions.removeFirst();
+        }
+
+        Vec3d[] snapshot = positions.toArray(new Vec3d[0]);
+        int lastIdx = snapshot.length - 1;
+
+        // Check if the player has teleported
+        double teleportThreshold = Util.serverConfig.getTravelTeleportThreshold();
+        if (lastIdx > 0 && GameMath.getHorizonalEuclideanDistance(snapshot[lastIdx - 1], snapshot[lastIdx]) > teleportThreshold) {
+            positions.clear();
+            positions.addLast(player.getPos());
+            return;
+        }
+
+        // Check if we have enough history
+        if (positions.size() < maxSamples) {
+            return; 
+        }
+        
+        // Total distance check
+        double totalDistance = GameMath.getHorizonalEuclideanDistance(snapshot[0], snapshot[lastIdx]);
+        if (totalDistance < Util.serverConfig.getTravelTotalDistanceThreshold()) {
+            return;
+        }
+
+        // Partial distance check
+        int interval = Util.serverConfig.getTravelPartialInterval();
+        double partialThreshold = Util.serverConfig.getTravelPartialDistanceThreshold();
+        for (int i = interval; i <= lastIdx; i++) {
+            double partialDistance = GameMath.getHorizonalEuclideanDistance(snapshot[i - interval], snapshot[i]);
+            if (partialDistance < partialThreshold) {
+                return;
+            }
+        }
+
+        String speedStr = String.format("%.2f", totalDistance / window * 20.0);
+        MutableText message = Util.parseTranslateableText("fmod.message.travel.fast", player.getDisplayName(), speedStr);
+        Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLocation(), message);
+
+        positions.clear();
+        positions.addLast(player.getPos());
     }
 }
