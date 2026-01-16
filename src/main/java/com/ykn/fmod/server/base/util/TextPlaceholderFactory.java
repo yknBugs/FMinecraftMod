@@ -453,11 +453,11 @@ public class TextPlaceholderFactory<T> {
             .add("${Ciallo}", t -> Component.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
                 .withStyle(style -> style.withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606").withStyle(
-                        styled -> styled.withColor(Integer.parseInt("000721", 16))
+                        styled -> styled.withColor(Integer.parseInt("c0721c", 16))
                     ))
                 ).withClickEvent(
-                    new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, "Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
-                ).withColor(Integer.parseInt("000721", 16)))
+                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
+                ).withColor(Integer.parseInt("c0721c", 16)))
             )
             .add("${player}", t -> t.getDisplayName())
             .add("${health}", t -> Component.literal(String.format("%.2f", t.getHealth())))

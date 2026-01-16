@@ -1117,9 +1117,16 @@ public class CommandRegistrater {
     private static int runSayCommand(String message, CommandContext<CommandSourceStack> context) {
         try {
             ServerPlayer player = context.getSource().getPlayer();
-            MutableComponent text = Component.literal("<").append(player.getDisplayName()).append(Component.literal("> ")).append(
-                TextPlaceholderFactory.ofDefault().parse(message, player)
-            );
+            MutableComponent text = null;
+            if (player == null) {
+                text = Component.literal("[").append(context.getSource().getDisplayName()).append(Component.literal("] ")).append(
+                    TextPlaceholderFactory.ofDefault().parse(message, player)
+                );
+            } else {
+                text = Component.literal("<").append(player.getDisplayName()).append(Component.literal("> ")).append(
+                    TextPlaceholderFactory.ofDefault().parse(message, player)
+                );
+            }
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
             if (e instanceof CommandRuntimeException) {
@@ -2376,6 +2383,52 @@ public class CommandRegistrater {
                         )
                         .executes(context -> {return runOptionsCommand("hugeDamageThreshold", null, context);})
                     )
+                    .then(Commands.literal("travelMessageLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("travelMessageLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("travelMessageLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("travelMessageLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("travelMessageLocation", null, context);})
+                    )
+                    .then(Commands.literal("travelMessageReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("travelMessageReceiver", null, context);})
+                    )
+                    .then(Commands.literal("travelWindow")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runOptionsCommand("travelWindow", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("travelWindow", null, context);})
+                    )
+                    .then(Commands.literal("travelDistanceThreshold")
+                        .then(Commands.argument("distance", DoubleArgumentType.doubleArg(0))
+                            .executes(context -> {return runOptionsCommand("travelDistanceThreshold", DoubleArgumentType.getDouble(context, "distance"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("travelDistanceThreshold", null, context);})
+                    )
+                    .then(Commands.literal("travelTeleportThreshold")
+                        .then(Commands.argument("distance", DoubleArgumentType.doubleArg(0))
+                            .executes(context -> {return runOptionsCommand("travelTeleportThreshold", DoubleArgumentType.getDouble(context, "distance"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("travelTeleportThreshold", null, context);})
+                    )
+                    .then(Commands.literal("travelPartialInterval")
+                        .then(Commands.argument("seconds", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runOptionsCommand("travelPartialInterval", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("travelPartialInterval", null, context);})
+                    )
+                    .then(Commands.literal("travelPartialDistance")
+                        .then(Commands.argument("distance", DoubleArgumentType.doubleArg(0))
+                            .executes(context -> {return runOptionsCommand("travelPartialDistance", DoubleArgumentType.getDouble(context, "distance"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("travelPartialDistance", null, context);})
+                    )
                     .then(Commands.literal("gptUrl")
                         .then(Commands.argument("url", StringArgumentType.greedyString())
                             .executes(context -> {return runOptionsCommand("gptUrl", StringArgumentType.getString(context, "url"), context);})
@@ -2709,6 +2762,62 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setPlayerHurtThreshold((double) value / 100.0);
                         context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.damagethres", value), true);
+                    }
+                    break;
+                case "travelMessageLocation":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.loc", EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLocation())), false);
+                    } else {
+                        Util.serverConfig.setTravelMessageLocation((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.loc", EnumI18n.getMessageLocationI18n((MessageLocation) value)), true);
+                    }
+                    break;
+                case "travelMessageReceiver":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.receiver", EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTravelMessageReceiver())), false);
+                    } else {
+                        Util.serverConfig.setTravelMessageReceiver((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.receiver", EnumI18n.getMessageReceiverI18n((MessageReceiver) value)), true);
+                    }
+                    break;
+                case "travelWindow":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.window", String.format("%.2f", Util.serverConfig.getTravelWindowTicks() / 20.0)), false);
+                    } else {
+                        Util.serverConfig.setTravelWindowTicks((int) value * 20);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.window", value), true);
+                    }
+                    break;
+                case "travelDistanceThreshold":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.total", Util.serverConfig.getTravelTotalDistanceThreshold()), false);
+                    } else {
+                        Util.serverConfig.setTravelTotalDistanceThreshold((double) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.total", value), true);
+                    }
+                    break;
+                case "travelTeleportThreshold":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.teleport", Util.serverConfig.getTravelTeleportThreshold()), false);
+                    } else {
+                        Util.serverConfig.setTravelTeleportThreshold((double) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.teleport", value), true);
+                    }
+                    break;
+                case "travelPartialInterval":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.interval", String.format("%.2f", Util.serverConfig.getTravelPartialInterval() / 20.0)), false);
+                    } else {
+                        Util.serverConfig.setTravelPartialInterval((int) value * 20);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.interval", value), true);
+                    }
+                    break;
+                case "travelPartialDistance":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.partial", Util.serverConfig.getTravelPartialDistanceThreshold()), false);
+                    } else {
+                        Util.serverConfig.setTravelPartialDistanceThreshold((double) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.partial", value), true);
                     }
                     break;
                 case "gptUrl":
