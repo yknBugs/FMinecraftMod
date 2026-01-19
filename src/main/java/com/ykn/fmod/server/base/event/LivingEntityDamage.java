@@ -8,7 +8,6 @@ import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.FightMessage;
 import com.ykn.fmod.server.base.schedule.PlayerHurtMessage;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.network.chat.Component;
@@ -81,7 +80,6 @@ public class LivingEntityDamage {
         // Trigger flow events
         List<FlowManager> damageEventFlow = serverData.gatherFlowByFirstNodeType("EntityDamageEventNode", true);
         for (FlowManager flow : damageEventFlow) {
-            ExecutionContext executionContext = new ExecutionContext(flow.flow, this.entity.getServer());
             List<Object> eventOutput = new ArrayList<>();
             eventOutput.add(this.entity);
             eventOutput.add((double)this.amount);
@@ -89,8 +87,7 @@ public class LivingEntityDamage {
             eventOutput.add(this.damageSource.getEntity());
             eventOutput.add(this.damageSource.getDirectEntity());
             eventOutput.add(this.damageSource.getSourcePosition());
-            executionContext.execute(Util.serverConfig.getMaxFlowLength(), eventOutput, null);
-            serverData.executeHistory.add(executionContext);
+            flow.execute(serverData, eventOutput, null);
         }
     }
 

@@ -531,9 +531,10 @@ public class GameMath {
 
     /**
      * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     * Returns yaw in the range [-180°, 180°] for easier angle comparison.
      *
      * @param vec the vector for which to calculate the yaw angle
-     * @return the yaw angle in degrees
+     * @return the yaw angle in degrees, in the range [-180°, 180°]
      */
     public static double getYaw(Vec3 vec) {
         double x = vec.x();
@@ -541,20 +542,18 @@ public class GameMath {
         if (x == 0.0 && z == 0.0) {
             return Double.NaN;
         }
-        double yaw = Math.atan2(-x, -z);
+        double yaw = Math.atan2(-x, z);
         double d = Math.toDegrees(yaw);
-        if (d < 0.0) {
-            d += 360.0;
-        }
         return d;
     }
 
     /**
      * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     * Returns yaw in the range [-180°, 180°] for easier angle comparison.
      *
      * @param a the first vector
      * @param b the second vector
-     * @return the yaw angle in degrees
+     * @return the yaw angle in degrees, in the range [-180°, 180°]
      */
     public static double getYaw(Vec3 a, Vec3 b) {
         double x = b.x() - a.x();
@@ -562,41 +561,37 @@ public class GameMath {
         if (x == 0.0 && z == 0.0) {
             return Double.NaN;
         }
-        double yaw = Math.atan2(-x, -z);
+        double yaw = Math.atan2(-x, z);
         double d = Math.toDegrees(yaw);
-        if (d < 0.0) {
-            d += 360.0;
-        }
         return d;
     }
 
     /**
      * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     * Returns yaw in the range [-180°, 180°] for easier angle comparison.
      *
      * @param x the x-coordinate of the vector
      * @param z the z-coordinate of the vector
-     * @return the yaw angle in degrees
+     * @return the yaw angle in degrees, in the range [-180°, 180°]
      */
     public static double getYaw(double x, double z) {
         if (x == 0.0 && z == 0.0) {
             return Double.NaN;
         }
-        double yaw = Math.atan2(-x, -z);
+        double yaw = Math.atan2(-x, z);
         double d = Math.toDegrees(yaw);
-        if (d < 0.0) {
-            d += 360.0;
-        }
         return d;
     }
 
     /**
      * Calculates the yaw angle (rotation around the Y-axis) in degrees for a given vector.
+     * Returns yaw in the range [-180°, 180°] for easier angle comparison.
      *
      * @param xa the x-coordinate of the first vector
      * @param za the z-coordinate of the first vector
      * @param xb the x-coordinate of the second vector
      * @param zb the z-coordinate of the second vector
-     * @return the yaw angle in degrees
+     * @return the yaw angle in degrees, in the range [-180°, 180°]
      */
     public static double getYaw(double xa, double za, double xb, double zb) {
         double x = xb - xa;
@@ -604,11 +599,8 @@ public class GameMath {
         if (x == 0.0 && z == 0.0) {
             return Double.NaN;
         }
-        double yaw = Math.atan2(-x, -z);
+        double yaw = Math.atan2(-x, z);
         double d = Math.toDegrees(yaw);
-        if (d < 0.0) {
-            d += 360.0;
-        }
         return d;
     }
 

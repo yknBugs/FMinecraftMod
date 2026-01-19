@@ -50,6 +50,7 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
+import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.flow.tool.FlowSerializer;
@@ -621,18 +622,8 @@ public class CommandRegistrater {
         try {
             for (Entity entity : entities) {
                 Component name = entity.getDisplayName();
-                MutableComponent biome = Util.getBiomeText(entity);
-                String strDim = entity.level().dimension().location().toString();
-                String strX = String.format("%.2f", entity.getX());
-                String strY = String.format("%.2f", entity.getY());
-                String strZ = String.format("%.2f", entity.getZ());
-                String strPitch = String.format("%.2f", entity.getXRot());
-                String strYaw = String.format("%.2f", entity.getYRot());
-                MutableComponent text = Util.parseTranslateableText("fmod.command.get.coord", name, biome, strX, strY, strZ).withStyle(style -> style.withClickEvent(
-                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
-                ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
-                ));
+                Component coord = Util.parseCoordText(entity);
+                MutableComponent text = Util.parseTranslateableText("fmod.command.get.coord", name, coord);
                 context.getSource().sendSuccess(() -> text, false);
             }
         } catch (Exception e) {
@@ -649,18 +640,8 @@ public class CommandRegistrater {
         try {
             ServerPlayer player = getShareCommandExecutor(context);
             Component name = player.getDisplayName();
-            MutableComponent biome = Util.getBiomeText(player);
-            String strDim = player.level().dimension().location().toString();
-            String strX = String.format("%.2f", player.getX());
-            String strY = String.format("%.2f", player.getY());
-            String strZ = String.format("%.2f", player.getZ());
-            String strPitch = String.format("%.2f", player.getXRot());
-            String strYaw = String.format("%.2f", player.getYRot());
-            Component text = Util.parseTranslateableText("fmod.command.share.coord", name, biome, strX, strY, strZ).withStyle(style -> style.withClickEvent(
-                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
-            ).withHoverEvent(
-                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
-            ));
+            Component coord = Util.parseCoordText(player);
+            MutableComponent text = Util.parseTranslateableText("fmod.command.share.coord", name, coord);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
             if (e instanceof CommandRuntimeException) {
@@ -680,23 +661,23 @@ public class CommandRegistrater {
             direction = Util.parseTranslateableText("fmod.misc.diru");
         } else if (pitch < -60.0) {
             direction = Util.parseTranslateableText("fmod.misc.dird");
-        } else if (yaw > 22.5 && yaw < 67.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirnw");
-        } else if (yaw >= 67.5 && yaw <= 112.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirw");
-        } else if (yaw > 112.5 && yaw < 157.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirsw");
-        } else if (yaw >= 157.5 && yaw <= 202.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirs");
-        } else if (yaw > 202.5 && yaw < 247.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirse");
-        } else if (yaw >= 247.5 && yaw <= 292.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dire");
-        } else if (yaw > 292.5 && yaw < 337.5) {
+        } else if (yaw >= -157.5 && yaw < -112.5) {
             direction = Util.parseTranslateableText("fmod.misc.dirne");
+        } else if (yaw >= -112.5 && yaw < -67.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dire");
+        } else if (yaw >= -67.5 && yaw < -22.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirse");
+        } else if (yaw >= -22.5 && yaw < 22.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirs");
+        } else if (yaw >= 22.5 && yaw < 67.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirsw");
+        } else if (yaw >= 67.5 && yaw < 112.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirw");
+        } else if (yaw >= 112.5 && yaw < 157.5) {
+            direction = Util.parseTranslateableText("fmod.misc.dirnw");
         } else {
             direction = Util.parseTranslateableText("fmod.misc.dirn");
-        }
+        } 
         return direction;
     }
 
@@ -719,9 +700,6 @@ public class CommandRegistrater {
                     degree = pitch;
                 } else if (pitch < -60.0) {
                     degree = -pitch;
-                }
-                if (degree > 180.0) {
-                    degree -= 360.0;
                 }
                 final Component name = entity.getDisplayName();
                 final String degStr = String.format("%.2f°", degree);
@@ -764,9 +742,6 @@ public class CommandRegistrater {
                     degree = pitch;
                 } else if (pitch < -60.0) {
                     degree = -pitch;
-                }
-                if (degree > 180.0) {
-                    degree -= 360.0;
                 }
                 final Component name = player.getDisplayName();
                 final String degStr = String.format("%.2f°", degree);
@@ -1059,7 +1034,7 @@ public class CommandRegistrater {
                 if (itemCountSum <= 0) {
                     context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
                 } else {
-                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.item", name).append(itemTxt), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.get.item", name, itemTxt), false);
                 }
             }
         } catch (Exception e) {
@@ -1102,7 +1077,7 @@ public class CommandRegistrater {
             if (itemCountSum <= 0) {
                 Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
             } else {
-                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.item", name).append(itemTxt));
+                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.item", name, itemTxt));
             }
         } catch (Exception e) {
             if (e instanceof CommandRuntimeException) {
@@ -1315,13 +1290,13 @@ public class CommandRegistrater {
                 String startNodeStr = startNode.name;
                 if (flowManager.isEnabled) {
                     line = Util.parseTranslateableText("fmod.command.flow.list.enabled", flowManager.flow.name, numNodesStr, startNodeStr).withStyle(s -> s
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview").withStyle(ChatFormatting.GREEN)))
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
                     );
                     enabledCount++;
                 } else {
                     line = Util.parseTranslateableText("fmod.command.flow.list.disabled", flowManager.flow.name, numNodesStr, startNodeStr).withStyle(s -> s
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview").withStyle(ChatFormatting.GREEN)))
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
                     );
                 }
@@ -1427,11 +1402,9 @@ public class CommandRegistrater {
             if (targetFlow.isEnabled == false) {
                 throw new CommandRuntimeException(Util.parseTranslateableText("fmod.command.flow.disabled", name));
             }
-            ExecutionContext ctx = new ExecutionContext(targetFlow.flow, context.getSource().getServer());
-            ctx.execute(Util.serverConfig.getMaxFlowLength(), null, null);
-            data.executeHistory.add(ctx);
-            if (ctx.getException() != null) {
-                throw new CommandRuntimeException(ctx.getException().getMessageText());
+            LogicException exception = targetFlow.execute(data, null, null);
+            if (exception != null) {
+                throw new CommandRuntimeException(exception.getMessageText());
             }
         } catch (Exception e) {
             if (e instanceof CommandRuntimeException) {
@@ -1490,7 +1463,7 @@ public class CommandRegistrater {
                 ExecutionContext entry = history.get(i);
                 String iStr = String.valueOf(i + 1);
                 MutableComponent entryText =  Util.parseTranslateableText("fmod.command.flow.history.entry", iStr, entry.getFlow().name).withStyle(s -> s
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview")))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview").withStyle(ChatFormatting.GREEN)))
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow log " + iStr))
                 );
                 context.getSource().sendSuccess(() -> entryText, false);
@@ -2169,6 +2142,12 @@ public class CommandRegistrater {
                         )
                         .executes(context -> {return runOptionsCommand("maxFlowLength", null, context);})
                     )
+                    .then(Commands.literal("keepFlowExecutionHistory")
+                        .then(Commands.argument("size", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("keepFlowExecutionHistory", IntegerArgumentType.getInteger(context, "size"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("keepFlowExecutionHistory", null, context);})
+                    )
                     .then(Commands.literal("entityDeathMessage")
                         .then(Commands.literal("off").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.NONE, context);}))
                         .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.CHAT, context);}))
@@ -2411,12 +2390,6 @@ public class CommandRegistrater {
                         )
                         .executes(context -> {return runOptionsCommand("travelDistanceThreshold", null, context);})
                     )
-                    .then(Commands.literal("travelTeleportThreshold")
-                        .then(Commands.argument("distance", DoubleArgumentType.doubleArg(0))
-                            .executes(context -> {return runOptionsCommand("travelTeleportThreshold", DoubleArgumentType.getDouble(context, "distance"), context);})
-                        )
-                        .executes(context -> {return runOptionsCommand("travelTeleportThreshold", null, context);})
-                    )
                     .then(Commands.literal("travelPartialInterval")
                         .then(Commands.argument("seconds", IntegerArgumentType.integer(1))
                             .executes(context -> {return runOptionsCommand("travelPartialInterval", IntegerArgumentType.getInteger(context, "seconds"), context);})
@@ -2428,6 +2401,28 @@ public class CommandRegistrater {
                             .executes(context -> {return runOptionsCommand("travelPartialDistance", DoubleArgumentType.getDouble(context, "distance"), context);})
                         )
                         .executes(context -> {return runOptionsCommand("travelPartialDistance", null, context);})
+                    )
+                    .then(Commands.literal("teleportThreshold")
+                        .then(Commands.argument("distance", DoubleArgumentType.doubleArg(0))
+                            .executes(context -> {return runOptionsCommand("teleportThreshold", DoubleArgumentType.getDouble(context, "distance"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("teleportThreshold", null, context);})
+                    )
+                    .then(Commands.literal("teleportMessageLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("teleportMessageLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("teleportMessageLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("teleportMessageLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("teleportMessageLocation", null, context);})
+                    )
+                    .then(Commands.literal("teleportMessageReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("teleportMessageReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("teleportMessageReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("teleportMessageReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("teleportMessageReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("teleportMessageReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("teleportMessageReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("teleportMessageReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("teleportMessageReceiver", null, context);})
                     )
                     .then(Commands.literal("gptUrl")
                         .then(Commands.argument("url", StringArgumentType.greedyString())
@@ -2494,6 +2489,14 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setMaxFlowLength((int) value);
                         context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.flowlength", value), true);
+                    }
+                    break;
+                case "keepFlowExecutionHistory":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.flowhistory", Util.serverConfig.getKeepFlowHistoryNumber()), false);
+                    } else {
+                        Util.serverConfig.setKeepFlowHistoryNumber((int) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.flowhistory", value), true);
                     }
                     break;
                 case "entityDeathMessage":
@@ -2766,9 +2769,9 @@ public class CommandRegistrater {
                     break;
                 case "travelMessageLocation":
                     if (value == null) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.loc", EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLocation())), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.loc", EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLoc())), false);
                     } else {
-                        Util.serverConfig.setTravelMessageLocation((MessageLocation) value);
+                        Util.serverConfig.setTravelMessageLoc((MessageLocation) value);
                         context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.loc", EnumI18n.getMessageLocationI18n((MessageLocation) value)), true);
                     }
                     break;
@@ -2796,14 +2799,6 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.total", value), true);
                     }
                     break;
-                case "travelTeleportThreshold":
-                    if (value == null) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.teleport", Util.serverConfig.getTravelTeleportThreshold()), false);
-                    } else {
-                        Util.serverConfig.setTravelTeleportThreshold((double) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.teleport", value), true);
-                    }
-                    break;
                 case "travelPartialInterval":
                     if (value == null) {
                         context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.interval", String.format("%.2f", Util.serverConfig.getTravelPartialInterval() / 20.0)), false);
@@ -2818,6 +2813,34 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setTravelPartialDistanceThreshold((double) value);
                         context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.partial", value), true);
+                    }
+                    break;
+                case "teleportThreshold":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.teleport", Util.serverConfig.getTeleportThreshold()), false);
+                    } else {
+                        Util.serverConfig.setTeleportThreshold((double) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.teleport", value), true);
+                    }
+                    break;
+                case "teleportMessageLocation":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getTeleportMessageLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.tpmsgloc", text), false);
+                    } else {
+                        Util.serverConfig.setTeleportMessageLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.tpmsgloc", text), true);
+                    }
+                    break;
+                case "teleportMessageReceiver":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTeleportMessageReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.get.tpmsgreceiver", text), false);
+                    } else {
+                        Util.serverConfig.setTeleportMessageReceiver((MessageReceiver) value);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.options.tpmsgreceiver", text), true);
                     }
                     break;
                 case "gptUrl":

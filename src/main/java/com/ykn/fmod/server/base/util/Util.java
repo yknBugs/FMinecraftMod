@@ -20,8 +20,11 @@ import com.ykn.fmod.server.base.config.ServerConfig;
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.ResourceLocation;
@@ -307,12 +310,56 @@ public class Util {
         if (serverConfig.isEnableServerTranslation()) {
             // A trick, by intentionally not passing args to translatable(), we still keep the "%" patterns here.
             String translatedText = Component.translatable(key).getString();
-            // A trick, by intentionally using a non-existent translation key, 
-            // we can make sure it always triggers the fallback, which is already the translated text.
-            return Component.translatableWithFallback("fmod.a.nonexistent.translation.key", translatedText, args);
+            // A trick, by intentionally using the original translation key,
+            // So if the client does have the translation, it can still ignore our translated text,
+            // but if the client does not have the translation, it can still show our translated text.
+            return Component.translatableWithFallback(key, translatedText, args);
         } else {
             return Component.translatable(key, args);
         }
+    }
+
+    /**
+     * Parses coordinate information into a formatted {@link MutableComponent} object.
+     * The text includes the dimension, biome, and coordinates (x, y, z) with click and hover events.
+     *
+     * @param dimension The dimension identifier where the coordinates are located. Must not be null.
+     * @param biome     The biome identifier at the specified coordinates. Can be null.
+     * @param x         The x-coordinate.
+     * @param y         The y-coordinate.
+     * @param z         The z-coordinate.
+     * @return A {@link MutableComponent} object representing the formatted coordinate information
+     *         with click and hover events for teleportation.
+     */
+    @Nonnull
+    public static MutableComponent parseCoordText(@Nonnull ResourceLocation dimension, @Nullable ResourceLocation biome, double x, double y, double z) {
+        String strX = String.format("%.2f", x);
+        String strY = String.format("%.2f", y);
+        String strZ = String.format("%.2f", z);
+        MutableComponent biomeText = getBiomeText(biome);
+        return parseTranslateableText("fmod.misc.coord", biomeText, strX, strY, strZ).withStyle(style -> style.withClickEvent(
+            new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + dimension.toString() + " run tp @s " + strX + " " + strY + " " + strZ)
+        ).withHoverEvent(
+            new HoverEvent(HoverEvent.Action.SHOW_TEXT, parseTranslateableText("fmod.misc.clicktp").withStyle(ChatFormatting.GREEN))   
+        ));
+    }
+
+    /**
+     * Parses the coordinate information of the given entity into a formatted {@link MutableComponent} object.
+     * The text includes the dimension, biome, and coordinates (x, y, z) with click and hover events.
+     *
+     * @param entity The entity whose coordinate information is to be parsed. Must not be null.
+     * @return A {@link MutableComponent} object representing the formatted coordinate information
+     *         with click and hover events for teleportation.
+     */
+    @Nonnull
+    public static MutableComponent parseCoordText(@Nonnull Entity entity) {
+        ResourceLocation dimension = entity.level().dimension().location();
+        ResourceLocation biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        double x = entity.getX();
+        double y = entity.getY();
+        double z = entity.getZ();
+        return parseCoordText(dimension, biome, x, y, z);
     }
 
     /**
@@ -354,7 +401,7 @@ public class Util {
     public static ServerData getServerData(@Nonnull MinecraftServer server) {
         ServerData data = worldData.get(server);
         if (data == null) {
-            data = new ServerData();
+            data = new ServerData(server);
             worldData.put(server, data);
             LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: A new instance of ServerData was created.");
         }
@@ -432,6 +479,25 @@ public class Util {
     }
 
     /**
+     * Retrieves the biome name as a localized text for the given biome identifier.
+     * 
+     * @param biomeId The identifier of the biome. Can be null.
+     * @return A {@link MutableText} representing the localized name of the biome. If the biomeId is null,
+     *         a default "unknown" text is returned.
+     */
+    @Nonnull
+    public static MutableComponent getBiomeText(@Nullable ResourceLocation biomeId) {
+        MutableComponent biomeText = null;
+        if (biomeId == null) {
+            biomeText = Util.parseTranslateableText("fmod.misc.unknown");
+        } else {
+            // Vanilla should contain this translation key.
+            biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
+        }
+        return biomeText;
+    }
+
+    /**
      * Retrieves the biome name as a localized text for the given entity's current position.
      *
      * @param entity The entity whose current biome is to be determined. Must not be null.
@@ -441,14 +507,7 @@ public class Util {
     @Nonnull
     public static MutableComponent getBiomeText(@Nonnull Entity entity) {
         ResourceLocation biomeId = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
-        MutableComponent biomeText = null;
-        if (biomeId == null) {
-            biomeText = Util.parseTranslateableText("fmod.misc.unknown");
-        } else {
-            // Vanilla should contain this translation key.
-            biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
-        }
-        return biomeText;
+        return getBiomeText(biomeId);
     }
 
     /**
@@ -500,7 +559,7 @@ public class Util {
             existingData.globalRequestPool.shutdown();
             LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the global thread pool.");
         }
-        ServerData data = new ServerData();
+        ServerData data = new ServerData(server);
         worldData.put(server, data);
     }
 }

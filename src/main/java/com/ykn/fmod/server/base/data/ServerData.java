@@ -18,6 +18,7 @@ import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -27,6 +28,7 @@ import net.minecraft.world.entity.LivingEntity;
  */
 public class ServerData {
 
+    public MinecraftServer server;
     public HashMap<UUID, PlayerData> playerData;
 
     public HashMap<String, FlowManager> logicFlows;
@@ -38,7 +40,8 @@ public class ServerData {
 
     private int serverTick;
 
-    public ServerData() {
+    public ServerData(MinecraftServer server) {
+        this.server = server;
         playerData = new HashMap<>();
         logicFlows = new HashMap<>();
         executeHistory = new ArrayList<>();

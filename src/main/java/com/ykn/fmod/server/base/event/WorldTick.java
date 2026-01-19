@@ -10,9 +10,7 @@ import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.base.util.GameMath;
 
-import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -43,8 +41,12 @@ public class WorldTick {
             PlayerData playerData = Util.getServerData(server).getPlayerData(player);
             handleAfkPlayers(player, playerData);
             handleChangeBiomePlayer(player, playerData);
-            handlePlayerCanSleepStatus(player, playerData);
             handlePlayerTravelStatus(player, playerData);
+            handlePlayerCanSleepStatus(player, playerData);
+            playerData.lastPitch = player.getXRot();
+            playerData.lastYaw = player.getYRot();
+            playerData.lastDimensionId = player.level().dimension().location();
+            playerData.lastBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         }
 
         List<ScheduledTask> scheduledTasks = Util.getServerData(server).getScheduledTasks();
@@ -69,13 +71,11 @@ public class WorldTick {
         float pitch = player.getXRot();
         float yaw = player.getYRot();
         if (Math.abs(pitch - playerData.lastPitch) < 0.01 && Math.abs(yaw - playerData.lastYaw) < 0.01) {
-            playerData.afkTicks++;
             postMessageToAfkingPlayer(player, playerData);
+            playerData.afkTicks++;
         } else {
             postMessageToBackPlayer(player, playerData);
             playerData.afkTicks = 0;
-            playerData.lastPitch = pitch;
-            playerData.lastYaw = yaw;
         }
     }
 
@@ -85,23 +85,8 @@ public class WorldTick {
         }
         if (playerData.afkTicks == Util.serverConfig.getBroadcastAfkingThreshold()) {
             Component playerName = player.getDisplayName();
-            double x = player.getX();
-            double y = player.getY();
-            double z = player.getZ();
-            double pitch = player.getXRot();
-            double yaw = player.getYRot();
-            String strDim = player.level().dimension().location().toString();;
-            String strX = String.format("%.2f", x);
-            String strY = String.format("%.2f", y);
-            String strZ = String.format("%.2f", z);
-            String strPitch = String.format("%.2f", pitch);
-            String strYaw = String.format("%.2f", yaw);
-            MutableComponent biomeText = Util.getBiomeText(player);
-            MutableComponent text = Util.parseTranslateableText("fmod.message.afk.broadcast", playerName, biomeText, strX, strY, strZ).withStyle(style -> style.withClickEvent(
-                new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
-            ).withHoverEvent(
-                new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
-            ));
+            Component coord = Util.parseCoordText(player);
+            MutableComponent text = Util.parseTranslateableText("fmod.message.afk.broadcast", playerName, coord);
             Util.postMessage(player, Util.serverConfig.getBroadcastAfking(), MessageLocation.CHAT, text);
         }
     }
@@ -116,7 +101,6 @@ public class WorldTick {
         ResourceLocation biomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         if (!biomeId.equals(playerData.lastBiomeId)) {
             Util.getServerData(server).submitScheduledTask(new BiomeMessage(player, biomeId));
-            playerData.lastBiomeId = biomeId;
         }
     }
 
@@ -141,20 +125,9 @@ public class WorldTick {
 
     private void handlePlayerTravelStatus(ServerPlayer player, PlayerData playerData) {
         int window = Util.serverConfig.getTravelWindowTicks();
-
         Deque<Vec3> positions = playerData.recentPositions;
-        ResourceLocation currentDim = player.level().dimension().location();
-
-        // Check if player changed dimensions
-        if (!currentDim.equals(playerData.lastDimensionId)) {
-            positions.clear();
-            positions.addLast(player.position());
-            playerData.lastDimensionId = currentDim;
-            return;
-        }
 
         // Update positions history
-        playerData.lastDimensionId = currentDim;
         positions.addLast(player.position());
         int maxSamples = window + 1;
         while (positions.size() > maxSamples) {
@@ -165,10 +138,22 @@ public class WorldTick {
         int lastIdx = snapshot.length - 1;
 
         // Check if the player has teleported
-        double teleportThreshold = Util.serverConfig.getTravelTeleportThreshold();
+        double teleportThreshold = Util.serverConfig.getTeleportThreshold();
         if (lastIdx > 0 && GameMath.getHorizonalEuclideanDistance(snapshot[lastIdx - 1], snapshot[lastIdx]) > teleportThreshold) {
             positions.clear();
             positions.addLast(player.position());
+            handleTeleportedPlayer(player, playerData, snapshot[lastIdx - 1], snapshot[lastIdx]);
+            return;
+        }
+
+        // Check if player changed dimensions
+        ResourceLocation currentDim = player.level().dimension().location();
+        if (!currentDim.equals(playerData.lastDimensionId)) {
+            positions.clear();
+            positions.addLast(player.position());
+            if (lastIdx > 0) {
+                handleTeleportedPlayer(player, playerData, snapshot[lastIdx - 1], snapshot[lastIdx]);
+            }
             return;
         }
 
@@ -195,9 +180,17 @@ public class WorldTick {
 
         String speedStr = String.format("%.2f", totalDistance / window * 20.0);
         MutableComponent message = Util.parseTranslateableText("fmod.message.travel.fast", player.getDisplayName(), speedStr);
-        Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLocation(), message);
+        Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLoc(), message);
 
         positions.clear();
         positions.addLast(player.position());
+    }
+
+    private void handleTeleportedPlayer(ServerPlayer player, PlayerData playerData, Vec3 fromPos, Vec3 toPos) {
+        Component playerName = player.getDisplayName();
+        Component fromCoord = Util.parseCoordText(playerData.lastDimensionId, playerData.lastBiomeId, fromPos.x, fromPos.y, fromPos.z);
+        Component toCoord = Util.parseCoordText(player);
+        Component finalText = Util.parseTranslateableText("fmod.message.teleport", playerName, fromCoord, toCoord);
+        Util.postMessage(player, Util.serverConfig.getTeleportMessageReceiver(), Util.serverConfig.getTeleportMessageLocation(), finalText);
     }
 }

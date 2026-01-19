@@ -1,9 +1,18 @@
 package com.ykn.fmod.server.flow.tool;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Stack;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+
+import com.ykn.fmod.server.base.data.ServerData;
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.DataReference;
+import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
+import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
 
 /**
@@ -220,5 +229,17 @@ public class FlowManager {
             edit.undo(this.flow);
             this.redoPath.push(edit);
         }
+    }
+
+    @Nullable
+    public LogicException execute(@Nonnull ServerData serverData, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
+        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server);
+        executionContext.execute(Util.serverConfig.getMaxFlowLength(), startNodeOutputs, initialVariables);
+        serverData.executeHistory.add(executionContext);
+        int historyLimit = Util.serverConfig.getKeepFlowHistoryNumber();
+        while (serverData.executeHistory.size() > historyLimit) {
+            serverData.executeHistory.remove(0);
+        }
+        return executionContext.getException();
     }
 }

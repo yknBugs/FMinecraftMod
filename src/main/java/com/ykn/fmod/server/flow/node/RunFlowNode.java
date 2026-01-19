@@ -81,13 +81,11 @@ public class RunFlowNode extends FlowNode {
             throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.disabled", flowName), null);
         }
         if (delayInput <= 0) {
-            ExecutionContext ctx = new ExecutionContext(targetFlow.flow, server);
             if (keepVariables) {
-                ctx.execute(Util.serverConfig.getMaxFlowLength(), null, context.getVariables());
+                targetFlow.execute(data, null, context.getVariables());
             } else {
-                ctx.execute(Util.serverConfig.getMaxFlowLength(), null, null);
+                targetFlow.execute(data, null, null);
             }
-            data.executeHistory.add(ctx);
             status.setOutput(0, null);
         } else {
             ScheduledTask scheduledFlow = new ScheduledFlow(targetFlow, null, keepVariables ? context.getVariables() : null, server, delayInput);

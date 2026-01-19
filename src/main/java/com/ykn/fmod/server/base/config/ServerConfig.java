@@ -26,6 +26,12 @@ public class ServerConfig extends ConfigReader {
     protected int maxFlowLength;
 
     /**
+     * How many history records of flow executions to keep.
+     * Default: 32767
+     */
+    protected int keepFlowHistoryNumber;
+
+    /**
      * The message sent to the client when an entity dies.
      * Default: NONE
      */
@@ -211,7 +217,7 @@ public class ServerConfig extends ConfigReader {
      * Controls where to show the message when a player travels a long distance in a short time.
      * Default: NONE
      */
-    protected MessageLocation travelMessageLocation;
+    protected MessageLocation travelMessageLoc;
 
     /**
      * Controls who can receive the message when a player travels a long distance in a short time.
@@ -232,12 +238,6 @@ public class ServerConfig extends ConfigReader {
     protected double travelTotalDistanceThreshold;
 
     /**
-     * The maximum allowed single-tick horizontal distance before it is considered a teleport (and ignored).
-     * Default: 75 blocks
-     */
-    protected double travelTeleportThreshold;
-
-    /**
      * Interval in ticks for partial distance checks within the travel window.
      * Default: 200 ticks (10 seconds)
      */
@@ -248,6 +248,24 @@ public class ServerConfig extends ConfigReader {
      * Default: 40 blocks
      */
     protected double travelPartialDistanceThreshold;
+
+    /**
+     * The maximum allowed single-tick horizontal distance before it is considered a teleport.
+     * Default: 75 blocks
+     */
+    protected double teleportThreshold;
+
+    /**
+     * Controls where to show the message when a player teleports.
+     * Default: NONE
+     */
+    protected MessageLocation teleportMessageLoc;
+
+    /**
+     * Controls who can receive the message when a player teleports.
+     * Default: NONE
+     */
+    protected MessageReceiver teleportMessageReceiver;
 
     /**
      * The URL of the target GPT server.
@@ -292,6 +310,7 @@ public class ServerConfig extends ConfigReader {
         super("server.json");
         this.serverTranslation = false;
         this.maxFlowLength = 32767;
+        this.keepFlowHistoryNumber = 32767;
         this.entityDeathMessage = MessageLocation.NONE;
         this.bossDeathMessage = MessageLocation.NONE;
         this.namedEntityDeathMessage = MessageLocation.NONE;
@@ -321,13 +340,15 @@ public class ServerConfig extends ConfigReader {
         this.entityNumberInterval = 20;
         this.playerSeriousHurt = MessageReceiver.NONE;
         this.playerHurtThreshold = 0.8;
-        this.travelMessageLocation = MessageLocation.NONE;
+        this.travelMessageLoc = MessageLocation.NONE;
         this.travelMessageReceiver = MessageReceiver.NONE;
         this.travelWindowTicks = 600;
         this.travelTotalDistanceThreshold = 100.0;
-        this.travelTeleportThreshold = 75.0;
         this.travelPartialInterval = 200;
         this.travelPartialDistanceThreshold = 40.0;
+        this.teleportThreshold = 75.0;
+        this.teleportMessageLoc = MessageLocation.NONE;
+        this.teleportMessageReceiver = MessageReceiver.NONE;
         this.gptUrl = "http://127.0.0.1:12345/v1/chat/completions";
         this.gptAccessTokens = "";
         this.gptModel = "";
@@ -373,6 +394,31 @@ public class ServerConfig extends ConfigReader {
                 this.maxFlowLength = 32767;
             } else {
                 this.maxFlowLength = maxFlowLength;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getKeepFlowHistoryNumber() {
+        lock.readLock().lock();
+        try {
+            if (keepFlowHistoryNumber < 0) {
+                return 0;
+            }
+            return keepFlowHistoryNumber;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setKeepFlowHistoryNumber(int keepFlowHistoryNumber) {
+        lock.writeLock().lock();
+        try {
+            if (keepFlowHistoryNumber < 0) {
+                this.keepFlowHistoryNumber = 0;
+            } else {
+                this.keepFlowHistoryNumber = keepFlowHistoryNumber;
             }
         } finally {
             lock.writeLock().unlock();
@@ -983,19 +1029,19 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public MessageLocation getTravelMessageLocation() {
+    public MessageLocation getTravelMessageLoc() {
         lock.readLock().lock();
         try {
-            return travelMessageLocation;
+            return travelMessageLoc;
         } finally {
             lock.readLock().unlock();
         }
     }
 
-    public void setTravelMessageLocation(MessageLocation travelMessageLocation) {
+    public void setTravelMessageLoc(MessageLocation travelMessageLocation) {
         lock.writeLock().lock();
         try {
-            this.travelMessageLocation = travelMessageLocation;
+            this.travelMessageLoc = travelMessageLocation;
         } finally {
             lock.writeLock().unlock();
         }
@@ -1069,31 +1115,6 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
-    public double getTravelTeleportThreshold() {
-        lock.readLock().lock();
-        try {
-            if (travelTeleportThreshold < 0) {
-                return 0;
-            }
-            return travelTeleportThreshold;
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public void setTravelTeleportThreshold(double travelTeleportThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (travelTeleportThreshold < 0) {
-                this.travelTeleportThreshold = 0;
-            } else {
-                this.travelTeleportThreshold = travelTeleportThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     public int getTravelPartialInterval() {
         lock.readLock().lock();
         try {
@@ -1139,6 +1160,67 @@ public class ServerConfig extends ConfigReader {
             } else {
                 this.travelPartialDistanceThreshold = travelPartialDistanceThreshold;
             }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getTeleportThreshold() {
+        lock.readLock().lock();
+        try {
+            if (teleportThreshold < 0) {
+                return 0;
+            }
+            return teleportThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTeleportThreshold(double teleportThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (teleportThreshold < 0) {
+                this.teleportThreshold = 0;
+            } else {
+                this.teleportThreshold = teleportThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getTeleportMessageLocation() {
+        lock.readLock().lock();
+        try {
+            return teleportMessageLoc;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTeleportMessageLocation(MessageLocation teleportMessageLoc) {
+        lock.writeLock().lock();
+        try {
+            this.teleportMessageLoc = teleportMessageLoc;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageReceiver getTeleportMessageReceiver() {
+        lock.readLock().lock();
+        try {
+            return teleportMessageReceiver;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTeleportMessageReceiver(MessageReceiver teleportMessageReceiver) {
+        lock.writeLock().lock();
+        try {
+            this.teleportMessageReceiver = teleportMessageReceiver;
         } finally {
             lock.writeLock().unlock();
         }
