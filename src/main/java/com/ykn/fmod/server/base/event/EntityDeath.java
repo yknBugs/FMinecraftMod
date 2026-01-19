@@ -7,7 +7,6 @@ import java.util.List;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.entity.LivingEntity;
@@ -77,7 +76,6 @@ public class EntityDeath {
         // Trigger the event for LogicFlow
         List<FlowManager> deathEventFlow = data.gatherFlowByFirstNodeType("EntityDeathEventNode", true);
         for (FlowManager flow : deathEventFlow) {
-            ExecutionContext executionContext = new ExecutionContext(flow.flow, this.livingEntity.getServer());
             List<Object> eventOutput = new ArrayList<>();
             eventOutput.add(this.livingEntity);
             eventOutput.add(this.damageSource.getType());
@@ -85,8 +83,7 @@ public class EntityDeath {
             eventOutput.add(this.damageSource.getSource());
             eventOutput.add(this.damageSource.getPosition());
             eventOutput.add(this.livingEntity.getDamageTracker().getDeathMessage());
-            executionContext.execute(Util.serverConfig.getMaxFlowLength(), eventOutput, null);
-            data.executeHistory.add(executionContext);
+            flow.execute(data, eventOutput, null);
         }
     }
 }

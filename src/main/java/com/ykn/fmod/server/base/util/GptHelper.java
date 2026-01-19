@@ -19,6 +19,7 @@ import com.ykn.fmod.server.base.data.GptData;
 
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 public class GptHelper implements Runnable {
 
@@ -76,7 +77,7 @@ public class GptHelper implements Runnable {
             } else {
                 gptData.cancel();
                 context.getSource().getServer().execute(() -> {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode).formatted(Formatting.RED), false);
                 });
                 LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response code: " + responseCode);
                 // BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
@@ -90,13 +91,13 @@ public class GptHelper implements Runnable {
         } catch (SocketTimeoutException e) {
             gptData.cancel();
             context.getSource().getServer().execute(() -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.timeout"), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.timeout").formatted(Formatting.RED), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Connect to the GPT server timeout", e);
         } catch (Exception e) {
             gptData.cancel();
             context.getSource().getServer().execute(() -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.error"), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.error").formatted(Formatting.RED), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Exception while connecting to the GPT server", e);
         } finally {

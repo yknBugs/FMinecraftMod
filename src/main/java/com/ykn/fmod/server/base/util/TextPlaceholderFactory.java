@@ -422,7 +422,7 @@ public class TextPlaceholderFactory<T> {
             .style("&[nN]", (param, text) -> text.formatted(Formatting.UNDERLINE))
             .style("&[mM]", (param, text) -> text.formatted(Formatting.STRIKETHROUGH))
             .style("&[rR]", (param, text) -> text.setStyle(Style.EMPTY))
-            .style("\\$\\{color: ([0-9A-Fa-f]{1,8})\\}", (param, text) -> {
+            .style("\\$\\{color:([0-9A-Fa-f]{1,8})\\}", (param, text) -> {
                 try {
                     int colorInt = Integer.parseInt(param, 16);
                     return text.styled(style -> style.withColor(colorInt));
@@ -431,21 +431,21 @@ public class TextPlaceholderFactory<T> {
                     return text;
                 }
             })
-            .style("\\$\\{link: (.*)\\}", (param, text) -> 
+            .style("\\$\\{link:(.*)\\}", (param, text) -> 
                 text.styled(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.OPEN_URL, param)
                 ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.openurl", param))
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.openurl", Text.literal(param).formatted(Formatting.YELLOW)).formatted(Formatting.GREEN))
                 ))
             )
-            .style("\\$\\{copy: (.*)\\}", (param, text) -> 
+            .style("\\$\\{copy:(.*)\\}", (param, text) -> 
                 text.styled(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, param)
                 ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.copyto", param))
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.copyto", param).formatted(Formatting.GREEN))
                 ))
             )
-            .style("\\$\\{hint: (.*)\\}", (param, text) -> 
+            .style("\\$\\{hint:(.*)\\}", (param, text) -> 
                 text.styled(style -> style.withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(param))
                 ))
@@ -473,29 +473,11 @@ public class TextPlaceholderFactory<T> {
             .add("${pitch}", t -> Text.literal(String.format("%.2f", t.getPitch())))
             .add("${yaw}", t -> Text.literal(String.format("%.2f", t.getYaw())))
             .add("${biome}", t -> Util.getBiomeText(t))
-            .add("${coord}", t -> {
-                Text biomeText = Util.getBiomeText(t);
-                String strDim = t.getWorld().getRegistryKey().getValue().toString();
-                String strX = String.format("%.2f", t.getX());
-                String strY = String.format("%.2f", t.getY());
-                String strZ = String.format("%.2f", t.getZ());
-                String strPitch = String.format("%.2f", t.getPitch());
-                String strYaw = String.format("%.2f", t.getYaw());
-                Text x = Text.literal(strX);
-                Text y = Text.literal(strY);
-                Text z = Text.literal(strZ);
-                MutableText result = Text.literal("[").append(biomeText).append("] (").append(x).append(", ").append(y).append(", ").append(z).append(")");
-                result = result.styled(style -> style.withClickEvent(
-                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
-                ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
-                ));
-                return result;
-            })
+            .add("${coord}", t -> Util.parseCoordText(t))
             .add("${mainhand}", t -> {
                 ItemStack item = t.getMainHandStack();
                 if (item == null || item.isEmpty()) {
-                    return Text.translatable("fmod.command.get.emptyslot");
+                    return Util.parseTranslateableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
                         return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
@@ -507,7 +489,7 @@ public class TextPlaceholderFactory<T> {
             .add("${offhand}", t -> {
                 ItemStack item = t.getOffHandStack();
                 if (item == null || item.isEmpty()) {
-                    return Text.translatable("fmod.command.get.emptyslot");
+                    return Util.parseTranslateableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
                         return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));

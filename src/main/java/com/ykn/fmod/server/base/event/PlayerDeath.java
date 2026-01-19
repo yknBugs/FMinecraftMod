@@ -6,10 +6,9 @@ import com.ykn.fmod.server.base.util.Util;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 public class PlayerDeath {
 
@@ -44,23 +43,9 @@ public class PlayerDeath {
         }
 
         Text playerName = player.getDisplayName();
-        double x = player.getX();
-        double y = player.getY();
-        double z = player.getZ();
-        double pitch = player.getPitch();
-        double yaw = player.getYaw();
-        String strDim = player.getWorld().getRegistryKey().getValue().toString();
-        String strX = String.format("%.2f", x);
-        String strY = String.format("%.2f", y);
-        String strZ = String.format("%.2f", z);
-        String strPitch = String.format("%.2f", pitch);
-        String strYaw = String.format("%.2f", yaw);
-        MutableText biomeText = Util.getBiomeText(player);
-        MutableText text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
-            new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + strDim + " run tp @s " + strX + " " + strY + " " + strZ + " " + strYaw + " " + strPitch)
-        ).withHoverEvent(
-            new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clicktp"))
-        ));
+        Text deathCoord = Util.parseCoordText(player);
+
+        MutableText text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, deathCoord).formatted(Formatting.RED);
         Util.postMessage(player, Util.serverConfig.getPlayerDeathCoord(), MessageLocation.CHAT, text);
     }
 

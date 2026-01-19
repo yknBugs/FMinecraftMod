@@ -8,7 +8,6 @@ import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.server.MinecraftServer;
@@ -31,9 +30,7 @@ public class ScheduledFlow extends ScheduledTask {
     @Override
     public void onTrigger() {
         ServerData data = Util.getServerData(server);
-        ExecutionContext ctx = new ExecutionContext(this.flowManager.flow, this.server);
-        ctx.execute(Util.serverConfig.getMaxFlowLength(), this.eventNodeOutputs, this.contextVariables);
-        data.executeHistory.add(ctx);
+        this.flowManager.execute(data, this.eventNodeOutputs, this.contextVariables);
     }
 
     @Override

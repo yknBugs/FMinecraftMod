@@ -109,6 +109,26 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.flowlength"),
                 Text.translatable("fmod.options.hint.flowlength")
             ));
+            // Flow History Size (non-linear slider)
+            SliderWidget flowHistorySlider = new SliderWidget(0, 0, 400, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getKeepFlowHistoryNumber())),
+                Math.log((double) Util.serverConfig.getKeepFlowHistoryNumber()) / Math.log(2147483647.0)
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) Math.exp(this.value * Math.log(2147483647.0)))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setKeepFlowHistoryNumber((int) Math.exp(this.value * Math.log(2147483647.0)));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                flowHistorySlider,
+                Text.translatable("fmod.options.flowhistory"),
+                Text.translatable("fmod.options.hint.flowhistory")
+            ));
             // Entity Death Message
             this.addEntry(new ButtonConfigEntry(
                 ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage()), button -> {
@@ -547,12 +567,12 @@ public class OptionScreen extends Screen {
             ));
             // Travel Message Location
             this.addEntry(new ButtonConfigEntry(
-                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLocation()), button -> {
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLoc()), button -> {
                     final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
-                    int currentIndex = values.indexOf(Util.serverConfig.getTravelMessageLocation());
+                    int currentIndex = values.indexOf(Util.serverConfig.getTravelMessageLoc());
                     currentIndex = (currentIndex + 1) % values.size();
-                    Util.serverConfig.setTravelMessageLocation((MessageLocation) values.get(currentIndex));
-                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLocation()));
+                    Util.serverConfig.setTravelMessageLoc((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLoc()));
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.travelmsg.loc"),
                 Text.translatable("fmod.options.hint.travelmsg.loc")
@@ -609,26 +629,6 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.travelmsg.total"),
                 Text.translatable("fmod.options.hint.travelmsg.total")
             ));
-            // Travel Teleport Threshold
-            SliderWidget travelTeleportSlider = new SliderWidget(0, 0, 400, 20,
-                Text.literal(String.format("%.1f", Util.serverConfig.getTravelTeleportThreshold())),
-                Util.serverConfig.getTravelTeleportThreshold() / 300.0
-            ) {
-                @Override
-                protected void updateMessage() {
-                    this.setMessage(Text.literal(String.format("%.1f", this.value * 300.0)));
-                }
-
-                @Override
-                protected void applyValue() {
-                    Util.serverConfig.setTravelTeleportThreshold(this.value * 300.0);
-                }
-            };
-            this.addEntry(new NumberConfigEntry(
-                travelTeleportSlider,
-                Text.translatable("fmod.options.travelmsg.teleport"),
-                Text.translatable("fmod.options.hint.travelmsg.teleport")
-            ));
             // Travel Partial Interval (ticks)
             SliderWidget travelPartialIntervalSlider = new SliderWidget(0, 0, 400, 20,
                 Text.literal(String.format("%.2f", Util.serverConfig.getTravelPartialInterval() / 20.0)),
@@ -669,6 +669,50 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.travelmsg.partial"),
                 Text.translatable("fmod.options.hint.travelmsg.partial")
             )); 
+            // Player Teleport Threshold
+            SliderWidget travelTeleportSlider = new SliderWidget(0, 0, 400, 20,
+                Text.literal(String.format("%.1f", Util.serverConfig.getTeleportThreshold())),
+                Util.serverConfig.getTeleportThreshold() / 300.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.1f", this.value * 300.0)));
+                }
+
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setTeleportThreshold(this.value * 300.0);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                travelTeleportSlider,
+                Text.translatable("fmod.options.teleport"),
+                Text.translatable("fmod.options.hint.teleport")
+            ));
+            // Player Teleport Message Location
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTeleportMessageLocation()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getTeleportMessageLocation());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setTeleportMessageLocation((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getTeleportMessageLocation()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.tpmsgloc"),
+                Text.translatable("fmod.options.hint.tpmsgloc")
+            ));
+            // Player Teleport Message Receiver
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTeleportMessageReceiver()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageReceiver.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getTeleportMessageReceiver());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setTeleportMessageReceiver((MessageReceiver) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTeleportMessageReceiver()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.tpmsgreceiver"),
+                Text.translatable("fmod.options.hint.tpmsgreceiver")
+            ));
             // GPT Server
             TextFieldWidget gptUrlTxtWgt = new TextFieldWidget(client.textRenderer, 0, 0, 400, 20, Text.empty());
             gptUrlTxtWgt.setMaxLength(1024);
