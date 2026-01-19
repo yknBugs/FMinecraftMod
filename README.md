@@ -61,6 +61,12 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.4
+
+- Player Teleport Message
+- Fix command `/f get distance` yaw calculation error.
+- Optimize i18n.
+
 ### Version 0.2.3
 
 - Player Travel Message
