@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.schedule;
 
 import com.ykn.fmod.server.base.util.MessageLocation;
@@ -24,7 +29,7 @@ public class PlayerHurtMessage extends ScheduledTask {
         if (lastHealth - health >= Util.serverConfig.getPlayerHurtThreshold() * player.getMaxHealth()) {
             double damage = lastHealth - health;
             Component playerName = player.getDisplayName();
-            MutableComponent text = Util.parseTranslateableText("fmod.message.playerhurt", playerName, String.format("%.1f", damage), String.format("%.1f", lastHealth), String.format("%.1f", health));
+            MutableComponent text = Util.parseTranslatableText("fmod.message.playerhurt", playerName, String.format("%.1f", damage), String.format("%.1f", lastHealth), String.format("%.1f", health));
             Util.postMessage(player, Util.serverConfig.getPlayerSeriousHurt(), MessageLocation.ACTIONBAR, text);
         }
     }

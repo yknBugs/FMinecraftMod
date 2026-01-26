@@ -353,7 +353,7 @@ public class MarkdownToTextConverter {
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslateableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
                     ))
                 );
                 alreadyApplyColor = true;
@@ -388,7 +388,7 @@ public class MarkdownToTextConverter {
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslateableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
                     ))
                 );
             }
@@ -421,7 +421,7 @@ public class MarkdownToTextConverter {
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslateableText("fmod.misc.openurl", Component.literal(hint.get(type.indexOf(MarkdownUnit.HYPERLINK))).withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.openurl", Component.literal(hint.get(type.indexOf(MarkdownUnit.HYPERLINK))).withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN)
                     ))
                 );
             }
@@ -536,7 +536,7 @@ public class MarkdownToTextConverter {
                 ))
                 .withHoverEvent(new HoverEvent(
                     HoverEvent.Action.SHOW_TEXT,
-                    Util.parseTranslateableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
+                    Util.parseTranslatableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
                 ))
             );
     }

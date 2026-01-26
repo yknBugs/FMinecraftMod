@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.command;
 
 import java.nio.file.Files;
@@ -33,7 +38,7 @@ public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack
                 cachedFlowList.add(path.getFileName().toString());
             });
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.MODID).error("Error while getting .flow file list", e);
+            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while getting .flow file list", e);
         }
     }
 

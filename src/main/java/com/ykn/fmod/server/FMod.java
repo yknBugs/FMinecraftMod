@@ -1,3 +1,9 @@
+/**
+ * Copyright (c) ykn, Xenapte
+ * This mod is under the MIT License
+ * We appreciate everyone that contributed to this mod.
+ */
+
 package com.ykn.fmod.server;
 
 import net.minecraft.server.level.ServerLevel;

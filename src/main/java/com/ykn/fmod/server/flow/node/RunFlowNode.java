@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -37,30 +42,30 @@ public class RunFlowNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslateableText("fmod.node.runflow.title.name");
-        Component description = Util.parseTranslateableText("fmod.node.runflow.title.feat");
+        Component displayName = Util.parseTranslatableText("fmod.node.runflow.title.name");
+        Component description = Util.parseTranslatableText("fmod.node.runflow.title.feat");
         List<Component> inputNames = new ArrayList<>();
         List<Component> inputDescriptions = new ArrayList<>();
         List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslateableText("fmod.node.runflow.input.name.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.runflow.input.name.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.runflow.input.name.type"));
-        inputNames.add(Util.parseTranslateableText("fmod.node.runflow.input.delay.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.runflow.input.delay.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.runflow.input.delay.type"));
-        inputNames.add(Util.parseTranslateableText("fmod.node.runflow.input.keepvar.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.runflow.input.keepvar.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.runflow.input.keepvar.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.runflow.input.name.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.input.name.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.input.name.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.runflow.input.delay.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.input.delay.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.input.delay.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.runflow.input.keepvar.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.input.keepvar.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.input.keepvar.type"));
         List<Component> outputNames = new ArrayList<>();
         List<Component> outputDescriptions = new ArrayList<>();
         List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslateableText("fmod.node.runflow.output.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.runflow.output.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.runflow.output.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.runflow.output.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.output.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.output.type"));
         List<Component> branchNames = new ArrayList<>();
         List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }
@@ -75,10 +80,10 @@ public class RunFlowNode extends FlowNode {
         ServerData data = Util.getServerData(server);
         FlowManager targetFlow = data.logicFlows.get(flowName);
         if (targetFlow == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.noflow", flowName), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.noflow", flowName), null);
         }
         if (targetFlow.isEnabled == false) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.disabled", flowName), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.disabled", flowName), null);
         }
         if (delayInput <= 0) {
             if (keepVariables) {
@@ -96,7 +101,7 @@ public class RunFlowNode extends FlowNode {
 
     private String parseFlowName(Object flowObj) throws LogicException {
         if (flowObj == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
         } else {
             return TypeAdaptor.parse(flowObj).asString();
         }
@@ -108,7 +113,7 @@ public class RunFlowNode extends FlowNode {
         }
         Double delay = TypeAdaptor.parse(delayObj).asDouble();
         if (delay == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
         }
         int delayInt = delay.intValue();
         if (delayInt < 0) {
@@ -123,7 +128,7 @@ public class RunFlowNode extends FlowNode {
         }
         Boolean keepVar = TypeAdaptor.parse(keepVarObj).asBoolean();
         if (keepVar == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.runflow.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
         }
         return keepVar;
     }

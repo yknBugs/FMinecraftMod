@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.schedule;
 
 import com.ykn.fmod.server.base.util.MessageLocation;
@@ -23,11 +28,11 @@ public class BiomeMessage extends ScheduledTask {
     public void onTrigger() {
         MutableComponent biomeText = null;
         if (biomeId == null) {
-            biomeText = Util.parseTranslateableText("fmod.misc.unknown");
+            biomeText = Util.parseTranslatableText("fmod.misc.unknown");
         } else {
             biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
         }
-        Util.postMessage(player, Util.serverConfig.getChangeBiome(), MessageLocation.ACTIONBAR, Util.parseTranslateableText("fmod.message.biome.change", player.getDisplayName(), biomeText));
+        Util.postMessage(player, Util.serverConfig.getChangeBiome(), MessageLocation.ACTIONBAR, Util.parseTranslatableText("fmod.message.biome.change", player.getDisplayName(), biomeText));
     }
 
     @Override

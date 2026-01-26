@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -30,24 +35,24 @@ public class GetVariableNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslateableText("fmod.node.getvar.title.name");
-        Component description = Util.parseTranslateableText("fmod.node.getvar.title.feat");
+        Component displayName = Util.parseTranslatableText("fmod.node.getvar.title.name");
+        Component description = Util.parseTranslatableText("fmod.node.getvar.title.feat");
         List<Component> inputNames = new ArrayList<>();
         List<Component> inputDescriptions = new ArrayList<>();
         List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslateableText("fmod.node.getvar.input.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.getvar.input.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.getvar.input.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.getvar.input.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getvar.input.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getvar.input.type"));
         List<Component> outputNames = new ArrayList<>();
         List<Component> outputDescriptions = new ArrayList<>();
         List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslateableText("fmod.node.getvar.output.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.getvar.output.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.getvar.output.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.getvar.output.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getvar.output.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getvar.output.type"));
         List<Component> branchNames = new ArrayList<>();
         List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.logic;
 
 import java.util.ArrayList;
@@ -71,29 +76,29 @@ public class FlowNode implements Cloneable {
      */
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
         // Should be overridden by subclasses to provide specific metadata
-        Component displayName = Util.parseTranslateableText("fmod.node.abstract.title.name");
-        Component description = Util.parseTranslateableText("fmod.node.abstract.title.feat");
+        Component displayName = Util.parseTranslatableText("fmod.node.abstract.title.name");
+        Component description = Util.parseTranslatableText("fmod.node.abstract.title.feat");
         List<Component> inputNames = new ArrayList<>();
         List<Component> inputDescriptions = new ArrayList<>();
         List<Component> inputDataTypes = new ArrayList<>();
         for (int i = 0; i < inputNumber; i++) {
-            inputNames.add(Util.parseTranslateableText("fmod.node.abstract.input.name", String.valueOf(i)));
-            inputDescriptions.add(Util.parseTranslateableText("fmod.node.abstract.input.feat", String.valueOf(i)));
-            inputDataTypes.add(Util.parseTranslateableText("fmod.node.abstract.input.type"));
+            inputNames.add(Util.parseTranslatableText("fmod.node.abstract.input.name", String.valueOf(i)));
+            inputDescriptions.add(Util.parseTranslatableText("fmod.node.abstract.input.feat", String.valueOf(i)));
+            inputDataTypes.add(Util.parseTranslatableText("fmod.node.abstract.input.type"));
         }
         List<Component> outputNames = new ArrayList<>();
         List<Component> outputDescriptions = new ArrayList<>();
         List<Component> outputDataTypes = new ArrayList<>();
         for (int i = 0; i < outputNumber; i++) {
-            outputNames.add(Util.parseTranslateableText("fmod.node.abstract.output.name", String.valueOf(i)));
-            outputDescriptions.add(Util.parseTranslateableText("fmod.node.abstract.output.feat", String.valueOf(i)));
-            outputDataTypes.add(Util.parseTranslateableText("fmod.node.abstract.output.type"));
+            outputNames.add(Util.parseTranslatableText("fmod.node.abstract.output.name", String.valueOf(i)));
+            outputDescriptions.add(Util.parseTranslatableText("fmod.node.abstract.output.feat", String.valueOf(i)));
+            outputDataTypes.add(Util.parseTranslatableText("fmod.node.abstract.output.type"));
         }
         List<Component> branchNames = new ArrayList<>();
         List<Component> branchDescriptions = new ArrayList<>();
         for (int i = 0; i < branchNumber; i++) {
-            branchNames.add(Util.parseTranslateableText("fmod.node.abstract.branch.name", String.valueOf(i)));
-            branchDescriptions.add(Util.parseTranslateableText("fmod.node.abstract.branch.feat", String.valueOf(i)));
+            branchNames.add(Util.parseTranslatableText("fmod.node.abstract.branch.name", String.valueOf(i)));
+            branchDescriptions.add(Util.parseTranslatableText("fmod.node.abstract.branch.feat", String.valueOf(i)));
         }
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
@@ -110,7 +115,7 @@ public class FlowNode implements Cloneable {
         List<Object> resolvedInputs = new ArrayList<>();
         for (DataReference inputRef : inputs) {
             if (inputRef == null) {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.nullinput", this.name), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullinput", this.name), null);
             } else {
                 Object resolvedValue = inputRef.resolve(context);
                 resolvedInputs.add(resolvedValue);
@@ -191,7 +196,7 @@ public class FlowNode implements Cloneable {
     public Object getOutput(ExecutionContext context, int index) throws LogicException {
         NodeStatus status = context.getNodeStatus(this.id);
         if (status.hasExecuted == false) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.notexecuted", this.name), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.notexecuted", this.name), null);
         }
         return status.outputs.get(index);
     }
@@ -270,23 +275,23 @@ public class FlowNode implements Cloneable {
      */
     public Component render(LogicFlow flow) {
         // Render title
-        MutableComponent text = Util.parseTranslateableText("fmod.flow.node.title", this.name, this.metadata.displayName, this.metadata.description);
+        MutableComponent text = Util.parseTranslatableText("fmod.flow.node.title", this.name, this.metadata.displayName, this.metadata.description);
         text = text.append("\n");
         // Render inputs
         for (int i = 0; i < this.metadata.inputNumber; i++) {
             DataReference inputRef = this.inputs.get(i);
-            MutableComponent inputLine = Util.parseTranslateableText("fmod.flow.node.input", this.metadata.inputNames.get(i), this.metadata.inputDescriptions.get(i));
+            MutableComponent inputLine = Util.parseTranslatableText("fmod.flow.node.input", this.metadata.inputNames.get(i), this.metadata.inputDescriptions.get(i));
             // Render optional info about the input source
             if (inputRef != null) {
                 if (inputRef.type == DataReference.ReferenceType.CONSTANT && inputRef.value != null) {
                     inputLine = inputLine.append(" (");
-                    inputLine = inputLine.append(Util.parseTranslateableText("fmod.flow.node.const", String.valueOf(inputRef.value)));
+                    inputLine = inputLine.append(Util.parseTranslatableText("fmod.flow.node.const", String.valueOf(inputRef.value)));
                     inputLine = inputLine.append(")");
                 } else if (inputRef.type == DataReference.ReferenceType.NODE_OUTPUT) {
                     FlowNode refNode = flow.getNode(inputRef.referenceId);
                     if (refNode != null) {
                         inputLine = inputLine.append(" (");
-                        inputLine = inputLine.append(Util.parseTranslateableText("fmod.flow.node.from", refNode.name, refNode.metadata.outputNames.get(inputRef.referenceIndex)));
+                        inputLine = inputLine.append(Util.parseTranslatableText("fmod.flow.node.from", refNode.name, refNode.metadata.outputNames.get(inputRef.referenceIndex)));
                         inputLine = inputLine.append(")");
                     }
                 }
@@ -295,7 +300,7 @@ public class FlowNode implements Cloneable {
         }
         // Render outputs
         for (int i = 0; i < this.metadata.outputNumber; i++) {
-            MutableComponent outputLine = Util.parseTranslateableText("fmod.flow.node.output", this.metadata.outputNames.get(i), this.metadata.outputDescriptions.get(i));
+            MutableComponent outputLine = Util.parseTranslatableText("fmod.flow.node.output", this.metadata.outputNames.get(i), this.metadata.outputDescriptions.get(i));
             text = text.append(outputLine).append("\n");
         }
         // Render branches
@@ -303,20 +308,20 @@ public class FlowNode implements Cloneable {
             // Directly show the next node
             long nextNodeId = this.nextNodeIds.get(0);
             if (flow.getNode(nextNodeId) == null) {
-                text = text.append(Util.parseTranslateableText("fmod.flow.node.connect", Util.parseTranslateableText("fmod.misc.null")));
+                text = text.append(Util.parseTranslatableText("fmod.flow.node.connect", Util.parseTranslatableText("fmod.misc.null")));
             } else {
                 FlowNode nextNode = flow.getNode(nextNodeId);
-                text = text.append(Util.parseTranslateableText("fmod.flow.node.connect", nextNode.name));
+                text = text.append(Util.parseTranslatableText("fmod.flow.node.connect", nextNode.name));
             }
         } else {
             // List all branches and show their next nodes
             for (int i = 0; i < this.metadata.branchNumber; i++) {
                 long nextNodeId = this.nextNodeIds.get(i);
-                MutableComponent branchLine = Util.parseTranslateableText("fmod.flow.node.branch", this.metadata.branchNames.get(i), this.metadata.branchDescriptions.get(i));
+                MutableComponent branchLine = Util.parseTranslatableText("fmod.flow.node.branch", this.metadata.branchNames.get(i), this.metadata.branchDescriptions.get(i));
                 // Show optional info about the next node
                 if (flow.getNode(nextNodeId) != null) {
                     FlowNode nextNode = flow.getNode(nextNodeId);
-                    MutableComponent connectText = Util.parseTranslateableText("fmod.flow.node.connect", nextNode.name);
+                    MutableComponent connectText = Util.parseTranslatableText("fmod.flow.node.connect", nextNode.name);
                     branchLine = branchLine.append(" (").append(connectText).append(")");
                 }
                 text = text.append(branchLine).append("\n");

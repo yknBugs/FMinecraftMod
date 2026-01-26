@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -31,23 +36,23 @@ public class IfConditionNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslateableText("fmod.node.if.title.name");
-        Component description = Util.parseTranslateableText("fmod.node.if.title.feat");
+        Component displayName = Util.parseTranslatableText("fmod.node.if.title.name");
+        Component description = Util.parseTranslatableText("fmod.node.if.title.feat");
         List<Component> inputNames = new ArrayList<>();
         List<Component> inputDescriptions = new ArrayList<>();
         List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslateableText("fmod.node.if.input.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.if.input.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.if.input.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.if.input.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.if.input.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.if.input.type"));
         List<Component> outputNames = new ArrayList<>();
         List<Component> outputDescriptions = new ArrayList<>();
         List<Component> outputDataTypes = new ArrayList<>();
         List<Component> branchNames = new ArrayList<>();
         List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.if.branch.true.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.if.branch.true.feat"));
-        branchNames.add(Util.parseTranslateableText("fmod.node.if.branch.false.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.if.branch.false.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.if.branch.true.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.if.branch.true.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.if.branch.false.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.if.branch.false.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }
@@ -57,7 +62,7 @@ public class IfConditionNode extends FlowNode {
         Object conditionObj = resolvedInputs.get(0);
         Boolean condition = TypeAdaptor.parse(conditionObj).asBoolean();
         if (condition == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.if.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.if.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
         } else if (condition == true) {
             return this.nextNodeIds.get(0); // True branch
         } else {

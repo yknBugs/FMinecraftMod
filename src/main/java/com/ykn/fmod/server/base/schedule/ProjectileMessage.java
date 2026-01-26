@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.schedule;
 
 import com.ykn.fmod.server.base.util.MessageLocation;
@@ -28,7 +33,7 @@ public class ProjectileMessage extends ScheduledTask {
         double victimHealth = Util.getHealth(victim);
         Component shooterName = shooter.getDisplayName();
         double shooterHealth = Util.getHealth(shooter);
-        MutableComponent text = Util.parseTranslateableText("fmod.message.projectile.onhit", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
+        MutableComponent text = Util.parseTranslatableText("fmod.message.projectile.onhit", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
         if (victim.isAlwaysTicking() && victim instanceof ServerPlayer) {
             ServerPlayer playerVictim = (ServerPlayer) victim;
             Util.postMessage(playerVictim, Util.serverConfig.getProjectileBeingHit(), MessageLocation.ACTIONBAR, text);

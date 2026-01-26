@@ -77,7 +77,7 @@ public class GptHelper implements Runnable {
             } else {
                 gptData.cancel();
                 context.getSource().getServer().execute(() -> {
-                    context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.gpt.httperror", responseCode).withStyle(ChatFormatting.RED), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.gpt.httperror", responseCode).withStyle(ChatFormatting.RED), false);
                 });
                 LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT server response code: " + responseCode);
                 // BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
@@ -91,13 +91,13 @@ public class GptHelper implements Runnable {
         } catch (SocketTimeoutException e) {
             gptData.cancel();
             context.getSource().getServer().execute(() -> {
-                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.gpt.timeout").withStyle(ChatFormatting.RED), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.gpt.timeout").withStyle(ChatFormatting.RED), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Connect to the GPT server timeout", e);
         } catch (Exception e) {
             gptData.cancel();
             context.getSource().getServer().execute(() -> {
-                context.getSource().sendSuccess(() -> Util.parseTranslateableText("fmod.command.gpt.error").withStyle(ChatFormatting.RED), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.gpt.error").withStyle(ChatFormatting.RED), false);
             });
             LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Exception while connecting to the GPT server", e);
         } finally {

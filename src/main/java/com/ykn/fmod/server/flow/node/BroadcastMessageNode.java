@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -32,24 +37,24 @@ public class BroadcastMessageNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslateableText("fmod.node.bcmessage.title.name");
-        Component description = Util.parseTranslateableText("fmod.node.bcmessage.title.feat");
+        Component displayName = Util.parseTranslatableText("fmod.node.bcmessage.title.name");
+        Component description = Util.parseTranslatableText("fmod.node.bcmessage.title.feat");
         List<Component> inputNames = new ArrayList<>();
         List<Component> inputDescriptions = new ArrayList<>();
         List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.bcmessage.input.type.type"));
-        inputNames.add(Util.parseTranslateableText("fmod.node.bcmessage.input.message.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.bcmessage.input.message.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.bcmessage.input.message.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.bcmessage.input.type.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bcmessage.input.type.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bcmessage.input.type.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.bcmessage.input.message.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bcmessage.input.message.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bcmessage.input.message.type"));
         List<Component> outputNames = new ArrayList<>();
         List<Component> outputDescriptions = new ArrayList<>();
         List<Component> outputDataTypes = new ArrayList<>();
         List<Component> branchNames = new ArrayList<>();
         List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }
@@ -74,14 +79,14 @@ public class BroadcastMessageNode extends FlowNode {
             } else if ("chat".equalsIgnoreCase(typeStr)) {
                 return MessageLocation.CHAT;
             } else {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
             }
         }
     }
 
     private Component parseMessage(Object messageObj) throws LogicException {
         if (messageObj == null) {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bcmessage.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.bcmessage.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
         } else if (messageObj instanceof Component) {
             return (Component) messageObj;
         } else {

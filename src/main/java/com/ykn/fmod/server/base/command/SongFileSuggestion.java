@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.command;
 
 import java.nio.file.Files;
@@ -19,7 +24,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
 
 public class SongFileSuggestion implements SuggestionProvider<CommandSourceStack> {
 
-    public static ArrayList<String> cachedSongList;
+    public static ArrayList<String> cachedSongList = new ArrayList<>();
 
     public SongFileSuggestion() {
         // Refresh the list of .nbs files in the config directory
@@ -33,7 +38,7 @@ public class SongFileSuggestion implements SuggestionProvider<CommandSourceStack
                 cachedSongList.add(path.getFileName().toString());
             });
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.MODID).error("Error while getting .nbs file list", e);
+            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while getting .nbs file list", e);
         }
     }
 

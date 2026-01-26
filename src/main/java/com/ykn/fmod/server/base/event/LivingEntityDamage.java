@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.event;
 
 import java.util.ArrayList;
@@ -69,7 +74,7 @@ public class LivingEntityDamage {
                 if (nearestEntities.size() >= Util.serverConfig.getMonsterNumberThreshold() && player.getHealth() > 0) {
                     Component playerName = player.getDisplayName();
                     Component entityName = attacker.getDisplayName();
-                    MutableComponent text = Util.parseTranslateableText("fmod.message.monsterattack", playerName, entityName, Integer.toString(nearestEntities.size()));
+                    MutableComponent text = Util.parseTranslatableText("fmod.message.monsterattack", playerName, entityName, Integer.toString(nearestEntities.size()));
                     Util.postMessage(player, Util.serverConfig.getMonsterSurroundMessageReceiver(), Util.serverConfig.getMonsterSurroundMessageLocation(), text);
                     data.lastMonsterSurroundTick = serverData.getServerTick();
                 }

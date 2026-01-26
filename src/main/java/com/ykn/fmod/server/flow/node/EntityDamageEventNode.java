@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -30,36 +35,36 @@ public class EntityDamageEventNode extends EventNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslateableText("fmod.node.damageevt.title.name");
-        Component description = Util.parseTranslateableText("fmod.node.damageevt.title.feat");
+        Component displayName = Util.parseTranslatableText("fmod.node.damageevt.title.name");
+        Component description = Util.parseTranslatableText("fmod.node.damageevt.title.feat");
         List<Component> inputNames = new ArrayList<>();
         List<Component> inputDescriptions = new ArrayList<>();
         List<Component> inputDataTypes = new ArrayList<>();
         List<Component> outputNames = new ArrayList<>();
         List<Component> outputDescriptions = new ArrayList<>();
         List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslateableText("fmod.node.damageevt.output.victim.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.damageevt.output.victim.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.damageevt.output.victim.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.damageevt.output.amount.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.damageevt.output.amount.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.damageevt.output.amount.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.damageevt.output.damage.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.damageevt.output.damage.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.damageevt.output.damage.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.damageevt.output.attacker.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.damageevt.output.attacker.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.damageevt.output.attacker.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.damageevt.output.source.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.damageevt.output.source.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.damageevt.output.source.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.damageevt.output.position.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.damageevt.output.position.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.damageevt.output.position.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.damageevt.output.victim.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.damageevt.output.victim.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.damageevt.output.victim.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.damageevt.output.amount.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.damageevt.output.amount.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.damageevt.output.amount.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.damageevt.output.damage.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.damageevt.output.damage.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.damageevt.output.damage.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.damageevt.output.attacker.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.damageevt.output.attacker.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.damageevt.output.attacker.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.damageevt.output.source.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.damageevt.output.source.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.damageevt.output.source.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.damageevt.output.position.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.damageevt.output.position.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.damageevt.output.position.type"));
         List<Component> branchNames = new ArrayList<>();
         List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }

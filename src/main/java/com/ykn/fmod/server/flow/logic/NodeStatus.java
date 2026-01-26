@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.logic;
 
 import java.util.ArrayList;
@@ -110,15 +115,15 @@ public class NodeStatus implements Cloneable {
      */
     public Component render(long index, LogicFlow flow) {
         // Render title
-        MutableComponent text = Util.parseTranslateableText("fmod.flow.execute.node", String.valueOf(index), this.node.name, this.node.metadata.displayName);
+        MutableComponent text = Util.parseTranslatableText("fmod.flow.execute.node", String.valueOf(index), this.node.name, this.node.metadata.displayName);
         text = text.append("\n");
         // Render inputs
         for (int i = 0; i < this.node.metadata.inputNumber; i++) {
             Object inputValue = this.inputs.get(i);
             if (inputValue == null) {
-                text = text.append(Util.parseTranslateableText("fmod.flow.execute.input", this.node.metadata.inputNames.get(i), Util.parseTranslateableText("fmod.misc.null")));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.input", this.node.metadata.inputNames.get(i), Util.parseTranslatableText("fmod.misc.null")));
             } else {
-                text = text.append(Util.parseTranslateableText("fmod.flow.execute.input", this.node.metadata.inputNames.get(i), String.valueOf(inputValue)));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.input", this.node.metadata.inputNames.get(i), String.valueOf(inputValue)));
             }
             text = text.append("\n");
         }
@@ -126,18 +131,18 @@ public class NodeStatus implements Cloneable {
         for (int i = 0; i < this.node.metadata.outputNumber; i++) {
             Object outputValue = this.outputs.get(i);
             if (outputValue == null) {
-                text = text.append(Util.parseTranslateableText("fmod.flow.execute.output", this.node.metadata.outputNames.get(i), Util.parseTranslateableText("fmod.misc.null")));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.output", this.node.metadata.outputNames.get(i), Util.parseTranslatableText("fmod.misc.null")));
             } else {
-                text = text.append(Util.parseTranslateableText("fmod.flow.execute.output", this.node.metadata.outputNames.get(i), String.valueOf(outputValue)));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.output", this.node.metadata.outputNames.get(i), String.valueOf(outputValue)));
             }
             text = text.append("\n");
         }
         // Render next node
         FlowNode nextNode = flow.getNode(this.nextBranchId);
         if (nextNode == null) {
-            text = text.append(Util.parseTranslateableText("fmod.flow.execute.next", Util.parseTranslateableText("fmod.misc.null")));
+            text = text.append(Util.parseTranslatableText("fmod.flow.execute.next", Util.parseTranslatableText("fmod.misc.null")));
         } else {
-            text = text.append(Util.parseTranslateableText("fmod.flow.execute.next", nextNode.name));
+            text = text.append(Util.parseTranslatableText("fmod.flow.execute.next", nextNode.name));
         }
         return text;
     }
