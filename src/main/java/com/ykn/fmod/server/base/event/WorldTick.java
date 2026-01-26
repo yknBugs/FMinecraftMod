@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.event;
 
 import java.util.Deque;
@@ -63,7 +68,7 @@ public class WorldTick {
             entityNumber += entities.size();
         }
         if (entityNumber >= Util.serverConfig.getEntityNumberThreshold()) {
-            Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslateableText("fmod.message.entitywarning", entityNumber));
+            Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslatableText("fmod.message.entitywarning", entityNumber));
         }
     }
 
@@ -81,19 +86,19 @@ public class WorldTick {
 
     private void postMessageToAfkingPlayer(ServerPlayerEntity player, PlayerData playerData) {
         if (playerData.afkTicks > Util.serverConfig.getInformAfkingThreshold() && playerData.afkTicks % 20 == 0) {
-            Util.postMessage(player, Util.serverConfig.getInformAfking(), MessageLocation.ACTIONBAR, Util.parseTranslateableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+            Util.postMessage(player, Util.serverConfig.getInformAfking(), MessageLocation.ACTIONBAR, Util.parseTranslatableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
         if (playerData.afkTicks == Util.serverConfig.getBroadcastAfkingThreshold()) {
             Text playerName = player.getDisplayName();
             Text coord = Util.parseCoordText(player);
-            MutableText text = Util.parseTranslateableText("fmod.message.afk.broadcast", playerName, coord);
+            MutableText text = Util.parseTranslatableText("fmod.message.afk.broadcast", playerName, coord);
             Util.postMessage(player, Util.serverConfig.getBroadcastAfking(), MessageLocation.CHAT, text);
         }
     }
 
     private void postMessageToBackPlayer(ServerPlayerEntity player, PlayerData playerData) {
         if (playerData.afkTicks >= Util.serverConfig.getBroadcastAfkingThreshold()) {
-            Util.postMessage(player, Util.serverConfig.getStopAfking(), MessageLocation.CHAT, Util.parseTranslateableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+            Util.postMessage(player, Util.serverConfig.getStopAfking(), MessageLocation.CHAT, Util.parseTranslatableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
     }
 
@@ -115,9 +120,9 @@ public class WorldTick {
         // Show message if status changed
         if (currentCanSleepStatus != null && !currentCanSleepStatus.equals(playerData.lastCanSleep)) {
             if (currentCanSleepStatus) {
-                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslateableText("fmod.message.sleep.can", player.getDisplayName()));
+                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslatableText("fmod.message.sleep.can", player.getDisplayName()));
             } else {
-                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslateableText("fmod.message.sleep.cannot", player.getDisplayName()));
+                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslatableText("fmod.message.sleep.cannot", player.getDisplayName()));
             }
         }
         playerData.lastCanSleep = currentCanSleepStatus;
@@ -179,7 +184,7 @@ public class WorldTick {
         }
 
         String speedStr = String.format("%.2f", totalDistance / window * 20.0);
-        MutableText message = Util.parseTranslateableText("fmod.message.travel.fast", player.getDisplayName(), speedStr);
+        MutableText message = Util.parseTranslatableText("fmod.message.travel.fast", player.getDisplayName(), speedStr);
         Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLoc(), message);
 
         positions.clear();
@@ -190,7 +195,7 @@ public class WorldTick {
         Text playerName = player.getDisplayName();
         Text fromCoord = Util.parseCoordText(playerData.lastDimensionId, playerData.lastBiomeId, fromPos.x, fromPos.y, fromPos.z);
         Text toCoord = Util.parseCoordText(player);
-        Text finalText = Util.parseTranslateableText("fmod.message.teleport", playerName, fromCoord, toCoord);
+        Text finalText = Util.parseTranslatableText("fmod.message.teleport", playerName, fromCoord, toCoord);
         Util.postMessage(player, Util.serverConfig.getTeleportMessageReceiver(), Util.serverConfig.getTeleportMessageLocation(), finalText);
     }
 }

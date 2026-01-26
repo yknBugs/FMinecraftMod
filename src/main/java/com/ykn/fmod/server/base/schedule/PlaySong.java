@@ -59,7 +59,7 @@ public class PlaySong extends ScheduledTask {
                 String currentTimeStr = Integer.toString(currentSeconds);
                 String totalTimeStr = Integer.toString((int) (this.song.getMaxVirtualTick() / 20.0));
                 String speedStr = String.format("%.2f", this.song.getSpeed());
-                Util.sendActionBarMessage(target, Util.parseTranslateableText("fmod.command.song.info", songName, currentTimeStr, totalTimeStr, speedStr));
+                Util.sendActionBarMessage(target, Util.parseTranslatableText("fmod.command.song.info", songName, currentTimeStr, totalTimeStr, speedStr));
             }
         }
         if (this.getSong().getSpeed() != 0) {
@@ -70,12 +70,12 @@ public class PlaySong extends ScheduledTask {
     @Override
     public void onCancel() {
         this.tick = song.getMaxRealTick();
-        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
+        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
     }
 
     @Override
     public void onFinish() {
-        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
+        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
     }
 
     @Override

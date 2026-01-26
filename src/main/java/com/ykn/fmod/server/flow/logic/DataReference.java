@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.logic;
 
 import org.jetbrains.annotations.NotNull;
@@ -90,11 +95,11 @@ public class DataReference implements Cloneable {
             LogicFlow flow = context.getFlow();
             FlowNode node = flow.getNode(this.referenceId);
             if (node == null) {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.nullnode", flow.name), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullnode", flow.name), null);
             }
             return node.getOutput(context, this.referenceIndex);
         } else {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.assert"), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.assert"), null);
         }
     }
 

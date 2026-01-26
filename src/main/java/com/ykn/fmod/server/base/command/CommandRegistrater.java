@@ -154,7 +154,7 @@ public class CommandRegistrater {
 
     private int runFModCommand(CommandContext<ServerCommandSource> context) {
         try {
-            MutableText commandFeedback = Util.parseTranslateableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
+            MutableText commandFeedback = Util.parseTranslatableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
             context.getSource().sendFeedback(() -> commandFeedback, false);
             return Command.SINGLE_SUCCESS;
         } catch (Exception e) {
@@ -162,15 +162,15 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.version.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.version.error"));
         }
     }
 
     private int runDevCommand(CommandContext<ServerCommandSource> context) {
         try {
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.dev.start"), false);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.dev.start"), false);
             Object result = devFunction(context);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
         } catch (Exception e) {
             try {
                 StringWriter sw = new StringWriter();
@@ -182,7 +182,7 @@ public class CommandRegistrater {
                 sw.close();
             } catch (Exception exception) {
                 logger.error("FMinecraftMod: Caught unexpected exception when executing command /f dev", exception);
-                throw new CommandException(Util.parseTranslateableText("fmod.command.dev.error"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.dev.error"));
             }
         }
         return Command.SINGLE_SUCCESS;
@@ -197,7 +197,7 @@ public class CommandRegistrater {
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.newConversation(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
@@ -206,17 +206,17 @@ public class CommandRegistrater {
             //     logger.info("<{}> {}", context.getSource().getDisplayName().getString(), text);
             // }
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt new", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -230,22 +230,22 @@ public class CommandRegistrater {
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.reply(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt reply", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -258,29 +258,29 @@ public class CommandRegistrater {
             GptData gptData = data.getGptData(context.getSource().getName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.nohistory"));
             }
             String text = gptData.getPostMessages(gptDataLength - 1);
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.regenerate(url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
 
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -293,31 +293,31 @@ public class CommandRegistrater {
             GptData gptData = data.getGptData(context.getSource().getName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.nohistory"));
             }
             // The Command argument index begins from 1, the source code index begins from 0
             if (index <= 0 || index > gptDataLength) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
             }
             GptHelper gptHelper = new GptHelper(gptData, context);
             boolean postResult = gptData.editHistory(index - 1, text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.spam"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             data.globalRequestPool.submit(gptHelper);
         } catch (URISyntaxException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (IllegalArgumentException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.urlerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -327,13 +327,13 @@ public class CommandRegistrater {
             GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getName());
             final int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.nohistory"));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.nohistory"));
             }
             if (index == 0) {
                 index = gptDataLength;
             }
             if (index < 0 || index > gptDataLength) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
             }
             final int finalIndex = index;
             final String postMessage = gptData.getPostMessages(index - 1);
@@ -341,13 +341,13 @@ public class CommandRegistrater {
             final Text receivedMessage = gptData.getResponseTexts(index - 1);
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(postMessage)), false);
             context.getSource().sendFeedback(() -> Text.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.gpt.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -357,12 +357,12 @@ public class CommandRegistrater {
             // Refresh song suggestion list
             SongFileSuggestion.suggest();
             if (SongFileSuggestion.getAvailableSongs() == 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hint"), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.hint"), false);
             }
             Path songFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
             Path songPath = songFolder.resolve(songName).normalize();
             if (!songPath.startsWith(songFolder)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));
             }
 
             // Load song
@@ -371,7 +371,7 @@ public class CommandRegistrater {
                 song = NbsSongDecoder.parse(fileInputStream);
             }
             if (song == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
             }
             // Check if a song is still playing, if so, cancel the task
             for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
@@ -393,19 +393,19 @@ public class CommandRegistrater {
             for (ServerPlayerEntity player : players) {
                 PlaySong playSong = new PlaySong(song, songName, player, context);
                 Util.getServerData(context.getSource().getServer()).submitScheduledTask(playSong);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.start", player.getDisplayName(), songName), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
         } catch (FileNotFoundException fileNotFoundException) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.filenotfound", songName));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));
         } catch (EOFException eofException) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.eofexception", songName));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.song.eofexception", songName));
         } catch (IOException ioException) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.ioexception", songName));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
         } catch (Exception exception) {
             if (exception instanceof CommandException) {
                 throw (CommandException) exception;
             }
-            throw new CommandException(Util.parseTranslateableText("fmod.command.song.error", songName));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.song.error", songName));
         }
         return players.size();
     }
@@ -462,7 +462,7 @@ public class CommandRegistrater {
                 playSong.cancel();
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -470,7 +470,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song cancel", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
@@ -482,10 +482,10 @@ public class CommandRegistrater {
                 String currentTimeStr = String.format("%.1f", playSong.getSong().getVirtualTick(playSong.getTick()) / 20.0);
                 String totalTimeStr = String.format("%.1f", playSong.getSong().getMaxVirtualTick() / 20.0);
                 String speedStr = String.format("%.2f", playSong.getSong().getSpeed());
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr, speedStr), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.get", player.getDisplayName(), playSong.getSongName(), currentTimeStr, totalTimeStr, speedStr), false);
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -493,7 +493,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song get", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
@@ -504,13 +504,13 @@ public class CommandRegistrater {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 playSong.setShowInfo(showInfo);
                 if (showInfo) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.show", player.getDisplayName(), playSong.getSongName()), true);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.show", player.getDisplayName(), playSong.getSongName()), true);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.hide", player.getDisplayName(), playSong.getSongName()), true);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.hide", player.getDisplayName(), playSong.getSongName()), true);
                 }
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -518,7 +518,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
@@ -528,10 +528,10 @@ public class CommandRegistrater {
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
                 MutableText isShowInfo = EnumI18n.getBooleanValueI18n(playSong.isShowInfo());
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.status", player.getDisplayName(), playSong.getSongName(), isShowInfo), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.status", player.getDisplayName(), playSong.getSongName(), isShowInfo), false);
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -539,7 +539,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
@@ -553,15 +553,15 @@ public class CommandRegistrater {
                 String songLengthStr = String.format("%.1f", songLength);
                 String timepointStr = String.format("%.1f", timepoint);
                 if (timepoint < 0 || timepoint > songLength) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.long", player.getDisplayName(), songName, songLengthStr, timepointStr), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.long", player.getDisplayName(), songName, songLengthStr, timepointStr), false);
                 } else {
                     playSong.seek((int) (timepoint * 20));
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.search", player.getDisplayName(), songName, timepointStr, songLengthStr), true);
                     return true;
                 }
                 return false;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -569,7 +569,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song search", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
@@ -583,13 +583,13 @@ public class CommandRegistrater {
                 String speedStr = String.format("%.2f", speed);
                 playSong.changeSpeed(speed);
                 if (speed == 0) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.pause", playerName, songName), true);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.pause", playerName, songName), true);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.speed", playerName, songName, speedStr), true);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.speed", playerName, songName, speedStr), true);
                 }
                 return true;
             }, player -> {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.song.empty", player.getDisplayName()), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
         } catch (Exception e) {
@@ -597,22 +597,22 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song speed", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
 
     private ServerPlayerEntity getShareCommandExecutor(CommandContext<ServerCommandSource> context) {
         if (context == null) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.playeronly"));
         }
         ServerCommandSource source = context.getSource();
         if (source == null) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.playeronly"));
         }
         ServerPlayerEntity player = source.getPlayer();
         if (player == null) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.playeronly"));
         }
         return player;
         // return Optional.ofNullable(context)
@@ -626,7 +626,7 @@ public class CommandRegistrater {
             for (Entity entity : entities) {
                 Text name = entity.getDisplayName();
                 Text coord = Util.parseCoordText(entity);
-                MutableText text = Util.parseTranslateableText("fmod.command.get.coord", name, coord);
+                MutableText text = Util.parseTranslatableText("fmod.command.get.coord", name, coord);
                 context.getSource().sendFeedback(() -> text, false);
             }
         } catch (Exception e) {
@@ -634,7 +634,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return entities.size();
     }
@@ -644,14 +644,14 @@ public class CommandRegistrater {
             ServerPlayerEntity player = getShareCommandExecutor(context);
             Text name = player.getDisplayName();
             Text coord = Util.parseCoordText(player);
-            MutableText text = Util.parseTranslateableText("fmod.command.share.coord", name, coord);
+            MutableText text = Util.parseTranslatableText("fmod.command.share.coord", name, coord);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -661,25 +661,25 @@ public class CommandRegistrater {
         double yaw = GameMath.getYaw(source, target);
         MutableText direction = Text.empty();
         if (pitch > 60.0) {
-            direction = Util.parseTranslateableText("fmod.misc.diru");
+            direction = Util.parseTranslatableText("fmod.misc.diru");
         } else if (pitch < -60.0) {
-            direction = Util.parseTranslateableText("fmod.misc.dird");
+            direction = Util.parseTranslatableText("fmod.misc.dird");
         } else if (yaw >= -157.5 && yaw < -112.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirne");
+            direction = Util.parseTranslatableText("fmod.misc.dirne");
         } else if (yaw >= -112.5 && yaw < -67.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dire");
+            direction = Util.parseTranslatableText("fmod.misc.dire");
         } else if (yaw >= -67.5 && yaw < -22.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirse");
+            direction = Util.parseTranslatableText("fmod.misc.dirse");
         } else if (yaw >= -22.5 && yaw < 22.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirs");
+            direction = Util.parseTranslatableText("fmod.misc.dirs");
         } else if (yaw >= 22.5 && yaw < 67.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirsw");
+            direction = Util.parseTranslatableText("fmod.misc.dirsw");
         } else if (yaw >= 67.5 && yaw < 112.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirw");
+            direction = Util.parseTranslatableText("fmod.misc.dirw");
         } else if (yaw >= 112.5 && yaw < 157.5) {
-            direction = Util.parseTranslateableText("fmod.misc.dirnw");
+            direction = Util.parseTranslatableText("fmod.misc.dirnw");
         } else {
-            direction = Util.parseTranslateableText("fmod.misc.dirn");
+            direction = Util.parseTranslatableText("fmod.misc.dirn");
         } 
         return direction;
     }
@@ -691,7 +691,7 @@ public class CommandRegistrater {
             for (Entity entity : entities) {
                 if (context.getSource().getWorld() != entity.getWorld()) {
                     final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.dimdistance", name), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.dimdistance", name), false);
                     continue;
                 }
                 Vec3d target = entity.getPos();
@@ -708,7 +708,7 @@ public class CommandRegistrater {
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
                 final MutableText dirTxt = getDirectionText(source, target);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
         } catch (Exception e) {
@@ -716,7 +716,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
@@ -728,12 +728,12 @@ public class CommandRegistrater {
             List<ServerPlayerEntity> onlinePlayers = Util.getOnlinePlayers(context.getSource().getServer());
             for (ServerPlayerEntity onlinePlayer : onlinePlayers) {
                 if (onlinePlayer.getUuid() == player.getUuid()) {
-                    Util.sendTextMessage(onlinePlayer, Util.parseTranslateableText("fmod.command.share.selfdistance"));
+                    Util.sendTextMessage(onlinePlayer, Util.parseTranslatableText("fmod.command.share.selfdistance"));
                     continue;
                 }
                 if (player.getWorld() != onlinePlayer.getWorld()) {
                     final Text name = player.getDisplayName();
-                    Util.sendTextMessage(onlinePlayer, Util.parseTranslateableText("fmod.command.share.dimdistance", name));
+                    Util.sendTextMessage(onlinePlayer, Util.parseTranslatableText("fmod.command.share.dimdistance", name));
                     continue;
                 }
                 Vec3d source = onlinePlayer.getPos();
@@ -750,7 +750,7 @@ public class CommandRegistrater {
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
                 final MutableText dirTxt = getDirectionText(source, target);
-                final MutableText text = Util.parseTranslateableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
+                final MutableText text = Util.parseTranslatableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
                 Util.sendTextMessage(onlinePlayer, text);
             }
         } catch (Exception e) {
@@ -758,7 +758,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -771,14 +771,14 @@ public class CommandRegistrater {
                 double maxhp = Util.getMaxHealth(entity);
                 final String hpStr = String.format("%.2f", hp);
                 final String maxhpStr = String.format("%.2f", maxhp);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return entities.size();
     }
@@ -791,14 +791,14 @@ public class CommandRegistrater {
             final Text name = player.getDisplayName();
             final String hpStr = String.format("%.2f", hp);
             final String maxhpStr = String.format("%.2f", maxhp);
-            MutableText text = Util.parseTranslateableText("fmod.command.share.health", name, hpStr, maxhpStr);
+            MutableText text = Util.parseTranslatableText("fmod.command.share.health", name, hpStr, maxhpStr);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -815,14 +815,14 @@ public class CommandRegistrater {
                 final String hungerStr = String.valueOf(hunger);
                 final String saturationStr = String.format("%.2f", saturation);
                 final String levelStr = String.valueOf(level);
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return players.size();
     }
@@ -839,14 +839,14 @@ public class CommandRegistrater {
             final String hungerStr = String.valueOf(hunger);
             final String saturationStr = String.format("%.2f", saturation);
             final String levelStr = String.valueOf(level);
-            MutableText text = Util.parseTranslateableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
+            MutableText text = Util.parseTranslatableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -856,7 +856,7 @@ public class CommandRegistrater {
         try {
             if (item == null || item.isEmpty()) {
                 itemText = Text.literal("00").formatted(Formatting.GRAY).styled(s -> s
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.command.get.emptyslot")))
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.command.get.emptyslot")))
                 );
             } else if (item.getCount() < 100) {
                 String itemCount = String.format("%02d", item.getCount());
@@ -970,7 +970,7 @@ public class CommandRegistrater {
         try {
             List<MutableText> inventoryText = getInventoryTexts(player);
             final Text name = player.getDisplayName();
-            final Text title = Util.parseTranslateableText("fmod.command.get.inventory", name);
+            final Text title = Util.parseTranslatableText("fmod.command.get.inventory", name);
             context.getSource().sendFeedback(() -> title, false);
             for (MutableText text : inventoryText) {
                 context.getSource().sendFeedback(() -> text, false);
@@ -980,7 +980,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -990,7 +990,7 @@ public class CommandRegistrater {
             ServerPlayerEntity player = getShareCommandExecutor(context);
             List<MutableText> inventoryText = getInventoryTexts(player);
             final Text name = player.getDisplayName();
-            final Text title = Util.parseTranslateableText("fmod.command.share.inventory", name);
+            final Text title = Util.parseTranslatableText("fmod.command.share.inventory", name);
             Util.broadcastTextMessage(context.getSource().getServer(), title);
             for (MutableText text : inventoryText) {
                 Util.broadcastTextMessage(context.getSource().getServer(), text);
@@ -1000,7 +1000,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1012,7 +1012,7 @@ public class CommandRegistrater {
                 Iterable<ItemStack> items = entity.getHandItems();
                 if (items == null || items.iterator().hasNext() == false) {
                     final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
                     continue;
                 }
                 MutableText itemList = Text.empty();
@@ -1035,9 +1035,9 @@ public class CommandRegistrater {
                 final Text name = entity.getDisplayName();
                 final MutableText itemTxt = itemList;
                 if (itemCountSum <= 0) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.noitem", name), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.get.item", name, itemTxt), false);
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.item", name, itemTxt), false);
                 }
             }
         } catch (Exception e) {
@@ -1045,7 +1045,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
     }
@@ -1056,7 +1056,7 @@ public class CommandRegistrater {
             Iterable<ItemStack> items = player.getHandItems();
             if (items == null || items.iterator().hasNext() == false) {
                 final Text name = player.getDisplayName();
-                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
+                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.noitem", name));
                 return Command.SINGLE_SUCCESS;
             }
             MutableText itemList = Text.empty();
@@ -1078,16 +1078,16 @@ public class CommandRegistrater {
             final Text name = player.getDisplayName();
             final MutableText itemTxt = itemList;
             if (itemCountSum <= 0) {
-                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.noitem", name));
+                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.noitem", name));
             } else {
-                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslateableText("fmod.command.share.item", name, itemTxt));
+                Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.item", name, itemTxt));
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.share.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1111,7 +1111,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f say", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1120,21 +1120,21 @@ public class CommandRegistrater {
         try {
             ServerData data = Util.getServerData(context.getSource().getServer());
             if (data.logicFlows.get(name) != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.exists", name));
             }
             Collection<String> validEventNodes = NodeRegistry.getEventNodeList();
             if (!validEventNodes.contains(eventNode)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.event.unknown", eventNode));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.event.unknown", eventNode));
             }
             FlowManager flowManager = new FlowManager(name, eventNode, eventNodeName);
             data.logicFlows.put(name, flowManager);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.create.success", eventNode, name), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.create.success", eventNode, name), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow create", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1145,22 +1145,22 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager sourceFlow = data.logicFlows.get(sourceName);
             if (sourceFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", sourceName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", sourceName));
             }
             FlowManager targetFlow = data.logicFlows.get(targetName);
             if (targetFlow != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", targetName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.exists", targetName));
             }
             FlowManager copiedFlow = new FlowManager(sourceFlow.flow.copy());
             copiedFlow.flow.name = targetName;
             data.logicFlows.put(targetName, copiedFlow);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.copy.success", sourceName, targetName), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.copy.success", sourceName, targetName), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow copy", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1169,7 +1169,7 @@ public class CommandRegistrater {
         try {
             FlowFileSuggestion.suggest();
             if (FlowFileSuggestion.getAvailableFlows() == 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.hint"), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.hint"), false);
             }
             Path flowFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
             ServerData data = Util.getServerData(context.getSource().getServer());
@@ -1179,16 +1179,16 @@ public class CommandRegistrater {
                 for (String flowFileName : FlowFileSuggestion.cachedFlowList) {
                     Path flowPath = flowFolder.resolve(flowFileName).normalize();
                     if (!flowPath.startsWith(flowFolder)) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.filenotfound", flowFileName), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.load.filenotfound", flowFileName), false);
                         continue;
                     }
                     LogicFlow flow = FlowSerializer.loadFile(flowPath);
                     if (flow == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.ioexception", flowFileName), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.load.ioexception", flowFileName), false);
                         continue;
                     }
                     if (data.logicFlows.get(flow.name) != null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.exists", flow.name), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.exists", flow.name), false);
                         continue;
                     }
                     FlowManager flowManager = new FlowManager(flow);
@@ -1196,29 +1196,29 @@ public class CommandRegistrater {
                     loadedCount++;
                 }
                 int loadedCountFinal = loadedCount;
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.all", String.valueOf(loadedCountFinal)), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.load.all", String.valueOf(loadedCountFinal)), true);
                 return loadedCountFinal;
             }
             Path flowPath = flowFolder.resolve(name).normalize();
             if (!flowPath.startsWith(flowFolder)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.load.filenotfound", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.load.filenotfound", name));
             }
             LogicFlow flow = FlowSerializer.loadFile(flowPath);
             if (flow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.load.ioexception", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.load.ioexception", name));
             }
             if (data.logicFlows.get(flow.name) != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", flow.name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.exists", flow.name));
             }
             FlowManager flowManager = new FlowManager(flow);
             data.logicFlows.put(flow.name, flowManager);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.load.success", flow.name), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.load.success", flow.name), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow load", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1233,41 +1233,41 @@ public class CommandRegistrater {
                 for (FlowManager flowManager : data.logicFlows.values()) {
                     Path flowPath = flowFolder.resolve(flowManager.flow.name + ".flow").normalize();
                     if (!flowPath.startsWith(flowFolder)) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.notavailable", flowManager.flow.name), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.save.notavailable", flowManager.flow.name), false);
                         continue;
                     }
                     boolean success = FlowSerializer.saveFile(flowManager.flow, flowPath, true);
                     if (success) {
                         savedCount++;
                     } else {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.ioexception", flowManager.flow.name), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.save.ioexception", flowManager.flow.name), false);
                     }
                 }
                 int savedCountFinal = savedCount;
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.all", String.valueOf(savedCountFinal)), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.save.all", String.valueOf(savedCountFinal)), true);
                 FlowFileSuggestion.suggest();
                 return savedCountFinal;
             }
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
             }
             Path flowPath = flowFolder.resolve(targetFlow.flow.name + ".flow").normalize();
             if (!flowPath.startsWith(flowFolder)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.save.notavailable", targetFlow.flow.name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.save.notavailable", targetFlow.flow.name));
             }
             boolean success = FlowSerializer.saveFile(targetFlow.flow, flowPath, true);
             if (!success) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.save.ioexception", targetFlow.flow.name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.save.ioexception", targetFlow.flow.name));
             }
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.save.success", targetFlow.flow.name), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.save.success", targetFlow.flow.name), true);
             FlowFileSuggestion.suggest();
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow save", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1277,7 +1277,7 @@ public class CommandRegistrater {
             FlowFileSuggestion.suggest();
             ServerData data = Util.getServerData(context.getSource().getServer());
             if (data.logicFlows.isEmpty()) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.list.empty"), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.list.empty"), false);
                 return Command.SINGLE_SUCCESS;
             }
             List<MutableText> flowLines = new ArrayList<>();
@@ -1292,14 +1292,14 @@ public class CommandRegistrater {
                 }
                 String startNodeStr = startNode.name;
                 if (flowManager.isEnabled) {
-                    line = Util.parseTranslateableText("fmod.command.flow.list.enabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview").formatted(Formatting.GREEN)))
+                    line = Util.parseTranslatableText("fmod.command.flow.list.enabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.clickview").formatted(Formatting.GREEN)))
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
                     );
                     enabledCount++;
                 } else {
-                    line = Util.parseTranslateableText("fmod.command.flow.list.disabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
-                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview").formatted(Formatting.GREEN)))
+                    line = Util.parseTranslatableText("fmod.command.flow.list.disabled", flowManager.flow.name, numNodesStr, startNodeStr).styled(s -> s
+                        .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.clickview").formatted(Formatting.GREEN)))
                         .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow view \"" + flowManager.flow.name + "\""))
                     );
                 }
@@ -1308,7 +1308,7 @@ public class CommandRegistrater {
             }
             String enabledCountStr = String.valueOf(enabledCount);
             String totalCountStr = String.valueOf(totalCount);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.list.title", totalCountStr, enabledCountStr), false);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.list.title", totalCountStr, enabledCountStr), false);
             for (MutableText line : flowLines) {
                 context.getSource().sendFeedback(() -> line, false);
             }
@@ -1317,7 +1317,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow list", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1328,21 +1328,21 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(oldName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", oldName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", oldName));
             }
             if (data.logicFlows.get(newName) != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.exists", newName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.exists", newName));
             }
             data.logicFlows.remove(oldName);
             targetFlow.flow.name = newName;
             data.logicFlows.put(newName, targetFlow);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.rename.success", oldName, newName), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.rename.success", oldName, newName), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow rename", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1353,19 +1353,19 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
             }
             if (targetFlow.isEnabled) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.true", name), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.enable.get.true", name), false);
             } else {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.get.false", name), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.enable.get.false", name), false);
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1376,20 +1376,20 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
             }
             targetFlow.isEnabled = enable;
             if (enable) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.true", name), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.enable.set.true", name), true);
             } else {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.enable.set.false", name), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.enable.set.false", name), true);
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1400,10 +1400,10 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
             }
             if (targetFlow.isEnabled == false) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.disabled", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.disabled", name));
             }
             LogicException exception = targetFlow.execute(data, null, null);
             if (exception != null) {
@@ -1414,7 +1414,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow execute", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1425,16 +1425,16 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
             }
             data.logicFlows.remove(name);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.delete.success", name), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.delete.success", name), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow delete", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1447,7 +1447,7 @@ public class CommandRegistrater {
             // 5 entries per page
             int maxPage = (history.size() + 4) / 5;
             if (maxPage <= 0) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.history.null"), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.history.null"), false);
                 return Command.SINGLE_SUCCESS;
             }
             int index = pageIndex;
@@ -1455,18 +1455,18 @@ public class CommandRegistrater {
                 index = maxPage;
             }
             if (index > maxPage) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.history.indexerror", pageIndex, maxPage));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.history.indexerror", pageIndex, maxPage));
             }
             int start = (index - 1) * 5;
             int end = Math.min(start + 5, history.size());
             String indexStr = String.valueOf(index);
             String maxPageStr = String.valueOf(maxPage);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.history.title", indexStr, maxPageStr), false);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.history.title", indexStr, maxPageStr), false);
             for (int i = start; i < end; i++) {
                 ExecutionContext entry = history.get(i);
                 String iStr = String.valueOf(i + 1);
-                MutableText entryText =  Util.parseTranslateableText("fmod.command.flow.history.entry", iStr, entry.getFlow().name).styled(s -> s
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.clickview").formatted(Formatting.GREEN)))
+                MutableText entryText =  Util.parseTranslatableText("fmod.command.flow.history.entry", iStr, entry.getFlow().name).styled(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.clickview").formatted(Formatting.GREEN)))
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow log " + iStr))
                 );
                 context.getSource().sendFeedback(() -> entryText, false);
@@ -1474,13 +1474,13 @@ public class CommandRegistrater {
             MutableText navigateText = Text.empty();
             if (index > 1) {
                 String prevIndexStr = String.valueOf(index - 1);
-                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.prev").styled(s -> s
+                navigateText.append(Util.parseTranslatableText("fmod.command.flow.history.prev").styled(s -> s
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow history " + prevIndexStr))
                 ));
             }
             if (index < maxPage) {
                 String nextIndexStr = String.valueOf(index + 1);
-                navigateText.append(Util.parseTranslateableText("fmod.command.flow.history.next").styled(s -> s
+                navigateText.append(Util.parseTranslatableText("fmod.command.flow.history.next").styled(s -> s
                     .withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/f flow history " + nextIndexStr))
                 ));
             }
@@ -1492,7 +1492,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow history", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1503,7 +1503,7 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
             }
             Text text = targetFlow.flow.render();
             context.getSource().sendFeedback(() -> text, false);
@@ -1512,7 +1512,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow view", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1523,7 +1523,7 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             List<ExecutionContext> history = data.executeHistory;
             if (index <= 0 || index > history.size()) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.log.indexerror", String.valueOf(index)));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.log.indexerror", String.valueOf(index)));
             }
             ExecutionContext entry = history.get(index - 1);
             Text text = entry.render();
@@ -1533,7 +1533,7 @@ public class CommandRegistrater {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow log", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1544,24 +1544,24 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             Collection<String> validNodeTypes = NodeRegistry.getNodeList();
             if (!validNodeTypes.contains(type)) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.unknown", type));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.unknown", type));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.exists", name, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.exists", name, flowName));
             }
             targetFlow.createNode(type, name);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.newnode.success", name, flowName), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.newnode.success", name, flowName), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1572,23 +1572,23 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (existingNode.isEventNode()) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.delete.event", flowName, name));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.delete.event", flowName, name));
             }
             targetFlow.removeNode(name);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.removenode.success", name, flowName), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.removenode.success", name, flowName), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1599,24 +1599,24 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(oldName);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", oldName, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", oldName, flowName));
             }
             FlowNode newNode = targetFlow.flow.getNodeByName(newName);
             if (newNode != null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.exists", newName, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.exists", newName, flowName));
             }
             targetFlow.renameNode(oldName, newName);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.renamenode.success", oldName, flowName, newName), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.renamenode.success", oldName, flowName, newName), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1627,27 +1627,27 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
             // parse const value
             DataReference ref = FlowSerializer.parseConstDataReference(value);
             Object parsedValue = ref.value;
             String parsedValueStr = String.valueOf(parsedValue);
             targetFlow.setConstInput(name, index - 1, parsedValue);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1658,30 +1658,30 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
             FlowNode refExistingNode = targetFlow.flow.getNodeByName(refNode);
             if (refExistingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", refNode, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", refNode, flowName));
             }
             if (refIndex <= 0 || refIndex > refExistingNode.getMetadata().outputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.output.indexerror", refNode, String.valueOf(refIndex)));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.edit.output.indexerror", refNode, String.valueOf(refIndex)));
             }
             targetFlow.setReferenceInput(name, index - 1, refNode, refIndex - 1);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1692,23 +1692,23 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
             }
             targetFlow.disconnectInput(name, index - 1);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1719,27 +1719,27 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
             }
             FlowNode nextNode = targetFlow.flow.getNodeByName(next);
             if (nextNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", next, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", next, flowName));
             }
             targetFlow.setNextNode(name, index - 1, next);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1750,23 +1750,23 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             FlowNode existingNode = targetFlow.flow.getNodeByName(name);
             if (existingNode == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.node.notexists", name, flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
             }
             if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
             }
             targetFlow.disconnectNextNode(name, index - 1);
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1777,21 +1777,21 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             if (targetFlow.undoPath.isEmpty()) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.nothing", flowName), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.undo.nothing", flowName), false);
                 return Command.SINGLE_SUCCESS;
             } else {
                 targetFlow.undo();
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.undo.success", flowName), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.undo.success", flowName), true);
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1802,21 +1802,21 @@ public class CommandRegistrater {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(flowName);
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslateableText("fmod.command.flow.notexists", flowName));
+                throw new CommandException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
             }
             if (targetFlow.redoPath.isEmpty()) {
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.nothing", flowName), false);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.redo.nothing", flowName), false);
                 return Command.SINGLE_SUCCESS;
             } else {
                 targetFlow.redo();
-                context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.flow.edit.redo.success", flowName), true);
+                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.redo.success", flowName), true);
             }
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
-            throw new CommandException(Util.parseTranslateableText("fmod.command.unknownerror"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -1826,12 +1826,12 @@ public class CommandRegistrater {
             SongFileSuggestion.suggest();
             FlowFileSuggestion.suggest();
             Util.loadServerConfig();
-            context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.reload.success"), true);
+            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.reload.success"), true);
         } catch (Exception e) {
             if (e instanceof CommandException) {
                 throw (CommandException) e;
             }
-            throw new CommandException(Util.parseTranslateableText("fmod.command.reload.error"));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.reload.error"));
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -2485,439 +2485,439 @@ public class CommandRegistrater {
             switch (options) {
                 case "serverTranslation":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.translate", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.translate", value), true);
                     }
                     break;
                 case "maxFlowLength":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.flowlength", Util.serverConfig.getMaxFlowLength()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.flowlength", Util.serverConfig.getMaxFlowLength()), false);
                     } else {
                         Util.serverConfig.setMaxFlowLength((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.flowlength", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.flowlength", value), true);
                     }
                     break;
                 case "keepFlowExecutionHistory":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.flowhistory", Util.serverConfig.getKeepFlowHistoryNumber()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.flowhistory", Util.serverConfig.getKeepFlowHistoryNumber()), false);
                     } else {
                         Util.serverConfig.setKeepFlowHistoryNumber((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.flowhistory", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.flowhistory", value), true);
                     }
                     break;
                 case "entityDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entdeathmsg", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.entdeathmsg", text), false);
                     } else {
                         Util.serverConfig.setEntityDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entdeathmsg", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.entdeathmsg", text), true);
                     }
                     break;
                 case "bossDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcbossdeath", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bcbossdeath", text), false);
                     } else {
                         Util.serverConfig.setBossDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcbossdeath", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bcbossdeath", text), true);
                     }
                     break;
                 case "namedMobDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getNamedEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.nameddeath", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.nameddeath", text), false);
                     } else {
                         Util.serverConfig.setNamedEntityDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.nameddeath", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.nameddeath", text), true);
                     }
                     break;
                 case "killerDeathMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getKillerEntityDeathMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bckillerdeath", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bckillerdeath", text), false);
                     } else {
                         Util.serverConfig.setKillerEntityDeathMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bckillerdeath", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bckillerdeath", text), true);
                     }
                     break;
                 case "bossMaxHealthThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bossmaxhp", Util.serverConfig.getBossMaxHpThreshold()), false);
                     } else {
                         Util.serverConfig.setBossMaxHpThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossmaxhp", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bossmaxhp", value), true);
                     }
                     break;
                 case "canSleepMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getPlayerCanSleepMessage());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.cansleepmsg", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.cansleepmsg", text), false);
                     } else {
                         Util.serverConfig.setPlayerCanSleepMessage((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.cansleepmsg", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.cansleepmsg", text), true);
                     }
                     break;
                 case "playerDeathCoord":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcdeathcoord", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bcdeathcoord", text), false);
                     } else {
                         Util.serverConfig.setPlayerDeathCoord((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcdeathcoord", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bcdeathcoord", text), true);
                     }
                     break;
                 case "projectileHitsEntity":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthers());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projhitting", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.projhitting", text), false);
                     } else {
                         Util.serverConfig.setProjectileHitOthers((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projhitting", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.projhitting", text), true);
                     }
                     break;
                 case "projectileBeingHit":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHit());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.projbeinghit", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.projbeinghit", text), false);
                     } else {
                         Util.serverConfig.setProjectileBeingHit((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.projbeinghit", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.projbeinghit", text), true);
                     }
                     break;
                 case "informAFK":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.informafk", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.informafk", text), false);
                     } else {
                         Util.serverConfig.setInformAfking((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.informafk", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.informafk", text), true);
                     }
                     break;
                 case "informAFKThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.informafkthres", String.format("%.2f", Util.serverConfig.getInformAfkingThreshold() / 20.0)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.informafkthres", String.format("%.2f", Util.serverConfig.getInformAfkingThreshold() / 20.0)), false);
                     } else {
                         Util.serverConfig.setInformAfkingThreshold((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.informafkthres", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.informafkthres", value), true);
                     }
                     break;
                 case "broadcastAFK":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcafk", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bcafk", text), false);
                     } else {
                         Util.serverConfig.setBroadcastAfking((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcafk", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bcafk", text), true);
                     }
                     break;
                 case "broadcastAFKThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bcafkthres", String.format("%.2f", Util.serverConfig.getBroadcastAfkingThreshold() / 20.0)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bcafkthres", String.format("%.2f", Util.serverConfig.getBroadcastAfkingThreshold() / 20.0)), false);
                     } else {
                         Util.serverConfig.setBroadcastAfkingThreshold((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bcafkthres", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bcafkthres", value), true);
                     }
                     break;
                 case "backFromAFK":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfking());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.stopafk", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.stopafk", text), false);
                     } else {
                         Util.serverConfig.setStopAfking((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.stopafk", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.stopafk", text), true);
                     }
                     break;
                 case "biomeChangeMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiome());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.changebiome", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.changebiome", text), false);
                     } else {
                         Util.serverConfig.setChangeBiome((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.changebiome", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.changebiome", text), true);
                     }
                     break;
                 case "biomeChangeDelay":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.biomedelay", String.format("%.2f", Util.serverConfig.getChangeBiomeDelay() / 20.0)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.biomedelay", String.format("%.2f", Util.serverConfig.getChangeBiomeDelay() / 20.0)), false);
                     } else {
                         Util.serverConfig.setChangeBiomeDelay((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.biomedelay", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.biomedelay", value), true);
                     }
                     break;
                 case "bossFightMessageLocation":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBossFightMessageLocation());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightloc", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bossfightloc", text), false);
                     } else {
                         Util.serverConfig.setBossFightMessageLocation((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightloc", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bossfightloc", text), true);
                     }
                     break;
                 case "bossFightMessageReceiver":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBossFightMessageReceiver());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightreceiver", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bossfightreceiver", text), false);
                     } else {
                         Util.serverConfig.setBossFightMessageReceiver((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightreceiver", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bossfightreceiver", text), true);
                     }
                     break;
                 case "bossFightMessageInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.bossfightinterval", String.format("%.2f", Util.serverConfig.getBossFightInterval() / 20.0)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.bossfightinterval", String.format("%.2f", Util.serverConfig.getBossFightInterval() / 20.0)), false);
                     } else {
                         Util.serverConfig.setBossFightInterval((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.bossfightinterval", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.bossfightinterval", value), true);
                     }
                     break;
                 case "monsterSurroundMessageLocation":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getMonsterSurroundMessageLocation());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterloc", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.monsterloc", text), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundMessageLocation((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterloc", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.monsterloc", text), true);
                     }
                     break;
                 case "monsterSurroundMessageReceiver":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getMonsterSurroundMessageReceiver());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterreceiver", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.monsterreceiver", text), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundMessageReceiver((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterreceiver", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.monsterreceiver", text), true);
                     }
                     break;
                 case "monsterSurroundMessageInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterinterval", String.format("%.2f", Util.serverConfig.getMonsterSurroundInterval() / 20.0)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.monsterinterval", String.format("%.2f", Util.serverConfig.getMonsterSurroundInterval() / 20.0)), false);
                     } else {
                         Util.serverConfig.setMonsterSurroundInterval((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterinterval", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.monsterinterval", value), true);
                     }
                     break;
                 case "monsterNumberThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsternumber", Util.serverConfig.getMonsterNumberThreshold()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.monsternumber", Util.serverConfig.getMonsterNumberThreshold()), false);
                     } else {
                         Util.serverConfig.setMonsterNumberThreshold((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsternumber", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.monsternumber", value), true);
                     }
                     break;
                 case "monsterDistanceThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.monsterdistance", Util.serverConfig.getMonsterDistanceThreshold()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.monsterdistance", Util.serverConfig.getMonsterDistanceThreshold()), false);
                     } else {
                         Util.serverConfig.setMonsterDistanceThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.monsterdistance", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.monsterdistance", value), true);
                     }
                     break;
                 case "entityNumberWarning":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityNumberWarning());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entitywarning", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.entitywarning", text), false);
                     } else {
                         Util.serverConfig.setEntityNumberWarning((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entitywarning", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.entitywarning", text), true);
                     }
                     break;
                 case "entityNumberThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entitynumber", Util.serverConfig.getEntityNumberThreshold()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.entitynumber", Util.serverConfig.getEntityNumberThreshold()), false);
                     } else {
                         Util.serverConfig.setEntityNumberThreshold((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entitynumber", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.entitynumber", value), true);
                     }
                     break;
                 case "entityNumberCheckInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.entityinterval", Util.serverConfig.getEntityNumberInterval()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.entityinterval", Util.serverConfig.getEntityNumberInterval()), false);
                     } else {
                         Util.serverConfig.setEntityNumberInterval((int) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.entityinterval", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.entityinterval", value), true);
                     }
                     break;
                 case "playerHurtMessage":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurt());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.playerhurt", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.playerhurt", text), false);
                     } else {
                         Util.serverConfig.setPlayerSeriousHurt((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.playerhurt", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.playerhurt", text), true);
                     }
                     break;
                 case "hugeDamageThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.damagethres", Util.serverConfig.getPlayerHurtThreshold() * 100.0), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.damagethres", Util.serverConfig.getPlayerHurtThreshold() * 100.0), false);
                     } else {
                         Util.serverConfig.setPlayerHurtThreshold((double) value / 100.0);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.damagethres", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.damagethres", value), true);
                     }
                     break;
                 case "travelMessageLocation":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.loc", EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLoc())), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.loc", EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLoc())), false);
                     } else {
                         Util.serverConfig.setTravelMessageLoc((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.loc", EnumI18n.getMessageLocationI18n((MessageLocation) value)), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.loc", EnumI18n.getMessageLocationI18n((MessageLocation) value)), true);
                     }
                     break;
                 case "travelMessageReceiver":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.receiver", EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTravelMessageReceiver())), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.receiver", EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTravelMessageReceiver())), false);
                     } else {
                         Util.serverConfig.setTravelMessageReceiver((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.receiver", EnumI18n.getMessageReceiverI18n((MessageReceiver) value)), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.receiver", EnumI18n.getMessageReceiverI18n((MessageReceiver) value)), true);
                     }
                     break;
                 case "travelWindow":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.window", String.format("%.2f", Util.serverConfig.getTravelWindowTicks() / 20.0)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.window", String.format("%.2f", Util.serverConfig.getTravelWindowTicks() / 20.0)), false);
                     } else {
                         Util.serverConfig.setTravelWindowTicks((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.window", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.window", value), true);
                     }
                     break;
                 case "travelDistanceThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.total", Util.serverConfig.getTravelTotalDistanceThreshold()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.total", Util.serverConfig.getTravelTotalDistanceThreshold()), false);
                     } else {
                         Util.serverConfig.setTravelTotalDistanceThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.total", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.total", value), true);
                     }
                     break;
                 case "travelPartialInterval":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.interval", String.format("%.2f", Util.serverConfig.getTravelPartialInterval() / 20.0)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.interval", String.format("%.2f", Util.serverConfig.getTravelPartialInterval() / 20.0)), false);
                     } else {
                         Util.serverConfig.setTravelPartialInterval((int) value * 20);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.interval", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.interval", value), true);
                     }
                     break;
                 case "travelPartialDistance":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.travelmsg.partial", Util.serverConfig.getTravelPartialDistanceThreshold()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.partial", Util.serverConfig.getTravelPartialDistanceThreshold()), false);
                     } else {
                         Util.serverConfig.setTravelPartialDistanceThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.travelmsg.partial", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.partial", value), true);
                     }
                     break;
                 case "teleportThreshold":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.teleport", Util.serverConfig.getTeleportThreshold()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.teleport", Util.serverConfig.getTeleportThreshold()), false);
                     } else {
                         Util.serverConfig.setTeleportThreshold((double) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.teleport", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.teleport", value), true);
                     }
                     break;
                 case "teleportMessageLocation":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getTeleportMessageLocation());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.tpmsgloc", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.tpmsgloc", text), false);
                     } else {
                         Util.serverConfig.setTeleportMessageLocation((MessageLocation) value);
                         final MutableText text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.tpmsgloc", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.tpmsgloc", text), true);
                     }
                     break;
                 case "teleportMessageReceiver":
                     if (value == null) {
                         final MutableText text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getTeleportMessageReceiver());
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.tpmsgreceiver", text), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.tpmsgreceiver", text), false);
                     } else {
                         Util.serverConfig.setTeleportMessageReceiver((MessageReceiver) value);
                         final MutableText text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.tpmsgreceiver", text), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.tpmsgreceiver", text), true);
                     }
                     break;
                 case "gptUrl":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpturl", Util.serverConfig.getGptUrl()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.gpturl", Util.serverConfig.getGptUrl()), false);
                     } else {
                         try {
                             new URI((String) value).toURL();
                         } catch (Exception e) {
-                            throw new CommandException(Util.parseTranslateableText("fmod.command.options.invalidurl", value));
+                            throw new CommandException(Util.parseTranslatableText("fmod.command.options.invalidurl", value));
                         }
                         Util.serverConfig.setGptUrl((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpturl", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.gpturl", value), true);
                     }
                     break;
                 case "gptAccessTokens":
                     if (value == null) {
                         final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptkey", secureTokens), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.gptkey", secureTokens), false);
                     } else {
                         String token = (String) value;
                         Util.serverConfig.setGptAccessTokens(token);
                         // For security reasons, we don't want to show the full token in the log, only show the first 5 and the last 5 characters
                         final String secureTokens = Util.serverConfig.getSecureGptAccessTokens();
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptkey", secureTokens), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.gptkey", secureTokens), true);
                     }
                     break;
                 case "gptModel":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.gptmodel", Util.serverConfig.getGptModel()), false);
                     } else {
                         Util.serverConfig.setGptModel((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptmodel", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.gptmodel", value), true);
                     }
                     break;
                 case "gptSystemPrompts":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gptsysprompt", Util.serverConfig.getGptSystemPrompt()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.gptsysprompt", Util.serverConfig.getGptSystemPrompt()), false);
                     } else {
                         Util.serverConfig.setGptSystemPrompt((String) value);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gptsysprompt", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.gptsysprompt", value), true);
                     }
                     break;
                 case "gptTemperature":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.gpttemperature", Util.serverConfig.getGptTemperature()), false);
                     } else {
                         double temperature = (double) value;
                         Util.serverConfig.setGptTemperature(temperature);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttemperature", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.gpttemperature", value), true);
                     }
                     break;
                 case "gptTimeout":
                     if (value == null) {
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.gpttimeout", (int) (Util.serverConfig.getGptServerTimeout() / 1000)), false);
                     } else {
                         int timeout = (int) value;
                         Util.serverConfig.setGptServerTimeout(timeout * 1000);
-                        context.getSource().sendFeedback(() -> Util.parseTranslateableText("fmod.command.options.gpttimeout", value), true);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.gpttimeout", value), true);
                     }
                     break;
                 default:
-                    throw new CommandException(Util.parseTranslateableText("fmod.command.options.unknownoption", options));
+                    throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", options));
             }
             if (value != null) {
                 Util.saveServerConfig();
             }
         } catch (ClassCastException e) {
-            throw new CommandException(Util.parseTranslateableText("fmod.command.options.classcast", value, options, e.getMessage()));
+            throw new CommandException(Util.parseTranslatableText("fmod.command.options.classcast", value, options, e.getMessage()));
         }
         return Command.SINGLE_SUCCESS;
     }

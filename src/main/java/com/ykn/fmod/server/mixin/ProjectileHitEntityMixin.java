@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.mixin;
 
 import org.slf4j.LoggerFactory;
@@ -7,6 +12,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.ykn.fmod.server.base.event.ProjectileHitEntity;
+import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.projectile.ProjectileEntity;
 import net.minecraft.util.hit.EntityHitResult;
@@ -21,7 +27,7 @@ public class ProjectileHitEntityMixin {
             ProjectileHitEntity projectileHitEntity = new ProjectileHitEntity(projectile, entityHitResult);
             projectileHitEntity.onProjectileHitEntity();
         } catch (Exception e) {
-            LoggerFactory.getLogger("FMinecraftMod").error("FMinecraftMod: Caught exception from ProjectileHitEntityEvent.", e);
+            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught exception from ProjectileHitEntityEvent.", e);
         }
     }
 }

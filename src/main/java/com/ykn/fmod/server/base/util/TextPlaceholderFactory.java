@@ -301,13 +301,13 @@ public class TextPlaceholderFactory<T> {
                 Function<T, Text> placeholderFunction = this.placeholders.get(part);
                 if (placeholderFunction == null) {
                     // Unlikely to happen
-                    LoggerFactory.getLogger(Util.LOGGERNAME).warn("Missing placeholder: " + part);
+                    LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Missing placeholder: " + part);
                     finalText.add(Text.literal(part));
                 } else {
                     try {
                         finalText.add(placeholderFunction.apply(t));
                     } catch (Exception e) {
-                        LoggerFactory.getLogger(Util.LOGGERNAME).error("Error while parsing placeholder: " + part, e);
+                        LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while parsing placeholder: " + part, e);
                         finalText.add(Text.literal(part));
                     }
                 }
@@ -353,14 +353,14 @@ public class TextPlaceholderFactory<T> {
                 BiFunction<String, MutableText, MutableText> styleFunction = this.customStyles.get(styleKey);
                 if (styleFunction == null) {
                     // Unlikely to happen
-                    LoggerFactory.getLogger(Util.LOGGERNAME).warn("Missing custom style: " + styleKey);
+                    LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Missing custom style: " + styleKey);
                     continue;
                 }
                 String param = activeStyles.get(styleKey);
                 try {
                     textToken = styleFunction.apply(param, textToken);
                 } catch (Exception e) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("Error while applying custom style: " + styleKey + " with param: " + param, e);
+                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while applying custom style: " + styleKey + " with param: " + param, e);
                 }
             }
             finalTexts.add(textToken);
@@ -424,30 +424,30 @@ public class TextPlaceholderFactory<T> {
             .style("&[rR]", (param, text) -> text.setStyle(Style.EMPTY))
             .style("\\$\\{color:([0-9A-Fa-f]{1,8})\\}", (param, text) -> {
                 try {
-                    int colorInt = Integer.parseInt(param, 16);
+                    int colorInt = Integer.parseInt(param.strip(), 16);
                     return text.styled(style -> style.withColor(colorInt));
                 } catch (NumberFormatException e) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("Invalid color code: " + param, e);
+                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Invalid color code: " + param.strip(), e);
                     return text;
                 }
             })
             .style("\\$\\{link:(.*)\\}", (param, text) -> 
                 text.styled(style -> style.withClickEvent(
-                    new ClickEvent(ClickEvent.Action.OPEN_URL, param)
+                    new ClickEvent(ClickEvent.Action.OPEN_URL, param.strip())
                 ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.openurl", Text.literal(param).formatted(Formatting.YELLOW)).formatted(Formatting.GREEN))
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.openurl", Text.literal(param.strip()).formatted(Formatting.YELLOW)).formatted(Formatting.GREEN))
                 ))
             )
             .style("\\$\\{copy:(.*)\\}", (param, text) -> 
                 text.styled(style -> style.withClickEvent(
-                    new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, param)
+                    new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, param.strip())
                 ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslateableText("fmod.misc.copyto", param).formatted(Formatting.GREEN))
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.copyto", param.strip()).formatted(Formatting.GREEN))
                 ))
             )
             .style("\\$\\{hint:(.*)\\}", (param, text) -> 
                 text.styled(style -> style.withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(param))
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(param.strip()))
                 ))
             )
             .add("${Ciallo}", t -> Text.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
@@ -477,7 +477,7 @@ public class TextPlaceholderFactory<T> {
             .add("${mainhand}", t -> {
                 ItemStack item = t.getMainHandStack();
                 if (item == null || item.isEmpty()) {
-                    return Util.parseTranslateableText("fmod.command.get.emptyslot");
+                    return Util.parseTranslatableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
                         return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
@@ -489,7 +489,7 @@ public class TextPlaceholderFactory<T> {
             .add("${offhand}", t -> {
                 ItemStack item = t.getOffHandStack();
                 if (item == null || item.isEmpty()) {
-                    return Util.parseTranslateableText("fmod.command.get.emptyslot");
+                    return Util.parseTranslatableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
                         return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));

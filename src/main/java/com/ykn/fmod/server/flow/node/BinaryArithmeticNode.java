@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -35,30 +40,30 @@ public class BinaryArithmeticNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.bialu.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.bialu.title.feat");
+        Text displayName = Util.parseTranslatableText("fmod.node.bialu.title.name");
+        Text description = Util.parseTranslatableText("fmod.node.bialu.title.feat");
         List<Text> inputNames = new ArrayList<>();
         List<Text> inputDescriptions = new ArrayList<>();
         List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslateableText("fmod.node.bialu.input.num1.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.bialu.input.num1.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.bialu.input.num1.type"));
-        inputNames.add(Util.parseTranslateableText("fmod.node.bialu.input.num2.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.bialu.input.num2.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.bialu.input.num2.type"));
-        inputNames.add(Util.parseTranslateableText("fmod.node.bialu.input.op.name"));
-        inputDescriptions.add(Util.parseTranslateableText("fmod.node.bialu.input.op.feat"));
-        inputDataTypes.add(Util.parseTranslateableText("fmod.node.bialu.input.op.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.bialu.input.num1.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.input.num1.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.input.num1.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.bialu.input.num2.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.input.num2.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.input.num2.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.bialu.input.op.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.input.op.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.input.op.type"));
         List<Text> outputNames = new ArrayList<>();
         List<Text> outputDescriptions = new ArrayList<>();
         List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslateableText("fmod.node.bialu.output.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.bialu.output.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.bialu.output.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.bialu.output.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.output.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.output.type"));
         List<Text> branchNames = new ArrayList<>();
         List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }
@@ -138,7 +143,7 @@ public class BinaryArithmeticNode extends FlowNode {
                     result = tryVec3dNum1.crossProduct(tryVec3dNum2);
                     break;
                 default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
             status.setOutput(0, result);
             return;
@@ -162,7 +167,7 @@ public class BinaryArithmeticNode extends FlowNode {
                     result = new Vec3d(tryVec3dNum1.x / tryDoubleNum2, tryVec3dNum1.y / tryDoubleNum2, tryVec3dNum1.z / tryDoubleNum2);
                     break;
                 default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
             status.setOutput(0, result);
             return;
@@ -185,7 +190,7 @@ public class BinaryArithmeticNode extends FlowNode {
                     result = new Vec3d(tryDoubleNum1 / tryVec3dNum2.x, tryDoubleNum1 / tryVec3dNum2.y, tryDoubleNum1 / tryVec3dNum2.z);
                     break;
                 default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
             status.setOutput(0, result);
             return;
@@ -216,7 +221,7 @@ public class BinaryArithmeticNode extends FlowNode {
                     status.setOutput(0, tryVec2fNum1.dot(tryVec2fNum2));
                     return;
                 default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
             status.setOutput(0, result);
             return;
@@ -240,7 +245,7 @@ public class BinaryArithmeticNode extends FlowNode {
                     result = new Vec2f(tryVec2fNum1.x / scalarF, tryVec2fNum1.y / scalarF);
                     break;
                 default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
             status.setOutput(0, result);
             return;
@@ -263,7 +268,7 @@ public class BinaryArithmeticNode extends FlowNode {
                     result = new Vec2f(scalarF / tryVec2fNum2.x, scalarF / tryVec2fNum2.y);
                     break;
                 default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
             status.setOutput(0, result);
             return;
@@ -289,7 +294,7 @@ public class BinaryArithmeticNode extends FlowNode {
                         return;
                     case "%":
                         if (tryDoubleNum2 == 0) {
-                            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.divzero", this.name), null);
+                            throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.divzero", this.name), null);
                         }
                         status.setOutput(0, tryDoubleNum1 % tryDoubleNum2);
                         return;
@@ -324,10 +329,10 @@ public class BinaryArithmeticNode extends FlowNode {
                         status.setOutput(0, Math.hypot(tryDoubleNum1, tryDoubleNum2));
                         return;
                     default:
-                        throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                        throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
                 }
             } catch (ArithmeticException ex) {
-                throw new LogicException(ex, Util.parseTranslateableText("fmod.node.bialu.error.arithmetic", this.name), null);
+                throw new LogicException(ex, Util.parseTranslatableText("fmod.node.bialu.error.arithmetic", this.name), null);
             }
         }
 
@@ -346,7 +351,7 @@ public class BinaryArithmeticNode extends FlowNode {
                     status.setOutput(0, tryBoolNum1 || tryBoolNum2);
                     return;
                 default:
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
         }
 
@@ -360,7 +365,7 @@ public class BinaryArithmeticNode extends FlowNode {
                 status.setOutput(0, result);
                 return;
             } else {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
         } else if (num1Obj instanceof Text) {
             String str2 = TypeAdaptor.parse(num2Obj).asString();
@@ -371,7 +376,7 @@ public class BinaryArithmeticNode extends FlowNode {
                 status.setOutput(0, result);
                 return;
             } else {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
             }
         }
 
@@ -381,7 +386,7 @@ public class BinaryArithmeticNode extends FlowNode {
             status.setOutput(0, str1 + str2);
             return;
         } else {
-            throw new LogicException(null, Util.parseTranslateableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
         }
     }
 }

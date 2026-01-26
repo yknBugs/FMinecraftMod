@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.event;
 
 import com.ykn.fmod.server.base.util.MessageLocation;
@@ -45,7 +50,7 @@ public class PlayerDeath {
         Text playerName = player.getDisplayName();
         Text deathCoord = Util.parseCoordText(player);
 
-        MutableText text = Util.parseTranslateableText("fmod.message.playerdeathcoord", playerName, deathCoord).formatted(Formatting.RED);
+        MutableText text = Util.parseTranslatableText("fmod.message.playerdeathcoord", playerName, deathCoord).formatted(Formatting.RED);
         Util.postMessage(player, Util.serverConfig.getPlayerDeathCoord(), MessageLocation.CHAT, text);
     }
 

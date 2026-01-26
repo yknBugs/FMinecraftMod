@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -29,33 +34,33 @@ public class ProjectileHitEntityEventNode extends EventNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.pentityevt.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.pentityevt.title.feat");
+        Text displayName = Util.parseTranslatableText("fmod.node.pentityevt.title.name");
+        Text description = Util.parseTranslatableText("fmod.node.pentityevt.title.feat");
         List<Text> inputNames = new ArrayList<>();
         List<Text> inputDescriptions = new ArrayList<>();
         List<Text> inputDataTypes = new ArrayList<>();
         List<Text> outputNames = new ArrayList<>();
         List<Text> outputDescriptions = new ArrayList<>();
         List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslateableText("fmod.node.pentityevt.output.projectile.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.pentityevt.output.projectile.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.pentityevt.output.projectile.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.pentityevt.output.shooter.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.pentityevt.output.shooter.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.pentityevt.output.shooter.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.pentityevt.output.entity.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.pentityevt.output.entity.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.pentityevt.output.entity.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.pentityevt.output.position.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.pentityevt.output.position.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.pentityevt.output.position.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.pentityevt.output.distance.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.pentityevt.output.distance.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.pentityevt.output.distance.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.projectile.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.projectile.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.projectile.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.shooter.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.shooter.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.shooter.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.entity.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.entity.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.entity.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.position.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.position.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.position.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.distance.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.distance.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.distance.type"));
         List<Text> branchNames = new ArrayList<>();
         List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }

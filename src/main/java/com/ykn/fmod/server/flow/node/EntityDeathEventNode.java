@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -30,36 +35,36 @@ public class EntityDeathEventNode extends EventNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.deathevt.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.deathevt.title.feat");
+        Text displayName = Util.parseTranslatableText("fmod.node.deathevt.title.name");
+        Text description = Util.parseTranslatableText("fmod.node.deathevt.title.feat");
         List<Text> inputNames = new ArrayList<>();
         List<Text> inputDescriptions = new ArrayList<>();
         List<Text> inputDataTypes = new ArrayList<>();
         List<Text> outputNames = new ArrayList<>();
         List<Text> outputDescriptions = new ArrayList<>();
         List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslateableText("fmod.node.deathevt.output.victim.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.deathevt.output.victim.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.deathevt.output.victim.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.deathevt.output.damage.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.deathevt.output.damage.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.deathevt.output.damage.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.deathevt.output.attacker.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.deathevt.output.attacker.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.deathevt.output.attacker.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.deathevt.output.source.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.deathevt.output.source.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.deathevt.output.source.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.deathevt.output.position.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.deathevt.output.position.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.deathevt.output.position.type"));
-        outputNames.add(Util.parseTranslateableText("fmod.node.deathevt.output.message.name"));
-        outputDescriptions.add(Util.parseTranslateableText("fmod.node.deathevt.output.message.feat"));
-        outputDataTypes.add(Util.parseTranslateableText("fmod.node.deathevt.output.message.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.deathevt.output.victim.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.deathevt.output.victim.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.deathevt.output.victim.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.deathevt.output.damage.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.deathevt.output.damage.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.deathevt.output.damage.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.deathevt.output.attacker.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.deathevt.output.attacker.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.deathevt.output.attacker.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.deathevt.output.source.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.deathevt.output.source.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.deathevt.output.source.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.deathevt.output.position.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.deathevt.output.position.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.deathevt.output.position.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.deathevt.output.message.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.deathevt.output.message.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.deathevt.output.message.type"));
         List<Text> branchNames = new ArrayList<>();
         List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }

@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.logic;
 
 import java.util.ArrayList;
@@ -159,11 +164,11 @@ public class ExecutionContext {
         FlowNode currentNode = this.flow.getFirstNode();
         try {
             if (currentNode == null) {
-                throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.nullstart"), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullstart"), null);
             }
             while (currentNode != null) {
                 if (this.nodeExecutionCounter > maxAllowedNodes) {
-                    throw new LogicException(null, Util.parseTranslateableText("fmod.flow.error.deadloop", maxAllowedNodes), null);
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.deadloop", maxAllowedNodes), null);
                 }
                 FlowNode nextNode = currentNode.execute(this);
                 this.nodeExecutionCounter++;
@@ -172,7 +177,7 @@ public class ExecutionContext {
             }
         } catch (LogicException e) {
             this.exception = e;
-            LoggerFactory.getLogger(Util.LOGGERNAME).info("Logic flow " + flow.name + " terminated with exception", e);
+            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Logic flow " + flow.name + " terminated with exception", e);
         }
     }
 

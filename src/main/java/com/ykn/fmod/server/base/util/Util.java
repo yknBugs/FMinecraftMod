@@ -151,6 +151,7 @@ public class Util {
         for (ServerPlayerEntity player : players) {
             sendActionBarMessage(player, message);
         }
+        LoggerFactory.getLogger(LOGGERNAME).debug(message.getString());
     }
 
     /**
@@ -307,7 +308,7 @@ public class Util {
      *         it is returned as a translatable text.
      */
     @NotNull
-    public static MutableText parseTranslateableText(@NotNull String key, Object... args) {
+    public static MutableText parseTranslatableText(@NotNull String key, Object... args) {
         if (serverConfig.isEnableServerTranslation()) {
             // A trick, by intentionally not passing args to translatable(), we still keep the "%" patterns here.
             String translatedText = Text.translatable(key).getString();
@@ -338,10 +339,10 @@ public class Util {
         String strY = String.format("%.2f", y);
         String strZ = String.format("%.2f", z);
         MutableText biomeText = getBiomeText(biome);
-        return parseTranslateableText("fmod.misc.coord", biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
+        return parseTranslatableText("fmod.misc.coord", biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
             new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + dimension.toString() + " run tp @s " + strX + " " + strY + " " + strZ)
         ).withHoverEvent(
-            new HoverEvent(HoverEvent.Action.SHOW_TEXT, parseTranslateableText("fmod.misc.clicktp").formatted(Formatting.GREEN))   
+            new HoverEvent(HoverEvent.Action.SHOW_TEXT, parseTranslatableText("fmod.misc.clicktp").formatted(Formatting.GREEN))   
         ));
     }
 
@@ -490,7 +491,7 @@ public class Util {
     public static MutableText getBiomeText(@Nullable Identifier biomeId) {
         MutableText biomeText = null;
         if (biomeId == null) {
-            biomeText = Util.parseTranslateableText("fmod.misc.unknown");
+            biomeText = Util.parseTranslatableText("fmod.misc.unknown");
         } else {
             // Vanilla should contain this translation key.
             biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));

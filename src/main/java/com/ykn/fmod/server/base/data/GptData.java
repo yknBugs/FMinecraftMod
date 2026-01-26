@@ -364,7 +364,7 @@ public class GptData {
         }
     }
 
-    public String getReponseMessages(int index) {
+    public String getResponseMessages(int index) {
         this.lock.readLock().lock();
         try {
             return this.responseMessages.get(index);
@@ -449,7 +449,7 @@ public class GptData {
      * Retrieves a list of chat messages, alternating between user and assistant messages.
      * 
      * This method constructs a list of `ChatMessage` objects by iterating through the 
-     * `postMessages` and `reponseMessages` lists. For each entry in these lists, it adds 
+     * `postMessages` and `responseMessages` lists. For each entry in these lists, it adds 
      * a `ChatMessage` for the user and a corresponding `ChatMessage` for the assistant.
      * Finally, it adds a `ChatMessage` for the cached post message from the user.
      * 

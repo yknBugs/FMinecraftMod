@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.schedule;
 
 import com.ykn.fmod.server.base.util.Util;
@@ -23,7 +28,7 @@ public class FightMessage extends ScheduledTask {
         Text playerName = player.getDisplayName();
         Text entityName = entity.getDisplayName();
         double entityHealth = entity.getHealth();
-        MutableText text = Util.parseTranslateableText("fmod.message.bossfight", playerName, entityName, String.format("%.1f", entityHealth));
+        MutableText text = Util.parseTranslatableText("fmod.message.bossfight", playerName, entityName, String.format("%.1f", entityHealth));
         Util.postMessage(player, Util.serverConfig.getBossFightMessageReceiver(), Util.serverConfig.getBossFightMessageLocation(), text);
     }
 

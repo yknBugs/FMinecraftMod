@@ -350,7 +350,7 @@ public class MarkdownToTextConverter {
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslateableText("fmod.misc.copyto").formatted(Formatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.copyto").formatted(Formatting.GREEN)
                     ))
                 );
                 alreadyApplyColor = true;
@@ -385,7 +385,7 @@ public class MarkdownToTextConverter {
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslateableText("fmod.misc.copyto").formatted(Formatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.copyto").formatted(Formatting.GREEN)
                     ))
                 );
             }
@@ -418,7 +418,7 @@ public class MarkdownToTextConverter {
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslateableText("fmod.misc.openurl", Text.literal(hint.get(type.indexOf(MarkdownUnit.HYPERLINK))).formatted(Formatting.YELLOW)).formatted(Formatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.openurl", Text.literal(hint.get(type.indexOf(MarkdownUnit.HYPERLINK))).formatted(Formatting.YELLOW)).formatted(Formatting.GREEN)
                     ))
                 );
             }
@@ -533,7 +533,7 @@ public class MarkdownToTextConverter {
                 ))
                 .withHoverEvent(new HoverEvent(
                     HoverEvent.Action.SHOW_TEXT,
-                    Util.parseTranslateableText("fmod.misc.copyto").formatted(Formatting.GREEN)
+                    Util.parseTranslatableText("fmod.misc.copyto").formatted(Formatting.GREEN)
                 ))
             );
     }

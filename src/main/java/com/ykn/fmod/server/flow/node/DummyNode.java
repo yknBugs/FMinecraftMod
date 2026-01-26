@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
@@ -25,8 +30,8 @@ public class DummyNode extends EventNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslateableText("fmod.node.dummy.title.name");
-        Text description = Util.parseTranslateableText("fmod.node.dummy.title.feat");
+        Text displayName = Util.parseTranslatableText("fmod.node.dummy.title.name");
+        Text description = Util.parseTranslatableText("fmod.node.dummy.title.feat");
         List<Text> inputNames = new ArrayList<>();
         List<Text> inputDescriptions = new ArrayList<>();
         List<Text> inputDataTypes = new ArrayList<>();
@@ -35,8 +40,8 @@ public class DummyNode extends EventNode {
         List<Text> outputDataTypes = new ArrayList<>();
         List<Text> branchNames = new ArrayList<>();
         List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslateableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslateableText("fmod.node.default.branch.feat"));
+        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
+        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
         return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
             inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
     }
