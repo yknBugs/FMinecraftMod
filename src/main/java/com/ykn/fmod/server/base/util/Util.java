@@ -543,8 +543,8 @@ public class Util {
     public static void overrideServerData(@Nonnull MinecraftServer server, @Nonnull ServerData data) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
-            existingData.globalRequestPool.shutdown();
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the global thread pool.");
+            existingData.shutdownAsyncTaskPool();
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the thread pool.");
         }
         worldData.put(server, data);
     }
@@ -557,8 +557,8 @@ public class Util {
     public static void resetServerData(@Nonnull MinecraftServer server) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
-            existingData.globalRequestPool.shutdown();
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the global thread pool.");
+            existingData.shutdownAsyncTaskPool();
+            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the thread pool.");
         }
         ServerData data = new ServerData(server);
         worldData.put(server, data);

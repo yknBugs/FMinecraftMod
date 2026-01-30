@@ -10,7 +10,6 @@ import java.util.List;
 
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.schedule.BiomeMessage;
-import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.base.util.GameMath;
@@ -53,10 +52,6 @@ public class WorldTick {
             playerData.lastDimensionId = player.level().dimension().location();
             playerData.lastBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         }
-
-        List<ScheduledTask> scheduledTasks = Util.getServerData(server).getScheduledTasks();
-        scheduledTasks.forEach(ScheduledTask::tick);
-        scheduledTasks.removeIf(ScheduledTask::isFinished);
 
         Util.getServerData(server).tick();
     }

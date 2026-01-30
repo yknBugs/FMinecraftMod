@@ -544,10 +544,10 @@ public class MarkdownToTextConverter {
     private static MutableComponent syntaxHighlightJava(String code) {
         Pattern commentPattern = Pattern.compile("(?s)/\\*.*?\\*/|//.*?(?=\\r?\\n|$)");
         Pattern stringPattern = Pattern.compile("(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
-        Pattern keywordPattern = Pattern.compile("\\b(?:abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|exports|extends|final|finally|float|for|if|goto|implements|import|instanceof|int|interface|long|module|native|new|package|private|protected|provides|public|record|requires|return|short|static|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|void|volatile|while|with|true|false|null)\\b");
+        Pattern keywordPattern = Pattern.compile("\\b(?:abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|exports|extends|final|finally|float|for|if|goto|implements|import|instanceof|int|interface|long|module|native|new|package|permits|private|protected|provides|public|record|requires|return|short|static|sealed|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|void|volatile|while|with|true|false|null)\\b");
         Pattern numberPattern = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+(?:[lL])?|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?:[fFdDlL])?)(?![A-Za-z0-9_$])");
         Pattern punctuationPattern = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
-        Pattern classPattern = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,?]*\\s*>|(?<=\\b(class|extends|implements|interface|instanceof|enum|throws|record)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?(\\s*\\[\\s*[0-9]*\\s*\\])?\\s+[A-Za-z_$]\\w*\\b)|(?<=\\b(package|import|exports|module|requires|provides|with)\\s+)(\\w+\\s*\\.\\s*)*\\w+|(?<=(?<![A-Za-z0-9_$]\\s*)@\\s*)[A-Za-z_$]\\w*\\b");
+        Pattern classPattern = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,?]*\\s*>|(?<=\\b(class|extends|implements|interface|instanceof|enum|throws|record|permits)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?(\\s*\\[\\s*[0-9]*\\s*\\])?\\s+[A-Za-z_$]\\w*\\b)|(?<=\\b(package|import|exports|module|requires|provides|with)\\s+)(\\w+\\s*\\.\\s*)*\\w+|(?<=(?<![A-Za-z0-9_$]\\s*)@\\s*)[A-Za-z_$]\\w*\\b");
         Pattern functionPattern = Pattern.compile("\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\()");
         // May not be able to handle ? symbol in generics, such as List<? extends Number>, and class name with full package path
         
@@ -603,7 +603,7 @@ public class MarkdownToTextConverter {
     private static MutableComponent syntaxHighlightCpp(String code) {
         Pattern commentPattern = Pattern.compile("(?s)/\\*.*?\\*/|//.*?(?=\\r?\\n|$)");
         Pattern stringPattern = Pattern.compile("(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
-        Pattern keywordPattern = Pattern.compile("\\b(?:auto|break|case|catch|class|concept|const|continue|default|do|else|enum|explicit|export|extern|for|friend|goto|if|inline|namespace|new|operator|private|protected|public|return|sizeof|static|struct|switch|template|this|throw|try|typedef|union|using|virtual|volatile|while|int|double|float|long|char|unsigned|signed|void|bool|true|false|nullptr|static_cast|dynamic_cast|const_cast|reinterpret_cast|typeid|typename|alignof|alignas|noexcept|constexpr|decltype|override|final|delete)\\b");
+        Pattern keywordPattern = Pattern.compile("\\b(?:alignas|alignof|auto|break|case|catch|class|concept|const|constexpr|continue|decltype|default|delete|do|else|enum|explicit|export|extern|for|final|friend|goto|if|import|inline|module|mutable|namespace|noexcept|new|operator|override|private|protected|public|requires|return|sizeof|static|struct|switch|template|this|throw|try|typedef|typeid|typename|union|using|virtual|volatile|while|int|double|float|long|char|unsigned|signed|void|bool|true|false|nullptr|static_cast|dynamic_cast|const_cast|reinterpret_cast|assert|static_assert|thread_local)\\b");
         Pattern preprocessorPattern = Pattern.compile("(?m)^\\s*#\\s*\\w+");
         Pattern numberPattern = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+(?:[lL])?|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?:[fFdDlL])?)(?![A-Za-z0-9_$])");
         Pattern punctuationPattern = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
@@ -615,6 +615,8 @@ public class MarkdownToTextConverter {
         // (\s*(?![&*\s]*&\s*&)[&*][&*\s]*)? An optional pointer or reference syntax while excluding AND && syntax
         // ([A-Za-z_$]\w*\s*::\s*)* One or more optional namespace or class name before a function or a class name
         // Class Pattern: Template | Definition | Namespace | Type Cast | Type Cast | Create Object | Inherit
+        // Cannot match newly initialized objects during return, such as "return ArrayList<>()"
+        // Cannot match variadic parameters, such as "template<typename... Args>" or "void func(int a, Args... args)"
 
         ArrayList<Pattern> patterns = new ArrayList<>();
         patterns.add(commentPattern);
