@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.base.schedule;
 
-import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
@@ -30,7 +29,7 @@ public class PlayerHurtMessage extends ScheduledTask {
             double damage = lastHealth - health;
             Component playerName = player.getDisplayName();
             MutableComponent text = Util.parseTranslatableText("fmod.message.playerhurt", playerName, String.format("%.1f", damage), String.format("%.1f", lastHealth), String.format("%.1f", health));
-            Util.postMessage(player, Util.serverConfig.getPlayerSeriousHurt(), MessageLocation.ACTIONBAR, text);
+            Util.postMessage(player, Util.serverConfig.getPlayerSeriousHurtReceiver(), Util.serverConfig.getPlayerSeriousHurtLocation(), text);
         }
     }
 

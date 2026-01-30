@@ -2132,45 +2132,69 @@ public class CommandRegistrater {
                         )
                         .executes(context -> {return runOptionsCommand("bossMaxHealthThreshold", null, context);})
                     )
-                    .then(Commands.literal("playerDeathCoord")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("playerDeathCoord", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("playerDeathCoord", null, context);})
+                    .then(Commands.literal("playerDeathCoordLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerDeathCoordLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("playerDeathCoordLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("playerDeathCoordLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("playerDeathCoordLocation", null, context);})
                     )
-                    .then(Commands.literal("projectileHitsEntity")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("projectileHitsEntity", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("projectileHitsEntity", null, context);})
+                    .then(Commands.literal("playerDeathCoordReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("playerDeathCoordReceiver", null, context);})
                     )
-                    .then(Commands.literal("projectileBeingHit")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("projectileBeingHit", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("projectileBeingHit", null, context);})
+                    .then(Commands.literal("projectileHitsEntityLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileHitsEntityLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("projectileHitsEntityLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("projectileHitsEntityLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("projectileHitsEntityLocation", null, context);})
                     )
-                    .then(Commands.literal("informAFK")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("informAFK", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("informAFK", null, context);})
+                    .then(Commands.literal("projectileHitsEntityReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("projectileHitsEntityReceiver", null, context);})
+                    )
+                    .then(Commands.literal("projectileBeingHitLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileBeingHitLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("projectileBeingHitLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("projectileBeingHitLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("projectileBeingHitLocation", null, context);})
+                    )
+                    .then(Commands.literal("projectileBeingHitReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("projectileBeingHitReceiver", null, context);})
+                    )
+                    .then(Commands.literal("informAFKLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("informAFKLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("informAFKLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("informAFKLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("informAFKLocation", null, context);})
+                    )
+                    .then(Commands.literal("informAFKReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("informAFKReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("informAFKReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("informAFKReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("informAFKReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("informAFKReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("informAFKReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("informAFKReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("informAFKReceiver", null, context);})
                     )
                     .then(Commands.literal("informAFKThreshold")
                         .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
@@ -2178,15 +2202,21 @@ public class CommandRegistrater {
                         )
                         .executes(context -> {return runOptionsCommand("informAFKThreshold", null, context);})
                     )
-                    .then(Commands.literal("broadcastAFK")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("broadcastAFK", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("broadcastAFK", null, context);})
+                    .then(Commands.literal("broadcastAFKLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("broadcastAFKLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("broadcastAFKLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("broadcastAFKLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("broadcastAFKLocation", null, context);})
+                    )
+                    .then(Commands.literal("broadcastAFKReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("broadcastAFKReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("broadcastAFKReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("broadcastAFKReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("broadcastAFKReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("broadcastAFKReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("broadcastAFKReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("broadcastAFKReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("broadcastAFKReceiver", null, context);})
                     )
                     .then(Commands.literal("broadcastAFKThreshold")
                         .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
@@ -2194,25 +2224,37 @@ public class CommandRegistrater {
                         )
                         .executes(context -> {return runOptionsCommand("broadcastAFKThreshold", null, context);})
                     )
-                    .then(Commands.literal("backFromAFK")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("backFromAFK", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("backFromAFK", null, context);})
+                    .then(Commands.literal("backFromAFKLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("backFromAFKLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("backFromAFKLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("backFromAFKLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("backFromAFKLocation", null, context);})
                     )
-                    .then(Commands.literal("biomeChangeMessage")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("biomeChangeMessage", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("biomeChangeMessage", null, context);})
+                    .then(Commands.literal("backFromAFKReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("backFromAFKReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("backFromAFKReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("backFromAFKReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("backFromAFKReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("backFromAFKReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("backFromAFKReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("backFromAFKReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("backFromAFKReceiver", null, context);})
+                    )
+                    .then(Commands.literal("biomeChangeMessageLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("biomeChangeMessageLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("biomeChangeMessageLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("biomeChangeMessageLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("biomeChangeMessageLocation", null, context);})
+                    )
+                    .then(Commands.literal("biomeChangeMessageReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("biomeChangeMessageReceiver", null, context);})
                     )
                     .then(Commands.literal("biomeChangeDelay")
                         .then(Commands.argument("seconds", IntegerArgumentType.integer(0))
@@ -2294,15 +2336,21 @@ public class CommandRegistrater {
                         )
                         .executes(context -> {return runOptionsCommand("entityNumberCheckInterval", null, context);})
                     )
-                    .then(Commands.literal("playerHurtMessage")
-                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.NONE, context);}))
-                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.ALL, context);}))
-                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.OP, context);}))
-                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.SELFOP, context);}))
-                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("playerHurtMessage", MessageReceiver.SELF, context);}))
-                        .executes(context -> {return runOptionsCommand("playerHurtMessage", null, context);})
+                    .then(Commands.literal("playerHurtMessageLocation")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerHurtMessageLocation", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("playerHurtMessageLocation", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("playerHurtMessageLocation", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("playerHurtMessageLocation", null, context);})
+                    )
+                    .then(Commands.literal("playerHurtMessageReceiver")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", MessageReceiver.NONE, context);}))
+                        .then(Commands.literal("all").executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", MessageReceiver.ALL, context);}))
+                        .then(Commands.literal("ops").executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", MessageReceiver.OP, context);}))
+                        .then(Commands.literal("selfops").executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", MessageReceiver.SELFOP, context);}))
+                        .then(Commands.literal("teamops").executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", MessageReceiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", MessageReceiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", MessageReceiver.SELF, context);}))
+                        .executes(context -> {return runOptionsCommand("playerHurtMessageReceiver", null, context);})
                     )
                     .then(Commands.literal("hugeDamageThreshold")
                         .then(Commands.argument("percentage", DoubleArgumentType.doubleArg(0, 100))
@@ -2505,44 +2553,84 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.cansleepmsg", text), true);
                     }
                     break;
-                case "playerDeathCoord":
+                case "playerDeathCoordLocation":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoord());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.bcdeathcoord", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getPlayerDeathCoordLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.bcdeathcoordloc", text), false);
                     } else {
-                        Util.serverConfig.setPlayerDeathCoord((MessageReceiver) value);
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.bcdeathcoord", text), true);
+                        Util.serverConfig.setPlayerDeathCoordLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.bcdeathcoordloc", text), true);
                     }
                     break;
-                case "projectileHitsEntity":
+                case "playerDeathCoordReceiver":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthers());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.projhitting", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerDeathCoordReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.bcdeathcoordreceiver", text), false);
                     } else {
-                        Util.serverConfig.setProjectileHitOthers((MessageReceiver) value);
+                        Util.serverConfig.setPlayerDeathCoordReceiver((MessageReceiver) value);
                         final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.projhitting", text), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.bcdeathcoordreceiver", text), true);
                     }
                     break;
-                case "projectileBeingHit":
+                case "projectileHitsEntityLocation":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHit());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.projbeinghit", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getProjectileHitOthersLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.projhittingloc", text), false);
                     } else {
-                        Util.serverConfig.setProjectileBeingHit((MessageReceiver) value);
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.projbeinghit", text), true);
+                        Util.serverConfig.setProjectileHitOthersLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.projhittingloc", text), true);
                     }
                     break;
-                case "informAFK":
+                case "projectileHitsEntityReceiver":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfking());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.informafk", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileHitOthersReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.projhittingreceiver", text), false);
                     } else {
-                        Util.serverConfig.setInformAfking((MessageReceiver) value);
+                        Util.serverConfig.setProjectileHitOthersReceiver((MessageReceiver) value);
                         final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.informafk", text), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.projhittingreceiver", text), true);
+                    }
+                    break;
+                case "projectileBeingHitLocation":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getProjectileBeingHitLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.projbeinghitloc", text), false);
+                    } else {
+                        Util.serverConfig.setProjectileBeingHitLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.projbeinghitloc", text), true);
+                    }
+                    break;
+                case "projectileBeingHitReceiver":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getProjectileBeingHitReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.projbeinghitreceiver", text), false);
+                    } else {
+                        Util.serverConfig.setProjectileBeingHitReceiver((MessageReceiver) value);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.projbeinghitreceiver", text), true);
+                    }
+                    break;
+                case "informAFKLocation":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getInformAfkingLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.informafkloc", text), false);
+                    } else {
+                        Util.serverConfig.setInformAfkingLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.informafkloc", text), true);
+                    }
+                    break;
+                case "informAFKReceiver":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getInformAfkingReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.informafkreceiver", text), false);
+                    } else {
+                        Util.serverConfig.setInformAfkingReceiver((MessageReceiver) value);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.informafkreceiver", text), true);
                     }
                     break;
                 case "informAFKThreshold":
@@ -2553,14 +2641,24 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.informafkthres", value), true);
                     }
                     break;
-                case "broadcastAFK":
+                case "broadcastAFKLocation":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfking());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.bcafk", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getBroadcastAfkingLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.bcafkloc", text), false);
                     } else {
-                        Util.serverConfig.setBroadcastAfking((MessageReceiver) value);
+                        Util.serverConfig.setBroadcastAfkingLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.bcafkloc", text), true);
+                    }
+                    break;
+                case "broadcastAFKReceiver":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getBroadcastAfkingReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.bcafkreceiver", text), false);
+                    } else {
+                        Util.serverConfig.setBroadcastAfkingReceiver((MessageReceiver) value);
                         final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.bcafk", text), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.bcafkreceiver", text), true);
                     }
                     break;
                 case "broadcastAFKThreshold":
@@ -2571,24 +2669,44 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.bcafkthres", value), true);
                     }
                     break;
-                case "backFromAFK":
+                case "backFromAFKLocation":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfking());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.stopafk", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getStopAfkingLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.stopafkloc", text), false);
                     } else {
-                        Util.serverConfig.setStopAfking((MessageReceiver) value);
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.stopafk", text), true);
+                        Util.serverConfig.setStopAfkingLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.stopafkloc", text), true);
                     }
                     break;
-                case "biomeChangeMessage":
+                case "backFromAFKReceiver":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiome());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.changebiome", text), false);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getStopAfkingReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.stopafkreceiver", text), false);
                     } else {
-                        Util.serverConfig.setChangeBiome((MessageReceiver) value);
+                        Util.serverConfig.setStopAfkingReceiver((MessageReceiver) value);
                         final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.changebiome", text), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.stopafkreceiver", text), true);
+                    }
+                    break;
+                case "biomeChangeMessageLocation":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getChangeBiomeLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.changebiomeloc", text), false);
+                    } else {
+                        Util.serverConfig.setChangeBiomeLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.changebiomeloc", text), true);
+                    }
+                    break;
+                case "biomeChangeMessageReceiver":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getChangeBiomeReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.changebiomereceiver", text), false);
+                    } else {
+                        Util.serverConfig.setChangeBiomeReceiver((MessageReceiver) value);
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.changebiomereceiver", text), true);
                     }
                     break;
                 case "biomeChangeDelay":
@@ -2697,14 +2815,24 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.entityinterval", value), true);
                     }
                     break;
-                case "playerHurtMessage":
+                case "playerHurtMessageLocation":
                     if (value == null) {
-                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurt());
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.playerhurt", text), false);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getPlayerSeriousHurtLocation());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.playerhurtloc", text), false);
                     } else {
-                        Util.serverConfig.setPlayerSeriousHurt((MessageReceiver) value);
+                        Util.serverConfig.setPlayerSeriousHurtLocation((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.playerhurtloc", text), true);
+                    }
+                    break;
+                case "playerHurtMessageReceiver":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageReceiverI18n(Util.serverConfig.getPlayerSeriousHurtReceiver());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.playerhurtreceiver", text), false);
+                    } else {
+                        Util.serverConfig.setPlayerSeriousHurtReceiver((MessageReceiver) value);
                         final MutableComponent text = EnumI18n.getMessageReceiverI18n((MessageReceiver) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.playerhurt", text), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.playerhurtreceiver", text), true);
                     }
                     break;
                 case "hugeDamageThreshold":
@@ -2717,9 +2845,9 @@ public class CommandRegistrater {
                     break;
                 case "travelMessageLocation":
                     if (value == null) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.loc", EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLoc())), false);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.loc", EnumI18n.getMessageLocationI18n(Util.serverConfig.getTravelMessageLocation())), false);
                     } else {
-                        Util.serverConfig.setTravelMessageLoc((MessageLocation) value);
+                        Util.serverConfig.setTravelMessageLocation((MessageLocation) value);
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.loc", EnumI18n.getMessageLocationI18n((MessageLocation) value)), true);
                     }
                     break;

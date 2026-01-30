@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.base.schedule;
 
-import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
@@ -36,11 +35,11 @@ public class ProjectileMessage extends ScheduledTask {
         MutableComponent text = Util.parseTranslatableText("fmod.message.projectile.onhit", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
         if (victim.isAlwaysTicking() && victim instanceof ServerPlayer) {
             ServerPlayer playerVictim = (ServerPlayer) victim;
-            Util.postMessage(playerVictim, Util.serverConfig.getProjectileBeingHit(), MessageLocation.ACTIONBAR, text);
+            Util.postMessage(playerVictim, Util.serverConfig.getProjectileBeingHitReceiver(), Util.serverConfig.getProjectileBeingHitLocation(), text);
         }
         if (shooter.isAlwaysTicking() && shooter instanceof ServerPlayer) {
             ServerPlayer playerShooter = (ServerPlayer) shooter;
-            Util.postMessage(playerShooter, Util.serverConfig.getProjectileHitOthers(), MessageLocation.ACTIONBAR, text);
+            Util.postMessage(playerShooter, Util.serverConfig.getProjectileHitOthersReceiver(), Util.serverConfig.getProjectileHitOthersLocation(), text);
         }
     }
 
