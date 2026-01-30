@@ -10,6 +10,9 @@ import net.minecraft.util.math.Box;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.World;
 
+/**
+ * Provides various mathematical utility functions for game development.
+ */
 public class GameMath {
 
     /**

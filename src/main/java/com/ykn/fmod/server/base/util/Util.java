@@ -201,7 +201,7 @@ public class Util {
                 sendActionBarMessage(player, message);
                 break;
             default:
-                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type: " + type);
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message type: " + type);
                 break;
         }
     }
@@ -224,7 +224,7 @@ public class Util {
                 broadcastActionBarMessage(server, message);
                 break;
             default:
-                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message type: " + type);
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message type: " + type);
                 break;
         }
     }
@@ -292,7 +292,7 @@ public class Util {
             case NONE:
                 break;
             default:
-                LoggerFactory.getLogger(LOGGERNAME).warn("FMinecraftMod: Invalid message method.");
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method.");
                 break;
         }
     }

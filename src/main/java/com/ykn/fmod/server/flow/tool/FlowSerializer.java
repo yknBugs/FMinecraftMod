@@ -28,32 +28,88 @@ import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 /**
- * LogicFlow Serializer
- *
- * JSON format (high level)
- * - Root object:
- *   - "name" : String           -- flow name
- *   - "startNodeId" : long      -- id of the start node
- *   - "nodes" : Array[Object]   -- array of serialized nodes
- *
- * - Node object:
- *   - "id" : long               -- node id
- *   - "type" : String           -- node type (used with NodeRegistry to re-create the node)
- *   - "name" : String           -- node display name
- *   - "inputs" : Array[Object]  -- array of serialized DataReference (length == node.metadata.inputNumber)
- *   - "nextNodes" : Array[long] -- array of next node ids (length == node.metadata.branchNumber)
- *
- * - DataReference object (constant or node output reference):
- *   - if constant:
- *       - "type" : "const"
- *       - "value" : String (the serialized value; booleans and numbers are stored as string representations)
- *   - if node output reference:
- *       - "type" : "reference"
- *       - "id" : long         -- referenced node id
- *       - "index" : int       -- referenced output index
+ * Utility class for serializing and deserializing logic flows to/from JSON.
+ * <p>
+ * FlowSerializer provides comprehensive functionality for:
+ * <ul>
+ *   <li>Converting LogicFlow objects to JSON format</li>
+ *   <li>Reconstructing LogicFlow objects from JSON</li>
+ *   <li>Saving flows to files with atomic replacement support</li>
+ *   <li>Loading flows from files with error handling</li>
+ * </ul>
+ * <p>
+ * <b>JSON Format Specification:</b>
+ * <p>
+ * <b>Root Object:</b>
+ * <pre>
+ * {
+ *   "name": String,           // Flow name
+ *   "version": String,        // Minecraft version
+ *   "mod": String,            // Mod version
+ *   "startNodeId": long,      // ID of the start node
+ *   "nodes": Array[Object]    // Array of serialized nodes
+ * }
+ * </pre>
+ * <p>
+ * <b>Node Object:</b>
+ * <pre>
+ * {
+ *   "id": long,               // Unique node ID
+ *   "type": String,           // Node type (for NodeRegistry)
+ *   "name": String,           // Display name
+ *   "inputs": Array[Object],  // Array of DataReference objects
+ *   "nextNodes": Array[long]  // Array of next node IDs
+ * }
+ * </pre>
+ * <p>
+ * <b>DataReference Object:</b>
+ * <p>
+ * For constant values:
+ * <pre>
+ * {
+ *   "type": "const",
+ *   "value": String           // String representation of value
+ * }
+ * </pre>
+ * <p>
+ * For node output references:
+ * <pre>
+ * {
+ *   "type": "reference",
+ *   "id": long,               // Referenced node ID
+ *   "index": int              // Referenced output index
+ * }
+ * </pre>
+ * <p>
+ * The serializer supports various value types including Vec3d, Vec2f, Double,
+ * Boolean, and String. Values are automatically parsed during deserialization.
+ * <p>
+ * File operations use atomic writes (via temporary files) when replacing existing
+ * files to prevent data corruption if the operation is interrupted.
+ * 
+ * @see LogicFlow
+ * @see FlowNode
+ * @see DataReference
+ * @see NodeRegistry
  */
 public class FlowSerializer {
 
+    /**
+     * Parses a string representation of a constant value into a DataReference.
+     * <p>
+     * This method attempts to parse the string as various types in order:
+     * <ol>
+     *   <li>null (if string is "null" or null)</li>
+ *   <li>Vec3d (3D vector)</li>
+ *   <li>Vec2f (2D float vector)</li>
+ *   <li>Double (numeric value)</li>
+ *   <li>Boolean (true/false)</li>
+ *   <li>String (fallback)</li>
+ * </ol>
+     * 
+     * @param valueStr The string representation of the value
+     * @return A DataReference containing the parsed constant value
+     */
     public static DataReference parseConstDataReference(String valueStr) {
         Vec3d valueVec3d = TypeAdaptor.parse(valueStr).asVec3d();
         Vec2f valueVec2f = TypeAdaptor.parse(valueStr).asVec2f();
@@ -74,6 +130,18 @@ public class FlowSerializer {
         }
     }
 
+    /**
+     * Serializes a DataReference into a JSON object.
+     * <p>
+     * The JSON format depends on the reference type:
+     * <ul>
+     *   <li>CONSTANT: {"type": "const", "value": String}</li>
+     *   <li>NODE_OUTPUT: {"type": "reference", "id": long, "index": int}</li>
+     * </ul>
+     * 
+     * @param ref The DataReference to serialize
+     * @return A JsonObject representing the reference
+     */
     private static JsonObject serializeDataReference(DataReference ref) {
         JsonObject json = new JsonObject();
         switch (ref.type) {
@@ -94,6 +162,14 @@ public class FlowSerializer {
         return json;
     }
 
+    /**
+     * Deserializes a DataReference from a JSON object.
+     * <p>
+     * Reconstructs the appropriate reference type based on the "type" field.
+     * 
+     * @param json The JsonObject containing the serialized reference
+     * @return A DataReference reconstructed from the JSON
+     */
     private static DataReference deserializeDataReference(JsonObject json) {
         String type = json.get("type").getAsString();
         if ("const".equals(type)) {
@@ -108,6 +184,19 @@ public class FlowSerializer {
         }
     }
 
+    /**
+     * Serializes a FlowNode into a JSON object.
+     * <p>
+     * The JSON includes:
+     * <ul>
+     *   <li>Node ID, type, and name</li>
+     *   <li>All input references as an array</li>
+     *   <li>All next node IDs as an array</li>
+     * </ul>
+     * 
+     * @param node The FlowNode to serialize
+     * @return A JsonObject representing the node
+     */
     private static JsonObject serializeNode(FlowNode node) {
         JsonObject json = new JsonObject();
         json.addProperty("id", node.getId());
@@ -129,6 +218,19 @@ public class FlowSerializer {
         return json;
     }
 
+    /**
+     * Deserializes a FlowNode from a JSON object.
+     * <p>
+     * This method:
+     * <ol>
+     *   <li>Extracts the node type and uses NodeRegistry to create the node</li>
+     *   <li>Deserializes and sets all input references</li>
+     *   <li>Deserializes and sets all next node IDs</li>
+     * </ol>
+     * 
+     * @param json The JsonObject containing the serialized node
+     * @return A FlowNode reconstructed from the JSON
+     */
     private static FlowNode deserializeNode(JsonObject json) {
         long id = json.get("id").getAsLong();
         String type = json.get("type").getAsString();
@@ -150,8 +252,16 @@ public class FlowSerializer {
 
     /**
      * Serializes a LogicFlow into a JsonObject.
-     * @param flow the LogicFlow to serialize (must not be null)
-     * @return a JsonObject representing the serialized LogicFlow
+     * <p>
+     * The resulting JSON includes:
+     * <ul>
+     *   <li>Flow name and start node ID</li>
+     *   <li>Version information (Minecraft and mod versions)</li>
+     *   <li>All nodes in sorted order with their full configuration</li>
+     * </ul>
+     * 
+     * @param flow The LogicFlow to serialize (must not be null)
+     * @return A JsonObject representing the complete serialized LogicFlow
      */
     public static JsonObject toJson(LogicFlow flow) {
         JsonObject json = new JsonObject();
@@ -170,10 +280,19 @@ public class FlowSerializer {
     }
 
     /**
-     * Deserialize a LogicFlow from its JSON representation.
-     *
-     * @param json the JsonObject containing the serialized LogicFlow
-     * @return a LogicFlow instance populated from the provided JSON
+     * Deserializes a LogicFlow from its JSON representation.
+     * <p>
+     * This method reconstructs the complete flow structure including:
+     * <ul>
+     *   <li>Flow name and start node</li>
+     *   <li>All nodes with their types, connections, and configurations</li>
+     *   <li>All data references between nodes</li>
+     * </ul>
+     * <p>
+     * Node types must be registered in NodeRegistry or deserialization will fail.
+     * 
+     * @param json The JsonObject containing the serialized LogicFlow
+     * @return A LogicFlow instance fully reconstructed from the JSON
      */
     public static LogicFlow fromJson(JsonObject json) {
         String name = json.get("name").getAsString();
@@ -189,9 +308,13 @@ public class FlowSerializer {
     }
 
     /**
-     * Serialize a LogicFlow to a JSON string.
-     * @param flow the LogicFlow to serialize
-     * @return the JSON string representation of the LogicFlow
+     * Serializes a LogicFlow to a pretty-printed JSON string.
+     * <p>
+     * The output is formatted with indentation for human readability.
+     * This is useful for debugging or displaying flows in text format.
+     * 
+     * @param flow The LogicFlow to serialize
+     * @return A formatted JSON string representation of the LogicFlow
      */
     public static String serializeToString(LogicFlow flow) {
         JsonObject json = toJson(flow);
@@ -203,9 +326,14 @@ public class FlowSerializer {
     }
 
     /**
-     * Deserialize a LogicFlow from a JSON string.
-     * @param jsonString the JSON string representation of the LogicFlow
-     * @return the deserialized LogicFlow
+     * Deserializes a LogicFlow from a JSON string.
+     * <p>
+     * This is the inverse of {@link #serializeToString(LogicFlow)}.
+     * Node types must be registered in NodeRegistry.
+     * 
+     * @param jsonString The JSON string representation of the LogicFlow
+     * @return The deserialized LogicFlow
+     * @throws com.google.gson.JsonSyntaxException If the JSON is malformed
      */
     public static LogicFlow deserializeFromString(String jsonString) {
         Gson gson = new Gson();
@@ -215,11 +343,24 @@ public class FlowSerializer {
     }
 
     /**
-     * Save a LogicFlow to a file in JSON format.
-     * @param flow the LogicFlow to save
-     * @param path the file path to save the LogicFlow to
-     * @param replace whether to replace the file atomically if it already exists
-     * @return true if the save operation was successful, false otherwise
+     * Saves a LogicFlow to a file in pretty-printed JSON format.
+     * <p>
+     * This method provides two modes:
+     * <ul>
+     *   <li><b>Atomic replacement (replace=true):</b> Writes to a temporary file first,
+     *       then atomically moves it to the target path. This prevents data corruption
+     *       if the write is interrupted. Will overwrite existing files.</li>
+     *   <li><b>Safe creation (replace=false):</b> Creates the file only if it doesn't
+     *       exist. Returns false if the file already exists.</li>
+     * </ul>
+     * <p>
+     * Parent directories are created automatically if they don't exist.
+     * Errors are logged but also returned as boolean status.
+     * 
+     * @param flow The LogicFlow to save
+     * @param path The file path to save the LogicFlow to
+     * @param replace Whether to replace the file atomically if it already exists
+     * @return {@code true} if the save operation was successful, {@code false} otherwise
      */
     public static boolean saveFile(LogicFlow flow, Path path, boolean replace) {
         JsonObject json = toJson(flow);
@@ -270,9 +411,20 @@ public class FlowSerializer {
     }
 
     /**
-     * Load a LogicFlow from a JSON file.
-     * @param path the file path to load the LogicFlow from
-     * @return the loaded LogicFlow, or null if loading failed
+     * Loads a LogicFlow from a JSON file.
+     * <p>
+     * This method:
+     * <ol>
+     *   <li>Checks if the path is a valid regular file</li>
+     *   <li>Reads and parses the JSON content</li>
+     *   <li>Deserializes the flow using {@link #fromJson(JsonObject)}</li>
+     * </ol>
+     * <p>
+     * Returns null if the file doesn't exist, isn't a regular file, or if
+     * deserialization fails. Errors are logged.
+     * 
+     * @param path The file path to load the LogicFlow from
+     * @return The loaded LogicFlow, or {@code null} if loading failed
      */
     public static LogicFlow loadFile(Path path) {
         if (!Files.isRegularFile(path)) {

@@ -16,18 +16,66 @@ import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 
+/**
+ * Represents a scheduled task for playing a NoteBlock song to a player.
+ * This class manages the playback of songs, including tick-based note triggering,
+ * speed control, seeking, and displaying song information to the player.
+ */
 public class PlaySong extends ScheduledTask {
 
+    /**
+     * The NoteBlock song to be played.
+     */
     private NoteBlockSong song;
+    
+    /**
+     * The name of the song being played.
+     */
     private String songName;
+    
+    /**
+     * The player who is receiving the song playback.
+     */
     private ServerPlayerEntity target;
+    
+    /**
+     * The command context from which this song playback was initiated.
+     */
     private CommandContext<ServerCommandSource> context;
+    
+    /**
+     * The current tick position in the song.
+     */
     private int tick;
+    
+    /**
+     * Whether to display song information to the player.
+     */
     private boolean showInfo;
+    
+    /**
+     * The last second value when song information was displayed.
+     */
     private int lastShowInfoSeconds;
+    
+    /**
+     * The last tick value when song information was displayed.
+     */
     private int lastShowInfoTicks;
+    
+    /**
+     * The last speed value when song information was displayed.
+     */
     private double lastShowInfoSpeed;
 
+    /**
+     * Constructs a new PlaySong task for playing a song to a player.
+     *
+     * @param song The NoteBlock song to be played.
+     * @param songName The name of the song.
+     * @param target The player who will receive the song playback.
+     * @param context The command context from which this playback was initiated.
+     */
     public PlaySong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
         super(1, song.getMaxRealTick() == 2147483647 ? 2147483647 : song.getMaxRealTick() + 1);
         this.song = song;
@@ -41,6 +89,10 @@ public class PlaySong extends ScheduledTask {
         this.lastShowInfoSpeed = 1.0;
     }
 
+    /**
+     * Called on each tick to play the notes scheduled for the current tick.
+     * Also handles displaying song information to the player if enabled.
+     */
     @Override
     public void onTick() {
         List<NoteBlockNote> notes = song.getNotes(this.tick);
@@ -83,22 +135,47 @@ public class PlaySong extends ScheduledTask {
         return target == null || target.isDisconnected() || target.isRemoved();
     }
 
+    /**
+     * Gets the NoteBlock song being played.
+     *
+     * @return The NoteBlock song.
+     */
     public NoteBlockSong getSong() {
         return song;
     }
 
+    /**
+     * Gets the name of the song being played.
+     *
+     * @return The song name.
+     */
     public String getSongName() {
         return songName;
     }
 
+    /**
+     * Gets the player receiving the song playback.
+     *
+     * @return The target player.
+     */
     public ServerPlayerEntity getTarget() {
         return target;
     }
 
+    /**
+     * Gets the current tick position in the song.
+     *
+     * @return The current tick.
+     */
     public int getTick() {
         return tick;
     }
 
+    /**
+     * Checks whether song information is being displayed to the player.
+     *
+     * @return {@code true} if song information is being shown; {@code false} otherwise.
+     */
     public boolean isShowInfo() {
         return showInfo;
     }
@@ -137,6 +214,11 @@ public class PlaySong extends ScheduledTask {
         this.reschedule(1, remainingRealTicks == 2147483647 ? 2147483647 : remainingRealTicks + 1);
     }
 
+    /**
+     * Sets whether to display song information to the player during playback.
+     *
+     * @param showInfo {@code true} to enable song information display; {@code false} to disable.
+     */
     public void setShowInfo(boolean showInfo) {
         this.showInfo = showInfo;
     }

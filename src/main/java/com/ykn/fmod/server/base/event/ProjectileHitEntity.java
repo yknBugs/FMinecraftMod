@@ -20,8 +20,8 @@ import net.minecraft.util.hit.EntityHitResult;
 
 public class ProjectileHitEntity {
 
-    private ProjectileEntity projectile;
-    private EntityHitResult entityHitResult;
+    private final ProjectileEntity projectile;
+    private final EntityHitResult entityHitResult;
 
     public ProjectileHitEntity(ProjectileEntity projectile, EntityHitResult entityHitResult) {
         this.projectile = projectile;

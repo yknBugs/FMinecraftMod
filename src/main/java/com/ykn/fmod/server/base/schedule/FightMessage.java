@@ -14,8 +14,8 @@ import net.minecraft.text.Text;
 
 public class FightMessage extends ScheduledTask {
 
-    private ServerPlayerEntity player;
-    private LivingEntity entity;
+    private final ServerPlayerEntity player;
+    private final LivingEntity entity;
 
     public FightMessage(ServerPlayerEntity player, LivingEntity entity) {
         super(1, 0);
@@ -39,7 +39,7 @@ public class FightMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (entity.isRemoved() || player.isDisconnected()) {
+        if (entity == null || player == null || entity.isRemoved() || player.isDisconnected()) {
             return true;
         }
         if (entity.getHealth() <= 0 || player.getHealth() <= 0) {

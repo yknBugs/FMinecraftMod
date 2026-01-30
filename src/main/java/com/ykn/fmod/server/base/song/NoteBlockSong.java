@@ -12,36 +12,60 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Represents a NoteBlock song with support for variable playback speed,
+ * tick-based note scheduling, and efficient note retrieval.
+ * <p>
+ * This class manages the mapping between virtual ticks (logical progression)
+ * and real ticks (actual playback time), allowing for features such as
+ * speed changes, seeking, and reverse playback.
+ */
 public class NoteBlockSong {
 
     /**
-     * List of notes and their corresponding tick in the song
+     * List of notes and their corresponding tick in the song.
+     * Maps virtual tick values to lists of notes scheduled at those ticks.
      */
     private HashMap<Double, List<NoteBlockNote>> notesMap;
 
     /**
-     * List of nearest tick for each note
+     * List of nearest tick for each note.
+     * Maps real tick values to lists of notes scheduled at those ticks.
      */
     private HashMap<Integer, List<NoteBlockNote>> realTickIndex;
 
     /**
-     * Last tick of the song (Will not change even the speed changes)
+     * Last tick of the song (will not change even when the speed changes).
+     * Represents the maximum virtual tick in the song.
      */
     private double maxVirtualTick;
 
     /**
-     * Last tick of the song in real time (When speed == 1 it will be the same as maxVirtualTick)
+     * Last tick of the song in real time (when speed == 1 it will be the same as maxVirtualTick).
+     * Represents the maximum real tick considering the current speed.
      */
     private int maxRealTick;
 
     /**
-     * Speed of the song
+     * Speed of the song.
+     * A value greater than 1.0 increases speed, between 0.0 and 1.0 decreases it,
+     * 0.0 pauses the song, and negative values enable reverse playback.
      */
     private double speed;
 
+    /**
+     * The title of the song.
+     */
     private String title;
+    
+    /**
+     * The author of the song.
+     */
     private String author;
 
+    /**
+     * Set of unique notes with instruments required for this song.
+     */
     private Set<NoteBlockNote> requirements;
 
 
@@ -54,13 +78,15 @@ public class NoteBlockSong {
      *                      A positive speed indicates forward progression, while a negative speed indicates
      *                      reverse progression.
      * @return The nearest real tick as an integer. Returns:
-     *         - 0 if speed is 0 and virtualTick is also 0.
-     *         - Integer.MAX_VALUE (2147483647) if speed is 0 and virtualTick is not 0, or if the calculated
-     *           real tick is NaN or positive infinity.
-     *         - Integer.MIN_VALUE (-2147483648) if the calculated real tick is negative infinity.
-     *         - Integer.MAX_VALUE or Integer.MIN_VALUE if the calculated real tick exceeds the range of
-     *           a 32-bit signed integer.
-     *         - The rounded value of the calculated real tick otherwise.
+     *         <ul>
+     *         <li> 0 if speed is 0 and virtualTick is also 0. </li>
+     *         <li> Integer.MAX_VALUE (2147483647) if speed is 0 and virtualTick is not 0, or if the calculated
+     *           real tick is NaN or positive infinity. </li>
+     *         <li> Integer.MIN_VALUE (-2147483648) if the calculated real tick is negative infinity. </li>
+     *         <li> Integer.MAX_VALUE or Integer.MIN_VALUE if the calculated real tick exceeds the range of
+     *           a 32-bit signed integer. </li>
+     *         <li> The rounded value of the calculated real tick otherwise. </li>
+     *         </ul>
      */
     public static int findNearestRealTick(double virtualTick, double maxVirtualTick, double speed) {
         if (speed == 0) {
@@ -116,6 +142,13 @@ public class NoteBlockSong {
         return map;
     }
 
+    /**
+     * Constructs a new NoteBlock song with the specified notes map, title, and author.
+     *
+     * @param notesMap A map of virtual ticks to lists of notes scheduled at those ticks.
+     * @param title The title of the song.
+     * @param author The author of the song.
+     */
     public NoteBlockSong(HashMap<Double, List<NoteBlockNote>> notesMap, String title, String author) {
         this.notesMap = notesMap;
         this.title = title;
@@ -165,9 +198,11 @@ public class NoteBlockSong {
 
     /**
      * Sets the playback speed of the song and updates the internal index.
+     * This method recalculates all tick mappings based on the new speed.
      *
      * @param speed The new playback speed to set. A higher value increases the speed,
-     *              while a lower value decreases it.
+     *              while a lower value decreases it. A value of 0.0 pauses the song,
+     *              and negative values enable reverse playback.
      */
     public void setSpeed(double speed) {
         this.speed = speed;
@@ -201,10 +236,22 @@ public class NoteBlockSong {
         return this.realTickIndex.getOrDefault(realTick, new ArrayList<>());
     }
 
+    /**
+     * Calculates the number of real ticks remaining from the current position to the end of the song.
+     *
+     * @param currentRealTick The current real tick position in the song.
+     * @return The number of real ticks remaining.
+     */
     public int getRemainingRealTicks(int currentRealTick) {
         return this.maxRealTick - currentRealTick;
     }
 
+    /**
+     * Calculates the number of virtual ticks remaining from the current position to the end of the song.
+     *
+     * @param currentVirtualTick The current virtual tick position in the song.
+     * @return The number of virtual ticks remaining.
+     */
     public double getRemainingVirtualTicks(double currentVirtualTick) {
         return this.maxVirtualTick - currentVirtualTick;
     }
@@ -251,34 +298,76 @@ public class NoteBlockSong {
         return findNearestRealTick(virtualTick, this.maxVirtualTick, this.speed);
     }
 
+    /**
+     * Gets the maximum real tick value of the song based on the current speed.
+     *
+     * @return The maximum real tick.
+     */
     public int getMaxRealTick() {
         return this.maxRealTick;
     }
 
+    /**
+     * Gets the maximum virtual tick value of the song.
+     * This value remains constant regardless of speed changes.
+     *
+     * @return The maximum virtual tick.
+     */
     public double getMaxVirtualTick() {
         return this.maxVirtualTick;
     }
 
+    /**
+     * Gets the map of virtual ticks to lists of notes.
+     *
+     * @return The notes map with virtual tick keys.
+     */
     public HashMap<Double, List<NoteBlockNote>> getNotesMap() {
         return this.notesMap;
     }
 
+    /**
+     * Gets the map of real ticks to lists of notes.
+     * This map is recalculated whenever the speed changes.
+     *
+     * @return The notes map with real tick keys.
+     */
     public HashMap<Integer, List<NoteBlockNote>> getRealTicksMap() {
         return this.realTickIndex;
     }
 
+    /**
+     * Gets the set of unique notes with instruments required for this song.
+     *
+     * @return The set of required notes.
+     */
     public Set<NoteBlockNote> getRequirements() {
         return this.requirements;
     }
 
+    /**
+     * Gets the current playback speed of the song.
+     *
+     * @return The current speed multiplier.
+     */
     public double getSpeed() {
         return this.speed;
     }
 
+    /**
+     * Gets the title of the song.
+     *
+     * @return The song title.
+     */
     public String getTitle() {
         return this.title;
     }
 
+    /**
+     * Gets the author of the song.
+     *
+     * @return The song author.
+     */
     public String getAuthor() {
         return this.author;
     }

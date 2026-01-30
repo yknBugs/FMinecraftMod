@@ -27,9 +27,9 @@ import net.minecraft.util.math.Box;
 
 public class LivingEntityDamage {
 
-    private LivingEntity entity;
-    private DamageSource damageSource;
-    private float amount;
+    private final LivingEntity entity;
+    private final DamageSource damageSource;
+    private final float amount;
 
     public LivingEntityDamage(LivingEntity entity, DamageSource damageSource, float amount) {
         this.entity = entity;

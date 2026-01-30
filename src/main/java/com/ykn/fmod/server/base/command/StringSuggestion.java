@@ -16,16 +16,43 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
 import net.minecraft.server.command.ServerCommandSource;
 
+/**
+ * Provides command auto-completion suggestions from a custom collection of strings.
+ * This is a generic suggestion provider that can suggest any collection of strings
+ * with optional quote wrapping for command auto-completion.
+ */
 public class StringSuggestion implements SuggestionProvider<ServerCommandSource> {
 
+    /**
+     * The collection of strings to suggest.
+     */
     public Collection<String> stringList;
+    
+    /**
+     * Whether to wrap suggestions in double quotes.
+     */
     private final boolean needQuote;
 
+    /**
+     * Constructs a new StringSuggestion with the specified string collection and quote setting.
+     *
+     * @param list the collection of strings to suggest
+     * @param needQuote whether to wrap suggestions in double quotes
+     */
     public StringSuggestion(Collection<String> list, boolean needQuote) {
         this.stringList = list;
         this.needQuote = needQuote;
     }
 
+    /**
+     * Provides suggestions from the string collection based on the current input.
+     * Suggests all strings that start with the remaining input text.
+     *
+     * @param context the command context
+     * @param builder the suggestions builder
+     * @return a completable future containing the suggestions
+     * @throws CommandSyntaxException if there's a syntax error in the command
+     */
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String item : stringList) {
@@ -40,10 +67,23 @@ public class StringSuggestion implements SuggestionProvider<ServerCommandSource>
         return builder.buildFuture();
     }
 
+    /**
+     * Creates a new StringSuggestion instance with the specified configuration.
+     *
+     * @param list the collection of strings to suggest
+     * @param needQuote whether to wrap suggestions in double quotes
+     * @return a new StringSuggestion instance
+     */
     public static StringSuggestion suggest(Collection<String> list, boolean needQuote) {
         return new StringSuggestion(list, needQuote);
     }
 
+    /**
+     * Updates the string collection for this suggestion provider.
+     *
+     * @param list the new collection of strings to suggest
+     * @return this StringSuggestion instance for method chaining
+     */
     public StringSuggestion update(Collection<String> list) {
         this.stringList = list;
         return this;

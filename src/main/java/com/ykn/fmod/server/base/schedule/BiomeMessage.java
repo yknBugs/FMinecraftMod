@@ -15,8 +15,8 @@ import net.minecraft.util.Identifier;
 
 public class BiomeMessage extends ScheduledTask {
 
-    private ServerPlayerEntity player;
-    private Identifier biomeId;
+    private final ServerPlayerEntity player;
+    private final Identifier biomeId;
     
     public BiomeMessage(ServerPlayerEntity player, Identifier biomeId) {
         super(Util.serverConfig.getChangeBiomeDelay(), 0);
@@ -37,7 +37,7 @@ public class BiomeMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (player.isDisconnected() || player.isRemoved()) {
+        if (player == null || player.isDisconnected() || player.isRemoved()) {
             return true;
         }
         Identifier currentBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);

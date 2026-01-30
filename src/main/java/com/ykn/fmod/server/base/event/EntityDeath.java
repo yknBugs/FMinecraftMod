@@ -19,8 +19,8 @@ import net.minecraft.entity.damage.DamageSource;
 
 public class EntityDeath {
 
-    private LivingEntity livingEntity;
-    private DamageSource damageSource;
+    private final LivingEntity livingEntity;
+    private final DamageSource damageSource;
 
     public EntityDeath(LivingEntity livingEntity, DamageSource damageSource) {
         this.livingEntity = livingEntity;

@@ -157,10 +157,9 @@ public class CommandRegistrater {
             MutableText commandFeedback = Util.parseTranslatableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
             context.getSource().sendFeedback(() -> commandFeedback, false);
             return Command.SINGLE_SUCCESS;
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.version.error"));
         }
@@ -205,6 +204,8 @@ public class CommandRegistrater {
             //     // Other source would have already logged the message
             //     logger.info("<{}> {}", context.getSource().getDisplayName().getString(), text);
             // }
+        } catch (CommandException e) {
+            throw e;
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -212,9 +213,6 @@ public class CommandRegistrater {
         } catch (IllegalArgumentException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt new", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
@@ -234,6 +232,8 @@ public class CommandRegistrater {
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             data.submitAsyncTask(gptHelper);
+        } catch (CommandException e) {
+            throw e;
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -241,9 +241,6 @@ public class CommandRegistrater {
         } catch (IllegalArgumentException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt reply", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
@@ -268,6 +265,8 @@ public class CommandRegistrater {
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             data.submitAsyncTask(gptHelper);
+        } catch (CommandException e) {
+            throw e;
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -275,9 +274,6 @@ public class CommandRegistrater {
         } catch (IllegalArgumentException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
@@ -305,6 +301,8 @@ public class CommandRegistrater {
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
             data.submitAsyncTask(gptHelper);
+        } catch (CommandException e) {
+            throw e;
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -312,9 +310,6 @@ public class CommandRegistrater {
         } catch (IllegalArgumentException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
@@ -341,10 +336,9 @@ public class CommandRegistrater {
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(postMessage)), false);
             context.getSource().sendFeedback(() -> Text.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
@@ -464,10 +458,9 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song cancel", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -487,10 +480,9 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song get", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -512,10 +504,9 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -533,10 +524,9 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -563,10 +553,9 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song search", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -591,10 +580,9 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f song speed", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -628,10 +616,9 @@ public class CommandRegistrater {
                 MutableText text = Util.parseTranslatableText("fmod.command.get.coord", name, coord);
                 context.getSource().sendFeedback(() -> text, false);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -645,10 +632,9 @@ public class CommandRegistrater {
             Text coord = Util.parseCoordText(player);
             MutableText text = Util.parseTranslatableText("fmod.command.share.coord", name, coord);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
@@ -710,10 +696,9 @@ public class CommandRegistrater {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -752,10 +737,9 @@ public class CommandRegistrater {
                 final MutableText text = Util.parseTranslatableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
                 Util.sendTextMessage(onlinePlayer, text);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
@@ -772,10 +756,9 @@ public class CommandRegistrater {
                 final String maxhpStr = String.format("%.2f", maxhp);
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -792,10 +775,9 @@ public class CommandRegistrater {
             final String maxhpStr = String.format("%.2f", maxhp);
             MutableText text = Util.parseTranslatableText("fmod.command.share.health", name, hpStr, maxhpStr);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
@@ -816,10 +798,9 @@ public class CommandRegistrater {
                 final String levelStr = String.valueOf(level);
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -840,10 +821,9 @@ public class CommandRegistrater {
             final String levelStr = String.valueOf(level);
             MutableText text = Util.parseTranslatableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
             Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
@@ -867,10 +847,9 @@ public class CommandRegistrater {
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
                 );
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when formatting item stack", e);
             itemText = Text.literal("??").formatted(Formatting.RED);
         }
@@ -974,10 +953,9 @@ public class CommandRegistrater {
             for (MutableText text : inventoryText) {
                 context.getSource().sendFeedback(() -> text, false);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -994,10 +972,9 @@ public class CommandRegistrater {
             for (MutableText text : inventoryText) {
                 Util.broadcastTextMessage(context.getSource().getServer(), text);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
@@ -1039,10 +1016,9 @@ public class CommandRegistrater {
                     context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.item", name, itemTxt), false);
                 }
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1081,10 +1057,9 @@ public class CommandRegistrater {
             } else {
                 Util.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.item", name, itemTxt));
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
@@ -1105,10 +1080,9 @@ public class CommandRegistrater {
                 );
             }
             Util.broadcastTextMessage(context.getSource().getServer(), text);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f say", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1128,10 +1102,9 @@ public class CommandRegistrater {
             FlowManager flowManager = new FlowManager(name, eventNode, eventNodeName);
             data.logicFlows.put(name, flowManager);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.create.success", eventNode, name), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow create", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1154,10 +1127,9 @@ public class CommandRegistrater {
             copiedFlow.flow.name = targetName;
             data.logicFlows.put(targetName, copiedFlow);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.copy.success", sourceName, targetName), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow copy", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1212,10 +1184,9 @@ public class CommandRegistrater {
             FlowManager flowManager = new FlowManager(flow);
             data.logicFlows.put(flow.name, flowManager);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.load.success", flow.name), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow load", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1261,10 +1232,9 @@ public class CommandRegistrater {
             }
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.save.success", targetFlow.flow.name), true);
             FlowFileSuggestion.suggest();
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow save", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1311,10 +1281,9 @@ public class CommandRegistrater {
             for (MutableText line : flowLines) {
                 context.getSource().sendFeedback(() -> line, false);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow list", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1336,10 +1305,9 @@ public class CommandRegistrater {
             targetFlow.flow.name = newName;
             data.logicFlows.put(newName, targetFlow);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.rename.success", oldName, newName), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow rename", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1359,10 +1327,9 @@ public class CommandRegistrater {
             } else {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.enable.get.false", name), false);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1383,10 +1350,9 @@ public class CommandRegistrater {
             } else {
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.enable.set.false", name), true);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow enable", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1408,10 +1374,9 @@ public class CommandRegistrater {
             if (exception != null) {
                 throw new CommandException(exception.getMessageText());
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow execute", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1428,10 +1393,9 @@ public class CommandRegistrater {
             }
             data.logicFlows.remove(name);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.delete.success", name), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow delete", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1486,10 +1450,9 @@ public class CommandRegistrater {
             if (maxPage > 1) {
                 context.getSource().sendFeedback(() -> navigateText, false);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow history", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1506,10 +1469,9 @@ public class CommandRegistrater {
             }
             Text text = targetFlow.flow.render();
             context.getSource().sendFeedback(() -> text, false);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow view", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1527,10 +1489,9 @@ public class CommandRegistrater {
             ExecutionContext entry = history.get(index - 1);
             Text text = entry.render();
             context.getSource().sendFeedback(() -> text, false);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow log", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1555,10 +1516,9 @@ public class CommandRegistrater {
             }
             targetFlow.createNode(type, name);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.newnode.success", name, flowName), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1582,10 +1542,9 @@ public class CommandRegistrater {
             }
             targetFlow.removeNode(name);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.removenode.success", name, flowName), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1610,10 +1569,9 @@ public class CommandRegistrater {
             }
             targetFlow.renameNode(oldName, newName);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.renamenode.success", oldName, flowName, newName), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1641,10 +1599,9 @@ public class CommandRegistrater {
             String parsedValueStr = String.valueOf(parsedValue);
             targetFlow.setConstInput(name, index - 1, parsedValue);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1675,10 +1632,9 @@ public class CommandRegistrater {
             }
             targetFlow.setReferenceInput(name, index - 1, refNode, refIndex - 1);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1702,10 +1658,9 @@ public class CommandRegistrater {
             }
             targetFlow.disconnectInput(name, index - 1);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1733,10 +1688,9 @@ public class CommandRegistrater {
             }
             targetFlow.setNextNode(name, index - 1, next);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1760,10 +1714,9 @@ public class CommandRegistrater {
             }
             targetFlow.disconnectNextNode(name, index - 1);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1785,10 +1738,9 @@ public class CommandRegistrater {
                 targetFlow.undo();
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.undo.success", flowName), true);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1810,10 +1762,9 @@ public class CommandRegistrater {
                 targetFlow.redo();
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.flow.edit.redo.success", flowName), true);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
@@ -1826,10 +1777,9 @@ public class CommandRegistrater {
             FlowFileSuggestion.suggest();
             Util.loadServerConfig();
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.reload.success"), true);
+        } catch (CommandException e) {
+            throw e;
         } catch (Exception e) {
-            if (e instanceof CommandException) {
-                throw (CommandException) e;
-            }
             throw new CommandException(Util.parseTranslatableText("fmod.command.reload.error"));
         }
         return Command.SINGLE_SUCCESS;

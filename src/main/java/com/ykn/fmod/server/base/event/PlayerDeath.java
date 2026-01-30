@@ -17,8 +17,8 @@ import net.minecraft.util.Formatting;
 
 public class PlayerDeath {
 
-    private ServerPlayerEntity player;
-    private DamageSource damageSource;
+    private final ServerPlayerEntity player;
+    private final DamageSource damageSource;
 
     public PlayerDeath(ServerPlayerEntity player, DamageSource damageSource) {
         this.player = player;
