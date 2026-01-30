@@ -10,6 +10,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
+/**
+ * Provides various mathematical utility functions for game development.
+ */
 public class GameMath {
 
     /**

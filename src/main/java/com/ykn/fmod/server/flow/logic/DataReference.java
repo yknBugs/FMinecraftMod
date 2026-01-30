@@ -11,43 +11,83 @@ import javax.annotation.Nullable;
 import com.ykn.fmod.server.base.util.Util;
 
 /**
- * Represents the input or output data of a FlowNode.
- * It can be a constant value or a reference to another node's output.
+ * Represents a reference to data that can be used as input for a node.
+ * <p>
+ * A DataReference can be one of two types:
+ * <ul>
+ *   <li><b>CONSTANT:</b> A direct value stored in this reference</li>
+ *   <li><b>NODE_OUTPUT:</b> A reference to an output from another node</li>
+ * </ul>
+ * <p>
+ * This abstraction allows nodes to accept inputs from either constant values
+ * or computed values from other nodes in the flow, enabling flexible data flow.
+ * <p>
+ * Use the static factory methods to create instances:
+ * <ul>
+ *   <li>{@link #createConstantReference(Object)} for constant values</li>
+ *   <li>{@link #createNodeOutputReference(long, int)} for node outputs</li>
+ *   <li>{@link #createEmptyReference()} for uninitialized references</li>
+ * </ul>
+ * 
+ * @see FlowNode
+ * @see ExecutionContext
  */
 public class DataReference implements Cloneable {
 
+    /**
+     * Enumeration of the types of data references supported.
+     */
     public enum ReferenceType {
+        /**
+         * The reference holds a constant value directly.
+         */
         CONSTANT,
+        
+        /**
+         * The reference points to an output from another node.
+         */
         NODE_OUTPUT
     }
 
     /**
-     * Indicates the type of this data reference
+     * Indicates the type of this data reference (CONSTANT or NODE_OUTPUT).
      */
     public ReferenceType type;
 
     /**
-     * Used only when the type is CONSTANT
-     * This variable holds the actual constant value
+     * The actual constant value when type is CONSTANT.
+     * <p>
+     * This field is only used when {@link #type} is {@link ReferenceType#CONSTANT}.
+     * It holds the literal value that will be returned by {@link #resolve}.
+     * For NODE_OUTPUT type references, this field should be null.
      */
     public Object value;
 
     /**
-     * Used only when the type is NODE_OUTPUT
-     * This variable holds the node that provides the data
+     * The ID of the node that provides the data when type is NODE_OUTPUT.
+     * <p>
+     * This field is only used when {@link #type} is {@link ReferenceType#NODE_OUTPUT}.
+     * It identifies which node's output should be retrieved.
+     * For CONSTANT type references, this should be set to -1.
      */
     public long referenceId;
 
     /**
-     * Used only when the type is NODE_OUTPUT
-     * One node may have multiple outputs, this variable indicates which output to use
+     * The output port index when type is NODE_OUTPUT.
+     * <p>
+     * This field is only used when {@link #type} is {@link ReferenceType#NODE_OUTPUT}.
+     * Since one node may have multiple outputs, this indicates which output port to use (0-based).
+     * For CONSTANT type references, this should be set to -1.
      */
     public int referenceIndex; 
 
     /**
-     * Create a constant data reference
-     * @param value The constant value
-     * @return The data reference
+     * Creates a constant data reference with the specified value.
+     * <p>
+     * The reference will directly hold and return the provided value when resolved.
+     * 
+     * @param value The constant value to store in this reference (can be null)
+     * @return A new DataReference of type CONSTANT
      */
     public static DataReference createConstantReference(Object value) {
         DataReference ref = new DataReference();
@@ -59,10 +99,13 @@ public class DataReference implements Cloneable {
     }
 
     /**
-     * Create a node output data reference
-     * @param nodeId The ID of the node
-     * @param outputIndex The index of the output
-     * @return The data reference
+     * Creates a node output reference pointing to another node's output.
+     * <p>
+     * The reference will retrieve the specified output from the specified node when resolved.
+     * 
+     * @param nodeId The ID of the node whose output to reference
+     * @param outputIndex The index of the output port (0-based)
+     * @return A new DataReference of type NODE_OUTPUT
      */
     public static DataReference createNodeOutputReference(long nodeId, int outputIndex) {
         DataReference ref = new DataReference();
@@ -74,18 +117,31 @@ public class DataReference implements Cloneable {
     }
 
     /**
-     * Create an empty data reference (null constant)
-     * @return The data reference
+     * Creates an empty data reference with a null constant value.
+     * <p>
+     * This is useful for initializing input ports that haven't been configured yet.
+     * 
+     * @return A new DataReference of type CONSTANT with a null value
      */
     public static DataReference createEmptyReference() {
         return createConstantReference(null);
     }
 
     /**
-     * Resolve the actual value of this data reference in the given execution context
-     * @param context The execution context
-     * @return The resolved value
-     * @throws LogicException If an error occurs during resolution
+     * Resolves this data reference to its actual value.
+     * <p>
+     * The resolution behavior depends on the reference type:
+     * <ul>
+     *   <li><b>CONSTANT:</b> Returns the stored value directly</li>
+     *   <li><b>NODE_OUTPUT:</b> Retrieves the output from the referenced node</li>
+     * </ul>
+     * <p>
+     * For NODE_OUTPUT references, the referenced node must have already been executed
+     * in the given context, or a {@link LogicException} will be thrown.
+     * 
+     * @param context The execution context containing node execution states
+     * @return The resolved value, which may be null
+     * @throws LogicException If the referenced node doesn't exist or hasn't been executed yet
      */
     @Nullable
     public Object resolve(@Nonnull ExecutionContext context) throws LogicException {
@@ -104,9 +160,12 @@ public class DataReference implements Cloneable {
     }
 
     /**
-     * Create a copy of this data reference
-     * Will NOT deep copy the value object
-     * @return The copied data reference
+     * Creates a shallow copy of this data reference.
+     * <p>
+     * The copy includes all fields (type, value, referenceId, referenceIndex).
+     * Note: The value object itself is not deep copied; only the reference is copied.
+     * 
+     * @return A new DataReference with the same configuration
      */
     @Nonnull
     public DataReference copy() {

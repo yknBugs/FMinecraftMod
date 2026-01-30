@@ -26,7 +26,7 @@ import net.minecraft.world.phys.Vec3;
 
 public class WorldTick {
 
-    private MinecraftServer server;
+    private final MinecraftServer server;
 
     public WorldTick(MinecraftServer server) {
         this.server = server;

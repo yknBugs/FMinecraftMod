@@ -22,10 +22,22 @@ import com.ykn.fmod.server.base.util.Util;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraftforge.fml.loading.FMLPaths;
 
+/**
+ * Provides command auto-completion suggestions for .flow files in the config directory.
+ * This suggestion provider scans the mod's config directory and caches the list of available
+ * .flow files for use in command auto-completion.
+ */
 public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack> {
 
+    /**
+     * Static cache of available .flow file names in the config directory.
+     */
     public static ArrayList<String> cachedFlowList = new ArrayList<>();
 
+    /**
+     * Constructs a new FlowFileSuggestion and refreshes the cached list of .flow files.
+     * Scans the mod's config directory for files with the .flow extension.
+     */
     public FlowFileSuggestion() {
         // Refresh the list of .flow files in the config directory
         cachedFlowList = new ArrayList<>();
@@ -42,6 +54,16 @@ public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack
         }
     }
 
+    /**
+     * Provides suggestions for .flow files based on the current input.
+     * Suggests all cached .flow files that start with the remaining input text.
+     * Also suggests "*" as a wildcard option.
+     *
+     * @param context the command context
+     * @param builder the suggestions builder
+     * @return a completable future containing the suggestions
+     * @throws CommandSyntaxException if there's a syntax error in the command
+     */
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String flow : cachedFlowList) {
@@ -55,10 +77,20 @@ public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack
         return builder.buildFuture();
     }
 
+    /**
+     * Creates a new FlowFileSuggestion instance.
+     *
+     * @return a new FlowFileSuggestion with refreshed .flow file cache
+     */
     public static FlowFileSuggestion suggest() {
         return new FlowFileSuggestion();
     }
 
+    /**
+     * Returns the number of available .flow files in the cache.
+     *
+     * @return the count of cached .flow files
+     */
     public static int getAvailableFlows() {
         return cachedFlowList.size();
     }

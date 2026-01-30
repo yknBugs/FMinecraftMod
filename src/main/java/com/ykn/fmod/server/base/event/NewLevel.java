@@ -12,8 +12,8 @@ import net.minecraft.server.level.ServerLevel;
 
 public class NewLevel {
 
-    private MinecraftServer server;
-    private ServerLevel world;
+    private final MinecraftServer server;
+    private final ServerLevel world;
 
     public NewLevel(MinecraftServer server, ServerLevel world) {
         this.server = server;

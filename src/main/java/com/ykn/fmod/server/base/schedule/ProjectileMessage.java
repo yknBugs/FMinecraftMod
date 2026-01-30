@@ -16,9 +16,9 @@ import net.minecraft.world.entity.LivingEntity;
 
 public class ProjectileMessage extends ScheduledTask {
 
-    private Entity shooter;
-    private Entity victim;
-    private double distance;
+    private final Entity shooter;
+    private final Entity victim;
+    private final double distance;
 
     public ProjectileMessage(Entity shooter, Entity victim, double distance) {
         super(1, 0);
@@ -46,6 +46,9 @@ public class ProjectileMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
+        if (shooter == null || victim == null) {
+            return true;
+        }
         // Avoid the shoot message override the entity death message
         if (shooter instanceof LivingEntity && Util.getHealth(shooter) <= 0) {
             return true;

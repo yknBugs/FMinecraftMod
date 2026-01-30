@@ -17,8 +17,8 @@ import net.minecraft.world.entity.LivingEntity;
 
 public class PlayerDeath {
 
-    private ServerPlayer player;
-    private DamageSource damageSource;
+    private final ServerPlayer player;
+    private final DamageSource damageSource;
 
     public PlayerDeath(ServerPlayer player, DamageSource damageSource) {
         this.player = player;

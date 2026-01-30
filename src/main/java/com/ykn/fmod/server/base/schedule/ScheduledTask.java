@@ -12,7 +12,14 @@ package com.ykn.fmod.server.base.schedule;
  */
 public class ScheduledTask {
 
+    /**
+     * The delay in ticks before the task is triggered.
+     */
     private int delay;
+    
+    /**
+     * The duration in ticks for the task's execution.
+     */
     private int duration;
 
     public ScheduledTask(int delay, int duration) {

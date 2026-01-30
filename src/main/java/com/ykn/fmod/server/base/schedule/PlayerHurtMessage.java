@@ -14,8 +14,8 @@ import net.minecraft.server.level.ServerPlayer;
 
 public class PlayerHurtMessage extends ScheduledTask {
 
-    private ServerPlayer player;
-    private double lastHealth;
+    private final ServerPlayer player;
+    private final double lastHealth;
 
     public PlayerHurtMessage(ServerPlayer player, double lastHealth) {
         super(1, 0);
@@ -36,7 +36,7 @@ public class PlayerHurtMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (player.hasDisconnected() || player.isSpectator() || player.isCreative() || player.getHealth() <= 0) {
+        if (player == null || player.hasDisconnected() || player.isSpectator() || player.isCreative() || player.getHealth() <= 0) {
             return true;
         }
         return false;

@@ -22,30 +22,74 @@ import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 
 /**
- * This class represents a custom logic flow that can be executed.
+ * Represents a complete logic flow consisting of interconnected nodes.
+ * <p>
+ * A LogicFlow is a directed graph of {@link FlowNode}s that can be executed to perform
+ * complex logic sequences. Key features:
+ * <ul>
+ *   <li>Manages a collection of nodes with unique IDs</li>
+ *   <li>Tracks a start node that begins execution</li>
+ *   <li>Provides node lookup, sorting, and graph traversal capabilities</li>
+ *   <li>Can be serialized, copied, and rendered for display</li>
+ * </ul>
+ * <p>
+ * Nodes in the flow are connected through their branch outputs, forming a potentially
+ * cyclic graph. The flow can be executed multiple times simultaneously using separate
+ * {@link ExecutionContext} instances.
+ * <p>
+ * Example usage:
+ * <pre>
+ * LogicFlow flow = new LogicFlow("MyFlow");
+ * FlowNode node1 = new SomeNode(flow.generateId(), "Node1");
+ * FlowNode node2 = new SomeNode(flow.generateId(), "Node2");
+ * flow.addNode(node1);
+ * flow.addNode(node2);
+ * node1.setNextNodeId(0, node2.getId());
+ * flow.startNodeId = node1.getId();
+ * </pre>
+ * 
+ * @see FlowNode
+ * @see ExecutionContext
  */
 public class LogicFlow implements Cloneable {
 
     /**
-     * A counter to generate unique IDs for nodes in this logic flow.
+     * A counter used to generate unique IDs for nodes in this logic flow.
+     * Incremented each time {@link #generateId()} is called.
      */
     private long idCounter;
 
     /**
-     * The name of this logic flow. Can be determined by the user, can be renamed at any time.
+     * The user-defined name of this logic flow.
+     * Can be changed at any time and is used for display and identification.
      */
     public String name;
 
     /**
-     * All nodes in this logic flow, mapped by their IDs
+     * All nodes in this logic flow, mapped by their unique IDs.
+     * Provides O(1) lookup by node ID.
      */
     private Map<Long, FlowNode> nodes;
 
     /**
-     * The first node to be executed in this logic flow.
+     * The ID of the first node to execute when this flow runs.
+     * A value of -1 indicates no start node has been set.
+     * Event nodes are typically used as start nodes.
      */
     public long startNodeId;
 
+    /**
+     * Creates a new logic flow with the specified name.
+     * <p>
+     * The flow is initialized with:
+     * <ul>
+     *   <li>An empty node collection</li>
+     *   <li>An ID counter starting at 0</li>
+     *   <li>No start node (startNodeId = -1)</li>
+     * </ul>
+     * 
+     * @param name The name of this logic flow
+     */
     public LogicFlow(String name) {
         this.idCounter = 0L;
         this.name = name;
@@ -53,20 +97,44 @@ public class LogicFlow implements Cloneable {
         this.startNodeId = -1L;
     }
 
+    /**
+     * Gets all nodes in this logic flow.
+     * 
+     * @return A collection of all FlowNodes in this flow
+     */
     public Collection<FlowNode> getNodes() {
         return this.nodes.values();
     }
 
+    /**
+     * Gets a specific node by its ID.
+     * 
+     * @param id The unique ID of the node
+     * @return The FlowNode with the specified ID, or null if not found
+     */
     @Nullable
     public FlowNode getNode(long id) {
         return this.nodes.get(id);
     }
 
+    /**
+     * Gets the start node of this flow.
+     * 
+     * @return The FlowNode designated as the start node, or null if not set
+     */
     @Nullable
     public FlowNode getFirstNode() {
         return this.nodes.get(this.startNodeId);
     }
 
+    /**
+     * Finds a node by its name.
+     * <p>
+     * Note: If multiple nodes have the same name, only the first match is returned.
+     * 
+     * @param name The name to search for
+     * @return The first FlowNode with the specified name, or null if not found
+     */
     @Nullable
     public FlowNode getNodeByName(String name) {
         for (FlowNode node : this.nodes.values()) {
@@ -78,10 +146,20 @@ public class LogicFlow implements Cloneable {
     }
 
     /**
-     * Produces a deterministic, fully-populated ordering of the graph's nodes.
-     *
-     * @return a deterministic list containing every node in this flow exactly once,
-     *         ordered by a DFS-driven traversal seeded by the nodes' IDs.
+     * Returns all nodes in a deterministic sorted order suitable for display.
+     * <p>
+     * The sorting algorithm:
+     * <ol>
+     *   <li>Starts from the designated start node and performs depth-first traversal</li>
+     *   <li>After exhausting reachable nodes, picks remaining nodes with zero in-degree</li>
+     *   <li>If cycles exist, picks any remaining unvisited node</li>
+     *   <li>All choices use ID-based sorting for determinism</li>
+     * </ol>
+     * <p>
+     * This ordering is primarily used for rendering and display purposes,
+     * ensuring consistent output across multiple calls.
+     * 
+     * @return A list of all nodes in a deterministic display order
      */
     public List<FlowNode> getSortedNodes() {
         List<FlowNode> sortedNodes = new ArrayList<>();
@@ -155,6 +233,14 @@ public class LogicFlow implements Cloneable {
         return sortedNodes;
     }
 
+    /**
+     * Adds a node to this logic flow.
+     * <p>
+     * If the node's ID is greater than or equal to the current ID counter,
+     * the counter is updated to match the node's ID to prevent future ID collisions.
+     * 
+     * @param node The FlowNode to add to this flow
+     */
     public void addNode(FlowNode node) {
         this.nodes.put(node.getId(), node);
         if (node.getId() >= this.idCounter) {
@@ -162,13 +248,24 @@ public class LogicFlow implements Cloneable {
         }
     }
 
+    /**
+     * Removes a node from this logic flow.
+     * <p>
+     * Note: This does not update references to this node in other nodes' nextNodeIds.
+     * Callers should ensure dangling references are handled appropriately.
+     * 
+     * @param id The ID of the node to remove
+     */
     public void removeNode(long id) {
         this.nodes.remove(id);
     }
 
     /**
-     * Generate a new unique ID for a node in this logic flow.
-     * @return The unique ID
+     * Generates a new unique ID for a node in this flow.
+     * <p>
+     * The ID counter is incremented each time this method is called.
+     * 
+     * @return A new unique node ID
      */
     public long generateId() {
         this.idCounter++;
@@ -176,8 +273,19 @@ public class LogicFlow implements Cloneable {
     }
 
     /**
-     * Create a copy of this logic flow that has the same structure.
-     * @return A new LogicFlow object
+     * Creates a deep copy of this logic flow.
+     * <p>
+     * The copy includes:
+     * <ul>
+     *   <li>All nodes (each node is copied)</li>
+     *   <li>The ID counter state</li>
+     *   <li>The start node ID</li>
+     *   <li>The flow name</li>
+     * </ul>
+     * <p>
+     * The copy is completely independent - modifying the copy does not affect the original.
+     * 
+     * @return A new LogicFlow instance with copied nodes and configuration
      */
     public LogicFlow copy() {
         LogicFlow newFlow = new LogicFlow(this.name);
@@ -198,10 +306,21 @@ public class LogicFlow implements Cloneable {
     }
 
     /**
-     * Render this logic flow into a text representation for display.
-     * It renders the static information about this flow.
-     * To render the dynamic status of an execution, use {@link ExecutionContext#render()} instead.
-     * @return A text representation of this flow
+     * Renders the static information about this flow as displayable text.
+     * <p>
+     * The rendered text includes:
+     * <ul>
+     *   <li>The flow name</li>
+     *   <li>A sequence of all nodes in sorted order (hoverable for details)</li>
+     * </ul>
+     * <p>
+     * Each node in the sequence can be hovered over to see its static configuration
+     * (inputs, outputs, and branch connections).
+     * <p>
+     * Note: This renders static flow structure. To render dynamic execution status,
+     * use {@link ExecutionContext#render()} instead.
+     * 
+     * @return A Text object suitable for display in Minecraft with hover events
      */
     public Component render() {
         MutableComponent title = Component.literal(this.name).append(" ");
