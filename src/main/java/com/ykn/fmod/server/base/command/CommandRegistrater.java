@@ -388,6 +388,8 @@ public class CommandRegistrater {
                 Util.getServerData(context.getSource().getServer()).submitScheduledTask(playSong);
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
+        } catch (CommandException e) {
+            throw e;
         } catch (FileNotFoundException fileNotFoundException) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));
         } catch (EOFException eofException) {
@@ -395,9 +397,6 @@ public class CommandRegistrater {
         } catch (IOException ioException) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
         } catch (Exception exception) {
-            if (exception instanceof CommandException) {
-                throw (CommandException) exception;
-            }
             throw new CommandException(Util.parseTranslatableText("fmod.command.song.error", songName));
         }
         return players.size();
