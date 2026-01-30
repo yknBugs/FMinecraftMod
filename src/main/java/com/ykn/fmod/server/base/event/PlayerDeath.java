@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.base.event;
 
-import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.LivingEntity;
@@ -51,7 +50,7 @@ public class PlayerDeath {
         Text deathCoord = Util.parseCoordText(player);
 
         MutableText text = Util.parseTranslatableText("fmod.message.playerdeathcoord", playerName, deathCoord).formatted(Formatting.RED);
-        Util.postMessage(player, Util.serverConfig.getPlayerDeathCoord(), MessageLocation.CHAT, text);
+        Util.postMessage(player, Util.serverConfig.getPlayerDeathCoordReceiver(), Util.serverConfig.getPlayerDeathCoordLocation(), text);
     }
 
 }

@@ -10,7 +10,6 @@ import java.util.List;
 
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.schedule.BiomeMessage;
-import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.base.util.GameMath;
 
@@ -81,19 +80,19 @@ public class WorldTick {
 
     private void postMessageToAfkingPlayer(ServerPlayerEntity player, PlayerData playerData) {
         if (playerData.afkTicks > Util.serverConfig.getInformAfkingThreshold() && playerData.afkTicks % 20 == 0) {
-            Util.postMessage(player, Util.serverConfig.getInformAfking(), MessageLocation.ACTIONBAR, Util.parseTranslatableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+            Util.postMessage(player, Util.serverConfig.getInformAfkingReceiver(), Util.serverConfig.getInformAfkingLocation(), Util.parseTranslatableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
         if (playerData.afkTicks == Util.serverConfig.getBroadcastAfkingThreshold()) {
             Text playerName = player.getDisplayName();
             Text coord = Util.parseCoordText(player);
             MutableText text = Util.parseTranslatableText("fmod.message.afk.broadcast", playerName, coord);
-            Util.postMessage(player, Util.serverConfig.getBroadcastAfking(), MessageLocation.CHAT, text);
+            Util.postMessage(player, Util.serverConfig.getBroadcastAfkingReceiver(), Util.serverConfig.getBroadcastAfkingLocation(), text);
         }
     }
 
     private void postMessageToBackPlayer(ServerPlayerEntity player, PlayerData playerData) {
         if (playerData.afkTicks >= Util.serverConfig.getBroadcastAfkingThreshold()) {
-            Util.postMessage(player, Util.serverConfig.getStopAfking(), MessageLocation.CHAT, Util.parseTranslatableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+            Util.postMessage(player, Util.serverConfig.getStopAfkingReceiver(), Util.serverConfig.getStopAfkingLocation(), Util.parseTranslatableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
         }
     }
 
@@ -180,7 +179,7 @@ public class WorldTick {
 
         String speedStr = String.format("%.2f", totalDistance / window * 20.0);
         MutableText message = Util.parseTranslatableText("fmod.message.travel.fast", player.getDisplayName(), speedStr);
-        Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLoc(), message);
+        Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLocation(), message);
 
         positions.clear();
         positions.addLast(player.getPos());

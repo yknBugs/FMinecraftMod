@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.base.schedule;
 
-import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -32,7 +31,7 @@ public class BiomeMessage extends ScheduledTask {
         } else {
             biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
         }
-        Util.postMessage(player, Util.serverConfig.getChangeBiome(), MessageLocation.ACTIONBAR, Util.parseTranslatableText("fmod.message.biome.change", player.getDisplayName(), biomeText));
+        Util.postMessage(player, Util.serverConfig.getChangeBiomeReceiver(), Util.serverConfig.getChangeBiomeLocation(), Util.parseTranslatableText("fmod.message.biome.change", player.getDisplayName(), biomeText));
     }
 
     @Override
