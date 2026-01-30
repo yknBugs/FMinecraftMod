@@ -109,7 +109,7 @@ public class ServerData {
         scheduledTasks.add(task);
     }
 
-    public void submitAsyncTask(@NotNull AsyncTaskExecutor task) {
+    public void submitAsyncTask(@Nonnull AsyncTaskExecutor task) {
         asyncTasks.add(task);
         asyncTaskPool.submit(task);
     }
