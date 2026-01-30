@@ -32,6 +32,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
+import com.ykn.fmod.server.base.async.GptCommandExecutor;
 import com.ykn.fmod.server.base.data.GptData;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
@@ -40,7 +41,6 @@ import com.ykn.fmod.server.base.song.NbsSongDecoder;
 import com.ykn.fmod.server.base.song.NoteBlockSong;
 import com.ykn.fmod.server.base.util.EnumI18n;
 import com.ykn.fmod.server.base.util.GameMath;
-import com.ykn.fmod.server.base.util.GptHelper;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
 import com.ykn.fmod.server.base.util.MessageReceiver;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
@@ -194,13 +194,13 @@ public class CommandRegistrater {
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
             GptData gptData = data.getGptData(context.getSource().getName());
-            GptHelper gptHelper = new GptHelper(gptData, context);
+            GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
             boolean postResult = gptData.newConversation(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            data.globalRequestPool.submit(gptHelper);
+            data.submitAsyncTask(gptHelper);
             // if (context.getSource().getPlayer() != null) {
             //     // Other source would have already logged the message
             //     logger.info("<{}> {}", context.getSource().getDisplayName().getString(), text);
@@ -227,13 +227,13 @@ public class CommandRegistrater {
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
             GptData gptData = data.getGptData(context.getSource().getName());
-            GptHelper gptHelper = new GptHelper(gptData, context);
+            GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
             boolean postResult = gptData.reply(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            data.globalRequestPool.submit(gptHelper);
+            data.submitAsyncTask(gptHelper);
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -261,14 +261,13 @@ public class CommandRegistrater {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.nohistory"));
             }
             String text = gptData.getPostMessages(gptDataLength - 1);
-            GptHelper gptHelper = new GptHelper(gptData, context);
+            GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
             boolean postResult = gptData.regenerate(url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            data.globalRequestPool.submit(gptHelper);
-
+            data.submitAsyncTask(gptHelper);
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {
@@ -299,13 +298,13 @@ public class CommandRegistrater {
             if (index <= 0 || index > gptDataLength) {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
             }
-            GptHelper gptHelper = new GptHelper(gptData, context);
+            GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
             boolean postResult = gptData.editHistory(index - 1, text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
             if (postResult == false) {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendFeedback(() -> Text.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Text.literal(text)), true);
-            data.globalRequestPool.submit(gptHelper);
+            data.submitAsyncTask(gptHelper);
         } catch (URISyntaxException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (MalformedURLException e) {

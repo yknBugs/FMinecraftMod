@@ -9,15 +9,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.ykn.fmod.server.base.async.AsyncTaskExecutor;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
@@ -29,7 +33,7 @@ import net.minecraft.server.network.ServerPlayerEntity;
 
 /**
  * WARNING: This class is not thread-safe.
- * WARNING: The globalRequestPool must be gracefully shutdown when replacing or resetting ServerData.
+ * WARNING: The asyncTaskPool must be gracefully shutdown when replacing or resetting ServerData.
  */
 public class ServerData {
 
@@ -41,7 +45,8 @@ public class ServerData {
     public List<ScheduledTask> scheduledTasks;
     public Collection<UUID> killerEntities;
     public ConcurrentHashMap<String, GptData> gptRequestStatus;
-    public ExecutorService globalRequestPool;
+    private final Queue<AsyncTaskExecutor> asyncTasks;
+    private final ExecutorService asyncTaskPool;
 
     private int serverTick;
 
@@ -53,11 +58,24 @@ public class ServerData {
         scheduledTasks = new ArrayList<>();
         killerEntities = new HashSet<>();
         gptRequestStatus = new ConcurrentHashMap<>();
-        globalRequestPool = Executors.newCachedThreadPool();
+        asyncTasks = new ConcurrentLinkedQueue<>();
+        asyncTaskPool = Executors.newCachedThreadPool();
         serverTick = 0;
     }
 
     public void tick() {
+        scheduledTasks.forEach(ScheduledTask::tick);
+        scheduledTasks.removeIf(ScheduledTask::isFinished);
+
+        Iterator<AsyncTaskExecutor> iterator = asyncTasks.iterator();
+        while (iterator.hasNext()) {
+            AsyncTaskExecutor task = iterator.next();
+            if (task.isAsyncFinished()) {
+                task.runAfterCompletion();
+                iterator.remove();
+            }
+        }
+
         serverTick++;
     }
 
@@ -89,6 +107,11 @@ public class ServerData {
             return;
         }
         scheduledTasks.add(task);
+    }
+
+    public void submitAsyncTask(@NotNull AsyncTaskExecutor task) {
+        asyncTasks.add(task);
+        asyncTaskPool.submit(task);
     }
 
     public void addKillerEntity(@Nullable LivingEntity entity) {
@@ -152,6 +175,10 @@ public class ServerData {
             }
         }
         return result;
+    }
+
+    public void shutdownAsyncTaskPool() {
+        asyncTaskPool.shutdown();
     }
 
     public int getServerTick() {

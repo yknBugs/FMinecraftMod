@@ -422,6 +422,7 @@ public class TextPlaceholderFactory<T> {
             .style("&[nN]", (param, text) -> text.formatted(Formatting.UNDERLINE))
             .style("&[mM]", (param, text) -> text.formatted(Formatting.STRIKETHROUGH))
             .style("&[rR]", (param, text) -> text.setStyle(Style.EMPTY))
+            .style("\\$\\{markdown\\}", (param, text) -> Text.empty().append(MarkdownToTextConverter.parseMarkdownToText(text.getString())))
             .style("\\$\\{color:([0-9A-Fa-f]{1,8})\\}", (param, text) -> {
                 try {
                     int colorInt = Integer.parseInt(param.strip(), 16);
@@ -448,6 +449,11 @@ public class TextPlaceholderFactory<T> {
             .style("\\$\\{hint:(.*)\\}", (param, text) -> 
                 text.styled(style -> style.withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(param.strip()))
+                ))
+            )
+            .style("\\$\\{suggest:(.*)\\}", (param, text) -> 
+                text.styled(style -> style.withClickEvent(
+                    new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, param.strip())
                 ))
             )
             .add("${Ciallo}", t -> Text.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
