@@ -142,7 +142,7 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
         }
         if (this.feedbackText == null) {
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.gpt.emptyerror").withStyle(ChatFormatting.RED), false);
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: GPT command executed but no feedback text was set.");
+            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: GPT command executed but no feedback text was set.");
             return;
         }
         context.getSource().sendSuccess(() -> this.feedbackText, false);
