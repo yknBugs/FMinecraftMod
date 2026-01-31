@@ -43,6 +43,8 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  *   <li><b>Execution control:</b> Enable/disable flows and execute them with history tracking</li>
  * </ul>
  * <p>
+ * Note: Any kinds of editing operations will automatically disable the flow to prevent unintended executions.
+ * <p>
  * Example usage:
  * <pre>
  * FlowManager manager = new FlowManager("MyFlow", "EntityDeathEventNode", "OnDeath");
@@ -138,6 +140,7 @@ public class FlowManager {
         FlowNode node = NodeRegistry.createNode(type, flow.generateId(), name);
         this.flow.addNode(node);
         this.undoPath.add(new NodeEditPath(f -> f.addNode(node), f -> f.removeNode(node.getId())));
+        this.isEnabled = false;
     }
 
     /**
@@ -156,6 +159,7 @@ public class FlowManager {
         if (node != null) {
             this.flow.removeNode(node.getId());
             this.undoPath.add(new NodeEditPath(f -> f.removeNode(node.getId()), f -> f.addNode(node)));
+            this.isEnabled = false;
         }
     }
 
@@ -187,6 +191,7 @@ public class FlowManager {
                     }
                 }
             ));
+            this.isEnabled = false;
         }
     }
 
@@ -220,6 +225,7 @@ public class FlowManager {
                     }
                 }
             ));
+            this.isEnabled = false;
         }
     }
 
@@ -257,6 +263,7 @@ public class FlowManager {
                     }
                 }
             ));
+            this.isEnabled = false;
         }
     }
 
@@ -288,6 +295,7 @@ public class FlowManager {
                     }
                 }
             ));
+            this.isEnabled = false;
         }
     }
 
@@ -325,6 +333,7 @@ public class FlowManager {
                     }
                 }
             ));
+            this.isEnabled = false;
         }
     }
 
@@ -358,6 +367,7 @@ public class FlowManager {
                     }
                 }
             ));
+            this.isEnabled = false;
         }
     }
 
@@ -372,6 +382,7 @@ public class FlowManager {
             NodeEditPath edit = this.redoPath.pop();
             edit.redo(this.flow);
             this.undoPath.push(edit);
+            this.isEnabled = false;
         }
     }
 
@@ -386,6 +397,7 @@ public class FlowManager {
             NodeEditPath edit = this.undoPath.pop();
             edit.undo(this.flow);
             this.redoPath.push(edit);
+            this.isEnabled = false;
         }
     }
 

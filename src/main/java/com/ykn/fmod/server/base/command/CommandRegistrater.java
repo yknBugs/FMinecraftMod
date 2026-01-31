@@ -35,6 +35,7 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.logging.LogUtils;
 import com.ykn.fmod.server.base.async.GptCommandExecutor;
 import com.ykn.fmod.server.base.data.GptData;
+import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.schedule.PlaySong;
@@ -1062,6 +1063,52 @@ public class CommandRegistrater {
         return Command.SINGLE_SUCCESS;
     }
 
+    private static int runGetAfkTimeCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
+        try {
+            for (ServerPlayer player : players) {
+                PlayerData data = Util.getServerData(context.getSource().getServer()).getPlayerData(player);
+                double afkSeconds = data.afkTicks / 20.0;
+                final String afkSecondsStr = String.format("%.1f", afkSeconds);
+                final Component name = player.getDisplayName();
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.afk", name, afkSecondsStr), false);
+            }
+        } catch (CommandRuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get afk", e);
+            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+        }
+        return players.size();
+    }
+
+    private static int runGetTravelRecordCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
+        try {
+            for (ServerPlayer player : players) {
+                PlayerData data = Util.getServerData(context.getSource().getServer()).getPlayerData(player);
+                Vec3[] snapshot = data.recentPositions.toArray(new Vec3[0]);
+                double seconds = snapshot.length / 20.0;
+                double totalDistance = GameMath.getHorizonalEuclideanDistance(snapshot[0], snapshot[snapshot.length - 1]);
+                double totalTravelled = 0.0;
+                for (int i = 1; i < snapshot.length; i++) {
+                    totalTravelled += GameMath.getHorizonalEuclideanDistance(snapshot[i - 1], snapshot[i]);
+                }
+                final Component name = player.getDisplayName();
+                final String secondsStr = String.format("%.1f", seconds);
+                final String totalDistanceStr = String.format("%.1f", totalDistance);
+                final String avgSpeedStr = String.format("%.1f", (totalDistance / seconds));
+                final String totalTravelledStr = String.format("%.1f", totalTravelled);
+                final String avgTravelSpeedStr = String.format("%.1f", (totalTravelled / seconds));
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.travel", name, secondsStr, totalDistanceStr, avgSpeedStr, totalTravelledStr, avgTravelSpeedStr), false);
+            }
+        } catch (CommandRuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get travelrecord", e);
+            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+        }
+        return players.size();
+    }
+
     private static int runSayCommand(String message, CommandContext<CommandSourceStack> context) {
         try {
             ServerPlayer player = context.getSource().getPlayer();
@@ -1160,6 +1207,7 @@ public class CommandRegistrater {
                     }
                     FlowManager flowManager = new FlowManager(flow);
                     data.logicFlows.put(flow.name, flowManager);
+                    flowManager.isEnabled = true;
                     loadedCount++;
                 }
                 int loadedCountFinal = loadedCount;
@@ -1179,6 +1227,7 @@ public class CommandRegistrater {
             }
             FlowManager flowManager = new FlowManager(flow);
             data.logicFlows.put(flow.name, flowManager);
+            flowManager.isEnabled = true;
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.load.success", flow.name), true);
         } catch (CommandRuntimeException e) {
             throw e;
@@ -1890,6 +1939,16 @@ public class CommandRegistrater {
                             .executes(context -> {return runGetItemCommand(EntityArgument.getEntities(context, "entity"), context);})
                         )
                     )
+                    .then(Commands.literal("afk")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .executes(context -> {return runGetAfkTimeCommand(EntityArgument.getPlayers(context, "player"), context);})
+                        )
+                    )
+                    .then(Commands.literal("travel")
+                        .then(Commands.argument("player", EntityArgument.players())
+                            .executes(context -> {return runGetTravelRecordCommand(EntityArgument.getPlayers(context, "player"), context);})
+                        )
+                    )
                 )
                 .then(Commands.literal("share")
                     .requires(source -> source.hasPermission(0))
@@ -2101,6 +2160,18 @@ public class CommandRegistrater {
                         .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.CHAT, context);}))
                         .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("entityDeathMessage", MessageLocation.ACTIONBAR, context);}))
                         .executes(context -> {return runOptionsCommand("entityDeathMessage", null, context);})
+                    )
+                    .then(Commands.literal("passiveDeathMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("passiveDeathMessage", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("passiveDeathMessage", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("passiveDeathMessage", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("passiveDeathMessage", null, context);})
+                    )
+                    .then(Commands.literal("hostileDeathMessage")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("hostileDeathMessage", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("hostileDeathMessage", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("hostileDeathMessage", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("hostileDeathMessage", null, context);})
                     )
                     .then(Commands.literal("bossDeathMessage")
                         .then(Commands.literal("off").executes(context -> {return runOptionsCommand("bossDeathMessage", MessageLocation.NONE, context);}))
@@ -2476,7 +2547,7 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), false);
                     } else {
                         Util.serverConfig.setEnableServerTranslation((boolean) value);
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.translate", value), true);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.translate", EnumI18n.getBooleanValueI18n(Util.serverConfig.isEnableServerTranslation())), true);
                     }
                     break;
                 case "maxFlowLength":
@@ -2503,6 +2574,26 @@ public class CommandRegistrater {
                         Util.serverConfig.setEntityDeathMessage((MessageLocation) value);
                         final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.entdeathmsg", text), true);
+                    }
+                    break;
+                case "passiveDeathMessage":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getPassiveDeathMessage());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.passivedeathmsg", text), false);
+                    } else {
+                        Util.serverConfig.setPassiveDeathMessage((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.passivedeathmsg", text), true);
+                    }
+                    break;
+                case "hostileDeathMessage":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getHostileDeathMessage());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.hostiledeathmsg", text), false);
+                    } else {
+                        Util.serverConfig.setHostileDeathMessage((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.hostiledeathmsg", text), true);
                     }
                     break;
                 case "bossDeathMessage":

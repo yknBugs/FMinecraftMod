@@ -15,7 +15,9 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Monster;
 
 public class EntityDeath {
 
@@ -72,7 +74,15 @@ public class EntityDeath {
             }
             Util.getServerData(livingEntity.getServer()).removeKillerEntity(livingEntity);
         }
+
+        // Normal entity death message
         MessageLocation type = Util.serverConfig.getEntityDeathMessage();
+        if (livingEntity instanceof AgeableMob) {
+            type = Util.serverConfig.getPassiveDeathMessage();
+        } else if (livingEntity instanceof Monster) {
+            type = Util.serverConfig.getHostileDeathMessage();
+        }
+        // broadcast only if not already broadcasted
         if (!isAlreadyBroadcasted.get(type)) {
             Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
             isAlreadyBroadcasted.put(type, true);

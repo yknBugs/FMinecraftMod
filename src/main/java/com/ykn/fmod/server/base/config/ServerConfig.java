@@ -19,7 +19,7 @@ public class ServerConfig extends ConfigReader {
      * If enabled, the server will translate all the messages and then send to the client.
      * This is useful if only the server has this mod installed and the client does not have it.
      * But if enabled, the message will not follow the client's language setting.
-     * Default: false
+     * Default: true
      */
     protected boolean serverTranslation;
 
@@ -37,10 +37,22 @@ public class ServerConfig extends ConfigReader {
     protected int keepFlowHistoryNumber;
 
     /**
-     * The message sent to the client when an entity dies.
+     * The message sent to the client when a non-hostile and non-passive entity dies.
      * Default: NONE
      */
     protected MessageLocation entityDeathMessage;
+
+    /**
+     * The message sent to the client when a hostile entity dies.
+     * Default: NONE
+     */
+    protected MessageLocation hostileDeathMessage;
+
+    /**
+     * The message sent to the client when a passive entity dies.
+     * Default: NONE
+     */
+    protected MessageLocation passiveDeathMessage;
 
     /**
      * The message sent to the client when a boss dies.
@@ -364,10 +376,12 @@ public class ServerConfig extends ConfigReader {
 
     public ServerConfig() {
         super("server.json");
-        this.serverTranslation = false;
+        this.serverTranslation = true;
         this.maxFlowLength = 32767;
         this.keepFlowHistoryNumber = 32767;
         this.entityDeathMessage = MessageLocation.NONE;
+        this.hostileDeathMessage = MessageLocation.NONE;
+        this.passiveDeathMessage = MessageLocation.NONE;
         this.bossDeathMessage = MessageLocation.NONE;
         this.namedEntityDeathMessage = MessageLocation.NONE;
         this.playerCanSleepMessage = MessageLocation.NONE;
@@ -502,6 +516,42 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.entityDeathMessage = entityDeathMessage;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getHostileDeathMessage() {
+        lock.readLock().lock();
+        try {
+            return hostileDeathMessage;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setHostileDeathMessage(MessageLocation hostileDeathMessage) {
+        lock.writeLock().lock();
+        try {
+            this.hostileDeathMessage = hostileDeathMessage;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public MessageLocation getPassiveDeathMessage() {
+        lock.readLock().lock();
+        try {
+            return passiveDeathMessage;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setPassiveDeathMessage(MessageLocation passiveDeathMessage) {
+        lock.writeLock().lock();
+        try {
+            this.passiveDeathMessage = passiveDeathMessage;
         } finally {
             lock.writeLock().unlock();
         }
