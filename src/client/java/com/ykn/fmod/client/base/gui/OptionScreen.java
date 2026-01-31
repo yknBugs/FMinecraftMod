@@ -129,7 +129,7 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.flowhistory"),
                 Text.translatable("fmod.options.hint.flowhistory")
             ));
-            // Entity Death Message
+            // Normal Entity Death Message
             this.addEntry(new ButtonConfigEntry(
                 ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDeathMessage()), button -> {
                     final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
@@ -140,6 +140,30 @@ public class OptionScreen extends Screen {
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.entdeathmsg"),
                 Text.translatable("fmod.options.hint.entdeathmsg")
+            ));
+            // Passive Entity Death Message
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getPassiveDeathMessage()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getPassiveDeathMessage());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setPassiveDeathMessage((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getPassiveDeathMessage()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.passivedeathmsg"),
+                Text.translatable("fmod.options.hint.passivedeathmsg")
+            ));
+            // Hostile Entity Death Message
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getHostileDeathMessage()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getHostileDeathMessage());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setHostileDeathMessage((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getHostileDeathMessage()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.hostiledeathmsg"),
+                Text.translatable("fmod.options.hint.hostiledeathmsg")
             ));
             // Boss Death Message
             this.addEntry(new ButtonConfigEntry(

@@ -61,6 +61,12 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.5
+
+- Add more config entries.
+- Add get afk and get travel command.
+- Now you can enable the death messages separately for hostile and passive entities.
+
 ### Version 0.2.4
 
 - Player Teleport Message

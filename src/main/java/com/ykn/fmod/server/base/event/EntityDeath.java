@@ -16,6 +16,8 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.mob.HostileEntity;
+import net.minecraft.entity.passive.PassiveEntity;
 
 public class EntityDeath {
 
@@ -72,7 +74,15 @@ public class EntityDeath {
             }
             Util.getServerData(livingEntity.getServer()).removeKillerEntity(livingEntity);
         }
+
+        // Normal entity death message
         MessageLocation type = Util.serverConfig.getEntityDeathMessage();
+        if (livingEntity instanceof PassiveEntity) {
+            type = Util.serverConfig.getPassiveDeathMessage();
+        } else if (livingEntity instanceof HostileEntity) {
+            type = Util.serverConfig.getHostileDeathMessage();
+        }
+        // broadcast only if not already broadcasted
         if (!isAlreadyBroadcasted.get(type)) {
             Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getDamageTracker().getDeathMessage());
             isAlreadyBroadcasted.put(type, true);
