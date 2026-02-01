@@ -98,6 +98,14 @@ public class AsyncTaskExecutor implements Runnable {
     }
 
     /**
+     * Check if the after-completion task has been executed.
+     * @return True if the after-completion task has been executed, false otherwise.
+     */
+    public final boolean isAfterCompletionExecuted() {
+        return afterCompletionExecuted.get();
+    }
+
+    /**
      * Run the after-completion task if it hasn't been executed yet.
      * This method should be called from the main thread.
      */

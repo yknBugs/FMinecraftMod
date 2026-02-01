@@ -601,6 +601,18 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.entitywarning"),
                 Text.translatable("fmod.options.hint.entitywarning")
             ));
+            // Density Warning
+            this.addEntry(new ButtonConfigEntry(
+                ButtonWidget.builder(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDensityWarning()), button -> {
+                    final List<Enum<?>> values = Arrays.asList(MessageLocation.values());
+                    int currentIndex = values.indexOf(Util.serverConfig.getEntityDensityWarning());
+                    currentIndex = (currentIndex + 1) % values.size();
+                    Util.serverConfig.setEntityDensityWarning((MessageLocation) values.get(currentIndex));
+                    button.setMessage(EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDensityWarning()));
+                }).size(200, 20).build(),
+                Text.translatable("fmod.options.densitywarning"),
+                Text.translatable("fmod.options.hint.densitywarning")
+            ));
             // Entity Number
             SliderWidget entityNumSlider = new SliderWidget(0, 0, 200, 20, 
                 Text.literal(Integer.toString(Util.serverConfig.getEntityNumberThreshold())),
@@ -621,25 +633,105 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.entitynumber"),
                 Text.translatable("fmod.options.hint.entitynumber")
             ));
-            // Entity Interval (Range: 1 ~ 100 Ticks, show in Ticks)
-            SliderWidget entityIntervalSlider = new SliderWidget(0, 0, 200, 20, 
-                Text.literal(Integer.toString(Util.serverConfig.getEntityNumberInterval())),
-                ((double) Util.serverConfig.getEntityNumberInterval() - 1.0) / 99.0 
+            // Entity Density
+            SliderWidget entityDensitySlider = new SliderWidget(0, 0, 200, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getEntityDensityThreshold())),
+                (double) Util.serverConfig.getEntityDensityThreshold() / 10000.0
             ) {
                 @Override
                 protected void updateMessage() {
-                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 99.0 + 1.0))));
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 10000.0))));
                 }
                 
                 @Override
                 protected void applyValue() {
-                    Util.serverConfig.setEntityNumberInterval((int) (this.value * 99.0 + 1.0));
+                    Util.serverConfig.setEntityDensityThreshold((int) (this.value * 10000.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                entityDensitySlider,
+                Text.translatable("fmod.options.entitydensity"),
+                Text.translatable("fmod.options.hint.entitydensity")
+            ));
+            // Density Number
+            SliderWidget densityNumberSlider = new SliderWidget(0, 0, 200, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getEntityDensityNumber())),
+                (double) Util.serverConfig.getEntityDensityNumber() / 1000.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 1000.0))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setEntityDensityNumber((int) (this.value * 1000.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                densityNumberSlider,
+                Text.translatable("fmod.options.densitynumber"),
+                Text.translatable("fmod.options.hint.densitynumber")
+            ));
+            // Density Radius
+            SliderWidget densityRadiusSlider = new SliderWidget(0, 0, 200, 20, 
+                Text.literal(String.format("%.2f", Util.serverConfig.getEntityDensityRadius())),
+                Util.serverConfig.getEntityDensityRadius() / 256.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", this.value * 256.0)));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setEntityDensityRadius(this.value * 256.0);
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                densityRadiusSlider,
+                Text.translatable("fmod.options.densityradius"),
+                Text.translatable("fmod.options.hint.densityradius")
+            ));
+            // Entity Interval (Range: 1 ~ 1200 Ticks, show in Ticks)
+            SliderWidget entityIntervalSlider = new SliderWidget(0, 0, 200, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getEntityNumberInterval())),
+                ((double) Util.serverConfig.getEntityNumberInterval() - 1.0) / 1199.0 
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 1199.0 + 1.0))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setEntityNumberInterval((int) (this.value * 1199.0 + 1.0));
                 }
             };
             this.addEntry(new NumberConfigEntry(
                 entityIntervalSlider,
                 Text.translatable("fmod.options.entityinterval"),
                 Text.translatable("fmod.options.hint.entityinterval")
+            ));
+            // Density Interval (Range: 1 ~ 1200 Ticks, show in Ticks)
+            SliderWidget densityIntervalSlider = new SliderWidget(0, 0, 200, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getEntityDensityInterval())),
+                ((double) Util.serverConfig.getEntityDensityInterval() - 1.0) / 1199.0 
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 1199.0 + 1.0))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setEntityDensityInterval((int) (this.value * 1199.0 + 1.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                densityIntervalSlider,
+                Text.translatable("fmod.options.densityinterval"),
+                Text.translatable("fmod.options.hint.densityinterval")
             ));
             // Player Seriously Hurt Location
             this.addEntry(new ButtonConfigEntry(

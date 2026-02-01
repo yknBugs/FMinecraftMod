@@ -250,6 +250,12 @@ public class ServerConfig extends ConfigReader {
     protected MessageLocation entityNumberWarning;
 
     /**
+     * Controls where to show the message when the entity density anaylze result is available.
+     * Default: NONE
+     */
+    protected MessageLocation entityDensityWarning;
+
+    /**
      * If the number of the entities in the server is larger than this value, the warning message will be sent.
      * This is designed to avoid too many entities lagging the server.
      * Default: 3000
@@ -257,11 +263,37 @@ public class ServerConfig extends ConfigReader {
     protected int entityNumberThreshold;
 
     /**
+     * If the number of the entities in the server is larger than this value,
+     * we will automatically perform entity density analysis to find the most crowded area.
+     * Default: 3000 
+     */
+    protected int entityDensityThreshold;
+
+    /**
+     * When anaylzing entity density, the minimum number of entities required for each candidate position.
+     * Default: 100
+     */
+    protected int entityDensityNumber;
+
+    /**
+     * The radius within which to count entities for density checks.
+     * Default: 8.0
+     */
+    protected double entityDensityRadius;
+
+    /**
      * The interval in ticks to check how many entities are there in the server.
      * Frequently checking the number of entities may cause lag.
      * Default: 20 (1 second)
      */
     protected int entityNumberInterval;
+
+    /**
+     * The interval in ticks to perform entity density analysis.
+     * Frequently performing entity density analysis may cause lag.
+     * Default: 20 (1 second)
+     */
+    protected int entityDensityInterval;
 
     /**
      * Controls where to show the message when a player is seriously hurt.
@@ -413,8 +445,13 @@ public class ServerConfig extends ConfigReader {
         this.monsterNumberThreshold = 8;
         this.monsterDistanceThreshold = 12.0;
         this.entityNumberWarning = MessageLocation.NONE;
+        this.entityDensityWarning = MessageLocation.NONE;
         this.entityNumberThreshold = 3000;
+        this.entityDensityThreshold = 3000;
+        this.entityDensityNumber = 100;
+        this.entityDensityRadius = 8.0;
         this.entityNumberInterval = 20;
+        this.entityDensityInterval = 20;
         this.playerSeriousHurtLocation = MessageLocation.NONE;
         this.playerSeriousHurtReceiver = MessageReceiver.NONE;
         this.playerHurtThreshold = 0.8;
@@ -1171,6 +1208,24 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
+    public MessageLocation getEntityDensityWarning() {
+        lock.readLock().lock();
+        try {
+            return entityDensityWarning;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityDensityWarning(MessageLocation entityDensityWarning) {
+        lock.writeLock().lock();
+        try {
+            this.entityDensityWarning = entityDensityWarning;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public int getEntityNumberThreshold() {
         lock.readLock().lock();
         try {
@@ -1196,6 +1251,81 @@ public class ServerConfig extends ConfigReader {
         }
     }
 
+    public int getEntityDensityThreshold() {
+        lock.readLock().lock();
+        try {
+            if (entityDensityThreshold < 0) {
+                return 0;
+            }
+            return entityDensityThreshold;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityDensityThreshold(int entityDensityThreshold) {
+        lock.writeLock().lock();
+        try {
+            if (entityDensityThreshold < 0) {
+                this.entityDensityThreshold = 0;
+            } else {
+                this.entityDensityThreshold = entityDensityThreshold;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getEntityDensityNumber() {
+        lock.readLock().lock();
+        try {
+            if (entityDensityNumber < 0) {
+                return 0;
+            }
+            return entityDensityNumber;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityDensityNumber(int entityDensityNumber) {
+        lock.writeLock().lock();
+        try {
+            if (entityDensityNumber < 0) {
+                this.entityDensityNumber = 0;
+            } else {
+                this.entityDensityNumber = entityDensityNumber;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public double getEntityDensityRadius() {
+        lock.readLock().lock();
+        try {
+            if (entityDensityRadius < 0) {
+                return 0.0;
+            }
+            return entityDensityRadius;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityDensityRadius(double entityDensityRadius) {
+        lock.writeLock().lock();
+        try {
+            if (entityDensityRadius < 0) {
+                this.entityDensityRadius = 0.0;
+            } else {
+                this.entityDensityRadius = entityDensityRadius;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public int getEntityNumberInterval() {
         lock.readLock().lock();
         try {
@@ -1215,6 +1345,31 @@ public class ServerConfig extends ConfigReader {
                 this.entityNumberInterval = 1;
             } else {
                 this.entityNumberInterval = entityNumberInterval;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getEntityDensityInterval() {
+        lock.readLock().lock();
+        try {
+            if (entityDensityInterval <= 0) {
+                return 1;
+            }
+            return entityDensityInterval;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setEntityDensityInterval(int entityDensityInterval) {
+        lock.writeLock().lock();
+        try {
+            if (entityDensityInterval <= 0) {
+                this.entityDensityInterval = 1;
+            } else {
+                this.entityDensityInterval = entityDensityInterval;
             }
         } finally {
             lock.writeLock().unlock();

@@ -44,8 +44,8 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
     private final GptData gptData;
     private final CommandContext<ServerCommandSource> context;
 
-    private Text feedbackText;
-    private String loggedResponse;
+    private volatile Text feedbackText;
+    private volatile String loggedResponse;
 
     public GptCommandExecutor(GptData gptData, CommandContext<ServerCommandSource> context) {
         this.gptData = gptData;
