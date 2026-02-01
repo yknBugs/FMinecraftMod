@@ -162,6 +162,7 @@ public class NodeRegistry {
         NodeRegistry.register("RunFlowNode", RunFlowNode::new);
 
         NodeRegistry.registerEvent("DummyNode", DummyNode::new);
+        NodeRegistry.registerEvent("TriggerNode", TriggerNode::new);
         NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
         NodeRegistry.registerEvent("EntityDamageEventNode", EntityDamageEventNode::new);
         NodeRegistry.registerEvent("ProjectileHitEntityEventNode", ProjectileHitEntityEventNode::new);

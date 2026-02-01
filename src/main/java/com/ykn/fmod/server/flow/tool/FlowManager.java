@@ -164,6 +164,42 @@ public class FlowManager {
     }
 
     /**
+     * Replaces the starting event node with a new event node of the specified type.
+     * <p>
+     * The old starting node is removed and replaced with a new node created
+     * using {@link NodeRegistry}. The new node becomes the start node of the flow.
+     * This operation is recorded in the undo stack and clears the redo stack.
+     * <p>
+     * Note: Since the start node cannot be deleted, this method provides a way to change the event type.
+     * 
+     * @param type The type name of the new event node to create (must be registered)
+     * @param name The display name for the new event node
+     */
+    public void replaceEventNode(String type, String name) {
+        this.redoPath.clear();
+        FlowNode oldNode = this.flow.getFirstNode();
+        FlowNode newNode = NodeRegistry.createNode(type, flow.generateId(), name);
+        if (oldNode != null) {
+            this.flow.addNode(newNode);
+            this.flow.startNodeId = newNode.getId();
+            this.flow.removeNode(oldNode.getId());
+            this.undoPath.add(new NodeEditPath(
+                f -> {
+                    f.addNode(newNode);
+                    f.startNodeId = newNode.getId();
+                    f.removeNode(oldNode.getId());
+                },
+                f -> {
+                    f.addNode(oldNode);
+                    f.startNodeId = oldNode.getId();
+                    f.removeNode(newNode.getId());
+                }
+            ));
+            this.isEnabled = false;
+        }
+    }
+
+    /**
      * Renames a node in the flow.
      * <p>
      * Changes the display name of the specified node. Node IDs remain unchanged.

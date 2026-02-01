@@ -54,6 +54,7 @@ import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
+import com.ykn.fmod.server.flow.node.TriggerNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.flow.tool.FlowSerializer;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
@@ -1434,9 +1435,6 @@ public class CommandRegistrater {
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
             }
-            if (targetFlow.isEnabled == false) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.disabled", name));
-            }
             LogicException exception = targetFlow.execute(data, null, null);
             if (exception != null) {
                 throw new CommandRuntimeException(exception.getMessageText());
@@ -1445,6 +1443,38 @@ public class CommandRegistrater {
             throw e;
         } catch (Exception e) {
             logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow execute", e);
+            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int runTriggerFlowCommand(String name, CommandContext<CommandSourceStack> context) {
+        try {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(name);
+            // Player without permission should not know the status of the trigger, always show not exists
+            if (targetFlow == null) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+            }
+            if (targetFlow.isEnabled == false) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+            }
+            if (targetFlow.flow.getFirstNode() == null) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+            }
+            if (targetFlow.flow.getFirstNode() instanceof TriggerNode == false) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+            }
+            List<Object> startNodeOutputs = new ArrayList<>();
+            startNodeOutputs.add(context.getSource().getPlayer());
+            LogicException exception = targetFlow.execute(data, startNodeOutputs, null);
+            if (exception != null) {
+                throw new CommandRuntimeException(exception.getMessageText());
+            }
+        } catch (CommandRuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f trigger", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -1609,6 +1639,33 @@ public class CommandRegistrater {
             }
             targetFlow.removeNode(name);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.removenode.success", name, flowName), true);
+        } catch (CommandRuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
+            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int runEditFlowReplaceEventCommand(String flowName, String type, String name, CommandContext<CommandSourceStack> context) {
+        try {
+            FlowFileSuggestion.suggest();
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            FlowManager targetFlow = data.logicFlows.get(flowName);
+            if (targetFlow == null) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", flowName));
+            }
+            Collection<String> validEventNodes = NodeRegistry.getEventNodeList();
+            if (!validEventNodes.contains(type)) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.event.unknown", type));
+            }
+            FlowNode existingNode = targetFlow.flow.getNodeByName(name);
+            if (existingNode != null) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.node.exists", name, flowName));
+            }
+            targetFlow.replaceEventNode(type, name);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.replaceevent.success", type, flowName), true);
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -2000,6 +2057,13 @@ public class CommandRegistrater {
                     .requires(source -> source.hasPermission(4))
                     .executes(context -> {return runReloadCommand(context);})
                 )
+                .then(Commands.literal("trigger")
+                    .requires(source -> source.hasPermission(0))
+                    .then(Commands.argument("function", StringArgumentType.greedyString())
+                        .suggests(LogicFlowSuggestion.suggestTrigger())
+                        .executes(context -> {return runTriggerFlowCommand(StringArgumentType.getString(context, "function"), context);})
+                    )
+                )
                 .then(Commands.literal("flow")
                     .requires(source -> source.hasPermission(3))
                     .then(Commands.literal("create")
@@ -2030,6 +2094,14 @@ public class CommandRegistrater {
                                 .then(Commands.argument("node", StringArgumentType.string())
                                     .suggests(FlowNodeSuggestion.suggest(true, 3))
                                     .executes(context -> {return runEditFlowRemoveNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), context);})
+                                )
+                            )
+                            .then(Commands.literal("event")
+                                .then(Commands.argument("type", StringArgumentType.string())
+                                    .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList(), true))
+                                    .then(Commands.argument("node", StringArgumentType.string())
+                                        .executes(context -> {return runEditFlowReplaceEventCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context);})
+                                    )
                                 )
                             )
                             .then(Commands.literal("rename")
