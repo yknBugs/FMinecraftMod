@@ -5,6 +5,9 @@
 
 package com.ykn.fmod.server.base.util;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -605,6 +608,122 @@ public class GameMath {
         double yaw = Math.atan2(-x, z);
         double d = Math.toDegrees(yaw);
         return d;
+    }
+
+    /**
+     * Calculates the density of points within a spherical region.
+     * 
+     * <p>This method counts the number of points from the given iterable that fall within
+     * a sphere defined by a center point and radius, then divides by the sphere's volume
+     * to determine point density.</p>
+     * 
+     * @param points an iterable collection of 3D points to evaluate
+     * @param center the center point of the spherical region
+     * @param radius the radius of the spherical region
+     * @return the density value, calculated as the number of points within the sphere
+     *         divided by the sphere's volume (4/3 * π * r³)
+     */
+    public static double getDensity(Iterable<Vec3> points, Vec3 center, double radius) {
+        double radiusSquared = radius * radius;
+        int count = 0;
+        for (Vec3 point : points) {
+            double dx = point.x() - center.x();
+            double dy = point.y() - center.y();
+            double dz = point.z() - center.z();
+            double distanceSquared = dx * dx + dy * dy + dz * dz;
+            if (distanceSquared <= radiusSquared) {
+                count++;
+            }
+        }
+        double volume = (4.0 / 3.0) * Math.PI * radiusSquared * Math.abs(radius);
+        return count / volume;
+    }
+
+    /**
+     * Calculates the density of entities within a specified radius around a center entity.
+     * Only entities in the same world as the center entity are considered in the calculation.
+     * 
+     * @param points An iterable collection of entities to be evaluated for density calculation
+     * @param center The entity at the center of the density calculation
+     * @param radius The radius within which to calculate entity density
+     * @return The calculated density value based on the positions of entities within the specified radius
+     */
+    public static double getDensity(Iterable<Entity> points, Entity center, double radius) {
+        List<Vec3> vecPoints = new ArrayList<>();
+        for (Entity entity : points) {
+            if (entity.level() == center.level()) {
+                vecPoints.add(entity.position());
+            }
+        }
+        return getDensity(vecPoints, center.position(), radius);
+    }
+
+    /**
+     * Checks if two 3D points are within a specified range of each other.
+     * Uses squared distance comparison to avoid expensive square root calculation.
+     *
+     * @param xa the x-coordinate of the first point
+     * @param ya the y-coordinate of the first point
+     * @param za the z-coordinate of the first point
+     * @param xb the x-coordinate of the second point
+     * @param yb the y-coordinate of the second point
+     * @param zb the z-coordinate of the second point
+     * @param range the maximum distance between the two points
+     * @return {@code true} if the distance between the points is less than or equal to the range,
+     *         {@code false} otherwise
+     */
+    public static boolean isInRange(double xa, double ya, double za, double xb, double yb, double zb, double range) {
+        double dx = xa - xb;
+        double dy = ya - yb;
+        double dz = za - zb;
+        double distanceSquared = dx * dx + dy * dy + dz * dz;
+        double rangeSquared = range * range;
+        return distanceSquared <= rangeSquared;
+    }
+
+    /**
+     * Checks if two 3D vectors are within a specified range of each other.
+     * Uses squared distance comparison to avoid expensive square root calculation.
+     *
+     * @param a the first vector
+     * @param b the second vector
+     * @param range the maximum distance between the two vectors
+     * @return {@code true} if the distance between the vectors is less than or equal to the range,
+     *         {@code false} otherwise
+     */
+    public static boolean isInRange(Vec3 a, Vec3 b, double range) {
+        double dx = a.x() - b.x();
+        double dy = a.y() - b.y();
+        double dz = a.z() - b.z();
+        double distanceSquared = dx * dx + dy * dy + dz * dz;
+        double rangeSquared = range * range;
+        return distanceSquared <= rangeSquared;
+    }
+
+    /**
+     * Checks if two entities are within a specified range of each other.
+     * <p>
+     * This method calculates the Euclidean distance between two entities and compares it
+     * against the specified range. The calculation uses squared distances to avoid the
+     * computational cost of square root operations.
+     * </p>
+     *
+     * @param a the first entity
+     * @param b the second entity
+     * @param range the maximum distance between the entities to be considered in range
+     * @return {@code true} if both entities are in the same world and the distance between
+     *         them is less than or equal to the specified range; {@code false} otherwise
+     */
+    public static boolean isInRange(Entity a, Entity b, double range) {
+        if (a.level() != b.level()) {
+            return false;
+        }
+        double dx = a.getX() - b.getX();
+        double dy = a.getY() - b.getY();
+        double dz = a.getZ() - b.getZ();
+        double distanceSquared = dx * dx + dy * dy + dz * dz;
+        double rangeSquared = range * range;
+        return distanceSquared <= rangeSquared;
     }
 
     /**

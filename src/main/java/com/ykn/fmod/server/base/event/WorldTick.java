@@ -5,14 +5,18 @@
 
 package com.ykn.fmod.server.base.event;
 
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+import com.ykn.fmod.server.base.async.EntityDensityCalculator;
 import com.ykn.fmod.server.base.data.PlayerData;
+import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.BiomeMessage;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.base.util.GameMath;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -35,10 +39,7 @@ public class WorldTick {
      * This method is called every tick.
      */
     public void onWorldTick() {
-        if (Util.getServerData(server).getServerTick() % Util.serverConfig.getEntityNumberInterval() == 0) {
-            checkEntityNumber();
-        }   
-
+        checkEntityNumber();
         List<ServerPlayer> players = server.getPlayerList().getPlayers();
         for (ServerPlayer player : players) {
             PlayerData playerData = Util.getServerData(server).getPlayerData(player);
@@ -56,13 +57,83 @@ public class WorldTick {
     }
 
     private void checkEntityNumber() {
-        int entityNumber = 0;
+        ServerData serverData = Util.getServerData(server);
+        // Check if have finished previous calculation (Happens every tick because async result must be feeded back immediately after finishing)
+        if (serverData.activeDensityCalculator != null && serverData.activeDensityCalculator.isAfterCompletionExecuted()) {
+            // If finished, retrieve result and clear the task
+            if (serverData.activeDensityCalculator.getEntity() == null || serverData.activeDensityCalculator.getCause() == null) {
+                // No result
+                Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslatableText("fmod.message.entitywarning", serverData.activeDensityCalculator.getInputNumber()).withStyle(ChatFormatting.RED));
+            } else {
+                // Has result
+                final String totalCount = Integer.toString(serverData.activeDensityCalculator.getInputNumber());
+                final Component coordText = Util.parseCoordText(serverData.activeDensityCalculator.getDimension(), serverData.activeDensityCalculator.getBiome(), serverData.activeDensityCalculator.getX(), serverData.activeDensityCalculator.getY(), serverData.activeDensityCalculator.getZ());
+                final String entityRadius = String.format("%.2f", serverData.activeDensityCalculator.getRadius());
+                final String entityCount = Integer.toString(serverData.activeDensityCalculator.getCount());
+                final String causeCount = Integer.toString(serverData.activeDensityCalculator.getNumber());
+                final Component entityCauseText = serverData.activeDensityCalculator.getCause().getDisplayName();
+                Util.broadcastMessage(server, Util.serverConfig.getEntityDensityWarning(), Util.parseTranslatableText("fmod.message.entitydensity", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText).withStyle(ChatFormatting.RED));
+            }
+            serverData.lastCheckEntityTick = serverData.getServerTick();
+            serverData.lastCheckDensityTick = serverData.getServerTick();
+            serverData.activeDensityCalculator = null;
+            return;
+        }
+
+        boolean satisfyNumberCondition = true;
+        boolean satisfyDensityCondition = true;
+
+        // If no finished calculation, wait after configured interval
+        if (serverData.getTickPassed(serverData.lastCheckEntityTick) < Util.serverConfig.getEntityNumberInterval()) {
+            satisfyNumberCondition = false;
+        }
+        if (serverData.getTickPassed(serverData.lastCheckDensityTick) < Util.serverConfig.getEntityDensityInterval()) {
+            satisfyDensityCondition = false;
+        }
+        if (satisfyNumberCondition == false && satisfyDensityCondition == false) {
+            return;
+        }
+
+        // Now we should check entity number and density
+        List<Entity> allEntities = new ArrayList<>();
         for (ServerLevel world : server.getAllLevels()) {
             List<Entity> entities = Util.getAllEntities(world);
-            entityNumber += entities.size();
+            allEntities.addAll(entities);
         }
-        if (entityNumber >= Util.serverConfig.getEntityNumberThreshold()) {
-            Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslatableText("fmod.message.entitywarning", entityNumber));
+
+        // Check if exceed threshold
+        if (allEntities.size() < Util.serverConfig.getEntityNumberThreshold()) {
+            serverData.lastCheckEntityTick = serverData.getServerTick();
+            satisfyNumberCondition = false;
+        }
+        if (allEntities.size() < Util.serverConfig.getEntityDensityThreshold()) {
+            serverData.lastCheckDensityTick = serverData.getServerTick();
+            satisfyDensityCondition = false;
+        }
+        if (satisfyNumberCondition == false && satisfyDensityCondition == false) {
+            return;
+        }
+
+        // Check if we have an active calculator
+        if (satisfyDensityCondition) {
+            if (serverData.activeDensityCalculator == null) {
+                // No active calculator, create a new one, we will broadcast result after finishing async calculation
+                serverData.lastCheckEntityTick = serverData.getServerTick();
+                serverData.lastCheckDensityTick = serverData.getServerTick();
+                satisfyNumberCondition = false; // We already start density calculation, no need to start number calculation
+                EntityDensityCalculator calculator = new EntityDensityCalculator(null, allEntities, Util.serverConfig.getEntityDensityRadius(), Util.serverConfig.getEntityDensityNumber());
+                serverData.activeDensityCalculator = calculator;
+                serverData.submitAsyncTask(calculator);
+                return;
+            } else {
+                // Have active calculator, wait for result
+                serverData.lastCheckDensityTick = serverData.getServerTick();
+            }
+        }
+
+        if (satisfyNumberCondition) {
+            serverData.lastCheckEntityTick = serverData.getServerTick();
+            Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslatableText("fmod.message.entitywarning", allEntities.size()).withStyle(ChatFormatting.RED));
         }
     }
 

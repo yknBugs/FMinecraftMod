@@ -33,6 +33,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import com.mojang.logging.LogUtils;
+import com.ykn.fmod.server.base.async.EntityDensityCalculator;
 import com.ykn.fmod.server.base.async.GptCommandExecutor;
 import com.ykn.fmod.server.base.data.GptData;
 import com.ykn.fmod.server.base.data.PlayerData;
@@ -66,6 +67,7 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Inventory;
@@ -1086,7 +1088,7 @@ public class CommandRegistrater {
             for (ServerPlayer player : players) {
                 PlayerData data = Util.getServerData(context.getSource().getServer()).getPlayerData(player);
                 Vec3[] snapshot = data.recentPositions.toArray(new Vec3[0]);
-                double seconds = snapshot.length / 20.0;
+                double seconds = (snapshot.length - 1) / 20.0;
                 double totalDistance = GameMath.getHorizonalEuclideanDistance(snapshot[0], snapshot[snapshot.length - 1]);
                 double totalTravelled = 0.0;
                 for (int i = 1; i < snapshot.length; i++) {
@@ -1103,10 +1105,30 @@ public class CommandRegistrater {
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
-            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get travelrecord", e);
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get travel", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return players.size();
+    }
+
+    private static int runGetCrowdedPlaceCommand(int number, double radius, CommandContext<CommandSourceStack> context) {
+        try {
+            List<Entity> allEntities = new ArrayList<>();
+            for (ServerLevel world : context.getSource().getServer().getAllLevels()) {
+                List<Entity> entities = Util.getAllEntities(world);
+                allEntities.addAll(entities);
+            }
+            EntityDensityCalculator calculator = new EntityDensityCalculator(context, allEntities, radius, number);
+            ServerData serverData = Util.getServerData(context.getSource().getServer());
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.crowd"), false);
+            serverData.submitAsyncTask(calculator);
+        } catch (CommandRuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            logger.error("FMinecraftMod: Caught unexpected exception when executing command /f get crowd", e);
+            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+        }
+        return Command.SINGLE_SUCCESS;
     }
 
     private static int runSayCommand(String message, CommandContext<CommandSourceStack> context) {
@@ -1949,6 +1971,14 @@ public class CommandRegistrater {
                             .executes(context -> {return runGetTravelRecordCommand(EntityArgument.getPlayers(context, "player"), context);})
                         )
                     )
+                    .then(Commands.literal("crowd")
+                        .then(Commands.argument("number", IntegerArgumentType.integer(1))
+                            .then(Commands.argument("radius", DoubleArgumentType.doubleArg(0.0))
+                                .executes(context -> {return runGetCrowdedPlaceCommand(IntegerArgumentType.getInteger(context, "number"), DoubleArgumentType.getDouble(context, "radius"), context);})
+                            )
+                        )
+                        .executes(context -> {return runGetCrowdedPlaceCommand(Util.serverConfig.getEntityDensityNumber(), Util.serverConfig.getEntityDensityRadius(), context);})
+                    )
                 )
                 .then(Commands.literal("share")
                     .requires(source -> source.hasPermission(0))
@@ -2395,17 +2425,47 @@ public class CommandRegistrater {
                         .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("entityNumberWarning", MessageLocation.ACTIONBAR, context);}))
                         .executes(context -> {return runOptionsCommand("entityNumberWarning", null, context);})
                     )
+                    .then(Commands.literal("entityDensityWarning")
+                        .then(Commands.literal("off").executes(context -> {return runOptionsCommand("entityDensityWarning", MessageLocation.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runOptionsCommand("entityDensityWarning", MessageLocation.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runOptionsCommand("entityDensityWarning", MessageLocation.ACTIONBAR, context);}))
+                        .executes(context -> {return runOptionsCommand("entityDensityWarning", null, context);})
+                    )
                     .then(Commands.literal("entityNumberThreshold")
                         .then(Commands.argument("num", IntegerArgumentType.integer(0))
                             .executes(context -> {return runOptionsCommand("entityNumberThreshold", IntegerArgumentType.getInteger(context, "num"), context);})
                         )
                         .executes(context -> {return runOptionsCommand("entityNumberThreshold", null, context);})
                     )
+                    .then(Commands.literal("entityDensityThreshold")
+                        .then(Commands.argument("num", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("entityDensityThreshold", IntegerArgumentType.getInteger(context, "num"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("entityDensityThreshold", null, context);})
+                    )
+                    .then(Commands.literal("entityDensityNumber")
+                        .then(Commands.argument("num", IntegerArgumentType.integer(0))
+                            .executes(context -> {return runOptionsCommand("entityDensityNumber", IntegerArgumentType.getInteger(context, "num"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("entityDensityNumber", null, context);})
+                    )
+                    .then(Commands.literal("entityDensityRadius")
+                        .then(Commands.argument("meters", DoubleArgumentType.doubleArg(0))
+                            .executes(context -> {return runOptionsCommand("entityDensityRadius", DoubleArgumentType.getDouble(context, "meters"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("entityDensityRadius", null, context);})
+                    )
                     .then(Commands.literal("entityNumberCheckInterval")
                         .then(Commands.argument("ticks", IntegerArgumentType.integer(1))
                             .executes(context -> {return runOptionsCommand("entityNumberCheckInterval", IntegerArgumentType.getInteger(context, "ticks"), context);})
                         )
                         .executes(context -> {return runOptionsCommand("entityNumberCheckInterval", null, context);})
+                    )
+                    .then(Commands.literal("entityDensityCheckInterval")
+                        .then(Commands.argument("ticks", IntegerArgumentType.integer(1))
+                            .executes(context -> {return runOptionsCommand("entityDensityCheckInterval", IntegerArgumentType.getInteger(context, "ticks"), context);})
+                        )
+                        .executes(context -> {return runOptionsCommand("entityDensityCheckInterval", null, context);})
                     )
                     .then(Commands.literal("playerHurtMessageLocation")
                         .then(Commands.literal("off").executes(context -> {return runOptionsCommand("playerHurtMessageLocation", MessageLocation.NONE, context);}))
@@ -2890,6 +2950,16 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.entitywarning", text), true);
                     }
                     break;
+                case "entityDensityWarning":
+                    if (value == null) {
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n(Util.serverConfig.getEntityDensityWarning());
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.densitywarning", text), false);
+                    } else {
+                        Util.serverConfig.setEntityDensityWarning((MessageLocation) value);
+                        final MutableComponent text = EnumI18n.getMessageLocationI18n((MessageLocation) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.densitywarning", text), true);
+                    }
+                    break;
                 case "entityNumberThreshold":
                     if (value == null) {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.entitynumber", Util.serverConfig.getEntityNumberThreshold()), false);
@@ -2898,12 +2968,44 @@ public class CommandRegistrater {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.entitynumber", value), true);
                     }
                     break;
+                case "entityDensityThreshold":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.entitydensity", Util.serverConfig.getEntityDensityThreshold()), false);
+                    } else {
+                        Util.serverConfig.setEntityDensityThreshold((int) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.entitydensity", value), true);
+                    }
+                    break;
+                case "entityDensityNumber":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.densitynumber", Util.serverConfig.getEntityDensityNumber()), false);
+                    } else {
+                        Util.serverConfig.setEntityDensityNumber((int) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.densitynumber", value), true);
+                    }
+                    break;
+                case "entityDensityRadius":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.densityradius", Util.serverConfig.getEntityDensityRadius()), false);
+                    } else {
+                        Util.serverConfig.setEntityDensityRadius((double) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.densityradius", value), true);
+                    }
+                    break;
                 case "entityNumberCheckInterval":
                     if (value == null) {
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.entityinterval", Util.serverConfig.getEntityNumberInterval()), false);
                     } else {
                         Util.serverConfig.setEntityNumberInterval((int) value);
                         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.entityinterval", value), true);
+                    }
+                    break;
+                case "entityDensityCheckInterval":
+                    if (value == null) {
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.get.densityinterval", Util.serverConfig.getEntityDensityInterval()), false);
+                    } else {
+                        Util.serverConfig.setEntityDensityInterval((int) value);
+                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.options.densityinterval", value), true);
                     }
                     break;
                 case "playerHurtMessageLocation":

@@ -23,6 +23,7 @@ import javax.annotation.Nullable;
 import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.async.AsyncTaskExecutor;
+import com.ykn.fmod.server.base.async.EntityDensityCalculator;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
@@ -103,6 +104,24 @@ public class ServerData {
     private int serverTick;
 
     /**
+     * Currently active EntityDensityCalculator, if any.
+     * Used for calculating entity density in the world.
+     */
+    public EntityDensityCalculator activeDensityCalculator;
+
+    /**
+     * The server tick when the number of loaded entities was last checked.
+     * Used to avoid checking entity count every tick.
+     */
+    public int lastCheckEntityTick;
+
+    /**
+     * The server tick when entity density was last checked.
+     * Used to avoid checking entity density every tick.
+     */
+    public int lastCheckDensityTick;
+
+    /**
      * Constructs a new ServerData instance for the given server.
      * Initializes all collections, the async task pool, and sets the server tick to 0.
      * 
@@ -117,8 +136,11 @@ public class ServerData {
         killerEntities = new HashSet<>();
         gptRequestStatus = new ConcurrentHashMap<>();
         asyncTasks = new ConcurrentLinkedQueue<>();
-        asyncTaskPool = Executors.newCachedThreadPool();
+        asyncTaskPool = Executors.newFixedThreadPool(2);
         serverTick = 0;
+        activeDensityCalculator = null;
+        lastCheckEntityTick = 0;
+        lastCheckDensityTick = 0;
     }
 
     /**
