@@ -511,7 +511,6 @@ public class FlowManager {
      * @param initialVariables Optional initial variables for the execution context
      * @throws LogicException If an error occurs during flow execution
      */
-    @Nullable
     public void execute(@NotNull ServerData serverData, ExecutionContext parentContext, int maxFlowLength, int maxRecursionDepth, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws LogicException {
         ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server, maxFlowLength, maxRecursionDepth);
         serverData.executeHistory.add(executionContext);
