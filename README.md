@@ -61,6 +61,19 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.7
+
+- Now Travel check does not reset history coord.
+- Add an option that prevents infinit recursion in logic flow.
+- Add new node that can add variables to scheduled flow.
+- Catch ConcurrentModificationException and StackOverflowError to avoid crash.
+
+### Version 0.2.6
+
+- Calculate the most crowded area with many entities.
+- Now is able to replace the even node in a flow.
+- Add a trigger event node that can be called by non-OP player.
+
 ### Version 0.2.5
 
 - Add more config entries.

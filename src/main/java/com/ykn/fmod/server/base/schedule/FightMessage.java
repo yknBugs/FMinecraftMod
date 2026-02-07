@@ -47,4 +47,9 @@ public class FightMessage extends ScheduledTask {
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "FightMessage{player='" + player.getScoreboardName() + "', entity='" + entity.getScoreboardName() + "'}";
+    }
 }

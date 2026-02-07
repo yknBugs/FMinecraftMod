@@ -231,6 +231,11 @@ public class WorldTick {
         if (positions.size() < maxSamples) {
             return; 
         }
+
+        // Check message interval
+        if (Util.getServerData(server).getTickPassed(playerData.lastTravelMessageTick) < Util.serverConfig.getTravelMessageInterval()) {
+            return;
+        }
         
         // Total distance check
         double totalDistance = GameMath.getHorizonalEuclideanDistance(snapshot[0], snapshot[lastIdx]);
@@ -251,9 +256,7 @@ public class WorldTick {
         String speedStr = String.format("%.2f", totalDistance / window * 20.0);
         MutableComponent message = Util.parseTranslatableText("fmod.message.travel.fast", player.getDisplayName(), speedStr);
         Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLocation(), message);
-
-        positions.clear();
-        positions.addLast(player.position());
+        playerData.lastTravelMessageTick = Util.getServerData(server).getServerTick();
     }
 
     private void handleTeleportedPlayer(ServerPlayer player, PlayerData playerData, Vec3 fromPos, Vec3 toPos) {

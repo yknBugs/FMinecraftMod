@@ -86,10 +86,16 @@ public class RunFlowNode extends FlowNode {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.disabled", flowName), null);
         }
         if (delayInput <= 0) {
-            if (keepVariables) {
-                targetFlow.execute(data, null, context.getVariables());
-            } else {
-                targetFlow.execute(data, null, null);
+            try {
+                if (keepVariables) {
+                    targetFlow.execute(data, context, context.getMaxAllowedNodes() - context.getNodeExecutionCounter(), context.getMaxAllowedRecursions(), null, context.getVariables());
+                } else {
+                    targetFlow.execute(data, context, context.getMaxAllowedNodes() - context.getNodeExecutionCounter(), context.getMaxAllowedRecursions(), null, null);
+                }
+            } catch (StackOverflowError e) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.overflow"), null);
+            } catch (LogicException e) {
+                throw e;
             }
             status.setOutput(0, null);
         } else {
@@ -101,7 +107,7 @@ public class RunFlowNode extends FlowNode {
 
     private String parseFlowName(Object flowObj) throws LogicException {
         if (flowObj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
         } else {
             return TypeAdaptor.parse(flowObj).asString();
         }
@@ -113,7 +119,7 @@ public class RunFlowNode extends FlowNode {
         }
         Double delay = TypeAdaptor.parse(delayObj).asDouble();
         if (delay == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
         }
         int delayInt = delay.intValue();
         if (delayInt < 0) {
@@ -128,7 +134,7 @@ public class RunFlowNode extends FlowNode {
         }
         Boolean keepVar = TypeAdaptor.parse(keepVarObj).asBoolean();
         if (keepVar == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
         }
         return keepVar;
     }

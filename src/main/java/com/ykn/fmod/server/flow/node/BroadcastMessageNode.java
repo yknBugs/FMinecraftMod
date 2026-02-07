@@ -79,14 +79,14 @@ public class BroadcastMessageNode extends FlowNode {
             } else if ("chat".equalsIgnoreCase(typeStr)) {
                 return MessageLocation.CHAT;
             } else {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bcmessage.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
             }
         }
     }
 
     private Component parseMessage(Object messageObj) throws LogicException {
         if (messageObj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.bcmessage.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
         } else if (messageObj instanceof Component) {
             return (Component) messageObj;
         } else {

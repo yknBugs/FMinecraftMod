@@ -47,4 +47,9 @@ public class BiomeMessage extends ScheduledTask {
             return true;
         }
     }
+
+    @Override
+    public String toString() {
+        return "BiomeMessage{player='" + player.getScoreboardName() + "', biomeId='" + biomeId + "'}";
+    }
 }

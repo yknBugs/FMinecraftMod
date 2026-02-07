@@ -7,6 +7,7 @@ package com.ykn.fmod.server.base.data;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -72,6 +73,17 @@ public class ServerData {
      * Tasks are ticked each server tick and removed when finished.
      */
     private final List<ScheduledTask> scheduledTasks;
+
+    /**
+     * List of scheduled tasks that are submitted during the ticking of scheduled tasks.
+     * This is used to avoid ConcurrentModificationException when a scheduled task submits another task while being
+     */
+    private final List<ScheduledTask> pendingScheduledTasks;
+
+    /**
+     * Flag to indicate whether the server is currently ticking scheduled tasks.
+     */
+    private boolean isTickingScheduledTasks;
     
     /**
      * Collection of UUIDs for entities that have killed a player before.
@@ -133,6 +145,8 @@ public class ServerData {
         logicFlows = new HashMap<>();
         executeHistory = new ArrayList<>();
         scheduledTasks = new ArrayList<>();
+        pendingScheduledTasks = new ArrayList<>();
+        isTickingScheduledTasks = false;
         killerEntities = new HashSet<>();
         gptRequestStatus = new ConcurrentHashMap<>();
         asyncTasks = new ConcurrentLinkedQueue<>();
@@ -149,8 +163,27 @@ public class ServerData {
      * and increments the server tick counter.
      */
     public void tick() {
-        scheduledTasks.forEach(ScheduledTask::tick);
-        scheduledTasks.removeIf(ScheduledTask::isFinished);
+        try {
+            isTickingScheduledTasks = true;
+            scheduledTasks.forEach(ScheduledTask::tick);
+            scheduledTasks.removeIf(ScheduledTask::isFinished);
+            scheduledTasks.addAll(pendingScheduledTasks);
+            pendingScheduledTasks.clear();
+            isTickingScheduledTasks = false;
+        } catch (ConcurrentModificationException e) {
+            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Concurrent modification detected while ticking scheduled tasks. This can be caused if a scheduled task submits another task or modifies the scheduledTasks list during its execution. To avoid this, ensure that tasks do not submit new tasks or modify the scheduledTasks list while being ticked.", e);
+            List<String> tasksInfo = new ArrayList<>();
+            for (ScheduledTask task : scheduledTasks) {
+                tasksInfo.add(task.toString());
+            }
+            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Current scheduled tasks at the time of exception: " + String.join(", ", tasksInfo));
+            scheduledTasks.clear();
+            pendingScheduledTasks.clear();
+        } catch (Exception e) {
+            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Exception occurred while ticking scheduled tasks. This should not happen and may indicate a bug in a scheduled task. To debug this, check the stack trace for the source of the exception and ensure that all scheduled tasks are implemented correctly.", e);
+            scheduledTasks.clear();
+            pendingScheduledTasks.clear();
+        }
 
         Iterator<AsyncTaskExecutor> iterator = asyncTasks.iterator();
         while (iterator.hasNext()) {
@@ -200,11 +233,15 @@ public class ServerData {
      * @param task the task to schedule
      */
     public void submitScheduledTask(@Nonnull ScheduledTask task) {
-        if (scheduledTasks.contains(task) || task.isFinished()) {
+        if (scheduledTasks.contains(task) || pendingScheduledTasks.contains(task) || task.isFinished()) {
             LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Attempted to submit a duplicate or finished scheduled task.");
             return;
         }
-        scheduledTasks.add(task);
+        if (isTickingScheduledTasks) {
+            pendingScheduledTasks.add(task);
+        } else {
+            scheduledTasks.add(task);
+        }
     }
 
     /**

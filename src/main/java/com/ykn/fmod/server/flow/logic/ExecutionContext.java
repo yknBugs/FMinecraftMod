@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +41,8 @@ import net.minecraft.server.MinecraftServer;
  * <p>
  * Typical usage:
  * <pre>
- * ExecutionContext context = new ExecutionContext(flow, server);
- * context.execute(1000, startOutputs, initialVariables);
+ * ExecutionContext context = new ExecutionContext(flow, server, 1000);
+ * context.execute(startOutputs, initialVariables);
  * if (context.getException() != null) {
  *     // Handle execution error
  * }
@@ -78,10 +79,22 @@ public class ExecutionContext {
     private Map<String, Object> variables;
 
     /**
+     * The maximum number of node executions allowed in this context.
+     * Used to detect and prevent infinite loops during execution.
+     */
+    private int maxAllowedNodes;
+
+    /**
+     * The maximum allowed recursion depth for flow executions.
+     * Used to prevent infinite recursive calls when flows invoke other flows.
+     */
+    private int maxAllowedRecursions;
+
+    /**
      * Counter tracking the total number of node executions in this context.
      * Used to detect and prevent infinite loops by limiting total executions.
      */
-    private long nodeExecutionCounter;
+    private int nodeExecutionCounter;
 
     /**
      * The chronological sequence of executed nodes with their final states.
@@ -89,6 +102,12 @@ public class ExecutionContext {
      * Used for debugging, visualization, and flow analysis.
      */
     private List<NodeStatus> executedSequence;
+
+    /**
+     * The parent execution contexts that led to this context, if any.
+     * This is used to track call stacks when flows invoke other flows.
+     */
+    private List<ExecutionContext> parentContexts;
 
     /**
      * The exception that occurred during execution, if any.
@@ -110,8 +129,10 @@ public class ExecutionContext {
      * 
      * @param flow The logic flow to execute (will be copied)
      * @param server The Minecraft server instance for game world interaction
+     * @param maxAllowedNodes The maximum number of node executions allowed to prevent infinite loops
+     * @param maxAllowedRecursions The maximum allowed recursion depth for flow executions
      */
-    public ExecutionContext(LogicFlow flow, MinecraftServer server) {
+    public ExecutionContext(LogicFlow flow, MinecraftServer server, int maxAllowedNodes, int maxAllowedRecursions) {
         this.flow = flow.copy();
         this.server = server;
         this.nodeStatuses = new HashMap<>();
@@ -120,8 +141,11 @@ public class ExecutionContext {
             this.nodeStatuses.put(node.getId(), new NodeStatus(node));
         }
         this.variables = new HashMap<>();
-        this.nodeExecutionCounter = 0L;
+        this.maxAllowedNodes = maxAllowedNodes;
+        this.maxAllowedRecursions = maxAllowedRecursions;
+        this.nodeExecutionCounter = 0;
         this.executedSequence = new ArrayList<>();
+        this.parentContexts = new ArrayList<>();
         this.exception = null;
     }
 
@@ -194,6 +218,18 @@ public class ExecutionContext {
     }
 
     /**
+    * Adds multiple variables to this execution context.
+    * <p>
+    * This is a convenience method for adding multiple variables at once.
+    * If any variable names already exist, they will be overwritten.
+    * 
+    * @param newVariables A map of variable names to values to add
+    */
+    public void addVariables(Map<String, Object> newVariables) {
+        this.variables.putAll(newVariables);
+    }
+
+    /**
      * Gets a variable from this execution context.
      * 
      * @param name The variable name
@@ -214,13 +250,39 @@ public class ExecutionContext {
     }
 
     /**
+     * Gets the maximum number of node executions allowed in this context.
+     * <p>
+     * This limit is used to detect and prevent infinite loops during execution.
+     * 
+     * @return The maximum allowed node executions
+     */
+    public int getMaxAllowedNodes() {
+        return this.maxAllowedNodes;
+    }
+
+    /**
+     * Sets the maximum number of node executions allowed in this context.
+     * <p>
+     * This limit is used to detect and prevent infinite loops during execution.
+     * 
+     * @param maxAllowedNodes The maximum allowed node executions
+     */
+    public void setMaxAllowedNodes(int maxAllowedNodes) {
+        if (maxAllowedNodes < 0) {
+            this.maxAllowedNodes = 0;
+        } else {
+            this.maxAllowedNodes = maxAllowedNodes;
+        }
+    }
+
+    /**
      * Gets the total number of node executions in this context.
      * <p>
      * This counter is used to detect potential infinite loops.
      * 
      * @return The number of times nodes have been executed
      */
-    public long getNodeExecutionCounter() {
+    public int getNodeExecutionCounter() {
         return this.nodeExecutionCounter;
     }
 
@@ -233,6 +295,56 @@ public class ExecutionContext {
      */
     public List<NodeStatus> getExecutedSequence() {
         return this.executedSequence;
+    }
+
+    /**
+     * Retrieves the list of parent execution contexts.
+     *
+     * @return a list of parent {@link ExecutionContext} objects, or an empty list if no parent contexts exist
+     */
+    public List<ExecutionContext> getParentContexts() {
+        return this.parentContexts;
+    }
+
+    /**
+     * Sets the parent context for this execution context.
+     * This method clears any existing parent contexts and replaces them with
+     * the parent context hierarchy from the provided parent, then adds the
+     * parent context itself to the chain.
+     *
+     * @param parent the parent ExecutionContext to set. Must not be null.
+     *               The parent's context chain will be copied to this context.
+     */
+    public void setParentContext(ExecutionContext parent) {
+        this.parentContexts.clear();
+        this.parentContexts.addAll(parent.getParentContexts());
+        this.parentContexts.add(parent);
+    }
+
+    /**
+     * Gets the maximum allowed recursion depth for flow executions.
+     * <p>
+     * This limit is used to prevent infinite recursive calls when flows invoke other flows.
+     * 
+     * @return The maximum allowed recursion depth
+     */
+    public int getMaxAllowedRecursions() {
+        return this.maxAllowedRecursions;
+    }
+
+    /**
+     * Sets the maximum allowed recursion depth for flow executions.
+     * <p>
+     * This limit is used to prevent infinite recursive calls when flows invoke other flows.
+     * 
+     * @param maxAllowedRecursions The maximum allowed recursion depth
+     */
+    public void setMaxAllowedRecursions(int maxAllowedRecursions) {
+        if (maxAllowedRecursions < 0) {
+            this.maxAllowedRecursions = 0;
+        } else {
+            this.maxAllowedRecursions = maxAllowedRecursions;
+        }
     }
 
     /**
@@ -265,9 +377,46 @@ public class ExecutionContext {
             status.reset();
         }
         this.variables.clear();
-        this.nodeExecutionCounter = 0L;
+        this.nodeExecutionCounter = 0;
         this.executedSequence.clear();
         this.exception = null;
+    }
+
+    /**
+     * Executes the logic flow in this context.
+     * 
+     * @param startNodeOutputs Optional list of output values to pre-populate for the start node
+     * @param initialVariables Optional map of variables to initialize before execution
+     * @throws Exception If any error occurs during execution
+     */
+    private void executeFlow(@Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws Exception {
+        if (startNodeOutputs != null) {
+            NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.startNodeId);
+            if (startNodeStatus != null) {
+                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.node.getMetadata().outputNumber; i++) {
+                    startNodeStatus.setOutput(i, startNodeOutputs.get(i));
+                }
+            }
+        }
+        if (initialVariables != null) {
+            this.variables.putAll(initialVariables);
+        }
+        FlowNode currentNode = this.flow.getFirstNode();
+        if (this.parentContexts.size() >= this.maxAllowedRecursions) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.recursion"), null);
+        }
+        if (currentNode == null) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullstart"), null);
+        }
+        while (currentNode != null) {
+            if (this.nodeExecutionCounter >= this.maxAllowedNodes) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.deadloop", this.maxAllowedNodes), null);
+            }
+            FlowNode nextNode = currentNode.execute(this);
+            this.nodeExecutionCounter++;
+            this.executedSequence.add(this.nodeStatuses.get(currentNode.getId()).copy());
+            currentNode = nextNode;
+        }
     }
     
     /**
@@ -287,42 +436,53 @@ public class ExecutionContext {
      * is stored in this context. After execution, check {@link #getException()} to determine
      * if the flow completed successfully.
      * 
-     * @param maxAllowedNodes The maximum number of node executions allowed before terminating
-     *                        to prevent infinite loops
      * @param startNodeOutputs Optional list of output values to pre-populate for the start node
      *                         (useful for passing event parameters)
      * @param initialVariables Optional map of variables to initialize before execution
      */
-    public void execute(long maxAllowedNodes, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
+    public void execute(@Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
         this.resetExecutionStatus();
-        if (startNodeOutputs != null) {
-            NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.startNodeId);
-            if (startNodeStatus != null) {
-                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.node.getMetadata().outputNumber; i++) {
-                    startNodeStatus.setOutput(i, startNodeOutputs.get(i));
-                }
-            }
-        }
-        if (initialVariables != null) {
-            this.variables.putAll(initialVariables);
-        }
-        FlowNode currentNode = this.flow.getFirstNode();
         try {
-            if (currentNode == null) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullstart"), null);
-            }
-            while (currentNode != null) {
-                if (this.nodeExecutionCounter > maxAllowedNodes) {
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.deadloop", maxAllowedNodes), null);
-                }
-                FlowNode nextNode = currentNode.execute(this);
-                this.nodeExecutionCounter++;
-                this.executedSequence.add(this.nodeStatuses.get(currentNode.getId()).copy());
-                currentNode = nextNode;
-            }
+            this.executeFlow(startNodeOutputs, initialVariables);
         } catch (LogicException e) {
             this.exception = e;
             LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Logic flow " + flow.name + " terminated with exception", e);
+        } catch (StackOverflowError e) {
+            this.exception = new LogicException(null, Util.parseTranslatableText("fmod.flow.error.overflow"), null);
+            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Logic flow " + flow.name + " terminated with stack overflow", e);
+        } catch (Exception e) {
+            this.exception = new LogicException(e, null, null);
+            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Logic flow " + flow.name + " terminated with unexpected exception", e);
+        }
+    }
+
+    /**
+     * Executes the logic flow in this context within the context of a parent execution.
+     * <p>
+     * If any node throws a {@link LogicException}, execution terminates and the exception
+     * is stored in this context. After execution, check {@link #getException()} to determine
+     * if the flow completed successfully.
+     * 
+     * @param parentContext The parent execution context invoking this flow
+     * @param startNodeOutputs Optional list of output values to pre-populate for the start node
+     *                         (useful for passing event parameters)
+     * @param initialVariables Optional map of variables to initialize before execution
+     * @throws LogicException If any error occurs during execution
+     */
+    public void execute(@Nonnull ExecutionContext parentContext, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws LogicException {
+        this.resetExecutionStatus();
+        this.setParentContext(parentContext);
+        try {
+            this.executeFlow(startNodeOutputs, initialVariables);
+        } catch (LogicException e) {
+            this.exception = e;
+            throw this.exception;
+        } catch (StackOverflowError e) {
+            this.exception = new LogicException(null, Util.parseTranslatableText("fmod.flow.error.overflow"), null);
+            throw this.exception;
+        } catch (Exception e) {
+            this.exception = new LogicException(e, null, null);
+            throw this.exception;
         }
     }
 

@@ -222,4 +222,9 @@ public class PlaySong extends ScheduledTask {
     public void setShowInfo(boolean showInfo) {
         this.showInfo = showInfo;
     }
+
+    @Override
+    public String toString() {
+        return "PlaySong{songName='" + songName + "'}";
+    }
 }

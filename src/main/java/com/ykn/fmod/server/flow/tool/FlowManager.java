@@ -458,13 +458,66 @@ public class FlowManager {
      */
     @Nullable
     public LogicException execute(@Nonnull ServerData serverData, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
-        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server);
-        executionContext.execute(Util.serverConfig.getMaxFlowLength(), startNodeOutputs, initialVariables);
+        return this.execute(serverData, Util.serverConfig.getMaxFlowLength(), Util.serverConfig.getMaxFlowRecursionDepth(), startNodeOutputs, initialVariables);
+    }
+
+    /**
+     * Executes this flow with a specified maximum flow length and stores the execution context in the server's history.
+     * <p>
+     * This method:
+     * <ol>
+     *   <li>Creates a new ExecutionContext for this flow</li>
+     *   <li>Executes the flow with the specified parameters</li>
+     *   <li>Stores the execution context in the server's history</li>
+     *   <li>Trims the history if it exceeds the configured limit</li>
+     *   <li>Returns any exception that occurred during execution</li>
+     * </ol>
+     * 
+     * @param serverData The server data containing the server instance and execution history
+     * @param maxFlowLength The maximum number of nodes to execute before forcibly stopping
+     * @param maxRecursionDepth The maximum allowed recursion depth for flow executions
+     * @param startNodeOutputs Optional output values to pre-populate for the start node (e.g., event parameters)
+     * @param initialVariables Optional initial variables for the execution context
+     * @return The LogicException that terminated execution, or null if execution completed successfully
+     */
+    @Nullable
+    public LogicException execute(@Nonnull ServerData serverData, int maxFlowLength, int maxRecursionDepth, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
+        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server, maxFlowLength, maxRecursionDepth);
+        executionContext.execute(startNodeOutputs, initialVariables);
         serverData.executeHistory.add(executionContext);
         int historyLimit = Util.serverConfig.getKeepFlowHistoryNumber();
         while (serverData.executeHistory.size() > historyLimit) {
             serverData.executeHistory.remove(0);
         }
         return executionContext.getException();
+    }
+
+    /**
+     * Executes this flow within a parent execution context and stores the execution context in the server's history.
+     * <p>
+     * This method:
+     * <ol>
+     *   <li>Creates a new ExecutionContext for this flow</li>
+     *   <li>Executes the flow within the provided parent context</li>
+     *   <li>Stores the execution context in the server's history</li>
+     *   <li>Trims the history if it exceeds the configured limit</li>
+     * </ol>
+     * 
+     * @param serverData The server data containing the server instance and execution history
+     * @param parentContext The parent execution context to inherit from
+     * @param maxFlowLength The maximum number of nodes to execute before forcibly stopping
+     * @param maxRecursionDepth The maximum allowed recursion depth for flow executions
+     * @param startNodeOutputs Optional output values to pre-populate for the start node (e.g., event parameters)
+     * @param initialVariables Optional initial variables for the execution context
+     * @throws LogicException If an error occurs during flow execution
+     */
+    public void execute(@Nonnull ServerData serverData, ExecutionContext parentContext, int maxFlowLength, int maxRecursionDepth, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws LogicException {
+        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server, maxFlowLength, maxRecursionDepth);
+        serverData.executeHistory.add(executionContext);
+        int historyLimit = Util.serverConfig.getKeepFlowHistoryNumber();
+        while (serverData.executeHistory.size() > historyLimit) {
+            serverData.executeHistory.remove(0);
+        }
+        executionContext.execute(parentContext, startNodeOutputs, initialVariables);
     }
 }
