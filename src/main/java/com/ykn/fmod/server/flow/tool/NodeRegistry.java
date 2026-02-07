@@ -157,6 +157,7 @@ public class NodeRegistry {
         NodeRegistry.register("AddVariableToScheduledFlowNode", AddVariableToScheduledFlowNode::new);
         NodeRegistry.register("BinaryArithmeticNode", BinaryArithmeticNode::new);
         NodeRegistry.register("BroadcastMessageNode", BroadcastMessageNode::new);
+        NodeRegistry.register("GetObjectAtIndexNode", GetObjectAtIndexNode::new);
         NodeRegistry.register("GetVariableNode", GetVariableNode::new);
         NodeRegistry.register("IfConditionNode", IfConditionNode::new);
         NodeRegistry.register("SetVariableNode", SetVariableNode::new);
