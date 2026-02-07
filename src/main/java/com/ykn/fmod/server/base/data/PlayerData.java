@@ -81,6 +81,12 @@ public class PlayerData {
     public int lastMonsterSurroundTick;
 
     /**
+     * The last tick when the player triggered a long-distance travel message.
+     * Used to enforce the message interval and prevent spamming.
+     */
+    public int lastTravelMessageTick;
+
+    /**
      * Constructs a new PlayerData instance with default values.
      * All counters are initialized to 0, all objects to null, and collections to empty.
      */
@@ -93,6 +99,7 @@ public class PlayerData {
         this.lastCanSleep = null;
         this.lastBossFightTick = 0;
         this.lastMonsterSurroundTick = 0;
+        this.lastTravelMessageTick = 0;
         this.recentPositions = new ArrayDeque<>();
     }
 }

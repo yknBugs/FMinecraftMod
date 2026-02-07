@@ -40,4 +40,9 @@ public class PlayerHurtMessage extends ScheduledTask {
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "PlayerHurtMessage{player='" + player.getEntityName() + "', lastHealth=" + lastHealth + "}";
+    }
 }

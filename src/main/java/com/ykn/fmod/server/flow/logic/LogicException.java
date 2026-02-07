@@ -5,7 +5,10 @@
 
 package com.ykn.fmod.server.flow.logic;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.text.Text;
 
@@ -55,20 +58,48 @@ public class LogicException extends Exception {
     private Text messageText;
 
     /**
-     * Creates a new LogicException with the specified details.
+     * Constructs a LogicException with the specified details.
      * <p>
-     * At least one of messageText or message should be provided. If both are provided,
-     * the message parameter takes precedence. If only messageText is provided, it will
-     * be converted to a string for the exception message.
+     * The message parameter will attempt to extract a string message in the following order:
+     * 1. Direct string message parameter
+     * 2. Text component converted to string
+     * 3. Exception message from the reason throwable
+     * 4. null if none of the above are available
      * 
-     * @param reason The underlying exception that caused this error, or null if not applicable
-     * @param messageText The user-facing translatable text message, or null if using plain string
-     * @param message The plain string message, or null to use messageText
+     * @param reason the underlying exception that caused this error, may be null
+     * @param messageText the user-facing message as a Text object, may be null
+     * @param message the string message for standard exception handling, may be null
      */
     public LogicException(@Nullable Exception reason, @Nullable Text messageText, @Nullable String message) {
-        super((message == null && messageText != null) ? messageText.getString() : message);
+        super(parseExceptionMessage(reason, messageText, message));
         this.reason = reason;
         this.messageText = messageText;
+    }
+
+    /**
+     * Parses and extracts an exception message from the provided parameters.
+     * <p>
+     * This method attempts to retrieve a message in the following priority order:
+     * 1. Direct string message parameter
+     * 2. Text component converted to string
+     * 3. Exception message from the reason throwable
+     * 4. null if none of the above are available
+     * 
+     * @param reason the exception to extract a message from, may be null
+     * @param messageText the text component containing a message, may be null
+     * @param message the string message, may be null
+     * @return the parsed exception message, or null if no message is available
+     */
+    private static String parseExceptionMessage(@Nullable Exception reason, @Nullable Text messageText, @Nullable String message) {
+        if (message != null) {
+            return message;
+        } else if (messageText != null) {
+            return messageText.getString();
+        } else if (reason != null) {
+            return reason.getMessage();
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -84,15 +115,24 @@ public class LogicException extends Exception {
     }
 
     /**
-     * Gets the user-facing message text in Minecraft's Text format.
+     * Gets the user-facing message as a Minecraft Text object.
      * <p>
-     * This Text object can be sent directly to players and will be displayed
-     * in their preferred language if it's a translatable text.
+     * This message is intended to be displayed to players in a localized format.
+     * If no Text message was provided, it attempts to convert the string message
+     * or the reason's message into a Text object.
      * 
-     * @return The Text message for display to users, or null if only a plain string message exists
+     * @return The user-facing message as Text.
      */
-    @Nullable
+    @NotNull
     public Text getMessageText() {
-        return messageText;
+        if (messageText != null) {
+            return messageText;
+        } else if (getMessage() != null) {
+            return Text.literal(getMessage());
+        } else if (reason != null && reason.getMessage() != null) {
+            return Text.literal(reason.getMessage());
+        } else {
+            return Util.parseTranslatableText("fmod.flow.error.unknown");
+        }
     }
 }

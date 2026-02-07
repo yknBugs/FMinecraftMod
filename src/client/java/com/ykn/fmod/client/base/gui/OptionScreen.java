@@ -109,6 +109,26 @@ public class OptionScreen extends Screen {
                 Text.translatable("fmod.options.flowlength"),
                 Text.translatable("fmod.options.hint.flowlength")
             ));
+            // Flow Recursion Depth (linear slider with 0 ~ 256)
+            SliderWidget flowRecursionSlider = new SliderWidget(0, 0, 200, 20, 
+                Text.literal(Integer.toString(Util.serverConfig.getMaxFlowRecursionDepth())),
+                Util.serverConfig.getMaxFlowRecursionDepth() / 256.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(Integer.toString((int) (this.value * 256.0))));
+                }
+                
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setMaxFlowRecursionDepth((int) (this.value * 256.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                flowRecursionSlider,
+                Text.translatable("fmod.options.flowrecursion"),
+                Text.translatable("fmod.options.hint.flowrecursion")
+            ));
             // Flow History Size (non-linear slider)
             SliderWidget flowHistorySlider = new SliderWidget(0, 0, 200, 20, 
                 Text.literal(Integer.toString(Util.serverConfig.getKeepFlowHistoryNumber())),
@@ -800,6 +820,26 @@ public class OptionScreen extends Screen {
                 }).size(200, 20).build(),
                 Text.translatable("fmod.options.travelmsg.receiver"),
                 Text.translatable("fmod.options.hint.travelmsg.receiver")
+            ));
+            // Travel Message Interval (ticks, shown in seconds)
+            SliderWidget travelMsgIntervalSlider = new SliderWidget(0, 0, 200, 20,
+                Text.literal(String.format("%.2f", Util.serverConfig.getTravelMessageInterval() / 20.0)),
+                ((double) Util.serverConfig.getTravelMessageInterval() - 1.0) / 1199.0
+            ) {
+                @Override
+                protected void updateMessage() {
+                    this.setMessage(Text.literal(String.format("%.2f", (this.value * 1199.0 + 1.0) / 20.0)));
+                }
+
+                @Override
+                protected void applyValue() {
+                    Util.serverConfig.setTravelMessageInterval((int) (this.value * 1199.0 + 1.0));
+                }
+            };
+            this.addEntry(new NumberConfigEntry(
+                travelMsgIntervalSlider,
+                Text.translatable("fmod.options.travelmsg.msginterval"),
+                Text.translatable("fmod.options.hint.travelmsg.msginterval")
             ));
             // Travel Window (ticks, shown in seconds)
             SliderWidget travelWindowSlider = new SliderWidget(0, 0, 200, 20,

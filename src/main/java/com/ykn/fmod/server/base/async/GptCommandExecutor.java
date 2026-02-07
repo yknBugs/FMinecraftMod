@@ -6,6 +6,8 @@
 package com.ykn.fmod.server.base.async;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
@@ -80,14 +82,16 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
             
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
                 StringBuilder responseBuilder = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    responseBuilder.append(line);
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        responseBuilder.append(line);
+                        responseBuilder.append("\n");
+                    }
                 }
-                final String responseJson = responseBuilder.toString();
-                final String response = gson.fromJson(responseJson, ChatResponse.class).getMessageContent().trim();
+                final String responseJson = responseBuilder.toString().strip();
+                final String response = gson.fromJson(responseJson, ChatResponse.class).getMessageContent().strip();
                 final String responseModel = gptData.getCachedGptModel();
                 final Text formattedText = MarkdownToTextConverter.parseMarkdownToText(response);
                 gptData.receiveMessage(response, formattedText, responseJson);
@@ -99,13 +103,18 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
                 this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.httperror", responseCode).formatted(Formatting.RED);
                 this.markAsyncFinished();
                 LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: GPT server response code: " + responseCode);
-                BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-                StringBuilder responseBuilder = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    responseBuilder.append(line);
+                InputStream errorStream = connection.getErrorStream();
+                if (errorStream != null) {
+                    StringBuilder responseBuilder = new StringBuilder();
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream, StandardCharsets.UTF_8))) {
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            responseBuilder.append(line);
+                            responseBuilder.append("\n");
+                        }
+                    }
+                    LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: GPT server response: " + responseBuilder.toString().strip());
                 }
-                LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: GPT server response: " + responseBuilder.toString());
             }
         } catch (SocketTimeoutException e) {
             gptData.cancel();
@@ -117,6 +126,11 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
             this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.connecterror").formatted(Formatting.RED);
             this.markAsyncFinished();
             LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Cannot connect to the GPT server", e);
+        } catch (FileNotFoundException e) {
+            gptData.cancel();
+            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.fileerror").formatted(Formatting.RED);
+            this.markAsyncFinished();
+            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: The GPT server did not return a valid response", e);
         } catch (Exception e) {
             gptData.cancel();
             this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.error").formatted(Formatting.RED);

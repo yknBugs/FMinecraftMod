@@ -57,4 +57,12 @@ public class ProjectileMessage extends ScheduledTask {
         }
         return false;
     }
+
+    @Override
+    public String toString() {
+        return "ProjectileMessage{shooter='" + shooter.getEntityName() +
+               "', victim='" + victim.getEntityName() +
+               "', distance=" + distance +
+               "}";
+    }
 }

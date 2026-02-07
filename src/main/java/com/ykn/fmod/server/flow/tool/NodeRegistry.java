@@ -154,6 +154,7 @@ public class NodeRegistry {
      * Custom mods can register additional node types after this method is called.
      */
     public static void registerDefaultNodes() {
+        NodeRegistry.register("AddVariableToScheduledFlowNode", AddVariableToScheduledFlowNode::new);
         NodeRegistry.register("BinaryArithmeticNode", BinaryArithmeticNode::new);
         NodeRegistry.register("BroadcastMessageNode", BroadcastMessageNode::new);
         NodeRegistry.register("GetVariableNode", GetVariableNode::new);

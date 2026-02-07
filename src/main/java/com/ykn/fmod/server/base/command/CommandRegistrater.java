@@ -2250,10 +2250,16 @@ public class CommandRegistrater {
                             .executes(context -> {return runOptionsCommand("serverTranslation", null, context);})
                         )
                         .then(CommandManager.literal("maxFlowLength")
-                            .then(CommandManager.argument("length", IntegerArgumentType.integer(1))
+                            .then(CommandManager.argument("length", IntegerArgumentType.integer(0))
                                 .executes(context -> {return runOptionsCommand("maxFlowLength", IntegerArgumentType.getInteger(context, "length"), context);})
                             )
                             .executes(context -> {return runOptionsCommand("maxFlowLength", null, context);})
+                        )
+                        .then(CommandManager.literal("maxFlowRecursionDepth")
+                            .then(CommandManager.argument("depth", IntegerArgumentType.integer(0))
+                                .executes(context -> {return runOptionsCommand("maxFlowRecursionDepth", IntegerArgumentType.getInteger(context, "depth"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("maxFlowRecursionDepth", null, context);})
                         )
                         .then(CommandManager.literal("keepFlowExecutionHistory")
                             .then(CommandManager.argument("size", IntegerArgumentType.integer(0))
@@ -2581,6 +2587,12 @@ public class CommandRegistrater {
                             .then(CommandManager.literal("self").executes(context -> {return runOptionsCommand("travelMessageReceiver", MessageReceiver.SELF, context);}))
                             .executes(context -> {return runOptionsCommand("travelMessageReceiver", null, context);})
                         )
+                        .then(CommandManager.literal("travelMessageInterval")
+                            .then(CommandManager.argument("seconds", IntegerArgumentType.integer(1))
+                                .executes(context -> {return runOptionsCommand("travelMessageInterval", IntegerArgumentType.getInteger(context, "seconds"), context);})
+                            )
+                            .executes(context -> {return runOptionsCommand("travelMessageInterval", null, context);})
+                        )
                         .then(CommandManager.literal("travelWindow")
                             .then(CommandManager.argument("seconds", IntegerArgumentType.integer(1))
                                 .executes(context -> {return runOptionsCommand("travelWindow", IntegerArgumentType.getInteger(context, "seconds"), context);})
@@ -2696,6 +2708,14 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setMaxFlowLength((int) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.flowlength", value), true);
+                    }
+                    break;
+                case "maxFlowRecursionDepth":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.flowrecursion", Util.serverConfig.getMaxFlowRecursionDepth()), false);
+                    } else {
+                        Util.serverConfig.setMaxFlowRecursionDepth((int) value);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.flowrecursion", value), true);
                     }
                     break;
                 case "keepFlowExecutionHistory":
@@ -3130,6 +3150,14 @@ public class CommandRegistrater {
                     } else {
                         Util.serverConfig.setTravelMessageReceiver((MessageReceiver) value);
                         context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.receiver", EnumI18n.getMessageReceiverI18n((MessageReceiver) value)), true);
+                    }
+                    break;
+                case "travelMessageInterval":
+                    if (value == null) {
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.get.travelmsg.msginterval", String.format("%.2f", Util.serverConfig.getTravelMessageInterval() / 20.0)), false);
+                    } else {
+                        Util.serverConfig.setTravelMessageInterval((int) value * 20);
+                        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.options.travelmsg.msginterval", value), true);
                     }
                     break;
                 case "travelWindow":

@@ -151,4 +151,9 @@ public class ScheduledTask {
     public int getDuration() {
         return duration;
     }
+
+    @Override
+    public String toString() {
+        return "ScheduledTask{}";
+    }
  }

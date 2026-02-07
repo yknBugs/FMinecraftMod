@@ -31,6 +31,15 @@ public class ServerConfig extends ConfigReader {
     protected int maxFlowLength;
 
     /**
+     * The maximum depth of flow recursion.
+     * If a flow calls another flow, the depth of recursion will increase by 1.
+     * If the depth of recursion exceeds this value, the flow execution will be stopped.
+     * This is designed to prevent StackOverflowError caused by infinite flow recursion.
+     * Default: 16
+     */
+    protected int maxFlowRecursionDepth;
+
+    /**
      * How many history records of flow executions to keep.
      * Default: 32767
      */
@@ -326,6 +335,12 @@ public class ServerConfig extends ConfigReader {
     protected MessageReceiver travelMessageReceiver;
 
     /**
+     * Controls how often the player can receive the message.
+     * Default: 20 Ticks (1 second)
+     */
+    protected int travelMessageInterval;
+
+    /**
      * How many recent ticks to track for long-distance travel detection.
      * Default: 600 ticks (30 seconds)
      */
@@ -410,6 +425,7 @@ public class ServerConfig extends ConfigReader {
         super("server.json");
         this.serverTranslation = true;
         this.maxFlowLength = 32767;
+        this.maxFlowRecursionDepth = 16;
         this.keepFlowHistoryNumber = 32767;
         this.entityDeathMessage = MessageLocation.NONE;
         this.hostileDeathMessage = MessageLocation.NONE;
@@ -457,6 +473,7 @@ public class ServerConfig extends ConfigReader {
         this.playerHurtThreshold = 0.8;
         this.travelMessageLocation = MessageLocation.NONE;
         this.travelMessageReceiver = MessageReceiver.NONE;
+        this.travelMessageInterval = 20;
         this.travelWindowTicks = 600;
         this.travelTotalDistanceThreshold = 100.0;
         this.travelPartialInterval = 200;
@@ -493,8 +510,8 @@ public class ServerConfig extends ConfigReader {
     public int getMaxFlowLength() {
         lock.readLock().lock();
         try {
-            if (maxFlowLength <= 0) {
-                return 32767;
+            if (maxFlowLength < 0) {
+                return 0;
             }
             return maxFlowLength;
         } finally {
@@ -505,10 +522,35 @@ public class ServerConfig extends ConfigReader {
     public void setMaxFlowLength(int maxFlowLength) {
         lock.writeLock().lock();
         try {
-            if (maxFlowLength <= 0) {
-                this.maxFlowLength = 32767;
+            if (maxFlowLength < 0) {
+                this.maxFlowLength = 0;
             } else {
                 this.maxFlowLength = maxFlowLength;
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getMaxFlowRecursionDepth() {
+        lock.readLock().lock();
+        try {
+            if (maxFlowRecursionDepth < 0) {
+                return 0;
+            }
+            return maxFlowRecursionDepth;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setMaxFlowRecursionDepth(int maxFlowRecursionDepth) {
+        lock.writeLock().lock();
+        try {
+            if (maxFlowRecursionDepth < 0) {
+                this.maxFlowRecursionDepth = 0;
+            } else {
+                this.maxFlowRecursionDepth = maxFlowRecursionDepth;
             }
         } finally {
             lock.writeLock().unlock();
@@ -1473,6 +1515,31 @@ public class ServerConfig extends ConfigReader {
         lock.writeLock().lock();
         try {
             this.travelMessageReceiver = travelMessageReceiver;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public int getTravelMessageInterval() {
+        lock.readLock().lock();
+        try {
+            if (travelMessageInterval <= 0) {
+                return 1;
+            }
+            return travelMessageInterval;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setTravelMessageInterval(int travelMessageInterval) {
+        lock.writeLock().lock();
+        try {
+            if (travelMessageInterval <= 0) {
+                this.travelMessageInterval = 1;
+            } else {
+                this.travelMessageInterval = travelMessageInterval;
+            }
         } finally {
             lock.writeLock().unlock();
         }

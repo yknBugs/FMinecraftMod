@@ -32,6 +32,18 @@ public class ScheduledFlow extends ScheduledTask {
         this.server = server;
     }
 
+    public void addContextVariable(String name, Object value) {
+        this.contextVariables.put(name, value);
+    }
+
+    public void addContextVariables(Map<String, Object> variables) {
+        this.contextVariables.putAll(variables);
+    }
+
+    public Map<String, Object> getContextVariables() {
+        return this.contextVariables;
+    }
+
     @Override
     public void onTrigger() {
         ServerData data = Util.getServerData(server);
@@ -46,4 +58,8 @@ public class ScheduledFlow extends ScheduledTask {
         return false;
     }
 
+    @Override
+    public String toString() {
+        return "ScheduledFlow{flow='" + flowManager.flow.name + "'}";
+    }
 }
