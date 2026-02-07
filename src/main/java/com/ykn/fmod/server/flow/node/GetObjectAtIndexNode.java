@@ -38,29 +38,29 @@ public class GetObjectAtIndexNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslatableText("fmod.node.indexat.title.name");
-        Text description = Util.parseTranslatableText("fmod.node.indexat.title.feat");
+        Text displayName = Util.parseTranslatableText("fmod.node.getindexattitle.name");
+        Text description = Util.parseTranslatableText("fmod.node.getindexattitle.feat");
         List<Text> inputNames = new ArrayList<>();
         List<Text> inputDescriptions = new ArrayList<>();
         List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.indexat.input.list.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.indexat.input.list.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.indexat.input.list.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.indexat.input.index.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.indexat.input.index.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.indexat.input.index.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.indexat.input.name.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.indexat.input.name.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.indexat.input.name.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.getindexatinput.list.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexatinput.list.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexatinput.list.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.getindexatinput.index.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexatinput.index.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexatinput.index.type"));
+        inputNames.add(Util.parseTranslatableText("fmod.node.getindexatinput.name.name"));
+        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexatinput.name.feat"));
+        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexatinput.name.type"));
         List<Text> outputNames = new ArrayList<>();
         List<Text> outputDescriptions = new ArrayList<>();
         List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.indexat.output.object.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.indexat.output.object.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.indexat.output.object.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.indexat.output.size.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.indexat.output.size.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.indexat.output.size.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.getindexatoutput.object.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexatoutput.object.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexatoutput.object.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.getindexatoutput.size.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexatoutput.size.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexatoutput.size.type"));
         List<Text> branchNames = new ArrayList<>();
         List<Text> branchDescriptions = new ArrayList<>();
         branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
