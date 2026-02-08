@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.base.schedule;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,15 +34,30 @@ public class ScheduledFlow extends ScheduledTask {
     }
 
     public void addContextVariable(String name, Object value) {
+        if (this.contextVariables == null) {
+            this.contextVariables = new HashMap<>();
+        }
         this.contextVariables.put(name, value);
     }
 
     public void addContextVariables(Map<String, Object> variables) {
+        if (this.contextVariables == null) {
+            this.contextVariables = new HashMap<>();
+        }
         this.contextVariables.putAll(variables);
     }
 
+    @Nonnull
     public Map<String, Object> getContextVariables() {
+        if (this.contextVariables == null) {
+            return new HashMap<>();
+        }
         return this.contextVariables;
+    }
+
+    @Nonnull
+    public FlowManager getFlowManager() {
+        return this.flowManager;
     }
 
     @Override

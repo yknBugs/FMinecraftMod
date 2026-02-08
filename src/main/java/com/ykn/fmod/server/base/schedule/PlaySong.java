@@ -132,7 +132,7 @@ public class PlaySong extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        return target == null || target.hasDisconnected() || target.isRemoved();
+        return target == null || target.hasDisconnected() || target.isRemoved() || target.getHealth() <= 0;
     }
 
     /**

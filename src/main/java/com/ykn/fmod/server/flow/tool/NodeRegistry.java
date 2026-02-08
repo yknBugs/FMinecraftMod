@@ -12,7 +12,6 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 import com.ykn.fmod.server.flow.node.*;
-
 import com.ykn.fmod.server.flow.logic.FlowNode;
 
 /**
@@ -157,8 +156,12 @@ public class NodeRegistry {
         NodeRegistry.register("AddVariableToScheduledFlowNode", AddVariableToScheduledFlowNode::new);
         NodeRegistry.register("BinaryArithmeticNode", BinaryArithmeticNode::new);
         NodeRegistry.register("BroadcastMessageNode", BroadcastMessageNode::new);
+        NodeRegistry.register("CancelScheduledTaskNode", CancelScheduledTaskNode::new);
+        NodeRegistry.register("GetObjectAtIndexNode", GetObjectAtIndexNode::new);
+        NodeRegistry.register("GetScheduledFlowNode", GetScheduledFlowNode::new);
         NodeRegistry.register("GetVariableNode", GetVariableNode::new);
         NodeRegistry.register("IfConditionNode", IfConditionNode::new);
+        NodeRegistry.register("SetObjectAtIndexNode", SetObjectAtIndexNode::new);
         NodeRegistry.register("SetVariableNode", SetVariableNode::new);
         NodeRegistry.register("RunFlowNode", RunFlowNode::new);
 
