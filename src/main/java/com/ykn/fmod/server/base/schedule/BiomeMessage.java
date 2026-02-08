@@ -36,7 +36,7 @@ public class BiomeMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (player == null || player.isDisconnected() || player.isRemoved()) {
+        if (player == null || player.isDisconnected() || player.isRemoved() || player.getHealth() <= 0) {
             return true;
         }
         Identifier currentBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
@@ -50,6 +50,6 @@ public class BiomeMessage extends ScheduledTask {
 
     @Override
     public String toString() {
-        return "BiomeMessage{player='" + player.getEntityName() + "', biomeId='" + biomeId + "'}";
+        return "BiomeMessage{player='" + player.getDisplayName().getString() + "', biomeId='" + biomeId + "'}";
     }
 }

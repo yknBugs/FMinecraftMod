@@ -8,7 +8,6 @@ package com.ykn.fmod.server.base.schedule;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -35,10 +34,16 @@ public class ProjectileMessage extends ScheduledTask {
         MutableText text = Util.parseTranslatableText("fmod.message.projectile.onhit", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
         if (victim.isPlayer() && victim instanceof ServerPlayerEntity) {
             ServerPlayerEntity playerVictim = (ServerPlayerEntity) victim;
+            if (playerVictim.isRemoved() || playerVictim.isDisconnected() || playerVictim.getHealth() <= 0) {
+                return;
+            }
             Util.postMessage(playerVictim, Util.serverConfig.getProjectileBeingHitReceiver(), Util.serverConfig.getProjectileBeingHitLocation(), text);
         }
         if (shooter.isPlayer() && shooter instanceof ServerPlayerEntity) {
             ServerPlayerEntity playerShooter = (ServerPlayerEntity) shooter;
+            if (playerShooter.isRemoved() || playerShooter.isDisconnected() || playerShooter.getHealth() <= 0) {
+                return;
+            }
             Util.postMessage(playerShooter, Util.serverConfig.getProjectileHitOthersReceiver(), Util.serverConfig.getProjectileHitOthersLocation(), text);
         }
     }
@@ -48,20 +53,13 @@ public class ProjectileMessage extends ScheduledTask {
         if (shooter == null || victim == null) {
             return true;
         }
-        // Avoid the shoot message override the entity death message
-        if (shooter instanceof LivingEntity && Util.getHealth(shooter) <= 0) {
-            return true;
-        }
-        if (victim instanceof LivingEntity && Util.getHealth(victim) <= 0) {
-            return true;
-        }
         return false;
     }
 
     @Override
     public String toString() {
-        return "ProjectileMessage{shooter='" + shooter.getEntityName() +
-               "', victim='" + victim.getEntityName() +
+        return "ProjectileMessage{shooter='" + shooter.getDisplayName().getString() +
+               "', victim='" + victim.getDisplayName().getString() +
                "', distance=" + distance +
                "}";
     }

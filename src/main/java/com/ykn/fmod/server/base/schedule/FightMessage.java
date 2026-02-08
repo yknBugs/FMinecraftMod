@@ -39,10 +39,7 @@ public class FightMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (entity == null || player == null || entity.isRemoved() || player.isDisconnected()) {
-            return true;
-        }
-        if (entity.getHealth() <= 0 || player.getHealth() <= 0) {
+        if (entity == null || player == null || entity.isRemoved() || player.isDisconnected() || player.getHealth() <= 0) {
             return true;
         }
         return false;
@@ -50,6 +47,6 @@ public class FightMessage extends ScheduledTask {
 
     @Override
     public String toString() {
-        return "FightMessage{player='" + player.getEntityName() + "', entity='" + entity.getEntityName() + "'}";
+        return "FightMessage{player='" + player.getDisplayName().getString() + "', entity='" + entity.getDisplayName().getString() + "'}";
     }
 }

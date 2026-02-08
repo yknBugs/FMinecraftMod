@@ -35,7 +35,7 @@ public class PlayerHurtMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (player == null || player.isDisconnected() || player.isSpectator() || player.isCreative() || player.getHealth() <= 0) {
+        if (player == null || player.isDisconnected() || player.isRemoved() || player.isSpectator() || player.isCreative() || player.getHealth() <= 0) {
             return true;
         }
         return false;
@@ -43,6 +43,6 @@ public class PlayerHurtMessage extends ScheduledTask {
 
     @Override
     public String toString() {
-        return "PlayerHurtMessage{player='" + player.getEntityName() + "', lastHealth=" + lastHealth + "}";
+        return "PlayerHurtMessage{player='" + player.getDisplayName().getString() + "', lastHealth=" + lastHealth + "}";
     }
 }
