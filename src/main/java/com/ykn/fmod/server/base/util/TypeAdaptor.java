@@ -311,10 +311,16 @@ public class TypeAdaptor {
             String str = this.asString().strip();
             if (str.startsWith("[") && str.endsWith("]")) {
                 str = str.substring(1, str.length() - 1).strip();
+                // We will not parse nested lists here
                 String[] parts = str.split(",");
                 List<Object> list = new ArrayList<>();
                 for (String part : parts) {
-                    list.add(TypeAdaptor.parse(part.strip()).autoCast());
+                    if (part.strip().startsWith("[") && part.strip().endsWith("]")) {
+                        // Avoid recursion
+                        list.add(part.strip());
+                    } else {
+                        list.add(TypeAdaptor.parse(part.strip()).autoCast());
+                    }       
                 }
                 return list;
             } 
