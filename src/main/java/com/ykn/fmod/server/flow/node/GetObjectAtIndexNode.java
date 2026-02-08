@@ -89,6 +89,8 @@ public class GetObjectAtIndexNode extends FlowNode {
             if (index >= 0 && index < listSize) {
                 resultObj = list.get(index);
             }
+        } else if (listSize > 0) {
+            resultObj = list.get(listSize - 1);
         }
 
         if (varName != null) {

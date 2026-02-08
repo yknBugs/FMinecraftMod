@@ -160,6 +160,7 @@ public class NodeRegistry {
         NodeRegistry.register("GetObjectAtIndexNode", GetObjectAtIndexNode::new);
         NodeRegistry.register("GetVariableNode", GetVariableNode::new);
         NodeRegistry.register("IfConditionNode", IfConditionNode::new);
+        NodeRegistry.register("SetObjectAtIndexNode", SetObjectAtIndexNode::new);
         NodeRegistry.register("SetVariableNode", SetVariableNode::new);
         NodeRegistry.register("RunFlowNode", RunFlowNode::new);
 
