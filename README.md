@@ -61,6 +61,11 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.8
+
+- Now logic flow supports list type
+- Now shoot message will not try to avoid overriding death message
+
 ### Version 0.2.7
 
 - Now Travel check does not reset history coord.
