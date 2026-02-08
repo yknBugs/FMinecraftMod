@@ -71,7 +71,7 @@ public class GetObjectAtIndexNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        List<?> list = parseList(resolvedInputs.get(0));
+        List<Object> list = parseList(resolvedInputs.get(0));
 
         Object indexObj = resolvedInputs.get(1);
         Double indexDouble = TypeAdaptor.parse(indexObj).asDouble();
@@ -100,15 +100,16 @@ public class GetObjectAtIndexNode extends FlowNode {
         status.setOutput(1, listSize);
     }
 
-    private List<?> parseList(Object obj) {
+    private List<Object> parseList(Object obj) {
         if (obj == null) {
             return new ArrayList<Object>();
         }
-        if (obj instanceof List) {
-            return (List<?>) obj;
+        List<Object> tryCastList = TypeAdaptor.parse(obj).asList();
+        if (tryCastList == null) {
+            List<Object> singleItemList = new ArrayList<>();
+            singleItemList.add(obj);
+            return singleItemList;
         }
-        List<Object> singleItemList = new ArrayList<>();
-        singleItemList.add(obj);
-        return singleItemList;
+        return tryCastList;
     }
 }

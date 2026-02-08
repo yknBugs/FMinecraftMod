@@ -205,11 +205,12 @@ public class SetObjectAtIndexNode extends FlowNode {
         if (obj == null) {
             return new ArrayList<Object>();
         }
-        if (obj instanceof List) {
-            return new ArrayList<Object>((List<?>) obj);
+        List<Object> tryCastList = TypeAdaptor.parse(obj).asList();
+        if (tryCastList == null) {
+            List<Object> singleItemList = new ArrayList<>();
+            singleItemList.add(obj);
+            return singleItemList;
         }
-        List<Object> singleItemList = new ArrayList<>();
-        singleItemList.add(obj);
-        return singleItemList;
+        return tryCastList;
     }
 }

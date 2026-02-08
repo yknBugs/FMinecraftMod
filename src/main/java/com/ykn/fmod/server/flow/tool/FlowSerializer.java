@@ -24,9 +24,6 @@ import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
 
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
-
 /**
  * Utility class for serializing and deserializing logic flows to/from JSON.
  * <p>
@@ -100,33 +97,22 @@ public class FlowSerializer {
      * This method attempts to parse the string as various types in order:
      * <ol>
      *   <li>null (if string is "null" or null)</li>
- *   <li>Vec3d (3D vector)</li>
- *   <li>Vec2f (2D float vector)</li>
- *   <li>Double (numeric value)</li>
- *   <li>Boolean (true/false)</li>
- *   <li>String (fallback)</li>
- * </ol>
+     *   <li>Vec3d (3D vector)</li>
+     *   <li>Vec2f (2D float vector)</li>
+     *   <li>List (comma-separated values in square brackets)</li>
+     *   <li>Double (numeric value)</li>
+     *   <li>Boolean (true/false)</li>
+     *   <li>String (fallback)</li>
+     * </ol>
      * 
      * @param valueStr The string representation of the value
      * @return A DataReference containing the parsed constant value
      */
     public static DataReference parseConstDataReference(String valueStr) {
-        Vec3d valueVec3d = TypeAdaptor.parse(valueStr).asVec3d();
-        Vec2f valueVec2f = TypeAdaptor.parse(valueStr).asVec2f();
-        Double valueDouble = TypeAdaptor.parse(valueStr).asDouble();
-        Boolean boolValue = TypeAdaptor.parse(valueStr).asBoolean();
         if (valueStr == null || "null".equals(valueStr)) {
             return DataReference.createEmptyReference();
-        } else if (valueVec3d != null) {
-            return DataReference.createConstantReference(valueVec3d);
-        } else if (valueVec2f != null) {
-            return DataReference.createConstantReference(valueVec2f);
-        } else if (valueDouble != null) {
-            return DataReference.createConstantReference(valueDouble);
-        } else if (boolValue != null) {
-            return DataReference.createConstantReference(boolValue);
         } else {
-            return DataReference.createConstantReference(valueStr);
+            return DataReference.createConstantReference(TypeAdaptor.parse(valueStr).autoCast());
         }
     }
 
