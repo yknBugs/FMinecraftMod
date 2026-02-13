@@ -27,6 +27,8 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.command.CommandOutput;
+import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.ClickEvent;
@@ -298,6 +300,46 @@ public class Util {
     }
 
     /**
+     * Sends a message to players on the server based on the specified delivery method.
+     *
+     * @param server  The Minecraft server instance. Must not be null.
+     * @param method  The delivery method for the message. Must not be null.
+     * @param type    The location type of the message (e.g., chat, action bar). Must not be null.
+     * @param message The message content to be sent. Must not be null.
+     */
+    public static void postMessage(@NotNull MinecraftServer server, @NotNull MessageReceiver method, @NotNull MessageLocation type, @NotNull Text message) {
+        switch (method) {
+            case ALL:
+                {
+                    broadcastMessage(server, type, message);
+                    break;
+                }
+            case OP:
+                {
+                    List<ServerPlayerEntity> players = getOnlinePlayers(server);
+                    for (ServerPlayerEntity p : players) {
+                        if (p.hasPermissionLevel(2)) {
+                            sendMessage(p, type, message);
+                        }
+                    }
+                    break;
+                }
+            case NONE:
+                break;
+            case SELFOP:
+            case TEAM:
+            case TEAMOP:
+            case SELF:
+                // Invalid cases, do the same as default
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Not supported message method");
+                break;
+            default:
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method.");
+                break;
+        }
+    }
+
+    /**
      * Parses a translatable text key into a {@link MutableText} object, optionally translating it
      * based on the server configuration.
      *
@@ -533,6 +575,20 @@ public class Util {
             index++;
         }
         return entityListText;
+    }
+
+    /**
+     * Executes a command with the specified permission level and output handler.
+     *
+     * @param output the {@link CommandOutput} to receive command execution results
+     * @param source the {@link Entity} executing the command
+     * @param command the command string to execute
+     * @param permissionLevel the permission level to execute the command with
+     * @return the result code of the command execution
+     */
+    public static int runCommand(@NotNull CommandOutput output, @NotNull Entity source, @NotNull String command, int permissionLevel) {
+        ServerCommandSource commandSource = source.getCommandSource().withLevel(permissionLevel).withOutput(output);
+        return source.getServer().getCommandManager().executeWithPrefix(commandSource, command);
     }
 
     /**

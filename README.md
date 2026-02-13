@@ -61,6 +61,11 @@ Say command cannot render colored text (Need more info).
 
 ## Changelog
 
+### Version 0.2.9
+
+- Add Node: RunCommandNode, UnaryArithmeticNode, GetNbtValueNode, GetEntityDataNode, GetWorldListNode, GatherEntityNode, GetBlockNode
+- Improve Node: BinaryArithmeticNode, BroadcastMessageNode
+
 ### Version 0.2.8
 
 - Now logic flow supports list type

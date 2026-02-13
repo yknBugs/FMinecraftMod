@@ -126,6 +126,7 @@ public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSour
      * @return a new LogicFlowSuggestion instance for trigger operations
      */
     public static LogicFlowSuggestion suggestTrigger() {
-        return new LogicFlowSuggestion(false, false, "TriggerNode", true);
+        return new LogicFlowSuggestion(true, false, "TriggerNode", true);
     }
 }
+    

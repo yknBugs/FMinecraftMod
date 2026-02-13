@@ -46,6 +46,7 @@ import com.ykn.fmod.server.base.util.GameMath;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
 import com.ykn.fmod.server.base.util.MessageReceiver;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
+import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.MessageLocation;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.DataReference;
@@ -1451,7 +1452,7 @@ public class CommandRegistrater {
         return Command.SINGLE_SUCCESS;
     }
 
-    private int runTriggerFlowCommand(String name, CommandContext<ServerCommandSource> context) {
+    private int runTriggerFlowCommand(String name, String param, CommandContext<ServerCommandSource> context) {
         try {
             ServerData data = Util.getServerData(context.getSource().getServer());
             FlowManager targetFlow = data.logicFlows.get(name);
@@ -1470,6 +1471,7 @@ public class CommandRegistrater {
             }
             List<Object> startNodeOutputs = new ArrayList<>();
             startNodeOutputs.add(context.getSource().getPlayer());
+            startNodeOutputs.add(TypeAdaptor.parse(param).autoCast());
             LogicException exception = targetFlow.execute(data, startNodeOutputs, null);
             if (exception != null) {
                 throw new CommandException(exception.getMessageText());
@@ -2063,9 +2065,12 @@ public class CommandRegistrater {
                     )
                     .then(CommandManager.literal("trigger")
                         .requires(source -> source.hasPermissionLevel(0))
-                        .then(CommandManager.argument("function", StringArgumentType.greedyString())
+                        .then(CommandManager.argument("function", StringArgumentType.string())
                             .suggests(LogicFlowSuggestion.suggestTrigger())
-                            .executes(context -> {return runTriggerFlowCommand(StringArgumentType.getString(context, "function"), context);})
+                            .executes(context -> {return runTriggerFlowCommand(StringArgumentType.getString(context, "function"), null, context);})
+                            .then(CommandManager.argument("param", StringArgumentType.greedyString())
+                                .executes(context -> {return runTriggerFlowCommand(StringArgumentType.getString(context, "function"), StringArgumentType.getString(context, "param"), context);})
+                            )
                         )
                     )
                     .then(CommandManager.literal("flow")
@@ -2120,7 +2125,7 @@ public class CommandRegistrater {
                                     .then(CommandManager.argument("node", StringArgumentType.string())
                                         .suggests(FlowNodeSuggestion.suggest(true, 3))
                                         .then(CommandManager.argument("index", IntegerArgumentType.integer(1))
-                                            .then(CommandManager.argument("value", StringArgumentType.greedyString())
+                                            .then(CommandManager.argument("value", StringArgumentType.string())
                                                 .executes(context -> {return runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context);})
                                             )
                                         )

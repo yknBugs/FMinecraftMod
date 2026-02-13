@@ -73,7 +73,7 @@ public class BinaryArithmeticNode extends FlowNode {
         Object num1Obj = resolvedInputs.get(0);
         Object num2Obj = resolvedInputs.get(1);
         Object opObj = resolvedInputs.get(2);
-        String operation = TypeAdaptor.parse(opObj).asString();
+        String operation = TypeAdaptor.parse(opObj).asString().strip().toLowerCase();
 
         // Special handling for "==" operator
         if ("=".equals(operation) || "==".equals(operation)) {
@@ -119,7 +119,7 @@ public class BinaryArithmeticNode extends FlowNode {
         Vec3d tryVec3dNum2 = TypeAdaptor.parse(num2Obj).asVec3d();
         if (tryVec3dNum1 != null && tryVec3dNum2 != null) {
             Vec3d result;
-            switch (operation.toLowerCase()) {
+            switch (operation) {
                 case "+":
                     result = tryVec3dNum1.add(tryVec3dNum2);
                     break;
@@ -151,7 +151,7 @@ public class BinaryArithmeticNode extends FlowNode {
 
         if (tryVec3dNum1 != null && tryDoubleNum2 != null) {
             Vec3d result;
-            switch (operation.toLowerCase()) {
+            switch (operation) {
                 case "+":
                     result = new Vec3d(tryVec3dNum1.x + tryDoubleNum2, tryVec3dNum1.y + tryDoubleNum2, tryVec3dNum1.z + tryDoubleNum2);
                     break;
@@ -174,7 +174,7 @@ public class BinaryArithmeticNode extends FlowNode {
         }
         if (tryDoubleNum1 != null && tryVec3dNum2 != null) {
             Vec3d result;
-            switch (operation.toLowerCase()) {
+            switch (operation) {
                 case "+":
                     result = new Vec3d(tryDoubleNum1 + tryVec3dNum2.x, tryDoubleNum1 + tryVec3dNum2.y, tryDoubleNum1 + tryVec3dNum2.z);
                     break;
@@ -202,7 +202,7 @@ public class BinaryArithmeticNode extends FlowNode {
 
         if (tryVec2fNum1 != null && tryVec2fNum2 != null) {
             Vec2f result;
-            switch (operation.toLowerCase()) {
+            switch (operation) {
                 case "+":
                     result = tryVec2fNum1.add(tryVec2fNum2);
                     break;
@@ -230,7 +230,7 @@ public class BinaryArithmeticNode extends FlowNode {
         if (tryVec2fNum1 != null && tryDoubleNum2 != null) {
             float scalarF = tryDoubleNum2.floatValue();
             Vec2f result;
-            switch (operation.toLowerCase()) {
+            switch (operation) {
                 case "+":
                     result = new Vec2f(tryVec2fNum1.x + scalarF, tryVec2fNum1.y + scalarF);
                     break;
@@ -253,7 +253,7 @@ public class BinaryArithmeticNode extends FlowNode {
         if (tryDoubleNum1 != null && tryVec2fNum2 != null) {
             float scalarF = tryDoubleNum1.floatValue();
             Vec2f result;
-            switch (operation.toLowerCase()) {
+            switch (operation) {
                 case "+":
                     result = new Vec2f(scalarF + tryVec2fNum2.x, scalarF + tryVec2fNum2.y);
                     break;
@@ -277,7 +277,7 @@ public class BinaryArithmeticNode extends FlowNode {
         // Double operations
         if (tryDoubleNum1 != null && tryDoubleNum2 != null) {
             try {
-                switch (operation.toLowerCase()) {
+                switch (operation) {
                     case "+":
                         status.setOutput(0, tryDoubleNum1 + tryDoubleNum2);
                         return;
@@ -341,7 +341,7 @@ public class BinaryArithmeticNode extends FlowNode {
         Boolean tryBoolNum2 = TypeAdaptor.parse(num2Obj).asBoolean();
 
         if (tryBoolNum1 != null && tryBoolNum2 != null) {
-            switch (operation.toLowerCase()) {
+            switch (operation) {
                 case "and":
                 case "&&":
                     status.setOutput(0, tryBoolNum1 && tryBoolNum2);
@@ -382,11 +382,40 @@ public class BinaryArithmeticNode extends FlowNode {
 
         String str1 = TypeAdaptor.parse(num1Obj).asString();
         String str2 = TypeAdaptor.parse(num2Obj).asString();
-        if ("+".equals(operation)) {
-            status.setOutput(0, str1 + str2);
-            return;
-        } else {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+        switch (operation) {
+            case "+":
+            case "append":
+                status.setOutput(0, str1 + str2);
+                return;
+            case "contains":
+                status.setOutput(0, str1.contains(str2));
+                return;
+            case "startsWith":
+                status.setOutput(0, str1.startsWith(str2));
+                return;
+            case "endsWith":
+                status.setOutput(0, str1.endsWith(str2));
+                return;
+            case "split":
+                try {
+                    String[] parts = str1.split(str2);
+                    List<String> listResult = new ArrayList<>();
+                    for (String part : parts) {
+                        listResult.add(part);
+                    }
+                    status.setOutput(0, listResult);
+                } catch (Exception ex) {
+                    throw new LogicException(ex, Util.parseTranslatableText("fmod.node.bialu.error.arithmetic", this.name), null);
+                }
+                return;
+            case "indexOf":
+                status.setOutput(0, str1.indexOf(str2));
+                return;
+            case "lastIndexOf":
+                status.setOutput(0, str1.lastIndexOf(str2));
+                return;
+            default:
+                 throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
         }
     }
 }
