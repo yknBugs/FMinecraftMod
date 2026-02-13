@@ -157,19 +157,26 @@ public class NodeRegistry {
         NodeRegistry.register("BinaryArithmeticNode", BinaryArithmeticNode::new);
         NodeRegistry.register("BroadcastMessageNode", BroadcastMessageNode::new);
         NodeRegistry.register("CancelScheduledTaskNode", CancelScheduledTaskNode::new);
+        NodeRegistry.register("ExecuteCommandNode", ExecuteCommandNode::new);
+        NodeRegistry.register("GatherEntityNode", GatherEntityNode::new);
+        NodeRegistry.register("GetBlockNode", GetBlockNode::new);
+        NodeRegistry.register("GetEntityDataNode", GetEntityDataNode::new);
+        NodeRegistry.register("GetNbtValueNode", GetNbtValueNode::new);
         NodeRegistry.register("GetObjectAtIndexNode", GetObjectAtIndexNode::new);
         NodeRegistry.register("GetScheduledFlowNode", GetScheduledFlowNode::new);
         NodeRegistry.register("GetVariableNode", GetVariableNode::new);
+        NodeRegistry.register("GetWorldListNode", GetWorldListNode::new);
         NodeRegistry.register("IfConditionNode", IfConditionNode::new);
         NodeRegistry.register("SetObjectAtIndexNode", SetObjectAtIndexNode::new);
         NodeRegistry.register("SetVariableNode", SetVariableNode::new);
         NodeRegistry.register("RunFlowNode", RunFlowNode::new);
+        NodeRegistry.register("UnaryArithmeticNode", UnaryArithmeticNode::new);
 
         NodeRegistry.registerEvent("DummyNode", DummyNode::new);
-        NodeRegistry.registerEvent("TriggerNode", TriggerNode::new);
-        NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
         NodeRegistry.registerEvent("EntityDamageEventNode", EntityDamageEventNode::new);
+        NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
         NodeRegistry.registerEvent("ProjectileHitEntityEventNode", ProjectileHitEntityEventNode::new);
+        NodeRegistry.registerEvent("TriggerNode", TriggerNode::new);
     }
 
     /**

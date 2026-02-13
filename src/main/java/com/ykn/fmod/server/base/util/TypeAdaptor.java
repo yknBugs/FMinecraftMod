@@ -140,10 +140,10 @@ public class TypeAdaptor {
         } else {
             String str = this.asString().strip();
             if ("yes".equalsIgnoreCase(str) || "true".equalsIgnoreCase(str) || "on".equalsIgnoreCase(str) ||
-                "enable".equalsIgnoreCase(str) || "y".equalsIgnoreCase(str) || "open".equalsIgnoreCase(str)) {
+                "enable".equalsIgnoreCase(str) || "open".equalsIgnoreCase(str)) {
                 return true;
             } else if ("no".equalsIgnoreCase(str) || "false".equalsIgnoreCase(str) || "off".equalsIgnoreCase(str) ||
-                       "disable".equalsIgnoreCase(str) || "n".equalsIgnoreCase(str) || "close".equalsIgnoreCase(str)) {
+                       "disable".equalsIgnoreCase(str) || "close".equalsIgnoreCase(str)) {
                 return false;
             } else {
                 return null;

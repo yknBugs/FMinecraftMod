@@ -19,12 +19,13 @@ import net.minecraft.network.chat.Component;
  * Inputs: None
  * Outputs: 
  * 1. Player - The player who triggered this node.
+ * 2. String - The parameter provided by the player. Empty String if not provided.
  * Branches: 1 (Next node)
  */
 public class TriggerNode extends EventNode {
 
     public TriggerNode(long id, String name) {
-        super(id, name, 0, 1, 1);
+        super(id, name, 0, 2, 1);
         this.type = "TriggerNode";
     }
 
@@ -38,9 +39,12 @@ public class TriggerNode extends EventNode {
         List<Component> outputNames = new ArrayList<>();
         List<Component> outputDescriptions = new ArrayList<>();
         List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.trigger.output.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.trigger.output.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.trigger.output.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.trigger.output.player.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.trigger.output.player.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.trigger.output.player.type"));
+        outputNames.add(Util.parseTranslatableText("fmod.node.trigger.output.param.name"));
+        outputDescriptions.add(Util.parseTranslatableText("fmod.node.trigger.output.param.feat"));
+        outputDataTypes.add(Util.parseTranslatableText("fmod.node.trigger.output.param.type"));
         List<Component> branchNames = new ArrayList<>();
         List<Component> branchDescriptions = new ArrayList<>();
         branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));

@@ -22,6 +22,8 @@ import com.ykn.fmod.server.base.data.ServerData;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -297,6 +299,46 @@ public class Util {
     }
 
     /**
+     * Sends a message to players on the server based on the specified delivery method.
+     *
+     * @param server  The Minecraft server instance. Must not be null.
+     * @param method  The delivery method for the message. Must not be null.
+     * @param type    The location type of the message (e.g., chat, action bar). Must not be null.
+     * @param message The message content to be sent. Must not be null.
+     */
+    public static void postMessage(@Nonnull MinecraftServer server, @Nonnull MessageReceiver method, @Nonnull MessageLocation type, @Nonnull Component message) {
+        switch (method) {
+            case ALL:
+                {
+                    broadcastMessage(server, type, message);
+                    break;
+                }
+            case OP:
+                {
+                    List<ServerPlayer> players = getOnlinePlayers(server);
+                    for (ServerPlayer p : players) {
+                        if (p.hasPermissions(2)) {
+                            sendMessage(p, type, message);
+                        }
+                    }
+                    break;
+                }
+            case NONE:
+                break;
+            case SELFOP:
+            case TEAM:
+            case TEAMOP:
+            case SELF:
+                // Invalid cases, do the same as default
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Not supported message method");
+                break;
+            default:
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method.");
+                break;
+        }
+    }
+
+    /**
      * Parses a translatable text key into a {@link MutableComponent} object, optionally translating it
      * based on the server configuration.
      *
@@ -532,6 +574,20 @@ public class Util {
             index++;
         }
         return entityListText;
+    }
+
+    /**
+     * Executes a command with the specified permission level and output handler.
+     *
+     * @param output the {@link CommandSource} to receive command execution results
+     * @param source the {@link Entity} executing the command
+     * @param command the command string to execute
+     * @param permissionLevel the permission level to execute the command with
+     * @return the result code of the command execution
+     */
+    public static int runCommand(@Nonnull CommandSource output, @Nonnull Entity source, @Nonnull String command, int permissionLevel) {
+        CommandSourceStack commandSource = source.createCommandSourceStack().withPermission(permissionLevel).withSource(output);
+        return source.getServer().getCommands().performPrefixedCommand(commandSource, command);
     }
 
     /**
