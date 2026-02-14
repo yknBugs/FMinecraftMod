@@ -582,26 +582,26 @@ public class TextPlaceholderFactory<T> {
                     return text;
                 }
             })
-            .style("\\$\\{link:(.*)\\}", (param, text) -> 
+            .style("\\$\\{link:([^}]*)\\}", (param, text) -> 
                 text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.OPEN_URL, param.strip())
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.openurl", Component.literal(param.strip()).withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN))
                 ))
             )
-            .style("\\$\\{copy:(.*)\\}", (param, text) -> 
+            .style("\\$\\{copy:([^}]*)\\}", (param, text) -> 
                 text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, param.strip())
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.copyto", param.strip()).withStyle(ChatFormatting.GREEN))
                 ))
             )
-            .style("\\$\\{hint:(.*)\\}", (param, text) -> 
+            .style("\\$\\{hint:([^}]*)\\}", (param, text) -> 
                 text.withStyle(style -> style.withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(param.strip()))
                 ))
             )
-            .style("\\$\\{suggest:(.*)\\}", (param, text) -> 
+            .style("\\$\\{suggest:([^}]*)\\}", (param, text) -> 
                 text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, param.strip())
                 ))

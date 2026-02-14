@@ -80,7 +80,7 @@ public class BroadcastMessageNode extends FlowNode {
             if (receiver == MessageReceiver.ALL || receiver == MessageReceiver.OP || receiver == MessageReceiver.NONE) {
                 Util.postMessage(context.getServer(), receiver, messageType, message);
             } else {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bcmessage.error.invalid", this.name), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bcmessage.error.invalid", receiver), null);
             }
         } else {
             // When player is not null, use postMessage
