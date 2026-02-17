@@ -7,6 +7,7 @@ package com.ykn.fmod.server.base.data;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -223,7 +224,8 @@ public class ServerData {
      */
     @NotNull
     public List<ScheduledTask> getScheduledTasks() {
-        return scheduledTasks;
+        // Prevent other code call add method of the returned list to avoid ConcurrentModificationException during ticking
+        return Collections.unmodifiableList(this.scheduledTasks);
     }
 
     /**
@@ -234,7 +236,7 @@ public class ServerData {
      */
     public void submitScheduledTask(@NotNull ScheduledTask task) {
         if (scheduledTasks.contains(task) || pendingScheduledTasks.contains(task) || task.isFinished()) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Attempted to submit a duplicate or finished scheduled task.");
+            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Attempted to submit a duplicate or finished scheduled task: " + task.toString());
             return;
         }
         if (isTickingScheduledTasks) {

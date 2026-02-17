@@ -25,6 +25,7 @@ import net.fabricmc.loader.api.metadata.Person;
 import net.minecraft.SharedConstants;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandOutput;
@@ -157,12 +158,12 @@ public class Util {
     }
 
     /**
-     * Sends a text message to the specified server player.
+     * Sends a text message to the specified player.
      *
-     * @param player  The server player to whom the message will be sent. Must not be null.
+     * @param player  The player to whom the message will be sent. Must not be null.
      * @param message The text message to send to the player. Must not be null.
      */
-    public static void sendTextMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
+    public static void sendTextMessage(@NotNull PlayerEntity player, @NotNull Text message) {
         player.sendMessage(message, false);
     }
 
@@ -254,6 +255,8 @@ public class Util {
                             sendMessage(p, type, message);
                         }
                     }
+                    // Server Console is also considered as an OP
+                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
                     break;
                 }
             case SELFOP:
@@ -264,6 +267,7 @@ public class Util {
                             sendMessage(p, type, message);
                         }
                     }
+                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
                     break;
                 }
             case TEAM:
@@ -284,6 +288,7 @@ public class Util {
                             sendMessage(p, type, message);
                         }
                     }
+                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
                     break;
                 }
             case SELF:
@@ -294,7 +299,7 @@ public class Util {
             case NONE:
                 break;
             default:
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method.");
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method: " + method);
                 break;
         }
     }
@@ -322,6 +327,7 @@ public class Util {
                             sendMessage(p, type, message);
                         }
                     }
+                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
                     break;
                 }
             case NONE:
@@ -331,10 +337,10 @@ public class Util {
             case TEAMOP:
             case SELF:
                 // Invalid cases, do the same as default
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Not supported message method");
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Unsupported message method for server-wide message: " + method);
                 break;
             default:
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method.");
+                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method: " + method);
                 break;
         }
     }
