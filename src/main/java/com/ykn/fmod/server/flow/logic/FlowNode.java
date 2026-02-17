@@ -175,7 +175,7 @@ public class FlowNode implements Cloneable {
             if (inputRef == null) {
                 throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullinput", this.name), null);
             } else {
-                Object resolvedValue = inputRef.resolve(context);
+                Object resolvedValue = inputRef.resolve(context, this);
                 resolvedInputs.add(resolvedValue);
             }
         }

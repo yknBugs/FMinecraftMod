@@ -144,14 +144,14 @@ public class DataReference implements Cloneable {
      * @throws LogicException If the referenced node doesn't exist or hasn't been executed yet
      */
     @Nullable
-    public Object resolve(@Nonnull ExecutionContext context) throws LogicException {
+    public Object resolve(@Nonnull ExecutionContext context, @Nonnull FlowNode currentNode) throws LogicException {
         if (this.type == ReferenceType.CONSTANT) {
             return this.value;
         } else if (this.type == ReferenceType.NODE_OUTPUT) {
             LogicFlow flow = context.getFlow();
             FlowNode node = flow.getNode(this.referenceId);
             if (node == null) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullnode", flow.name), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullnode", currentNode.name), null);
             }
             return node.getOutput(context, this.referenceIndex);
         } else {

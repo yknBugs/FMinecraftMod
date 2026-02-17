@@ -7,6 +7,8 @@ package com.ykn.fmod.server.base.schedule;
 
 import java.util.List;
 
+import org.slf4j.LoggerFactory;
+
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.song.NoteBlockNote;
 import com.ykn.fmod.server.base.song.NoteBlockSong;
@@ -122,11 +124,23 @@ public class PlaySong extends ScheduledTask {
     @Override
     public void onCancel() {
         this.tick = song.getMaxRealTick();
+        if (context.getSource().isPlayer()) {
+            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().hasDisconnected()) {
+                LoggerFactory.getLogger(Util.LOGGERNAME).info(Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName).getString());
+                return;
+            }
+        }
         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
     }
 
     @Override
     public void onFinish() {
+        if (context.getSource().isPlayer()) {
+            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().hasDisconnected()) {
+                LoggerFactory.getLogger(Util.LOGGERNAME).info(Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName).getString());
+                return;
+            }
+        }
         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
     }
 
@@ -221,6 +235,24 @@ public class PlaySong extends ScheduledTask {
      */
     public void setShowInfo(boolean showInfo) {
         this.showInfo = showInfo;
+    }
+
+    /**
+     * Gets the command context from which this song playback was initiated.
+     *
+     * @return The command context.
+     */
+    public CommandContext<CommandSourceStack> getContext() {
+        return context;
+    }
+
+    /**
+     * Sets the command context for this song playback, which is used for sending feedback messages to the player.
+     * 
+     * @param context The command context to be associated with this song playback.
+     */
+    public void setContext(CommandContext<CommandSourceStack> context) {
+        this.context = context;
     }
 
     @Override

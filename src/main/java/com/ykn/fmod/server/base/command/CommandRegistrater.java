@@ -453,6 +453,7 @@ public class CommandRegistrater {
         int result = 0;
         try {
             result = doSongTaskOrDefault(players, context, (player, playSong) -> {
+                playSong.setContext(context);
                 playSong.cancel();
                 return true;
             }, player -> {
