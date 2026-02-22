@@ -10,10 +10,13 @@ import java.util.HashMap;
 import java.util.List;
 
 import com.ykn.fmod.server.base.data.ServerData;
-import com.ykn.fmod.server.base.util.MessageLocation;
+import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.LivingEntity;
@@ -49,43 +52,63 @@ public class EntityDeath {
         ServerData data = Util.getServerData(livingEntity.getServer());
 
         // Broadcast death message, each type of message can be broadcasted only once
-        HashMap<MessageLocation, Boolean> isAlreadyBroadcasted = new HashMap<>();
-        for (MessageLocation type : MessageLocation.values()) {
-            isAlreadyBroadcasted.put(type, false);
+        HashMap<MessageType.Location, Boolean> isMainBroadcasted = new HashMap<>();
+        HashMap<MessageType.Location, Boolean> isOtherBroadcasted = new HashMap<>();
+        for (MessageType.Location type : MessageType.Location.values()) {
+            isMainBroadcasted.put(type, false);
+            isOtherBroadcasted.put(type, false);
         }
 
+        Component mainTextCoord = Util.parseCoordText(livingEntity).withStyle(ChatFormatting.GRAY);
+        Component mainTextDeath = livingEntity.getCombatTracker().getDeathMessage();
+        Component mainText = Component.empty().append(mainTextCoord).append(" ").append(mainTextDeath);
+        Component otherText = livingEntity.getCombatTracker().getDeathMessage();
+
         if (this.livingEntity.hasCustomName()) {
-            MessageLocation type = Util.serverConfig.getNamedEntityDeathMessage();
-            Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
-            isAlreadyBroadcasted.put(type, true);
+            ServerMessageType type = Util.serverConfig.getNamedEntityDeathMessage();
+            type.postMessage(livingEntity.getServer(), mainText, otherText);
+            isMainBroadcasted.put(type.mainPlayerLocation, true);
+            isOtherBroadcasted.put(type.otherPlayerLocation, true);
         }
-        if (this.livingEntity.getMaxHealth() > Util.serverConfig.getBossMaxHpThreshold()) {
-            MessageLocation type = Util.serverConfig.getBossDeathMessage();
-            if (!isAlreadyBroadcasted.get(type)) {
-                Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
-                isAlreadyBroadcasted.put(type, true);
+        if (this.livingEntity.getMaxHealth() > Util.serverConfig.getBossMaxHealthThreshold()) {
+            ServerMessageType type = Util.serverConfig.getBossDeathMessage();
+            if (!isMainBroadcasted.get(type.mainPlayerLocation)) {
+                type.updateOther(ServerMessageType.Location.NONE).postMessage(livingEntity.getServer(), mainText, otherText);
+                isMainBroadcasted.put(type.mainPlayerLocation, true);
+            }
+            if (!isOtherBroadcasted.get(type.otherPlayerLocation)) {
+                type.updateMain(ServerMessageType.Location.NONE).postMessage(livingEntity.getServer(), mainText, otherText);
+                isOtherBroadcasted.put(type.otherPlayerLocation, true);
             }
         }
         if (Util.getServerData(livingEntity.getServer()).isKillerEntity(livingEntity)) {
-            MessageLocation type = Util.serverConfig.getKillerEntityDeathMessage();
-            if (!isAlreadyBroadcasted.get(type)) {
-                Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
-                isAlreadyBroadcasted.put(type, true);
+            ServerMessageType type = Util.serverConfig.getKillerDeathMessage();
+            if (!isMainBroadcasted.get(type.mainPlayerLocation)) {
+                type.updateOther(ServerMessageType.Location.NONE).postMessage(livingEntity.getServer(), mainText, otherText);
+                isMainBroadcasted.put(type.mainPlayerLocation, true);
+            }
+            if (!isOtherBroadcasted.get(type.otherPlayerLocation)) {
+                type.updateMain(ServerMessageType.Location.NONE).postMessage(livingEntity.getServer(), mainText, otherText);
+                isOtherBroadcasted.put(type.otherPlayerLocation, true);
             }
             Util.getServerData(livingEntity.getServer()).removeKillerEntity(livingEntity);
         }
 
         // Normal entity death message
-        MessageLocation type = Util.serverConfig.getEntityDeathMessage();
+        ServerMessageType type = Util.serverConfig.getEntityDeathMessage();
         if (livingEntity instanceof AgeableMob) {
             type = Util.serverConfig.getPassiveDeathMessage();
         } else if (livingEntity instanceof Monster) {
             type = Util.serverConfig.getHostileDeathMessage();
         }
         // broadcast only if not already broadcasted
-        if (!isAlreadyBroadcasted.get(type)) {
-            Util.broadcastMessage(livingEntity.getServer(), type, livingEntity.getCombatTracker().getDeathMessage());
-            isAlreadyBroadcasted.put(type, true);
+        if (!isMainBroadcasted.get(type.mainPlayerLocation)) {
+            type.updateOther(ServerMessageType.Location.NONE).postMessage(livingEntity.getServer(), mainText, otherText);
+            isMainBroadcasted.put(type.mainPlayerLocation, true);
+        }
+        if (!isOtherBroadcasted.get(type.otherPlayerLocation)) {
+            type.updateMain(ServerMessageType.Location.NONE).postMessage(livingEntity.getServer(), mainText, otherText);
+            isOtherBroadcasted.put(type.otherPlayerLocation, true);
         }
 
         // Trigger the event for LogicFlow

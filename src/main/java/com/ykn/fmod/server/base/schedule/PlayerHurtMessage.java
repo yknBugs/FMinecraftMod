@@ -8,7 +8,6 @@ package com.ykn.fmod.server.base.schedule;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 
 public class PlayerHurtMessage extends ScheduledTask {
@@ -28,8 +27,9 @@ public class PlayerHurtMessage extends ScheduledTask {
         if (lastHealth - health >= Util.serverConfig.getPlayerHurtThreshold() * player.getMaxHealth()) {
             double damage = lastHealth - health;
             Component playerName = player.getDisplayName();
-            MutableComponent text = Util.parseTranslatableText("fmod.message.playerhurt", playerName, String.format("%.1f", damage), String.format("%.1f", lastHealth), String.format("%.1f", health));
-            Util.postMessage(player, Util.serverConfig.getPlayerSeriousHurtReceiver(), Util.serverConfig.getPlayerSeriousHurtLocation(), text);
+            Component mainText = Util.parseTranslatableText("fmod.message.playerhurt.main", playerName, String.format("%.1f", damage), String.format("%.1f", lastHealth), String.format("%.1f", health));
+            Component otherText = Util.parseTranslatableText("fmod.message.playerhurt.other", playerName, String.format("%.1f", damage));
+            Util.serverConfig.getPlayerHurtMessage().postMessage(player, mainText, otherText);
         }
     }
 

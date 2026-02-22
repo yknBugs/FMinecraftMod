@@ -7,7 +7,9 @@ package com.ykn.fmod.server.base.util;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -28,14 +30,13 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraftforge.fml.ModList;
 
@@ -130,221 +131,6 @@ public class Util {
     }
 
     /**
-     * Sends an action bar message to the specified player.
-     *
-     * @param player  The {@link ServerPlayer} to whom the message will be sent. Must not be null.
-     * @param message The {@link Component} message to display in the action bar. Must not be null.
-     */
-    public static void sendActionBarMessage(@Nonnull ServerPlayer player, @Nonnull Component message) {
-        player.connection.send(new ClientboundSetActionBarTextPacket(message));
-    }
-
-    /**
-     * Sends an action bar message to all online players on the server.
-     *
-     * @param server  The Minecraft server instance. If null, the method will return without performing any action.
-     * @param message The message to be displayed in the action bar. Must not be null.
-     */
-    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @Nonnull Component message) {
-        if (server == null) {
-            return;
-        }
-        List<ServerPlayer> players = getOnlinePlayers(server);
-        for (ServerPlayer player : players) {
-            sendActionBarMessage(player, message);
-        }
-        LoggerFactory.getLogger(LOGGERNAME).debug(message.getString());
-    }
-
-    /**
-     * Sends a text message to the specified player.
-     *
-     * @param player  The player to whom the message will be sent. Must not be null.
-     * @param message The text message to send to the player. Must not be null.
-     */
-    public static void sendTextMessage(@Nonnull Player player, @Nonnull Component message) {
-        player.displayClientMessage(message, false);
-    }
-
-    /**
-     * Broadcasts a text message to all online players on the server and logs the message
-     * to the server console.
-     *
-     * @param server The Minecraft server instance. If null, the method will return without doing anything.
-     * @param message The text message to broadcast. Must not be null.
-     */
-    public static void broadcastTextMessage(@Nullable MinecraftServer server, @Nonnull Component message) {
-        if (server == null) {
-            return;
-        }
-        List<ServerPlayer> players = getOnlinePlayers(server);
-        for (ServerPlayer player : players) {
-            sendTextMessage(player, message);
-        }
-        // Also broadcast the message to the server console.
-        LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
-    }
-
-    /**
-     * Sends a message to the specified player based on the provided message location type.
-     *
-     * @param player The {@link ServerPlayer} to whom the message will be sent. Must not be null.
-     * @param type   The {@link MessageLocation} indicating where the message should be displayed (e.g., CHAT, ACTIONBAR, NONE). Must not be null.
-     * @param message The {@link Component} message to be sent. Must not be null.
-     */
-    public static void sendMessage(@Nonnull ServerPlayer player, @Nonnull MessageLocation type, @Nonnull Component message) {
-        switch (type) {
-            case NONE:
-                break;
-            case CHAT:
-                sendTextMessage(player, message);
-                break;
-            case ACTIONBAR:
-                sendActionBarMessage(player, message);
-                break;
-            default:
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message type: " + type);
-                break;
-        }
-    }
-
-    /**
-     * Broadcasts a message to players on the server based on the specified message location type.
-     *
-     * @param server The Minecraft server instance. Can be null if no server is available.
-     * @param type   The location type where the message should be broadcasted. Must not be null.
-     * @param message The message to broadcast. Must not be null.
-     */
-    public static void broadcastMessage(@Nullable MinecraftServer server, @Nonnull MessageLocation type, @Nonnull Component message) {
-        switch (type) {
-            case NONE:
-                break;
-            case CHAT:
-                broadcastTextMessage(server, message);
-                break;
-            case ACTIONBAR:
-                broadcastActionBarMessage(server, message);
-                break;
-            default:
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message type: " + type);
-                break;
-        }
-    }
-
-    /**
-     * Sends a message to players based on the specified delivery method.
-     *
-     * @param player  The player who will receive the message. Must not be null.
-     * @param method  The delivery method for the message. Must not be null.
-     * @param type    The location type of the message (e.g., chat, action bar). Must not be null.
-     * @param message The message content to be sent. Must not be null.
-     */
-    public static void postMessage(@Nonnull ServerPlayer player, @Nonnull MessageReceiver method, @Nonnull MessageLocation type, @Nonnull Component message) {
-        switch (method) {
-            case ALL:
-                {
-                    broadcastMessage(player.getServer(), type, message);
-                    break;
-                }
-            case OP:
-                {
-                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayer p : players) {
-                        if (p.hasPermissions(2)) {
-                            sendMessage(p, type, message);
-                        }
-                    }
-                    // Server Console is also considered as an OP
-                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
-                    break;
-                }
-            case SELFOP:
-                {
-                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayer p : players) {
-                        if (p.hasPermissions(2) || p == player) {
-                            sendMessage(p, type, message);
-                        }
-                    }
-                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
-                    break;
-                }
-            case TEAM:
-                {
-                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayer p : players) {
-                        if (p.isAlliedTo(player) || p == player) {
-                            sendMessage(p, type, message);
-                        }
-                    }
-                    break;
-                }
-            case TEAMOP:
-                {
-                    List<ServerPlayer> players = getOnlinePlayers(player.getServer());
-                    for (ServerPlayer p : players) {
-                        if (p.hasPermissions(2) || p.isAlliedTo(player) || p == player) {
-                            sendMessage(p, type, message);
-                        }
-                    }
-                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
-                    break;
-                }
-            case SELF:
-                {
-                    sendMessage(player, type, message);
-                    break;
-                }
-            case NONE:
-                break;
-            default:
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method: " + method);
-                break;
-        }
-    }
-
-    /**
-     * Sends a message to players on the server based on the specified delivery method.
-     *
-     * @param server  The Minecraft server instance. Must not be null.
-     * @param method  The delivery method for the message. Must not be null.
-     * @param type    The location type of the message (e.g., chat, action bar). Must not be null.
-     * @param message The message content to be sent. Must not be null.
-     */
-    public static void postMessage(@Nonnull MinecraftServer server, @Nonnull MessageReceiver method, @Nonnull MessageLocation type, @Nonnull Component message) {
-        switch (method) {
-            case ALL:
-                {
-                    broadcastMessage(server, type, message);
-                    break;
-                }
-            case OP:
-                {
-                    List<ServerPlayer> players = getOnlinePlayers(server);
-                    for (ServerPlayer p : players) {
-                        if (p.hasPermissions(2)) {
-                            sendMessage(p, type, message);
-                        }
-                    }
-                    LoggerFactory.getLogger(LOGGERNAME).info(message.getString());
-                    break;
-                }
-            case NONE:
-                break;
-            case SELFOP:
-            case TEAM:
-            case TEAMOP:
-            case SELF:
-                // Invalid cases, do the same as default
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Unsupported message method for server-wide message: " + method);
-                break;
-            default:
-                LoggerFactory.getLogger(LOGGERNAME).error("FMinecraftMod: Invalid message method: " + method);
-                break;
-        }
-    }
-
-    /**
      * Parses a translatable text key into a {@link MutableComponent} object, optionally translating it
      * based on the server configuration.
      *
@@ -356,7 +142,7 @@ public class Util {
      */
     @Nonnull
     public static MutableComponent parseTranslatableText(@Nonnull String key, Object... args) {
-        if (serverConfig.isEnableServerTranslation()) {
+        if (serverConfig.getServerTranslation()) {
             // A trick, by intentionally not passing args to translatable(), we still keep the "%" patterns here.
             String translatedText = Component.translatable(key).getString();
             // A trick, by intentionally using the original translation key,
@@ -528,6 +314,34 @@ public class Util {
     }
 
     /**
+     * Finds the dominant entity type from the given list of entities.
+     * 
+     * The dominant entity type is determined by which entity type appears most frequently
+     * in the provided list.
+     * 
+     * @param entities a list of entities to analyze
+     * @return a Map.Entry containing:
+     *         <li> key: an example Entity of the most frequent type
+     *         <li> value: the count of entities of that type
+     *         <li> Returns null if the input list is empty
+     */
+    public static Map.Entry<Entity, Integer> getDominantEntities(List<Entity> entities) {
+        Map<ResourceLocation, List<Entity>> entityMap = new HashMap<>();
+        for (Entity entity : entities) {
+            ResourceLocation entityId = EntityType.getKey(entity.getType());
+            entityMap.computeIfAbsent(entityId, k -> new ArrayList<>()).add(entity);
+        }
+        Map.Entry<Entity, Integer> dominantEntry = null;
+        for (Map.Entry<ResourceLocation, List<Entity>> entry : entityMap.entrySet()) {
+            List<Entity> entityList = entry.getValue();
+            if (dominantEntry == null || entityList.size() > dominantEntry.getValue()) {
+                dominantEntry = Map.entry(entityList.get(0), entityList.size());
+            }
+        }
+        return dominantEntry;
+    }
+
+    /**
      * Retrieves the biome name as a localized text for the given biome identifier.
      * 
      * @param biomeId The identifier of the biome. Can be null.
@@ -557,6 +371,21 @@ public class Util {
     public static MutableComponent getBiomeText(@Nonnull Entity entity) {
         ResourceLocation biomeId = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         return getBiomeText(biomeId);
+    }
+
+    /**
+     * Generates a formatted text representation of a boolean value, displaying "On" in green for true and "Off" in red for false.
+     *
+     * @param value the boolean value to be represented as text
+     * @return a {@link MutableText} object containing the formatted text representation of the boolean value
+     */
+    @Nonnull
+    public static MutableComponent getBooleanText(boolean value) {
+        if (value) {
+            return parseTranslatableText("options.on").withStyle(ChatFormatting.GREEN);
+        } else {
+            return parseTranslatableText("options.off").withStyle(ChatFormatting.RED);
+        }
     }
 
     /**

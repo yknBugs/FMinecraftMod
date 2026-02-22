@@ -7,6 +7,7 @@ package com.ykn.fmod.server.base.event;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
@@ -16,7 +17,6 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -57,7 +57,7 @@ public class LivingEntityDamage {
         if (attacker != null && attacker.isAlwaysTicking() && attacker instanceof ServerPlayer) {
             ServerPlayer player = (ServerPlayer) attacker;
             PlayerData data = serverData.getPlayerData(player);
-            if (entity.getMaxHealth() > Util.serverConfig.getBossMaxHpThreshold() && serverData.getTickPassed(data.lastBossFightTick) > Util.serverConfig.getBossFightInterval() && amount > 0) {
+            if (entity.getMaxHealth() > Util.serverConfig.getBossMaxHealthThreshold() && serverData.getTickPassed(data.lastBossFightTick) > Util.serverConfig.getBossFightInterval() && amount > 0) {
                 data.lastBossFightTick = serverData.getServerTick();
                 serverData.submitScheduledTask(new FightMessage(player, entity));
             }
@@ -74,8 +74,13 @@ public class LivingEntityDamage {
                 if (nearestEntities.size() >= Util.serverConfig.getMonsterNumberThreshold() && player.getHealth() > 0) {
                     Component playerName = player.getDisplayName();
                     Component entityName = attacker.getDisplayName();
-                    MutableComponent text = Util.parseTranslatableText("fmod.message.monsterattack", playerName, entityName, Integer.toString(nearestEntities.size()));
-                    Util.postMessage(player, Util.serverConfig.getMonsterSurroundMessageReceiver(), Util.serverConfig.getMonsterSurroundMessageLocation(), text);
+                    String entityNumber = Integer.toString(nearestEntities.size());
+                    Map.Entry<Entity, Integer> dominantMonster = Util.getDominantEntities(nearestEntities);
+                    Component dominantMonsterName = dominantMonster.getKey().getDisplayName();
+                    String dominantMonsterNumber = Integer.toString(dominantMonster.getValue());
+                    Component mainText = Util.parseTranslatableText("fmod.message.monsterattack.main", playerName, entityName, entityNumber, dominantMonsterNumber, dominantMonsterName);
+                    Component otherText = Util.parseTranslatableText("fmod.message.monsterattack.other", playerName, entityNumber);
+                    Util.serverConfig.getMonsterSurroundMessage().postMessage(player, mainText, otherText);
                     data.lastMonsterSurroundTick = serverData.getServerTick();
                 }
             }

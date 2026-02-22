@@ -8,7 +8,6 @@ package com.ykn.fmod.server.base.schedule;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 
@@ -28,8 +27,9 @@ public class FightMessage extends ScheduledTask {
         Component playerName = player.getDisplayName();
         Component entityName = entity.getDisplayName();
         double entityHealth = entity.getHealth();
-        MutableComponent text = Util.parseTranslatableText("fmod.message.bossfight", playerName, entityName, String.format("%.1f", entityHealth));
-        Util.postMessage(player, Util.serverConfig.getBossFightMessageReceiver(), Util.serverConfig.getBossFightMessageLocation(), text);
+        Component mainText = Util.parseTranslatableText("fmod.message.bossfight.main", playerName, entityName, String.format("%.1f", entityHealth));
+        Component otherText = Util.parseTranslatableText("fmod.message.bossfight.other", playerName, entityName);
+        Util.serverConfig.getBossFightMessage().postMessage(player, mainText, otherText);
     }
 
     @Override

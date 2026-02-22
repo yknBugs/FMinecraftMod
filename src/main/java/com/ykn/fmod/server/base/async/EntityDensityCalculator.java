@@ -516,7 +516,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
 
         if (resultEntity == null || resultCause == null) {
             // No result
-            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.message.entitywarning", snapshots.size()), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.message.entitywarning.main", snapshots.size()), false);
         } else {
             // Has result
             final String totalCount = Integer.toString(snapshots.size());
@@ -525,7 +525,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
             final String entityCount = Integer.toString(finalCount);
             final String causeCount = Integer.toString(finalNumber);
             final Component entityCauseText = resultCause.entity.getDisplayName();
-            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.message.entitydensity", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.message.entitydensity.main", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText), false);
         }
     }
 

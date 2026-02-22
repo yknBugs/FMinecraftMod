@@ -48,9 +48,12 @@ public class PlayerDeath {
 
         Component playerName = player.getDisplayName();
         Component deathCoord = Util.parseCoordText(player);
+        Component deathBiome = Util.getBiomeText(player);
 
-        MutableComponent text = Util.parseTranslatableText("fmod.message.playerdeathcoord", playerName, deathCoord).withStyle(ChatFormatting.RED);
-        Util.postMessage(player, Util.serverConfig.getPlayerDeathCoordReceiver(), Util.serverConfig.getPlayerDeathCoordLocation(), text);
+        MutableComponent mainText = Util.parseTranslatableText("fmod.message.playerdeath.main", playerName, deathCoord).withStyle(ChatFormatting.RED);
+        MutableComponent otherText = Util.parseTranslatableText("fmod.message.playerdeath.other", playerName, deathBiome).withStyle(ChatFormatting.RED);
+
+        Util.serverConfig.getPlayerDeathCoord().postMessage(player, mainText, otherText);
     }
 
 }

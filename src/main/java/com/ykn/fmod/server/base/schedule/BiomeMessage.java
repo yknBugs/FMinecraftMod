@@ -31,7 +31,9 @@ public class BiomeMessage extends ScheduledTask {
         } else {
             biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
         }
-        Util.postMessage(player, Util.serverConfig.getChangeBiomeReceiver(), Util.serverConfig.getChangeBiomeLocation(), Util.parseTranslatableText("fmod.message.biome.change", player.getDisplayName(), biomeText));
+        Component mainText = Util.parseTranslatableText("fmod.message.biome.change.main", player.getDisplayName(), Util.parseCoordText(player));
+        Component otherText = Util.parseTranslatableText("fmod.message.biome.change.other", player.getDisplayName(), biomeText);
+        Util.serverConfig.getChangeBiomeMessage().postMessage(player, mainText, otherText);
     }
 
     @Override

@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 import com.ykn.fmod.server.base.command.CommandRegistrater;
+import com.ykn.fmod.server.base.config.ServerConfigRegistry;
 import com.ykn.fmod.server.base.event.EntityDeath;
 import com.ykn.fmod.server.base.event.LivingEntityDamage;
 import com.ykn.fmod.server.base.event.NewLevel;
@@ -43,12 +44,18 @@ public class FMod {
 	public FMod() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
+
+		// Load config
+		Util.loadServerConfig();
+		ServerConfigRegistry.register(Util.serverConfig);
+
+		// Register events
 		MinecraftForge.EVENT_BUS.register(this);
 
 		// Register Nodes
 		NodeRegistry.registerDefaultNodes();
 
-		Util.loadServerConfig();
+		// Finish initialization
 		LOGGER.info("FMinecraftMod: Server side initialized successfully.");
 	}
 

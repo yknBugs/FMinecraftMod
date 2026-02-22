@@ -8,7 +8,6 @@ package com.ykn.fmod.server.base.schedule;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
@@ -31,20 +30,21 @@ public class ProjectileMessage extends ScheduledTask {
         double victimHealth = Util.getHealth(victim);
         Component shooterName = shooter.getDisplayName();
         double shooterHealth = Util.getHealth(shooter);
-        MutableComponent text = Util.parseTranslatableText("fmod.message.projectile.onhit", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
+        Component mainText = Util.parseTranslatableText("fmod.message.projectile.onhit.main", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
+        Component otherText = Util.parseTranslatableText("fmod.message.projectile.onhit.other", shooterName, victimName);
         if (victim.isAlwaysTicking() && victim instanceof ServerPlayer) {
             ServerPlayer playerVictim = (ServerPlayer) victim;
             if (playerVictim.isRemoved() || playerVictim.hasDisconnected() || playerVictim.getHealth() <= 0) {
                 return;
             }
-            Util.postMessage(playerVictim, Util.serverConfig.getProjectileBeingHitReceiver(), Util.serverConfig.getProjectileBeingHitLocation(), text);
+            Util.serverConfig.getProjectileBeingHit().postMessage(playerVictim, mainText, otherText);
         }
         if (shooter.isAlwaysTicking() && shooter instanceof ServerPlayer) {
             ServerPlayer playerShooter = (ServerPlayer) shooter;
             if (playerShooter.isRemoved() || playerShooter.hasDisconnected() || playerShooter.getHealth() <= 0) {
                 return;
             }
-            Util.postMessage(playerShooter, Util.serverConfig.getProjectileHitOthersReceiver(), Util.serverConfig.getProjectileHitOthersLocation(), text);
+            Util.serverConfig.getProjectileHitOthers().postMessage(playerShooter, mainText, otherText);
         }
     }
 

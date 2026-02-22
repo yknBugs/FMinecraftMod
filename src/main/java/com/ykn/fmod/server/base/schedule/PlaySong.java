@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.song.NoteBlockNote;
 import com.ykn.fmod.server.base.song.NoteBlockSong;
+import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.commands.CommandSourceStack;
@@ -113,7 +114,7 @@ public class PlaySong extends ScheduledTask {
                 String currentTimeStr = Integer.toString(currentSeconds);
                 String totalTimeStr = Integer.toString((int) (this.song.getMaxVirtualTick() / 20.0));
                 String speedStr = String.format("%.2f", this.song.getSpeed());
-                Util.sendActionBarMessage(target, Util.parseTranslatableText("fmod.command.song.info", songName, currentTimeStr, totalTimeStr, speedStr));
+                MessageType.sendActionBarMessage(target, Util.parseTranslatableText("fmod.command.song.info", songName, currentTimeStr, totalTimeStr, speedStr));
             }
         }
         if (this.getSong().getSpeed() != 0) {
