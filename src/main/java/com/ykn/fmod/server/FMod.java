@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.command.CommandRegistrater;
+import com.ykn.fmod.server.base.config.ServerConfigRegistry;
 import com.ykn.fmod.server.base.event.NewLevel;
 import com.ykn.fmod.server.base.event.WorldTick;
 import com.ykn.fmod.server.base.util.Util;
@@ -27,8 +28,13 @@ public class FMod implements ModInitializer {
 	public void onInitialize() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
 		// However, some things (like resources) may still be uninitialized.
-		CommandRegistrater commandRegistrater = new CommandRegistrater(LOGGER);
-		commandRegistrater.registerCommand();
+
+		// Load config
+		Util.loadServerConfig();
+		ServerConfigRegistry.register(Util.serverConfig);
+
+		// Register commands
+		CommandRegistrater.registerCommand();
 
 		// Register events
 		ServerWorldEvents.LOAD.register((server, world) -> {
@@ -44,7 +50,7 @@ public class FMod implements ModInitializer {
 		// Register Nodes
 		NodeRegistry.registerDefaultNodes();
 
-		Util.loadServerConfig();
+		// Finish initialization
 		LOGGER.info("FMinecraftMod: Server side initialized successfully.");
 	}
 }

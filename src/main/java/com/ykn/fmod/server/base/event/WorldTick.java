@@ -63,16 +63,21 @@ public class WorldTick {
             // If finished, retrieve result and clear the task
             if (serverData.activeDensityCalculator.getEntity() == null || serverData.activeDensityCalculator.getCause() == null) {
                 // No result
-                Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslatableText("fmod.message.entitywarning", serverData.activeDensityCalculator.getInputNumber()).formatted(Formatting.RED));
+                Text mainText = Util.parseTranslatableText("fmod.message.entitywarning.main", serverData.activeDensityCalculator.getInputNumber()).formatted(Formatting.RED);
+                Text otherText = Util.parseTranslatableText("fmod.message.entitywarning.other").formatted(Formatting.RED);
+                Util.serverConfig.getEntityNumberWarning().postMessage(server, mainText, otherText);
             } else {
                 // Has result
                 final String totalCount = Integer.toString(serverData.activeDensityCalculator.getInputNumber());
                 final Text coordText = Util.parseCoordText(serverData.activeDensityCalculator.getDimension(), serverData.activeDensityCalculator.getBiome(), serverData.activeDensityCalculator.getX(), serverData.activeDensityCalculator.getY(), serverData.activeDensityCalculator.getZ());
+                final Text biomeText = Util.getBiomeText(serverData.activeDensityCalculator.getBiome());
                 final String entityRadius = String.format("%.2f", serverData.activeDensityCalculator.getRadius());
                 final String entityCount = Integer.toString(serverData.activeDensityCalculator.getCount());
                 final String causeCount = Integer.toString(serverData.activeDensityCalculator.getNumber());
                 final Text entityCauseText = serverData.activeDensityCalculator.getCause().getDisplayName();
-                Util.broadcastMessage(server, Util.serverConfig.getEntityDensityWarning(), Util.parseTranslatableText("fmod.message.entitydensity", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText).formatted(Formatting.RED));
+                Text mainText = Util.parseTranslatableText("fmod.message.entitydensity.main", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText).formatted(Formatting.RED);
+                Text otherText = Util.parseTranslatableText("fmod.message.entitydensity.other", biomeText, entityRadius, entityCount).formatted(Formatting.RED);
+                Util.serverConfig.getEntityDensityWarning().postMessage(server, mainText, otherText);
             }
             serverData.lastCheckEntityTick = serverData.getServerTick();
             serverData.lastCheckDensityTick = serverData.getServerTick();
@@ -133,7 +138,9 @@ public class WorldTick {
 
         if (satisfyNumberCondition) {
             serverData.lastCheckEntityTick = serverData.getServerTick();
-            Util.broadcastMessage(server, Util.serverConfig.getEntityNumberWarning(), Util.parseTranslatableText("fmod.message.entitywarning", allEntities.size()).formatted(Formatting.RED));
+            Text mainText = Util.parseTranslatableText("fmod.message.entitywarning.main", allEntities.size()).formatted(Formatting.RED);
+            Text otherText = Util.parseTranslatableText("fmod.message.entitywarning.other").formatted(Formatting.RED);
+            Util.serverConfig.getEntityNumberWarning().postMessage(server, mainText, otherText);
         }
     }
 
@@ -150,20 +157,25 @@ public class WorldTick {
     }
 
     private void postMessageToAfkingPlayer(ServerPlayerEntity player, PlayerData playerData) {
-        if (playerData.afkTicks > Util.serverConfig.getInformAfkingThreshold() && playerData.afkTicks % 20 == 0) {
-            Util.postMessage(player, Util.serverConfig.getInformAfkingReceiver(), Util.serverConfig.getInformAfkingLocation(), Util.parseTranslatableText("fmod.message.afk.inform", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+        if (playerData.afkTicks > Util.serverConfig.getInformAfkThreshold() && playerData.afkTicks % 20 == 0) {
+            Text mainText = Util.parseTranslatableText("fmod.message.afk.inform.main", player.getDisplayName(), (int) (playerData.afkTicks / 20));
+            Text otherText = Util.parseTranslatableText("fmod.message.afk.inform.other", player.getDisplayName());
+            Util.serverConfig.getInformAfk().postMessage(player, mainText, otherText);
         }
-        if (playerData.afkTicks == Util.serverConfig.getBroadcastAfkingThreshold()) {
+        if (playerData.afkTicks == Util.serverConfig.getBroadcastAfkThreshold()) {
             Text playerName = player.getDisplayName();
             Text coord = Util.parseCoordText(player);
-            MutableText text = Util.parseTranslatableText("fmod.message.afk.broadcast", playerName, coord);
-            Util.postMessage(player, Util.serverConfig.getBroadcastAfkingReceiver(), Util.serverConfig.getBroadcastAfkingLocation(), text);
+            MutableText mainText = Util.parseTranslatableText("fmod.message.afk.broadcast.main", playerName, coord);
+            MutableText otherText = Util.parseTranslatableText("fmod.message.afk.broadcast.other", playerName);
+            Util.serverConfig.getBroadcastAfk().postMessage(player, mainText, otherText);
         }
     }
 
     private void postMessageToBackPlayer(ServerPlayerEntity player, PlayerData playerData) {
-        if (playerData.afkTicks >= Util.serverConfig.getBroadcastAfkingThreshold()) {
-            Util.postMessage(player, Util.serverConfig.getStopAfkingReceiver(), Util.serverConfig.getStopAfkingLocation(), Util.parseTranslatableText("fmod.message.afk.stop", player.getDisplayName(), (int) (playerData.afkTicks / 20)));
+        if (playerData.afkTicks >= Util.serverConfig.getBroadcastAfkThreshold()) {
+            Text mainText = Util.parseTranslatableText("fmod.message.afk.stop.main", player.getDisplayName(), (int) (playerData.afkTicks / 20));
+            Text otherText = Util.parseTranslatableText("fmod.message.afk.stop.other", player.getDisplayName());
+            Util.serverConfig.getStopAfk().postMessage(player, mainText, otherText);
         }
     }
 
@@ -185,16 +197,20 @@ public class WorldTick {
         // Show message if status changed
         if (currentCanSleepStatus != null && !currentCanSleepStatus.equals(playerData.lastCanSleep)) {
             if (currentCanSleepStatus) {
-                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslatableText("fmod.message.sleep.can", player.getDisplayName()));
+                Text mainText = Util.parseTranslatableText("fmod.message.sleep.can.main", player.getDisplayName(), Util.parseCoordText(player));
+                Text otherText = Util.parseTranslatableText("fmod.message.sleep.can.other", player.getDisplayName());
+                Util.serverConfig.getPlayerCanSleepMessage().postMessage(player, mainText, otherText);
             } else {
-                Util.sendMessage(player, Util.serverConfig.getPlayerCanSleepMessage(), Util.parseTranslatableText("fmod.message.sleep.cannot", player.getDisplayName()));
+                Text mainText = Util.parseTranslatableText("fmod.message.sleep.cannot.main", player.getDisplayName(), Util.parseCoordText(player));
+                Text otherText = Util.parseTranslatableText("fmod.message.sleep.cannot.other", player.getDisplayName());
+                Util.serverConfig.getPlayerCanSleepMessage().postMessage(player, mainText, otherText);
             }
         }
         playerData.lastCanSleep = currentCanSleepStatus;
     }
 
     private void handlePlayerTravelStatus(ServerPlayerEntity player, PlayerData playerData) {
-        int window = Util.serverConfig.getTravelWindowTicks();
+        int window = Util.serverConfig.getTravelWindow();
         Deque<Vec3d> positions = playerData.recentPositions;
 
         // Update positions history
@@ -254,8 +270,9 @@ public class WorldTick {
         }
 
         String speedStr = String.format("%.2f", totalDistance / window * 20.0);
-        MutableText message = Util.parseTranslatableText("fmod.message.travel.fast", player.getDisplayName(), speedStr);
-        Util.postMessage(player, Util.serverConfig.getTravelMessageReceiver(), Util.serverConfig.getTravelMessageLocation(), message);
+        Text mainText = Util.parseTranslatableText("fmod.message.travel.fast.main", player.getDisplayName(), Util.parseCoordText(player), speedStr);
+        Text otherText = Util.parseTranslatableText("fmod.message.travel.fast.other", player.getDisplayName(), speedStr);
+        Util.serverConfig.getTravelMessage().postMessage(player, mainText, otherText);
         playerData.lastTravelMessageTick = Util.getServerData(server).getServerTick();
     }
 
@@ -263,7 +280,8 @@ public class WorldTick {
         Text playerName = player.getDisplayName();
         Text fromCoord = Util.parseCoordText(playerData.lastDimensionId, playerData.lastBiomeId, fromPos.x, fromPos.y, fromPos.z);
         Text toCoord = Util.parseCoordText(player);
-        Text finalText = Util.parseTranslatableText("fmod.message.teleport", playerName, fromCoord, toCoord);
-        Util.postMessage(player, Util.serverConfig.getTeleportMessageReceiver(), Util.serverConfig.getTeleportMessageLocation(), finalText);
+        Text mainText = Util.parseTranslatableText("fmod.message.teleport.main", playerName, fromCoord, toCoord);
+        Text otherText = Util.parseTranslatableText("fmod.message.teleport.other", playerName);
+        Util.serverConfig.getTeleportMessage().postMessage(player, mainText, otherText);
     }
 }

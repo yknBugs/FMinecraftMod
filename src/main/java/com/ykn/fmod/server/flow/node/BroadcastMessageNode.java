@@ -8,8 +8,9 @@ package com.ykn.fmod.server.flow.node;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ykn.fmod.server.base.util.MessageLocation;
-import com.ykn.fmod.server.base.util.MessageReceiver;
+import com.ykn.fmod.server.base.util.MessageType;
+import com.ykn.fmod.server.base.util.PlayerMessageType;
+import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
@@ -71,20 +72,22 @@ public class BroadcastMessageNode extends FlowNode {
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         ServerPlayerEntity player = parsePlayer(resolvedInputs.get(0));
-        MessageReceiver receiver = parseReceiver(resolvedInputs.get(1));
-        MessageLocation messageType = parseMessageType(resolvedInputs.get(2));
+        PlayerMessageType.Receiver receiver = parseReceiver(resolvedInputs.get(1));
+        MessageType.Location messageType = parseMessageType(resolvedInputs.get(2));
         Text message = parseMessage(resolvedInputs.get(3));
+        PlayerMessageType type = PlayerMessageType.of(messageType, receiver);
         
         if (player == null) {
             // When player is null, handle special cases
-            if (receiver == MessageReceiver.ALL || receiver == MessageReceiver.OP || receiver == MessageReceiver.NONE) {
-                Util.postMessage(context.getServer(), receiver, messageType, message);
+            if (receiver == PlayerMessageType.Receiver.ALL || receiver == PlayerMessageType.Receiver.OP || receiver == PlayerMessageType.Receiver.NONE) {
+                ServerMessageType serverMessageType = ServerMessageType.fromPlayerMessageType(type);
+                serverMessageType.postMessage(context.getServer(), message);
             } else {
                 throw new LogicException(null, Util.parseTranslatableText("fmod.node.bcmessage.error.invalid", receiver), null);
             }
         } else {
             // When player is not null, use postMessage
-            Util.postMessage(player, receiver, messageType, message);
+            type.postMessage(player, message);
         }
     }
 
@@ -98,45 +101,45 @@ public class BroadcastMessageNode extends FlowNode {
         }
     }
 
-    private MessageReceiver parseReceiver(Object receiverObj) throws LogicException {
+    private PlayerMessageType.Receiver parseReceiver(Object receiverObj) throws LogicException {
         if (receiverObj == null) {
-            return MessageReceiver.ALL;
-        } else if (receiverObj instanceof MessageReceiver) {
-            MessageReceiver receiver = (MessageReceiver) receiverObj;
+            return PlayerMessageType.Receiver.ALL;
+        } else if (receiverObj instanceof PlayerMessageType.Receiver) {
+            PlayerMessageType.Receiver receiver = (PlayerMessageType.Receiver) receiverObj;
             return receiver;
         } else {
             String receiverStr = TypeAdaptor.parse(receiverObj).asString().strip();
             if ("all".equalsIgnoreCase(receiverStr)) {
-                return MessageReceiver.ALL;
+                return PlayerMessageType.Receiver.ALL;
             } else if ("op".equalsIgnoreCase(receiverStr)) {
-                return MessageReceiver.OP;
+                return PlayerMessageType.Receiver.OP;
             } else if ("none".equalsIgnoreCase(receiverStr)) {
-                return MessageReceiver.NONE;
+                return PlayerMessageType.Receiver.NONE;
             } else if ("team".equalsIgnoreCase(receiverStr)) {
-                return MessageReceiver.TEAM;
+                return PlayerMessageType.Receiver.TEAM;
             } else if ("self".equalsIgnoreCase(receiverStr)) {
-                return MessageReceiver.SELF;
+                return PlayerMessageType.Receiver.SELF;
             } else if ("teamop".equalsIgnoreCase(receiverStr)) {
-                return MessageReceiver.TEAMOP;
+                return PlayerMessageType.Receiver.TEAMOP;
             } else if ("selfop".equalsIgnoreCase(receiverStr)) {
-                return MessageReceiver.SELFOP;
+                return PlayerMessageType.Receiver.SELFOP;
             } else {
                 throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
             }
         }
     }
 
-    private MessageLocation parseMessageType(Object typeObj) throws LogicException {
+    private MessageType.Location parseMessageType(Object typeObj) throws LogicException {
         if (typeObj == null) {
-            return MessageLocation.CHAT;
-        } else if (typeObj instanceof MessageLocation) {
-            return (MessageLocation) typeObj;
+            return MessageType.Location.CHAT;
+        } else if (typeObj instanceof MessageType.Location) {
+            return (MessageType.Location) typeObj;
         } else {
             String typeStr = TypeAdaptor.parse(typeObj).asString().strip();
             if ("actionbar".equalsIgnoreCase(typeStr)) {
-                return MessageLocation.ACTIONBAR;
+                return MessageType.Location.ACTIONBAR;
             } else if ("chat".equalsIgnoreCase(typeStr)) {
-                return MessageLocation.CHAT;
+                return MessageType.Location.CHAT;
             } else {
                 throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
             }

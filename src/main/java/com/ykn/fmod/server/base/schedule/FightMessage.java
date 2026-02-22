@@ -9,7 +9,6 @@ import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 public class FightMessage extends ScheduledTask {
@@ -28,8 +27,9 @@ public class FightMessage extends ScheduledTask {
         Text playerName = player.getDisplayName();
         Text entityName = entity.getDisplayName();
         double entityHealth = entity.getHealth();
-        MutableText text = Util.parseTranslatableText("fmod.message.bossfight", playerName, entityName, String.format("%.1f", entityHealth));
-        Util.postMessage(player, Util.serverConfig.getBossFightMessageReceiver(), Util.serverConfig.getBossFightMessageLocation(), text);
+        Text mainText = Util.parseTranslatableText("fmod.message.bossfight.main", playerName, entityName, String.format("%.1f", entityHealth));
+        Text otherText = Util.parseTranslatableText("fmod.message.bossfight.other", playerName, entityName);
+        Util.serverConfig.getBossFightMessage().postMessage(player, mainText, otherText);
     }
 
     @Override

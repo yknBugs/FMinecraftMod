@@ -1,6 +1,7 @@
 package com.ykn.fmod.client;
 
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.util.Util;
 
@@ -8,7 +9,7 @@ import net.fabricmc.api.ClientModInitializer;
 
 public class FMod implements ClientModInitializer {
 
-	public static final Logger LOGGER = Logger.getLogger(Util.LOGGERNAME);
+	public static final Logger LOGGER = LoggerFactory.getLogger(Util.LOGGERNAME);
 
 	@Override
 	public void onInitializeClient() {

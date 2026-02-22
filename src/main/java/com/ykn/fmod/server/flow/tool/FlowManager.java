@@ -485,7 +485,7 @@ public class FlowManager {
         ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server, maxFlowLength, maxRecursionDepth);
         executionContext.execute(startNodeOutputs, initialVariables);
         serverData.executeHistory.add(executionContext);
-        int historyLimit = Util.serverConfig.getKeepFlowHistoryNumber();
+        int historyLimit = Util.serverConfig.getMaxFlowHistorySize();
         while (serverData.executeHistory.size() > historyLimit) {
             serverData.executeHistory.remove(0);
         }
@@ -514,7 +514,7 @@ public class FlowManager {
     public void execute(@NotNull ServerData serverData, ExecutionContext parentContext, int maxFlowLength, int maxRecursionDepth, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws LogicException {
         ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server, maxFlowLength, maxRecursionDepth);
         serverData.executeHistory.add(executionContext);
-        int historyLimit = Util.serverConfig.getKeepFlowHistoryNumber();
+        int historyLimit = Util.serverConfig.getMaxFlowHistorySize();
         while (serverData.executeHistory.size() > historyLimit) {
             serverData.executeHistory.remove(0);
         }
