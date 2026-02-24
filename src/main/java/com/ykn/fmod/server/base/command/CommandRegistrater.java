@@ -10,8 +10,6 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.LoggerFactory;
-
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -51,7 +49,7 @@ public class CommandRegistrater {
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.version.error"));
         }
     }
@@ -63,15 +61,13 @@ public class CommandRegistrater {
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
         } catch (Exception e) {
             try {
-                StringWriter sw = new StringWriter();
-                PrintWriter pw = new PrintWriter(sw);
-                e.printStackTrace(pw);
-                // context.getSource().sendSuccess(() -> Component.literal(e.getMessage()), false);
-                context.getSource().sendSuccess(() -> Component.literal(sw.toString()), false);
-                pw.close();
-                sw.close();
+                try (StringWriter sw = new StringWriter(); PrintWriter pw = new PrintWriter(sw)) {
+                    e.printStackTrace(pw);
+                    // context.getSource().sendFeedback(() -> Text.literal(e.getMessage()), false);
+                    context.getSource().sendSuccess(() -> Component.literal(sw.toString()), false);
+                }
             } catch (Exception exception) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f dev", exception);
+                Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f dev", exception);
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.dev.error"));
             }
         }
@@ -95,7 +91,7 @@ public class CommandRegistrater {
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f say", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f say", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -104,18 +100,18 @@ public class CommandRegistrater {
     private static int runTriggerFlowCommand(String name, String param, CommandContext<CommandSourceStack> context) {
         try {
             ServerData data = Util.getServerData(context.getSource().getServer());
-            FlowManager targetFlow = data.logicFlows.get(name);
+            FlowManager targetFlow = data.getLogicFlows().get(name);
             // Player without permission should not know the status of the trigger, always show not exists
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
             }
-            if (targetFlow.isEnabled == false) {
+            if (!targetFlow.isEnabled()) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
             }
-            if (targetFlow.flow.getFirstNode() == null) {
+            if (targetFlow.getFlow().getFirstNode() == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
             }
-            if (targetFlow.flow.getFirstNode() instanceof TriggerNode == false) {
+            if (!(targetFlow.getFlow().getFirstNode() instanceof TriggerNode)) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
             }
             List<Object> startNodeOutputs = new ArrayList<>();
@@ -128,7 +124,7 @@ public class CommandRegistrater {
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f trigger", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f trigger", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -143,6 +139,7 @@ public class CommandRegistrater {
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f reload", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.reload.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -193,7 +190,7 @@ public class CommandRegistrater {
             );
             return true;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Unable to register command.", e);
+            Util.LOGGER.error("FMinecraftMod: Unable to register command.", e);
             return false;
         }
     }

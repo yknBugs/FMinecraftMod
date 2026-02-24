@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.schedule.ScheduledFlow;
@@ -16,8 +15,6 @@ import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
-
-import net.minecraft.network.chat.Component;
 
 /**
  * A flow node that adds a variable to a scheduled flow.
@@ -38,32 +35,13 @@ public class AddVariableToScheduledFlowNode extends FlowNode {
     
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.addvarflow.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.addvarflow.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.addvarflow.input.flow.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.addvarflow.input.flow.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.addvarflow.input.flow.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.addvarflow.input.varname.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.addvarflow.input.varname.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.addvarflow.input.varname.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.addvarflow.input.value.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.addvarflow.input.value.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.addvarflow.input.value.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.addvarflow.output.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.addvarflow.output.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.addvarflow.output.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.addvarflow.title.name", "fmod.node.addvarflow.title.feat")
+            .input("fmod.node.addvarflow.input.flow.name", "fmod.node.addvarflow.input.flow.feat", "fmod.node.addvarflow.input.flow.type")
+            .input("fmod.node.addvarflow.input.varname.name", "fmod.node.addvarflow.input.varname.feat", "fmod.node.addvarflow.input.varname.type")
+            .input("fmod.node.addvarflow.input.value.name", "fmod.node.addvarflow.input.value.feat", "fmod.node.addvarflow.input.value.type")
+            .output("fmod.node.addvarflow.output.name", "fmod.node.addvarflow.output.feat", "fmod.node.addvarflow.output.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override

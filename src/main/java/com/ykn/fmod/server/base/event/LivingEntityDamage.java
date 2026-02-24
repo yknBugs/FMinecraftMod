@@ -57,8 +57,8 @@ public class LivingEntityDamage {
         if (attacker != null && attacker.isAlwaysTicking() && attacker instanceof ServerPlayer) {
             ServerPlayer player = (ServerPlayer) attacker;
             PlayerData data = serverData.getPlayerData(player);
-            if (entity.getMaxHealth() > Util.serverConfig.getBossMaxHealthThreshold() && serverData.getTickPassed(data.lastBossFightTick) > Util.serverConfig.getBossFightInterval() && amount > 0) {
-                data.lastBossFightTick = serverData.getServerTick();
+            if (entity.getMaxHealth() > Util.getServerConfig().getBossMaxHealthThreshold() && data.getBossFightTickPassed() > Util.getServerConfig().getBossFightInterval() && amount > 0) {
+                data.setLastBossFightTick();
                 serverData.submitScheduledTask(new FightMessage(player, entity));
             }
         }
@@ -67,21 +67,26 @@ public class LivingEntityDamage {
         if (entity.isAlwaysTicking() && entity instanceof ServerPlayer) {
             ServerPlayer player = (ServerPlayer) entity;
             PlayerData data = serverData.getPlayerData(player);
-            if (attacker != null && attacker instanceof Monster && serverData.getTickPassed(data.lastMonsterSurroundTick) > Util.serverConfig.getMonsterSurroundInterval() && amount > 0) {
-                double distance = Util.serverConfig.getMonsterDistanceThreshold();
+            if (attacker != null && attacker instanceof Monster && data.getMonsterSurroundTickPassed() > Util.getServerConfig().getMonsterSurroundInterval() && amount > 0) {
+                double distance = Util.getServerConfig().getMonsterDistanceThreshold();
                 AABB box = new AABB(player.getX() - distance, player.getY() - distance, player.getZ() - distance, player.getX() + distance, player.getY() + distance, player.getZ() + distance);
                 List<Entity> nearestEntities = player.level().getEntitiesOfClass(Entity.class, box, monster -> (monster != null && (monster instanceof Monster)));
-                if (nearestEntities.size() >= Util.serverConfig.getMonsterNumberThreshold() && player.getHealth() > 0) {
+                if (nearestEntities.size() >= Util.getServerConfig().getMonsterNumberThreshold() && player.getHealth() > 0) {
                     Component playerName = player.getDisplayName();
                     Component entityName = attacker.getDisplayName();
                     String entityNumber = Integer.toString(nearestEntities.size());
                     Map.Entry<Entity, Integer> dominantMonster = Util.getDominantEntities(nearestEntities);
-                    Component dominantMonsterName = dominantMonster.getKey().getDisplayName();
-                    String dominantMonsterNumber = Integer.toString(dominantMonster.getValue());
-                    Component mainText = Util.parseTranslatableText("fmod.message.monsterattack.main", playerName, entityName, entityNumber, dominantMonsterNumber, dominantMonsterName);
-                    Component otherText = Util.parseTranslatableText("fmod.message.monsterattack.other", playerName, entityNumber);
-                    Util.serverConfig.getMonsterSurroundMessage().postMessage(player, mainText, otherText);
-                    data.lastMonsterSurroundTick = serverData.getServerTick();
+                    if (dominantMonster == null) {
+                        // Unlikely to happen
+                        Util.LOGGER.warn("FMinecraftMod: Got unexpected null value when searching for dominant monster.");
+                    } else {
+                        Component dominantMonsterName = dominantMonster.getKey().getDisplayName();
+                        String dominantMonsterNumber = Integer.toString(dominantMonster.getValue());
+                        Component mainText = Util.parseTranslatableText("fmod.message.monsterattack.main", playerName, entityName, entityNumber, dominantMonsterNumber, dominantMonsterName);
+                        Component otherText = Util.parseTranslatableText("fmod.message.monsterattack.other", playerName, entityNumber);
+                        Util.getServerConfig().getMonsterSurroundMessage().postMessage(player, mainText, otherText);
+                    }
+                    data.setLastMonsterSurroundTick();
                 }
             }
             serverData.submitScheduledTask(new PlayerHurtMessage(player, player.getHealth()));

@@ -32,7 +32,6 @@ import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.ShortTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.commands.data.BlockDataAccessor;
 import net.minecraft.server.commands.data.EntityDataAccessor;
 import net.minecraft.world.entity.Entity;
@@ -58,32 +57,13 @@ public class GetNbtValueNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.getnbt.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.getnbt.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.getnbt.input.source.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getnbt.input.source.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getnbt.input.source.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getnbt.input.path.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getnbt.input.path.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getnbt.input.path.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getnbt.input.scale.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getnbt.input.scale.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getnbt.input.scale.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.getnbt.output.value.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getnbt.output.value.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getnbt.output.value.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description,
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.getnbt.title.name", "fmod.node.getnbt.title.feat")
+            .input("fmod.node.getnbt.input.source.name", "fmod.node.getnbt.input.source.feat", "fmod.node.getnbt.input.source.type")
+            .input("fmod.node.getnbt.input.path.name", "fmod.node.getnbt.input.path.feat", "fmod.node.getnbt.input.path.type")
+            .input("fmod.node.getnbt.input.scale.name", "fmod.node.getnbt.input.scale.feat", "fmod.node.getnbt.input.scale.type")
+            .output("fmod.node.getnbt.output.value.name", "fmod.node.getnbt.output.value.feat", "fmod.node.getnbt.output.value.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override

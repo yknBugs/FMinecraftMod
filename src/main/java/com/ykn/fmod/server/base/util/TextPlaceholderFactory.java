@@ -9,13 +9,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.slf4j.LoggerFactory;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
@@ -53,12 +52,12 @@ public class TextPlaceholderFactory<T> {
     /**
      * Map of placeholder keys to their corresponding text generation functions.
      */
-    private HashMap<String, Function<T, Component>> placeholders;
+    private Map<String, Function<T, Component>> placeholders;
 
     /**
      * Map of custom style regex patterns to their corresponding style application functions.
      */
-    private HashMap<String, BiFunction<String, MutableComponent, MutableComponent>> customStyles;
+    private Map<String, BiFunction<String, MutableComponent, MutableComponent>> customStyles;
 
     /**
      * Constructs a new empty TextPlaceholderFactory with no placeholders or custom styles.
@@ -74,7 +73,7 @@ public class TextPlaceholderFactory<T> {
      *
      * @param placeholders A map of placeholder keys to their corresponding text generation functions
      */
-    public TextPlaceholderFactory(HashMap<String, Function<T, Component>> placeholders) {
+    public TextPlaceholderFactory(Map<String, Function<T, Component>> placeholders) {
         this.placeholders = placeholders;
     }
 
@@ -140,7 +139,7 @@ public class TextPlaceholderFactory<T> {
      * @param placeholders A map of placeholders to add
      * @return This factory instance for method chaining
      */
-    public TextPlaceholderFactory<T> append(HashMap<String, Function<T, Component>> placeholders) {
+    public TextPlaceholderFactory<T> append(Map<String, Function<T, Component>> placeholders) {
         this.placeholders.putAll(placeholders);
         return this;
     }
@@ -199,7 +198,7 @@ public class TextPlaceholderFactory<T> {
      * @param newElements The list of new elements to insert at the specified index.
      * @return A new list with the element at the specified index replaced by the new elements.
      */
-    public static <U> List<U> replaceElementToList(List<U> list, int index, List<U> newElements) {
+    private static <U> List<U> replaceElementToList(List<U> list, int index, List<U> newElements) {
         List<U> result = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             if (i == index) {
@@ -224,7 +223,7 @@ public class TextPlaceholderFactory<T> {
      * @param <U> the element type of the inner lists
      * @return a new outer list containing shallow-copied inner lists with the specified expansions applied
      */
-    public static <U> List<List<U>> expandElementToList(List<List<U>> list, int index, List<U> newElements) {
+    private static <U> List<List<U>> expandElementToList(List<List<U>> list, int index, List<U> newElements) {
         List<List<U>> result = new ArrayList<>();
         for (int i = 0; i < list.size(); i++) {
             if (i == index) {
@@ -255,7 +254,7 @@ public class TextPlaceholderFactory<T> {
      * @param styleTokens Output list to receive the style regex patterns applicable to each text fragment
      * @param styleParams Output list to receive the captured parameters from each style pattern match
      */
-    public void tokenizeText(String text, List<String> textTokens, List<List<String>> styleTokens, List<List<String>> styleParams) {
+    private void tokenizeText(String text, List<String> textTokens, List<List<String>> styleTokens, List<List<String>> styleParams) {
         Set<String> keys = this.customStyles.keySet();
         List<String> splitText = new ArrayList<>();
         List<List<String>> splitStyles = new ArrayList<>();
@@ -310,7 +309,7 @@ public class TextPlaceholderFactory<T> {
      * @return A new list containing the original list elements followed by the split parts
      *         of the text, with or without the delimiter based on the keepDelimiter flag.
      */
-    public static List<String> splitAndAppend(List<String> list, String text, String delimiter, boolean keepDelimiter) {
+    private static List<String> splitAndAppend(List<String> list, String text, String delimiter, boolean keepDelimiter) {
         List<String> result = new ArrayList<>(list);
         // We need to escape the delimiter for regex, so we use Pattern.quote
         String pattern = Pattern.quote(delimiter);
@@ -372,13 +371,13 @@ public class TextPlaceholderFactory<T> {
                 Function<T, Component> placeholderFunction = this.placeholders.get(part);
                 if (placeholderFunction == null) {
                     // Unlikely to happen
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Missing placeholder: " + part);
+                    Util.LOGGER.error("FMinecraftMod: Missing placeholder: " + part);
                     finalText.add(Component.literal(part));
                 } else {
                     try {
                         finalText.add(placeholderFunction.apply(t));
                     } catch (Exception e) {
-                        LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while parsing placeholder: " + part, e);
+                        Util.LOGGER.error("FMinecraftMod: Error while parsing placeholder: " + part, e);
                         finalText.add(Component.literal(part));
                     }
                 }
@@ -440,14 +439,14 @@ public class TextPlaceholderFactory<T> {
                 BiFunction<String, MutableComponent, MutableComponent> styleFunction = this.customStyles.get(styleKey);
                 if (styleFunction == null) {
                     // Unlikely to happen
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Missing custom style: " + styleKey);
+                    Util.LOGGER.error("FMinecraftMod: Missing custom style: " + styleKey);
                     continue;
                 }
                 String param = activeStyles.get(styleKey);
                 try {
                     textToken = styleFunction.apply(param, textToken);
                 } catch (Exception e) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while applying custom style: " + styleKey + " with param: " + param, e);
+                    Util.LOGGER.error("FMinecraftMod: Error while applying custom style: " + styleKey + " with param: " + param, e);
                 }
             }
             finalTexts.add(textToken);
@@ -477,7 +476,7 @@ public class TextPlaceholderFactory<T> {
      * @param placeholders A map of placeholder keys to their corresponding text generation functions
      * @return A new factory instance with the given placeholders
      */
-    public static <U> TextPlaceholderFactory<U> of(HashMap<String, Function<U, Component>> placeholders) {
+    public static <U> TextPlaceholderFactory<U> of(Map<String, Function<U, Component>> placeholders) {
         return new TextPlaceholderFactory<U>(placeholders);
     }
 
@@ -578,7 +577,7 @@ public class TextPlaceholderFactory<T> {
                     int colorInt = Integer.parseInt(param.strip(), 16);
                     return text.withStyle(style -> style.withColor(colorInt));
                 } catch (NumberFormatException e) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Invalid color code: " + param.strip(), e);
+                    Util.LOGGER.debug("FMinecraftMod: Invalid color code: " + param.strip(), e);
                     return text;
                 }
             })
@@ -615,22 +614,25 @@ public class TextPlaceholderFactory<T> {
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
                 ).withColor(Integer.parseInt("c0721c", 16)))
             )
-            .add("${player}", t -> t.getDisplayName())
-            .add("${health}", t -> Component.literal(String.format("%.2f", t.getHealth())))
-            .add("${hp}", t -> Component.literal(String.format("%.2f", t.getHealth())))
-            .add("${maxhealth}", t -> Component.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${maxhp}", t -> Component.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${level}", t -> Component.literal(String.valueOf(t.experienceLevel)))
-            .add("${hunger}", t -> Component.literal(String.valueOf(t.getFoodData().getFoodLevel())))
-            .add("${saturation}", t -> Component.literal(String.format("%.2f", t.getFoodData().getSaturationLevel())))
-            .add("${x}", t -> Component.literal(String.format("%.2f", t.getX())))
-            .add("${y}", t -> Component.literal(String.format("%.2f", t.getY())))
-            .add("${z}", t -> Component.literal(String.format("%.2f", t.getZ())))
-            .add("${pitch}", t -> Component.literal(String.format("%.2f", t.getXRot())))
-            .add("${yaw}", t -> Component.literal(String.format("%.2f", t.getYRot())))
-            .add("${biome}", t -> Util.getBiomeText(t))
-            .add("${coord}", t -> Util.parseCoordText(t))
+            .add("${player}", t -> t == null ? Component.literal("${player}") : t.getDisplayName())
+            .add("${health}", t -> t == null ? Component.literal("${health}") : Component.literal(String.format("%.2f", t.getHealth())))
+            .add("${hp}", t -> t == null ? Component.literal("${hp}") : Component.literal(String.format("%.2f", t.getHealth())))
+            .add("${maxhealth}", t -> t == null ? Component.literal("${maxhealth}") : Component.literal(String.format("%.2f", t.getMaxHealth())))
+            .add("${maxhp}", t -> t == null ? Component.literal("${maxhp}") : Component.literal(String.format("%.2f", t.getMaxHealth())))
+            .add("${level}", t -> t == null ? Component.literal("${level}") : Component.literal(String.valueOf(t.experienceLevel)))
+            .add("${hunger}", t -> t == null ? Component.literal("${hunger}") : Component.literal(String.valueOf(t.getFoodData().getFoodLevel())))
+            .add("${saturation}", t -> t == null ? Component.literal("${saturation}") : Component.literal(String.format("%.2f", t.getFoodData().getSaturationLevel())))
+            .add("${x}", t -> t == null ? Component.literal("${x}") : Component.literal(String.format("%.2f", t.getX())))
+            .add("${y}", t -> t == null ? Component.literal("${y}") : Component.literal(String.format("%.2f", t.getY())))
+            .add("${z}", t -> t == null ? Component.literal("${z}") : Component.literal(String.format("%.2f", t.getZ())))
+            .add("${pitch}", t -> t == null ? Component.literal("${pitch}") : Component.literal(String.format("%.2f", t.getXRot())))
+            .add("${yaw}", t -> t == null ? Component.literal("${yaw}") : Component.literal(String.format("%.2f", t.getYRot())))
+            .add("${biome}", t -> t == null ? Component.literal("${biome}") : Util.getBiomeText(t))
+            .add("${coord}", t -> t == null ? Component.literal("${coord}") : Util.parseCoordText(t))
             .add("${mainhand}", t -> {
+                if (t == null) {
+                    return Component.literal("${mainhand}");
+                }
                 ItemStack item = t.getMainHandItem();
                 if (item == null || item.isEmpty()) {
                     return Util.parseTranslatableText("fmod.command.get.emptyslot");
@@ -643,6 +645,9 @@ public class TextPlaceholderFactory<T> {
                 }
             })
             .add("${offhand}", t -> {
+                if (t == null) {
+                    return Component.literal("${offhand}");
+                }
                 ItemStack item = t.getOffhandItem();
                 if (item == null || item.isEmpty()) {
                     return Util.parseTranslatableText("fmod.command.get.emptyslot");

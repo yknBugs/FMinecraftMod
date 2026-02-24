@@ -10,8 +10,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 
-import org.slf4j.LoggerFactory;
-
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
@@ -31,13 +29,13 @@ public class GptCommand {
 
     private static int runGptNewCommand(String text, CommandContext<CommandSourceStack> context) {
         try {
-            String urlString = Util.serverConfig.getGptUrl();
+            String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
             GptData gptData = data.getGptData(context.getSource().getTextName());
             GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
-            boolean postResult = gptData.newConversation(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
-            if (postResult == false) {
+            boolean postResult = gptData.newConversation(text, url, Util.getServerConfig().getGptModel(), Util.getServerConfig().getGptTemperature());
+            if (!postResult) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
@@ -55,7 +53,7 @@ public class GptCommand {
         } catch (IllegalArgumentException e) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f gpt new", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt new", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -63,13 +61,13 @@ public class GptCommand {
 
     private static int runGptReplyCommand(String text, CommandContext<CommandSourceStack> context) {
         try {
-            String urlString = Util.serverConfig.getGptUrl();
+            String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
             GptData gptData = data.getGptData(context.getSource().getTextName());
             GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
-            boolean postResult = gptData.reply(text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
-            if (postResult == false) {
+            boolean postResult = gptData.reply(text, url, Util.getServerConfig().getGptModel(), Util.getServerConfig().getGptTemperature());
+            if (!postResult) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
@@ -83,7 +81,7 @@ public class GptCommand {
         } catch (IllegalArgumentException e) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f gpt reply", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt reply", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -91,7 +89,7 @@ public class GptCommand {
 
     private static int runGptRegenerateCommand(CommandContext<CommandSourceStack> context) {
         try {
-            String urlString = Util.serverConfig.getGptUrl();
+            String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
             GptData gptData = data.getGptData(context.getSource().getTextName());
@@ -99,10 +97,10 @@ public class GptCommand {
             if (gptDataLength == 0) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.nohistory"));
             }
-            String text = gptData.getPostMessages(gptDataLength - 1);
+            String text = gptData.getPostMessage(gptDataLength - 1);
             GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
-            boolean postResult = gptData.regenerate(url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
-            if (postResult == false) {
+            boolean postResult = gptData.regenerate(url, Util.getServerConfig().getGptModel(), Util.getServerConfig().getGptTemperature());
+            if (!postResult) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
@@ -116,7 +114,7 @@ public class GptCommand {
         } catch (IllegalArgumentException e) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt regenerate", e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -124,7 +122,7 @@ public class GptCommand {
 
     private static int runGptEditCommand(int index, String text, CommandContext<CommandSourceStack> context) {
         try {
-            String urlString = Util.serverConfig.getGptUrl();
+            String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
             ServerData data = Util.getServerData(context.getSource().getServer());
             GptData gptData = data.getGptData(context.getSource().getTextName());
@@ -137,8 +135,8 @@ public class GptCommand {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
             }
             GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
-            boolean postResult = gptData.editHistory(index - 1, text, url, Util.serverConfig.getGptModel(), Util.serverConfig.getGptTemperature());
-            if (postResult == false) {
+            boolean postResult = gptData.editHistory(index - 1, text, url, Util.getServerConfig().getGptModel(), Util.getServerConfig().getGptTemperature());
+            if (!postResult) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.spam"));
             }
             context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(text)), true);
@@ -152,7 +150,7 @@ public class GptCommand {
         } catch (IllegalArgumentException e) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.urlerror"));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt edit " + index, e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -172,16 +170,16 @@ public class GptCommand {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.historyindexerror", index, gptDataLength));
             }
             final int finalIndex = index;
-            final String postMessage = gptData.getPostMessages(index - 1);
-            final String model = gptData.getGptModels(index - 1);
-            final Component receivedMessage = gptData.getResponseTexts(index - 1);
+            final String postMessage = gptData.getPostMessage(index - 1);
+            final String model = gptData.getGptModel(index - 1);
+            final Component receivedMessage = gptData.getResponseText(index - 1);
             context.getSource().sendSuccess(() -> Component.literal("<").append(context.getSource().getDisplayName()).append("> ").append(Component.literal(postMessage)), false);
             context.getSource().sendSuccess(() -> Component.literal("<").append(model.isBlank() ? "GPT" : model).append("> ").append(receivedMessage), false);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.gpt.history", finalIndex, gptDataLength), false);
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f gpt history " + index, e);
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;

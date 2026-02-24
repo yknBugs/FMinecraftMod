@@ -7,12 +7,12 @@ package com.ykn.fmod.server.flow.tool;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
-
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -91,6 +91,101 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  */
 public class FlowSerializer {
 
+    /** 
+     * Shared Gson instance with pretty printing enabled for consistent JSON formatting 
+     */
+    private static final Gson gson = buildGson();
+
+    /**
+     * Builds a Gson instance with pretty printing enabled.
+     * <p>
+     * This method centralizes Gson configuration for consistent JSON formatting
+     * across all serialization operations in this class.
+     * 
+     * @return A configured Gson instance
+     */
+    private static Gson buildGson() {
+        GsonBuilder builder = new GsonBuilder();
+        builder.setPrettyPrinting();
+        Gson gson = builder.create();
+        return gson;
+    }
+
+    /**
+     * Utility method to safely extract a string value from a JsonObject with a default fallback.
+     * <p>
+     * This method checks if the key exists and is not null before attempting to retrieve the value.
+     * If the key is missing or null, it logs a warning and returns the provided default value.
+     * 
+     * @param json The JsonObject to extract from
+     * @param key The key to look for
+     * @param defaultValue The default value to return if the key is missing or null
+     * @return The extracted string value, or the default value if not found
+     */
+    private static String getStringOrDefault(JsonObject json, String key, String defaultValue) {
+        if (json == null || !json.has(key) || json.get(key).isJsonNull()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing or null key '" + key + "' in JSON. Using default value: " + defaultValue);
+            return defaultValue;
+        }
+        return json.get(key).getAsString();
+    }
+
+    /**
+     * Utility method to safely extract a long value from a JsonObject with a default fallback.
+     * <p>
+     * This method checks if the key exists and is not null before attempting to retrieve the value.
+     * If the key is missing or null, it logs a warning and returns the provided default value.
+     * 
+     * @param json The JsonObject to extract from
+     * @param key The key to look for
+     * @param defaultValue The default value to return if the key is missing or null
+     * @return The extracted long value, or the default value if not found
+     */
+    private static long getLongOrDefault(JsonObject json, String key, long defaultValue) {
+        if (json == null || !json.has(key) || json.get(key).isJsonNull()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing or null key '" + key + "' in JSON. Using default value: " + defaultValue);
+            return defaultValue;
+        }
+        return json.get(key).getAsLong();
+    }
+
+    /**
+     * Utility method to safely extract an int value from a JsonObject with a default fallback.
+     * <p>
+     * This method checks if the key exists and is not null before attempting to retrieve the value.
+     * If the key is missing or null, it logs a warning and returns the provided default value.
+     * 
+     * @param json The JsonObject to extract from
+     * @param key The key to look for
+     * @param defaultValue The default value to return if the key is missing or null
+     * @return The extracted int value, or the default value if not found
+     */
+    private static int getIntOrDefault(JsonObject json, String key, int defaultValue) {
+        if (json == null || !json.has(key) || json.get(key).isJsonNull()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing or null key '" + key + "' in JSON. Using default value: " + defaultValue);
+            return defaultValue;
+        }
+        return json.get(key).getAsInt();
+    }
+
+    /**
+     * Utility method to safely extract a JsonArray from a JsonObject with an empty array fallback.
+     * <p>
+     * This method checks if the key exists and is a JsonArray before attempting to retrieve it.
+     * If the key is missing, null, or not an array, it logs a warning and returns an empty JsonArray.
+     * 
+     * @param json The JsonObject to extract from
+     * @param key The key to look for
+     * @return The extracted JsonArray, or an empty array if not found or invalid
+     */
+    private static JsonArray getArrayOrEmpty(JsonObject json, String key) {
+        if (json == null || !json.has(key) || !json.get(key).isJsonArray()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing or invalid key '" + key + "' in JSON. Using empty array.");
+            return new JsonArray();
+        }
+        return json.getAsJsonArray(key);
+    }
+
     /**
      * Parses a string representation of a constant value into a DataReference.
      * <p>
@@ -130,15 +225,15 @@ public class FlowSerializer {
      */
     private static JsonObject serializeDataReference(DataReference ref) {
         JsonObject json = new JsonObject();
-        switch (ref.type) {
+        switch (ref.getType()) {
             case CONSTANT:
                 json.addProperty("type", "const");
-                json.addProperty("value", String.valueOf(ref.value));
+                json.addProperty("value", String.valueOf(ref.getValue()));
                 break;
             case NODE_OUTPUT:
                 json.addProperty("type", "reference");
-                json.addProperty("id", ref.referenceId);
-                json.addProperty("index", ref.referenceIndex);
+                json.addProperty("id", ref.getReferenceId());
+                json.addProperty("index", ref.getReferenceIndex());
                 break;
             default:
                 json.addProperty("type", "const");
@@ -157,13 +252,13 @@ public class FlowSerializer {
      * @return A DataReference reconstructed from the JSON
      */
     private static DataReference deserializeDataReference(JsonObject json) {
-        String type = json.get("type").getAsString();
+        String type = getStringOrDefault(json, "type", "const");
         if ("const".equals(type)) {
-            String valueStr = json.get("value").getAsString();
+            String valueStr = getStringOrDefault(json, "value", "null");
             return parseConstDataReference(valueStr);
         } else if ("reference".equals(type)) {
-            long id = json.get("id").getAsLong();
-            int index = json.get("index").getAsInt();
+            long id = getLongOrDefault(json, "id", -1L);
+            int index = getIntOrDefault(json, "index", 0);
             return DataReference.createNodeOutputReference(id, index);
         } else {
             return DataReference.createEmptyReference();
@@ -187,7 +282,7 @@ public class FlowSerializer {
         JsonObject json = new JsonObject();
         json.addProperty("id", node.getId());
         json.addProperty("type", node.getType());
-        json.addProperty("name", node.name);
+        json.addProperty("name", node.getName());
         JsonArray inputsArray = new JsonArray();
         for (int i = 0; i < node.getMetadata().inputNumber; i++) {
             DataReference ref = node.getInput(i);
@@ -197,7 +292,7 @@ public class FlowSerializer {
         json.add("inputs", inputsArray);
         JsonArray nextNodeArray = new JsonArray();
         for (int i = 0; i < node.getMetadata().branchNumber; i++) {
-            long nextNodeId = node.nextNodeIds.get(i);
+            long nextNodeId = node.getNextNodeIds().get(i);
             nextNodeArray.add(nextNodeId);
         }
         json.add("nextNodes", nextNodeArray);
@@ -218,20 +313,45 @@ public class FlowSerializer {
      * @return A FlowNode reconstructed from the JSON
      */
     private static FlowNode deserializeNode(JsonObject json) {
-        long id = json.get("id").getAsLong();
-        String type = json.get("type").getAsString();
-        String name = json.get("name").getAsString();
-        FlowNode node = NodeRegistry.createNode(type, id, name);
-        JsonArray inputsArray = json.getAsJsonArray("inputs");
-        for (int i = 0; i < node.getMetadata().inputNumber; i++) {
-            JsonObject refJson = inputsArray.get(i).getAsJsonObject();
-            DataReference ref = deserializeDataReference(refJson);
-            node.setInput(i, ref);
+        long id = getLongOrDefault(json, "id", -1L);
+        if (id < 0) {
+            throw new IllegalStateException("Invalid node ID: " + id + " (Malformed Json).");
         }
-        JsonArray nextNodeArray = json.getAsJsonArray("nextNodes");
+        String type = getStringOrDefault(json, "type", "");
+        if (type.isEmpty()) {
+            throw new IllegalStateException("Missing node type for node ID: " + id + " (Malformed Json).");
+        }
+        String name = getStringOrDefault(json, "name", "unknown");
+        FlowNode node = NodeRegistry.createNode(type, id, name);
+        if (node == null) {
+            throw new IllegalStateException("Unknown node type: " + type + " for node " + name + " (Malformed Json).");
+        }
+        JsonArray inputsArray = getArrayOrEmpty(json, "inputs");
+        for (int i = 0; i < node.getMetadata().inputNumber; i++) {
+            if (i < inputsArray.size()) {
+                JsonObject refJson = inputsArray.get(i).getAsJsonObject();
+                DataReference ref = deserializeDataReference(refJson);
+                node.setInput(i, ref);
+            } else {
+                Util.LOGGER.warn("FMinecraftMod: Missing input reference for input index " + i + " in node " + name + ". Using empty reference.");
+                node.setInput(i, DataReference.createEmptyReference());
+            }
+        }
+        if (inputsArray.size() > node.getMetadata().inputNumber) {
+            Util.LOGGER.warn("FMinecraftMod: Extra input references found for node " + name + ". Expected " + node.getMetadata().inputNumber + " but found " + inputsArray.size() + ". Extra references will be ignored.");
+        }
+        JsonArray nextNodeArray = getArrayOrEmpty(json, "nextNodes");
         for (int i = 0; i < node.getMetadata().branchNumber; i++) {
-            long nextNodeId = nextNodeArray.get(i).getAsLong();
-            node.setNextNodeId(i, nextNodeId);
+            if (i < nextNodeArray.size()) {
+                long nextNodeId = nextNodeArray.get(i).getAsLong();
+                node.setNextNodeId(i, nextNodeId);
+            } else {
+                Util.LOGGER.warn("FMinecraftMod: Missing next node ID for branch index " + i + " in node " + name + ". Using -1.");
+                node.setNextNodeId(i, -1L);
+            }
+        }
+        if (nextNodeArray.size() > node.getMetadata().branchNumber) {
+            Util.LOGGER.warn("FMinecraftMod: Extra next node IDs found for node " + name + ". Expected " + node.getMetadata().branchNumber + " but found " + nextNodeArray.size() + ". Extra IDs will be ignored.");
         }
         return node;
     }
@@ -251,10 +371,10 @@ public class FlowSerializer {
      */
     public static JsonObject toJson(LogicFlow flow) {
         JsonObject json = new JsonObject();
-        json.addProperty("name", flow.name);
+        json.addProperty("name", flow.getName());
         json.addProperty("version", Util.getMinecraftVersion());
         json.addProperty("mod", Util.getModVersion());
-        json.addProperty("startNodeId", flow.startNodeId);
+        json.addProperty("startNodeId", flow.getStartNodeId());
         JsonArray nodesArray = new JsonArray();
         List<FlowNode> nodes = flow.getSortedNodes();
         for (FlowNode node : nodes) {
@@ -281,15 +401,23 @@ public class FlowSerializer {
      * @return A LogicFlow instance fully reconstructed from the JSON
      */
     public static LogicFlow fromJson(JsonObject json) {
-        String name = json.get("name").getAsString();
+        String name = getStringOrDefault(json, "name", "unknown");
+        String version = getStringOrDefault(json, "version", "unknown");
+        String mod = getStringOrDefault(json, "mod", "unknown");
+        if (!Util.getMinecraftVersion().equals(version)) {
+            Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " was created in Minecraft version " + version + ", but the current version is " + Util.getMinecraftVersion() + ". This may cause compatibility issues.");
+        }
+        if (!Util.getModVersion().equals(mod)) {
+            Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " was created with mod version " + mod + ", but the current version is " + Util.getModVersion() + ". This may cause compatibility issues.");
+        }
         LogicFlow flow = new LogicFlow(name);
-        flow.startNodeId = json.get("startNodeId").getAsLong();
-        JsonArray nodesArray = json.getAsJsonArray("nodes");
+        JsonArray nodesArray = getArrayOrEmpty(json, "nodes");
         for (int i = 0; i < nodesArray.size(); i++) {
             JsonObject nodeJson = nodesArray.get(i).getAsJsonObject();
             FlowNode node = deserializeNode(nodeJson);
             flow.addNode(node);
         }
+        flow.setStartNodeId(getLongOrDefault(json, "startNodeId", -1L));
         return flow;
     }
 
@@ -304,9 +432,7 @@ public class FlowSerializer {
      */
     public static String serializeToString(LogicFlow flow) {
         JsonObject json = toJson(flow);
-        GsonBuilder builder = new GsonBuilder();
-        builder.setPrettyPrinting();
-        Gson gson = builder.create();
+        
         String jsonString = gson.toJson(json);
         return jsonString;
     }
@@ -322,7 +448,6 @@ public class FlowSerializer {
      * @throws com.google.gson.JsonSyntaxException If the JSON is malformed
      */
     public static LogicFlow deserializeFromString(String jsonString) {
-        Gson gson = new Gson();
         JsonObject json = gson.fromJson(jsonString, JsonObject.class);
         LogicFlow flow = fromJson(json);
         return flow;
@@ -362,35 +487,34 @@ public class FlowSerializer {
                     gson.toJson(json, writer);
                     writer.flush();
                 } catch (Exception e) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Could not write the logic flow " + flow.name + " to temporary file " + tmp.toString(), e);
+                    Util.LOGGER.error("FMinecraftMod: Could not write the logic flow " + flow.getName() + " to temporary file " + tmp.toString(), e);
                     return false;
                 }
                 Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
                 return true;
             } catch (Exception e) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Could not move temporary file to " + path.toString(), e);
+                Util.LOGGER.error("FMinecraftMod: Could not move temporary file to " + path.toString(), e);
                 try {
                     Files.deleteIfExists(tmp);
                 } catch (Exception ex) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Could not delete temporary file " + tmp.toString(), ex);
+                    Util.LOGGER.error("FMinecraftMod: Could not delete temporary file " + tmp.toString(), ex);
                 }
                 return false;
             }
         }
         try {
             Files.createDirectories(path.getParent());
-            if (Files.exists(path)) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Cannot overwrite existing file " + path.toString());
-                return false;
-            }
-            try (BufferedWriter writer = Files.newBufferedWriter(path)) {
+            try (BufferedWriter writer = Files.newBufferedWriter(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
                 gson.toJson(json, writer);
+            } catch (FileAlreadyExistsException e) {
+                Util.LOGGER.warn("FMinecraftMod: Cannot overwrite existing file " + path.toString());
+                return false;
             } catch (Exception e) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Could not write the logic flow " + flow.name + " to file " + path.toString(), e);
+                Util.LOGGER.error("FMinecraftMod: Could not write the logic flow " + flow.getName() + " to file " + path.toString(), e);
                 return false;
             }
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Could not create the target directory " + path.getParent().toString(), e);
+            Util.LOGGER.error("FMinecraftMod: Could not create the target directory " + path.getParent().toString(), e);
             return false;
         }
         return true;
@@ -417,12 +541,11 @@ public class FlowSerializer {
             return null;
         }
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            Gson gson = new Gson();
             JsonObject json = gson.fromJson(reader, JsonObject.class);
             LogicFlow flow = fromJson(json);
             return flow;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Could not read the logic flow from file " + path.toString(), e);
+            Util.LOGGER.error("FMinecraftMod: Could not read the logic flow from file " + path.toString(), e);
             return null;
         }
     }

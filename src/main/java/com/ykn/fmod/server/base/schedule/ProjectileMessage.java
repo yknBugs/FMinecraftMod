@@ -34,17 +34,15 @@ public class ProjectileMessage extends ScheduledTask {
         Component otherText = Util.parseTranslatableText("fmod.message.projectile.onhit.other", shooterName, victimName);
         if (victim.isAlwaysTicking() && victim instanceof ServerPlayer) {
             ServerPlayer playerVictim = (ServerPlayer) victim;
-            if (playerVictim.isRemoved() || playerVictim.hasDisconnected() || playerVictim.getHealth() <= 0) {
-                return;
+            if (!playerVictim.isRemoved() && !playerVictim.hasDisconnected() && playerVictim.getHealth() > 0) {
+                Util.getServerConfig().getProjectileBeingHit().postMessage(playerVictim, mainText, otherText);
             }
-            Util.serverConfig.getProjectileBeingHit().postMessage(playerVictim, mainText, otherText);
         }
         if (shooter.isAlwaysTicking() && shooter instanceof ServerPlayer) {
             ServerPlayer playerShooter = (ServerPlayer) shooter;
-            if (playerShooter.isRemoved() || playerShooter.hasDisconnected() || playerShooter.getHealth() <= 0) {
-                return;
+            if (!playerShooter.isRemoved() && !playerShooter.hasDisconnected() && playerShooter.getHealth() > 0) {
+                Util.getServerConfig().getProjectileHitOthers().postMessage(playerShooter, mainText, otherText);
             }
-            Util.serverConfig.getProjectileHitOthers().postMessage(playerShooter, mainText, otherText);
         }
     }
 

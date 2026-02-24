@@ -17,19 +17,19 @@ import net.minecraft.network.chat.MutableComponent;
 /**
  * A {@link CommandSource} implementation that redirects and stores command messages
  * instead of sending them to the standard output. This class captures all messages
- * sent through the {@link #sendMessage(Text)} method for later retrieval.
+ * sent through the {@link #sendMessage(Component)} method for later retrieval.
  */
 public class RedirectedCommandOutput implements CommandSource {
 
     /**
      * List of all messages that have been captured by this redirected output.
      */
-    public final ArrayList<Component> messages;
+    private final ArrayList<Component> messages;
 
     /**
      * Constructs a new {@code RedirectedCommandOutput} with an empty message list.
      */
-    public RedirectedCommandOutput() {
+    private RedirectedCommandOutput() {
         this.messages = new ArrayList<>();
     }
 

@@ -29,12 +29,12 @@ public class FightMessage extends ScheduledTask {
         double entityHealth = entity.getHealth();
         Component mainText = Util.parseTranslatableText("fmod.message.bossfight.main", playerName, entityName, String.format("%.1f", entityHealth));
         Component otherText = Util.parseTranslatableText("fmod.message.bossfight.other", playerName, entityName);
-        Util.serverConfig.getBossFightMessage().postMessage(player, mainText, otherText);
+        Util.getServerConfig().getBossFightMessage().postMessage(player, mainText, otherText);
     }
 
     @Override
     public void onCancel() {
-        Util.getPlayerData(player).lastBossFightTick = 0;
+        Util.getPlayerData(player).setLastBossFightTick();
     }
 
     @Override

@@ -7,6 +7,7 @@ package com.ykn.fmod.server.flow.tool;
 
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Nullable;
@@ -47,13 +48,13 @@ public class NodeRegistry {
     /**
      * Map of regular node type names to their factory functions.
      */
-    private static Map<String, NodeFactory> nodes = new HashMap<>();
+    private static final Map<String, NodeFactory> nodes = new HashMap<>();
 
     /**
      * Map of event node type names to their factory functions.
      * Event nodes are kept separate for easier categorization and querying.
      */
-    private static Map<String, NodeFactory> eventNodes = new HashMap<>();
+    private static final Map<String, NodeFactory> eventNodes = new HashMap<>();
 
     /**
      * Factory interface for creating node instances.
@@ -192,7 +193,7 @@ public class NodeRegistry {
      * @return A collection of all registered regular node type names
      */
     public static Collection<String> getNodeList() {
-        return nodes.keySet();
+        return List.copyOf(nodes.keySet());
     }
 
     /**
@@ -204,6 +205,6 @@ public class NodeRegistry {
      * @return A collection of all registered event node type names
      */
     public static Collection<String> getEventNodeList() {
-        return eventNodes.keySet();
+        return List.copyOf(eventNodes.keySet());
     }
 }

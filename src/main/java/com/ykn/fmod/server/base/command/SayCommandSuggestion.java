@@ -12,8 +12,8 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
@@ -67,7 +67,7 @@ public class SayCommandSuggestion implements SuggestionProvider<CommandSourceSta
      * @return A list of suggestions that match the input string. If no matching 
      *         suggestions are found, an empty list is returned.
      */
-    @NotNull
+    @Nonnull
     public List<String> generateSuggestionList(@Nullable String input) {
         if (input == null || input.isEmpty()) {
             return List.of();

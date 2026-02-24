@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
@@ -18,7 +17,6 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -46,47 +44,23 @@ public class GetBlockNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.getblock.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.getblock.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.getblock.input.world.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getblock.input.world.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getblock.input.world.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getblock.input.position.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getblock.input.position.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getblock.input.position.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.getblock.output.identifier.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getblock.output.identifier.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getblock.output.identifier.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getblock.output.blockstate.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getblock.output.blockstate.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getblock.output.blockstate.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getblock.output.blockentity.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getblock.output.blockentity.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getblock.output.blockentity.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.getblock.title.name", "fmod.node.getblock.title.feat")
+            .input("fmod.node.getblock.input.world.name", "fmod.node.getblock.input.world.feat", "fmod.node.getblock.input.world.type")
+            .input("fmod.node.getblock.input.position.name", "fmod.node.getblock.input.position.feat", "fmod.node.getblock.input.position.type")
+            .output("fmod.node.getblock.output.identifier.name", "fmod.node.getblock.output.identifier.feat", "fmod.node.getblock.output.identifier.type")
+            .output("fmod.node.getblock.output.blockstate.name", "fmod.node.getblock.output.blockstate.feat", "fmod.node.getblock.output.blockstate.type")
+            .output("fmod.node.getblock.output.blockentity.name", "fmod.node.getblock.output.blockentity.feat", "fmod.node.getblock.output.blockentity.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         Level world = parseWorld(resolvedInputs.get(0));
         Vec3 position = parsePosition(resolvedInputs.get(1));
-        int x = (int) Math.round(position.x);
-        int y = (int) Math.round(position.y);
-        int z = (int) Math.round(position.z);
 
-        BlockPos blockPos = new BlockPos(x, y, z);
-        if (world.isInWorldBounds(blockPos) == false || world.hasChunk(SectionPos.blockToSectionCoord(x), SectionPos.blockToSectionCoord(z)) == false) {
+        BlockPos blockPos = BlockPos.containing(position);
+        if (world.isInWorldBounds(blockPos) == false || world.hasChunk(SectionPos.blockToSectionCoord(blockPos.getX()), SectionPos.blockToSectionCoord(blockPos.getZ())) == false) {
             status.setOutput(0, null);
             status.setOutput(1, null);
             status.setOutput(2, null);

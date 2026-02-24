@@ -5,6 +5,8 @@
 
 package com.ykn.fmod.server.base.schedule;
 
+import com.ykn.fmod.server.base.util.Util;
+
 /**
  * Represents a scheduled task with a delay and duration. The task can be triggered,
  * ticked, finished, canceled, or rescheduled. Subclasses can override specific
@@ -130,6 +132,9 @@ public class ScheduledTask {
      * @param duration The new duration for the task's execution.
      */
     public void reschedule(int delay, int duration) {
+        if (delay < 0 || duration < 0) {
+            Util.LOGGER.warn("FMincraftMod: Attempted to reschedule a task with delay " + delay + " and duration " + duration + ".");
+        }
         this.delay = delay;
         this.duration = duration;
     }

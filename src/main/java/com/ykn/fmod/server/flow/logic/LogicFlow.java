@@ -7,6 +7,7 @@ package com.ykn.fmod.server.flow.logic;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +17,8 @@ import java.util.Set;
 import java.util.Stack;
 
 import javax.annotation.Nullable;
+
+import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -63,7 +66,7 @@ public class LogicFlow implements Cloneable {
      * The user-defined name of this logic flow.
      * Can be changed at any time and is used for display and identification.
      */
-    public String name;
+    private String name;
 
     /**
      * All nodes in this logic flow, mapped by their unique IDs.
@@ -76,7 +79,7 @@ public class LogicFlow implements Cloneable {
      * A value of -1 indicates no start node has been set.
      * Event nodes are typically used as start nodes.
      */
-    public long startNodeId;
+    private long startNodeId;
 
     /**
      * Creates a new logic flow with the specified name.
@@ -103,7 +106,7 @@ public class LogicFlow implements Cloneable {
      * @return A collection of all FlowNodes in this flow
      */
     public Collection<FlowNode> getNodes() {
-        return this.nodes.values();
+        return Collections.unmodifiableCollection(this.nodes.values());
     }
 
     /**
@@ -173,7 +176,7 @@ public class LogicFlow implements Cloneable {
         // Calculate in-degrees of all nodes
         for (FlowNode node : nodeList) {
             nodeInDegrees.putIfAbsent(node.getId(), 0);
-            for (long neighborId : node.nextNodeIds) {
+            for (long neighborId : node.getNextNodeIds()) {
                 nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(neighborId, 0) + 1);
             }
         }
@@ -200,8 +203,8 @@ public class LogicFlow implements Cloneable {
                     FlowNode currentNode = this.nodes.get(currentNodeId);
                     if (currentNode != null) {
                         sortedNodes.add(currentNode);
-                        for (int i = currentNode.nextNodeIds.size() - 1; i >= 0; i--) {
-                            long neighborId = currentNode.nextNodeIds.get(i);
+                        for (int i = currentNode.getNextNodeIds().size() - 1; i >= 0; i--) {
+                            long neighborId = currentNode.getNextNodeIds().get(i);
                             if (!visited.contains(neighborId)) {
                                 dfsStack.push(neighborId);
                             }
@@ -303,6 +306,52 @@ public class LogicFlow implements Cloneable {
     @Override
     protected Object clone() throws CloneNotSupportedException {
         return this.copy();
+    }
+
+    /**
+     * Gets the name of this logic flow.
+     * 
+     * @return The name of this flow
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Sets the name of this logic flow.
+     * <p>
+     * The name is used for display and identification purposes. It can be changed at any time.
+     * 
+     * @param name The new name for this flow
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * Sets the start node ID for this flow.
+     * <p>
+     * The start node is the first node that will be executed when this flow runs.
+     * It is typically an event node. Setting a start node ID that does not exist in the flow
+     * will log a warning but will still set the ID.
+     * 
+     * @param startNodeId The ID of the node to set as the start node
+     */
+    public void setStartNodeId(long startNodeId) {
+        if (startNodeId > 0 && !this.nodes.containsKey(startNodeId)) {
+            Util.LOGGER.warn("FMinecraftMod: Setting startNodeId to " + startNodeId + " which does not exist in the flow " + this.name);
+        }
+        this.startNodeId = startNodeId;
+    }
+
+    /**
+     * Gets the start node ID for this flow.
+     * <p>
+     * The start node is the first node that will be executed when this flow runs.
+     * A value of -1 indicates that no start node has been set.
+     */
+    public long getStartNodeId() {
+        return this.startNodeId;
     }
 
     /**

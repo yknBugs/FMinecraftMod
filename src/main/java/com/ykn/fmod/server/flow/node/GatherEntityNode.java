@@ -15,16 +15,14 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
+import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.phys.Vec3;
-
-import com.ykn.fmod.server.flow.logic.NodeMetadata;
 
 /**
  * Get entities matching certain criteria, such as nearby entities, entities in a certain area, etc.
@@ -47,38 +45,15 @@ public class GatherEntityNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.gatherentity.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.gatherentity.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.gatherentity.input.uuid.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.gatherentity.input.uuid.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.gatherentity.input.uuid.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.gatherentity.input.type.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.gatherentity.input.type.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.gatherentity.input.type.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.gatherentity.input.world.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.gatherentity.input.world.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.gatherentity.input.world.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.gatherentity.input.position.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.gatherentity.input.position.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.gatherentity.input.position.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.gatherentity.input.radius.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.gatherentity.input.radius.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.gatherentity.input.radius.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.gatherentity.output.entities.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.gatherentity.output.entities.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.gatherentity.output.entities.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.gatherentity.title.name", "fmod.node.gatherentity.title.feat")
+            .input("fmod.node.gatherentity.input.uuid.name", "fmod.node.gatherentity.input.uuid.feat", "fmod.node.gatherentity.input.uuid.type")
+            .input("fmod.node.gatherentity.input.type.name", "fmod.node.gatherentity.input.type.feat", "fmod.node.gatherentity.input.type.type")
+            .input("fmod.node.gatherentity.input.world.name", "fmod.node.gatherentity.input.world.feat", "fmod.node.gatherentity.input.world.type")
+            .input("fmod.node.gatherentity.input.position.name", "fmod.node.gatherentity.input.position.feat", "fmod.node.gatherentity.input.position.type")
+            .input("fmod.node.gatherentity.input.radius.name", "fmod.node.gatherentity.input.radius.feat", "fmod.node.gatherentity.input.radius.type")
+            .output("fmod.node.gatherentity.output.entities.name", "fmod.node.gatherentity.output.entities.feat", "fmod.node.gatherentity.output.entities.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
@@ -152,13 +127,7 @@ public class GatherEntityNode extends FlowNode {
             }
         }
 
-        if (resultEntities.isEmpty()) {
-            status.setOutput(0, null);
-        } else if (resultEntities.size() == 1) {
-            status.setOutput(0, resultEntities.get(0));
-        } else {
-            status.setOutput(0, resultEntities);
-        }
+        status.setOutput(0, TypeAdaptor.parse(resultEntities).collapseList());
     }
     
     private ResourceLocation parseIdentifier(Object obj) throws LogicException {

@@ -20,21 +20,21 @@ import net.minecraft.network.chat.Component;
  */
 public class GptData {
 
-    protected final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    protected List<String> postMessages;
-    protected List<Component> responseTexts;
-    protected List<String> responseMessages;
-    protected List<String> responseJson;
-    protected List<URL> requestUrls;
-    protected List<String> gptModels;
-    protected List<Double> responseTemperature;
-    protected boolean hasReceivedResponse;
+    private List<String> postMessages;
+    private List<Component> responseTexts;
+    private List<String> responseMessages;
+    private List<String> responseJson;
+    private List<URL> requestUrls;
+    private List<String> gptModels;
+    private List<Double> responseTemperature;
+    private boolean hasReceivedResponse;
 
-    protected String cachedPostMessage;
-    protected URL cachedRequestUrl;
-    protected String cachedGptModel;
-    protected double cachedResponseTemperature;
+    private String cachedPostMessage;
+    private URL cachedRequestUrl;
+    private String cachedGptModel;
+    private double cachedResponseTemperature;
 
     public GptData() {
         postMessages = new ArrayList<>();
@@ -64,7 +64,7 @@ public class GptData {
         boolean result = false;
         this.lock.writeLock().lock();
         try {
-            if (this.hasReceivedResponse == false) {
+            if (!this.hasReceivedResponse) {
                 this.postMessages.add(this.cachedPostMessage);
                 this.requestUrls.add(this.cachedRequestUrl);
                 this.gptModels.add(this.cachedGptModel);
@@ -95,7 +95,7 @@ public class GptData {
         boolean result = false;
         this.lock.writeLock().lock();
         try {
-            if (this.hasReceivedResponse == false) {
+            if (!this.hasReceivedResponse) {
                 this.hasReceivedResponse = true;
                 result = true;
             }
@@ -205,7 +205,7 @@ public class GptData {
     public boolean newConversation(String message, URL url, String gptModel, double responseTemperature) {
         this.lock.writeLock().lock();
         try {
-            if (this.hasReceivedResponse == false) {
+            if (!this.hasReceivedResponse) {
                 return false;
             }
             // Clear history
@@ -237,7 +237,7 @@ public class GptData {
     public boolean regenerate() {
         this.lock.writeLock().lock();
         try {
-            if (this.postMessages.size() == 0 || this.hasReceivedResponse == false) {
+            if (this.postMessages.size() == 0 || !this.hasReceivedResponse) {
                 return false;
             }
             int lastMessageIndex = this.postMessages.size() - 1;
@@ -274,7 +274,7 @@ public class GptData {
     public boolean regenerate(URL url, String gptModel, double responseTemperature) {
         this.lock.writeLock().lock();
         try {
-            if (this.postMessages.size() == 0 || this.hasReceivedResponse == false) {
+            if (this.postMessages.size() == 0 || !this.hasReceivedResponse) {
                 return false;
             }
             int lastMessageIndex = this.postMessages.size() - 1;
@@ -312,7 +312,7 @@ public class GptData {
     public boolean editHistory(int index, String message, URL url, String gptModel, double responseTemperature) {
         this.lock.writeLock().lock();
         try {
-            if (index < 0 || index >= this.postMessages.size() || this.hasReceivedResponse == false) {
+            if (index < 0 || index >= this.postMessages.size() || !this.hasReceivedResponse) {
                 return false;
             }
             // Reply
@@ -337,7 +337,7 @@ public class GptData {
         }
     }
 
-    public String getPostMessages(int index) {
+    public String getPostMessage(int index) {
         this.lock.readLock().lock();
         try {
             return this.postMessages.get(index);
@@ -346,7 +346,7 @@ public class GptData {
         }
     }
 
-    public Component getResponseTexts(int index) {
+    public Component getResponseText(int index) {
         this.lock.readLock().lock();
         try {
             return this.responseTexts.get(index);
@@ -364,7 +364,7 @@ public class GptData {
         }
     }
 
-    public String getResponseMessages(int index) {
+    public String getResponseMessage(int index) {
         this.lock.readLock().lock();
         try {
             return this.responseMessages.get(index);
@@ -373,7 +373,7 @@ public class GptData {
         }
     }
 
-    public URL getRequestUrls(int index) {
+    public URL getRequestUrl(int index) {
         this.lock.readLock().lock();
         try {
             return this.requestUrls.get(index);
@@ -382,7 +382,7 @@ public class GptData {
         }
     }
 
-    public String getGptModels(int index) {
+    public String getGptModel(int index) {
         this.lock.readLock().lock();
         try {
             return this.gptModels.get(index);
@@ -457,8 +457,8 @@ public class GptData {
      */
     private ChatMessage[] getChatMessageList() {
         ArrayList<ChatMessage> messages = new ArrayList<>();
-        String systemPrompt = Util.serverConfig.getGptSystemPrompt();
-        if (systemPrompt.isBlank() == false) {
+        String systemPrompt = Util.getServerConfig().getGptSystemPrompt();
+        if (!systemPrompt.isBlank()) {
             messages.add(new ChatMessage("system", systemPrompt));
         }
         for (int i = 0; i < postMessages.size(); i++) {

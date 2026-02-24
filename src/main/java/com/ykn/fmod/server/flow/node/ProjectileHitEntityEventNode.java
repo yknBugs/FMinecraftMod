@@ -5,14 +5,8 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.EventNode;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
-
-import net.minecraft.network.chat.Component;
 
 /**
  * A flow node that triggers when a projectile hits an entity.
@@ -34,34 +28,13 @@ public class ProjectileHitEntityEventNode extends EventNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.pentityevt.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.pentityevt.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.projectile.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.projectile.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.projectile.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.shooter.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.shooter.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.shooter.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.entity.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.entity.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.entity.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.position.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.position.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.position.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.pentityevt.output.distance.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.pentityevt.output.distance.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.pentityevt.output.distance.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
-    }
+        return NodeMetadata.builder("fmod.node.pentityevt.title.name", "fmod.node.pentityevt.title.feat")
+            .output("fmod.node.pentityevt.output.projectile.name", "fmod.node.pentityevt.output.projectile.feat", "fmod.node.pentityevt.output.projectile.type")
+            .output("fmod.node.pentityevt.output.shooter.name", "fmod.node.pentityevt.output.shooter.feat", "fmod.node.pentityevt.output.shooter.type")
+            .output("fmod.node.pentityevt.output.entity.name", "fmod.node.pentityevt.output.entity.feat", "fmod.node.pentityevt.output.entity.type")
+            .output("fmod.node.pentityevt.output.position.name", "fmod.node.pentityevt.output.position.feat", "fmod.node.pentityevt.output.position.type")
+            .output("fmod.node.pentityevt.output.distance.name", "fmod.node.pentityevt.output.distance.feat", "fmod.node.pentityevt.output.distance.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
+}
 }

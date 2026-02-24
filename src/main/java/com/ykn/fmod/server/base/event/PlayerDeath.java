@@ -42,7 +42,7 @@ public class PlayerDeath {
         }
 
         LivingEntity killer = player.getKillCredit();
-        if (killer != null && killer.isAlwaysTicking() == false) {
+        if (killer != null && !killer.isAlwaysTicking() && killer.getServer() != null) {
             Util.getServerData(killer.getServer()).addKillerEntity(killer);
         }
 
@@ -53,7 +53,7 @@ public class PlayerDeath {
         MutableComponent mainText = Util.parseTranslatableText("fmod.message.playerdeath.main", playerName, deathCoord).withStyle(ChatFormatting.RED);
         MutableComponent otherText = Util.parseTranslatableText("fmod.message.playerdeath.other", playerName, deathBiome).withStyle(ChatFormatting.RED);
 
-        Util.serverConfig.getPlayerDeathCoord().postMessage(player, mainText, otherText);
+        Util.getServerConfig().getPlayerDeathCoord().postMessage(player, mainText, otherText);
     }
 
 }

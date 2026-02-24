@@ -8,9 +8,10 @@ package com.ykn.fmod.server.base.command;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
-import org.slf4j.LoggerFactory;
+import java.util.stream.Stream;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -31,27 +32,40 @@ public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack
 
     /**
      * Static cache of available .flow file names in the config directory.
+     * Marked {@code volatile} so that the reference update performed by the constructor
+     * (which runs on the server thread) is immediately visible to the network thread that
+     * calls {@link #getSuggestions}.
      */
-    public static ArrayList<String> cachedFlowList = new ArrayList<>();
+    private static volatile ArrayList<String> cachedFlowList = new ArrayList<>();
 
     /**
      * Constructs a new FlowFileSuggestion and refreshes the cached list of .flow files.
      * Scans the mod's config directory for files with the .flow extension.
+     * <p>
+     * The new list is built into a local variable first and then assigned to
+     * {@code cachedFlowList} in a single write, so the network thread never sees
+     * a partially-populated list.
      */
     public FlowFileSuggestion() {
-        // Refresh the list of .flow files in the config directory
-        cachedFlowList = new ArrayList<>();
+        // Build the list locally to avoid exposing a partially-populated ArrayList
+        // to the network thread that may call getSuggestions() concurrently.
+        ArrayList<String> newList = new ArrayList<>();
         Path absPath = FMLPaths.CONFIGDIR.get().resolve(Util.MODID);
         try {
             if (!Files.exists(absPath)) {
                 Files.createDirectories(absPath);
             }
-            Files.list(absPath).filter(path -> path.toString().endsWith(".flow")).forEach(path -> {
-                cachedFlowList.add(path.getFileName().toString());
-            });
+            try (Stream<Path> stream = Files.list(absPath)) {
+                stream.filter(path -> path.toString().endsWith(".flow")).forEach(path -> {
+                    newList.add(path.getFileName().toString());
+                });
+            }
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while getting .flow file list", e);
+            Util.LOGGER.error("FMinecraftMod: Error while getting .flow file list", e);
         }
+        // Single volatile write – the network thread either sees the old complete list
+        // or the new complete list, never a half-populated one.
+        cachedFlowList = newList;
     }
 
     /**
@@ -93,5 +107,14 @@ public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack
      */
     public static int getAvailableFlows() {
         return cachedFlowList.size();
+    }
+
+    /**
+     * Returns an unmodifiable list of cached .flow file names.
+     *
+     * @return an unmodifiable list of cached .flow file names
+     */
+    public static List<String> getCachedFlowList() {
+        return Collections.unmodifiableList(cachedFlowList);
     }
 }

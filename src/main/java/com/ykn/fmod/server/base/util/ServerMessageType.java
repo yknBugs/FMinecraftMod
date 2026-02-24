@@ -10,8 +10,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.slf4j.LoggerFactory;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -105,7 +103,7 @@ public class ServerMessageType extends MessageType {
                 sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
                 break;
             default:
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Invalid receiver type: " + this.receiver);
+                Util.LOGGER.error("FMinecraftMod: Invalid receiver type: " + this.receiver);
                 break;
         }
     }
@@ -141,6 +139,8 @@ public class ServerMessageType extends MessageType {
         for (ServerPlayer player : Util.getOnlinePlayers(server)) {
             type.postMessage(player, mainMessage, Component.empty());
         }
+        ServerPlayer player = null;
+        type.postMessage(player, mainMessage, Component.empty());
     }
 
     /**
@@ -210,7 +210,7 @@ public class ServerMessageType extends MessageType {
                 receiver = ServerMessageType.Receiver.NONE;
                 break;
             default:
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Invalid PlayerMessageType receiver: " + playerMessageType.receiver);
+                Util.LOGGER.error("FMinecraftMod: Invalid PlayerMessageType receiver: " + playerMessageType.receiver);
                 receiver = ServerMessageType.Receiver.NONE;
                 break;
         }
@@ -235,6 +235,7 @@ public class ServerMessageType extends MessageType {
      * @param newMainLocation the new main player location; must not be null
      * @return a new {@code ServerMessageType} instance with the updated main player location
      */
+    @Override
     public ServerMessageType updateMain(MessageType.Location newMainLocation) {
         return new ServerMessageType(newMainLocation, this.otherPlayerLocation, this.receiver);
     }
@@ -246,8 +247,19 @@ public class ServerMessageType extends MessageType {
      * @param newOtherLocation the new other player location; must not be null
      * @return a new {@code ServerMessageType} instance with the updated other player location
      */
+    @Override
     public ServerMessageType updateOther(MessageType.Location newOtherLocation) {
         return new ServerMessageType(this.mainPlayerLocation, newOtherLocation, this.receiver);
+    }
+
+    /**
+     * Returns the receiver filter of this {@code ServerMessageType}.
+     *
+     * @return the receiver filter
+     */
+    @Override
+    public Enum<?> getReceiver() {
+        return this.receiver;
     }
 
     /**

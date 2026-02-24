@@ -11,8 +11,8 @@ import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 
 public class NoteBlockNote {
 
-    public NoteBlockInstrument instrument;
-    public int noteLevel;
+    public final NoteBlockInstrument instrument;
+    public final int noteLevel;
 
     public NoteBlockNote(NoteBlockInstrument instrument, int noteLevel) {
         this.instrument = instrument;

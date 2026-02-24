@@ -16,10 +16,9 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
+import com.ykn.fmod.server.flow.logic.LogicFlow;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
-
-import net.minecraft.network.chat.Component;
 
 /**
  * A node to get a list of all the scheduled flows, which are flows that are submitted by RunFlowNode but not executed yet
@@ -48,56 +47,21 @@ public class GetScheduledFlowNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.getscheduledflow.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.getscheduledflow.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.flowname.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.flowname.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.flowname.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.nodetype.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.nodetype.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.nodetype.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.varname.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.varname.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.varname.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.minnodes.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.minnodes.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.minnodes.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.maxnodes.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.maxnodes.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.maxnodes.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.minticks.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.minticks.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.minticks.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.maxticks.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.maxticks.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.input.maxticks.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.flows.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.flows.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.flows.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.count.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.count.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.count.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.variables.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.variables.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.variables.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.nodecounts.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.nodecounts.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.nodecounts.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.ticksleft.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.ticksleft.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getscheduledflow.output.ticksleft.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.getscheduledflow.title.name", "fmod.node.getscheduledflow.title.feat")
+            .input("fmod.node.getscheduledflow.input.flowname.name", "fmod.node.getscheduledflow.input.flowname.feat", "fmod.node.getscheduledflow.input.flowname.type")
+            .input("fmod.node.getscheduledflow.input.nodetype.name", "fmod.node.getscheduledflow.input.nodetype.feat", "fmod.node.getscheduledflow.input.nodetype.type")
+            .input("fmod.node.getscheduledflow.input.varname.name", "fmod.node.getscheduledflow.input.varname.feat", "fmod.node.getscheduledflow.input.varname.type")
+            .input("fmod.node.getscheduledflow.input.minnodes.name", "fmod.node.getscheduledflow.input.minnodes.feat", "fmod.node.getscheduledflow.input.minnodes.type")
+            .input("fmod.node.getscheduledflow.input.maxnodes.name", "fmod.node.getscheduledflow.input.maxnodes.feat", "fmod.node.getscheduledflow.input.maxnodes.type")
+            .input("fmod.node.getscheduledflow.input.minticks.name", "fmod.node.getscheduledflow.input.minticks.feat", "fmod.node.getscheduledflow.input.minticks.type")
+            .input("fmod.node.getscheduledflow.input.maxticks.name", "fmod.node.getscheduledflow.input.maxticks.feat", "fmod.node.getscheduledflow.input.maxticks.type")
+            .output("fmod.node.getscheduledflow.output.flows.name", "fmod.node.getscheduledflow.output.flows.feat", "fmod.node.getscheduledflow.output.flows.type")
+            .output("fmod.node.getscheduledflow.output.count.name", "fmod.node.getscheduledflow.output.count.feat", "fmod.node.getscheduledflow.output.count.type")
+            .output("fmod.node.getscheduledflow.output.variables.name", "fmod.node.getscheduledflow.output.variables.feat", "fmod.node.getscheduledflow.output.variables.type")
+            .output("fmod.node.getscheduledflow.output.nodecounts.name", "fmod.node.getscheduledflow.output.nodecounts.feat", "fmod.node.getscheduledflow.output.nodecounts.type")
+            .output("fmod.node.getscheduledflow.output.ticksleft.name", "fmod.node.getscheduledflow.output.ticksleft.feat", "fmod.node.getscheduledflow.output.ticksleft.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
@@ -123,11 +87,12 @@ public class GetScheduledFlowNode extends FlowNode {
                 ScheduledFlow flow = (ScheduledFlow) task;
                 
                 // Get flow properties
-                String flowName = flow.getFlowManager().flow.name;
-                FlowNode startNode = flow.getFlowManager().flow.getFirstNode();
+                LogicFlow logicFlow = flow.getFlowManager().getFlow();
+                String flowName = logicFlow.getName();
+                FlowNode startNode = logicFlow.getFirstNode();
                 String startNodeType = startNode != null ? startNode.getType() : null;
                 Map<String, Object> variables = flow.getContextVariables();
-                int nodeCount = flow.getFlowManager().flow.getNodes().size();
+                int nodeCount = logicFlow.getNodes().size();
                 int ticksLeft = task.getDelay();
                 
                 // Apply filters
@@ -168,39 +133,11 @@ public class GetScheduledFlowNode extends FlowNode {
         }
         
         // Set outputs
-        if (matchedFlows.isEmpty()) {
-            status.setOutput(0, null);
-        } else if (matchedFlows.size() == 1) {
-            status.setOutput(0, matchedFlows.get(0));
-        } else {
-            status.setOutput(0, matchedFlows);
-        }
-        
+        status.setOutput(0, TypeAdaptor.parse(matchedFlows).collapseList());
         status.setOutput(1, matchedFlows.size());
-
-        if (variableValues.isEmpty()) {
-            status.setOutput(2, null);
-        } else if (variableValues.size() == 1) {
-            status.setOutput(2, variableValues.get(0));
-        } else {
-            status.setOutput(2, variableValues);
-        }
-
-        if (nodeCounts.isEmpty()) {
-            status.setOutput(3, null);
-        } else if (nodeCounts.size() == 1) {
-            status.setOutput(3, nodeCounts.get(0));
-        } else {
-            status.setOutput(3, nodeCounts);
-        }
-
-        if (ticksLeftList.isEmpty()) {
-            status.setOutput(4, null);
-        } else if (ticksLeftList.size() == 1) {
-            status.setOutput(4, ticksLeftList.get(0));
-        } else {
-            status.setOutput(4, ticksLeftList);
-        }
+        status.setOutput(2, TypeAdaptor.parse(variableValues).collapseList());
+        status.setOutput(3, TypeAdaptor.parse(nodeCounts).collapseList());
+        status.setOutput(4, TypeAdaptor.parse(ticksLeftList).collapseList());
     }
     
     private String parseStringFilter(Object obj) {

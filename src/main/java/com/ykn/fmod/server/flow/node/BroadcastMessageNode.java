@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.MessageType;
@@ -41,32 +40,13 @@ public class BroadcastMessageNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.bcmessage.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.bcmessage.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.bcmessage.input.player.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bcmessage.input.player.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bcmessage.input.player.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.bcmessage.input.receiver.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bcmessage.input.receiver.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bcmessage.input.receiver.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.bcmessage.input.type.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bcmessage.input.type.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bcmessage.input.type.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.bcmessage.input.message.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bcmessage.input.message.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bcmessage.input.message.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.bcmessage.title.name", "fmod.node.bcmessage.title.feat")
+            .input("fmod.node.bcmessage.input.player.name", "fmod.node.bcmessage.input.player.feat", "fmod.node.bcmessage.input.player.type")
+            .input("fmod.node.bcmessage.input.receiver.name", "fmod.node.bcmessage.input.receiver.feat", "fmod.node.bcmessage.input.receiver.type")
+            .input("fmod.node.bcmessage.input.type.name", "fmod.node.bcmessage.input.type.feat", "fmod.node.bcmessage.input.type.type")
+            .input("fmod.node.bcmessage.input.message.name", "fmod.node.bcmessage.input.message.feat", "fmod.node.bcmessage.input.message.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override

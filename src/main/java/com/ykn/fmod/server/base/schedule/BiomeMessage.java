@@ -18,7 +18,7 @@ public class BiomeMessage extends ScheduledTask {
     private final ResourceLocation biomeId;
     
     public BiomeMessage(ServerPlayer player, ResourceLocation biomeId) {
-        super(Util.serverConfig.getChangeBiomeDelay(), 0);
+        super(Util.getServerConfig().getChangeBiomeDelay(), 0);
         this.player = player;
         this.biomeId = biomeId;
     }
@@ -33,7 +33,7 @@ public class BiomeMessage extends ScheduledTask {
         }
         Component mainText = Util.parseTranslatableText("fmod.message.biome.change.main", player.getDisplayName(), Util.parseCoordText(player));
         Component otherText = Util.parseTranslatableText("fmod.message.biome.change.other", player.getDisplayName(), biomeText);
-        Util.serverConfig.getChangeBiomeMessage().postMessage(player, mainText, otherText);
+        Util.getServerConfig().getChangeBiomeMessage().postMessage(player, mainText, otherText);
     }
 
     @Override
@@ -42,7 +42,9 @@ public class BiomeMessage extends ScheduledTask {
             return true;
         }
         ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
-        if (currentBiomeId.equals(biomeId)) {
+        if (currentBiomeId == null && biomeId == null) {
+            return false;
+        } else if (currentBiomeId != null && currentBiomeId.equals(biomeId)) {
             return false;
         } else {
             // During delay period, if the player changes to a new biome, the scheduled task should be cancelled.

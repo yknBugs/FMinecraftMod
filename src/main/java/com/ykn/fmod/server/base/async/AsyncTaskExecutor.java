@@ -7,8 +7,6 @@ package com.ykn.fmod.server.base.async;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.slf4j.LoggerFactory;
-
 import com.ykn.fmod.server.base.util.Util;
 
 /**
@@ -66,7 +64,7 @@ public class AsyncTaskExecutor implements Runnable {
      */
     protected void handleAsyncException(Exception e) {
         // Default implementation: log the exception
-        LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Exception in async task execution", e);
+        Util.LOGGER.error("FMinecraftMod: Exception in async task execution", e);
     }
 
     /**
@@ -75,7 +73,7 @@ public class AsyncTaskExecutor implements Runnable {
      */
     protected void handleAfterCompletionException(Exception e) {
         // Default implementation: log the exception
-        LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Exception in after-completion task execution", e);
+        Util.LOGGER.error("FMinecraftMod: Exception in after-completion task execution", e);
     }
 
     @Override

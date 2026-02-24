@@ -25,8 +25,11 @@ public class StringSuggestion implements SuggestionProvider<CommandSourceStack> 
 
     /**
      * The collection of strings to suggest.
+     * Marked {@code volatile} so that a reference swap performed by
+     * {@link #update(Collection)} on the server thread is immediately visible
+     * to the network thread calling {@link #getSuggestions}.
      */
-    public Collection<String> stringList;
+    private volatile Collection<String> stringList;
     
     /**
      * Whether to wrap suggestions in double quotes.

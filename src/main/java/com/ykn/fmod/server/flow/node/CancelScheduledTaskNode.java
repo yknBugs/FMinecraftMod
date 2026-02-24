@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
@@ -15,8 +14,6 @@ import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
-
-import net.minecraft.network.chat.Component;
 
 /**
  * A node that cancels a scheduled task.
@@ -36,29 +33,12 @@ public class CancelScheduledTaskNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.canceltask.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.canceltask.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.canceltask.input.task.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.canceltask.input.task.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.canceltask.input.task.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.canceltask.output.ticks.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.canceltask.output.ticks.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.canceltask.output.ticks.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.canceltask.output.duration.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.canceltask.output.duration.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.canceltask.output.duration.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.canceltask.title.name", "fmod.node.canceltask.title.feat")
+            .input("fmod.node.canceltask.input.task.name", "fmod.node.canceltask.input.task.feat", "fmod.node.canceltask.input.task.type")
+            .output("fmod.node.canceltask.output.ticks.name", "fmod.node.canceltask.output.ticks.feat", "fmod.node.canceltask.output.ticks.type")
+            .output("fmod.node.canceltask.output.duration.name", "fmod.node.canceltask.output.duration.feat", "fmod.node.canceltask.output.duration.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override

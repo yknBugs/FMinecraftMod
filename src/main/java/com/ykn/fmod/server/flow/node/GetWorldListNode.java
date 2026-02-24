@@ -16,7 +16,6 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 
@@ -37,26 +36,11 @@ public class GetWorldListNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.listworld.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.listworld.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.listworld.input.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.listworld.input.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.listworld.input.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.listworld.output.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.listworld.output.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.listworld.output.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.listworld.title.name", "fmod.node.listworld.title.feat")
+            .input("fmod.node.listworld.input.name", "fmod.node.listworld.input.feat", "fmod.node.listworld.input.type")
+            .output("fmod.node.listworld.output.name", "fmod.node.listworld.output.feat", "fmod.node.listworld.output.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
@@ -72,13 +56,7 @@ public class GetWorldListNode extends FlowNode {
             }
         }
 
-        if (worldList.isEmpty()) {
-            status.setOutput(0, null);
-        } else if (worldList.size() == 1) {
-            status.setOutput(0, worldList.get(0));
-        } else {
-            status.setOutput(0, worldList);
-        }
+        status.setOutput(0, TypeAdaptor.parse(worldList).collapseList());
     }
     
     private ResourceLocation parseIdentifier(Object obj) throws LogicException {

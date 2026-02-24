@@ -37,7 +37,7 @@ public class MarkdownToTextConverter {
      * @param number the number to check
      * @return true if the number is within any of the specified ranges, false otherwise
      */
-    public static boolean isNumberBetween(List<Integer> start, List<Integer> end, int number) {
+    private static boolean isNumberBetween(List<Integer> start, List<Integer> end, int number) {
         for (int i = 0; i < start.size(); i++) {
             if (start.get(i) <= number && number <= end.get(i)) {
                 return true;
@@ -45,6 +45,17 @@ public class MarkdownToTextConverter {
         }
         return false;
     }
+
+    private static final Pattern MARKDOWN_CODE = Pattern.compile("(?m)^( *)(`{3,})(\\w*)\n([\\s\\S]*?)\\n( *)\\2", Pattern.MULTILINE); // Group = 4
+    private static final Pattern MARKDOWN_MATH = Pattern.compile("(?<!\\\\)\\$(.*?)(?<!\\\\)\\$"); // Group = 1
+    private static final Pattern MARKDOWN_HEADER = Pattern.compile("(?m)^( *)(#{1,5}) +(.*)"); // Group = 3
+    private static final Pattern MARKDOWN_BOLD = Pattern.compile("(?<!\\\\)\\*\\*(?!\\s)(.*?)(?<!\\s)(?<!\\\\)\\*\\*"); // Group = 1
+    // Pattern italicPattern = Pattern.compile("(?<!\\\\)(?:\\*|_)(?!\\s)(.*?)(?<!\\s)(?<!\\\\)(?:\\*|_)"); // Group = 1
+    private static final Pattern MARKDOWN_ITALIC = Pattern.compile("(?<!\\\\)(?:\\*)(?!\\s)(.*?)(?<!\\s)(?<!\\\\)(?:\\*)"); // Disable _ italic because it may cause too many false positive
+    private static final Pattern MARKDOWN_STRIKE = Pattern.compile("(?<!\\\\)~~(?!\\s)(.*?)(?<!\\s)(?<!\\\\)~~"); // Group = 1
+    private static final Pattern MARKDOWN_INLINE = Pattern.compile("(?<!\\\\)`(.*?)(?<!\\\\)`"); // Group = 1
+    private static final Pattern MARKDOWN_BULLET = Pattern.compile("(?m)^( *)(- )+(.*)"); // Group = 3
+    private static final Pattern MARKDOWN_HYPERLINK = Pattern.compile("(?<!\\\\)\\[(.*?)\\]\\((.*?)\\)"); // Group = 1, 2
 
     /**
      * Analyzes the given markdown string and identifies various markdown syntax elements.
@@ -57,25 +68,15 @@ public class MarkdownToTextConverter {
      * @param unitText A list to store the text content of the identified markdown units.
      * @param unitHint A list to store additional hints or metadata for the identified markdown units.
      */
-    public static void analyzeMarkdownSyntax(String markdown, 
-                                            ArrayList<Integer> unitStartIndex, 
-                                            ArrayList<Integer> unitEndIndex, 
-                                            ArrayList<MarkdownUnit> unitType, 
-                                            ArrayList<String> unitText, 
-                                            ArrayList<String> unitHint) {
-        Pattern codePattern = Pattern.compile("(?m)^( *)(`{3,})(\\w*)\n([\\s\\S]*?)\\n( *)\\2", Pattern.MULTILINE); // Group = 4
-        Pattern mathPattern = Pattern.compile("(?<!\\\\)\\$(.*?)(?<!\\\\)\\$"); // Group = 1
-        Pattern headerPattern = Pattern.compile("(?m)^( *)(#{1,5}) +(.*)"); // Group = 3
-        Pattern boldPattern = Pattern.compile("(?<!\\\\)\\*\\*(?!\\s)(.*?)(?<!\\s)(?<!\\\\)\\*\\*"); // Group = 1
-        // Pattern italicPattern = Pattern.compile("(?<!\\\\)(?:\\*|_)(?!\\s)(.*?)(?<!\\s)(?<!\\\\)(?:\\*|_)"); // Group = 1
-        Pattern italicPattern = Pattern.compile("(?<!\\\\)(?:\\*)(?!\\s)(.*?)(?<!\\s)(?<!\\\\)(?:\\*)"); // Disable _ italic because it may cause too many false positive
-        Pattern strikePattern = Pattern.compile("(?<!\\\\)~~(?!\\s)(.*?)(?<!\\s)(?<!\\\\)~~"); // Group = 1
-        Pattern inlinePattern = Pattern.compile("(?<!\\\\)`(.*?)(?<!\\\\)`"); // Group = 1
-        Pattern enumPattern = Pattern.compile("(?m)^( *)(- )+(.*)"); // Group = 3
-        Pattern hyperlinkPattern = Pattern.compile("(?<!\\\\)\\[(.*?)\\]\\((.*?)\\)"); // Group = 1, 2
-
+    private static void analyzeMarkdownSyntax(String markdown, 
+                                            List<Integer> unitStartIndex, 
+                                            List<Integer> unitEndIndex, 
+                                            List<MarkdownUnit> unitType, 
+                                            List<String> unitText, 
+                                            List<String> unitHint) {
         // Use \u00a7 to label different parts of the markdown, exisiting \u00a7 will be replaced by \\u00a7
-        String parsedStr = markdown.replace("\u00a7", "\\u00a7");
+        // String parsedStr = markdown.replace("\u00a7", "\\u00a7");
+        String parsedStr = markdown;
         ArrayList<Integer> codePartStartIndex = new ArrayList<>();
         ArrayList<Integer> codePartEndIndex = new ArrayList<>();
         
@@ -91,7 +92,7 @@ public class MarkdownToTextConverter {
         unitHint.clear();
         
         // match code part
-        Matcher codeMatcher = codePattern.matcher(parsedStr);
+        Matcher codeMatcher = MARKDOWN_CODE.matcher(parsedStr);
         while (codeMatcher.find()) {
             codePartStartIndex.add(codeMatcher.start());
             codePartEndIndex.add(codeMatcher.end());
@@ -102,7 +103,7 @@ public class MarkdownToTextConverter {
             unitHint.add(codeMatcher.group(3)); // Language
         }
         // match math part outside code part and remove $ symbol
-        Matcher mathMatcher = mathPattern.matcher(parsedStr);
+        Matcher mathMatcher = MARKDOWN_MATH.matcher(parsedStr);
         while (mathMatcher.find()) {
             int startIndex = mathMatcher.start();
             int endIndex = mathMatcher.end();
@@ -116,7 +117,7 @@ public class MarkdownToTextConverter {
             }
         }
         // match header part
-        Matcher headerMatcher = headerPattern.matcher(parsedStr);
+        Matcher headerMatcher = MARKDOWN_HEADER.matcher(parsedStr);
         while (headerMatcher.find()) {
             int startIndex = headerMatcher.start();
             int endIndex = headerMatcher.end();
@@ -130,7 +131,7 @@ public class MarkdownToTextConverter {
             }
         }
         // match bold part
-        Matcher boldMatcher = boldPattern.matcher(parsedStr);
+        Matcher boldMatcher = MARKDOWN_BOLD.matcher(parsedStr);
         while (boldMatcher.find()) {
             int startIndex = boldMatcher.start();
             int endIndex = boldMatcher.end();
@@ -144,7 +145,7 @@ public class MarkdownToTextConverter {
             }
         }
         // match italic part
-        Matcher italicMatcher = italicPattern.matcher(parsedStr);
+        Matcher italicMatcher = MARKDOWN_ITALIC.matcher(parsedStr);
         while (italicMatcher.find()) {
             int startIndex = italicMatcher.start();
             int endIndex = italicMatcher.end();
@@ -158,7 +159,7 @@ public class MarkdownToTextConverter {
             }
         }
         // match strike part
-        Matcher strikeMatcher = strikePattern.matcher(parsedStr);
+        Matcher strikeMatcher = MARKDOWN_STRIKE.matcher(parsedStr);
         while (strikeMatcher.find()) {
             int startIndex = strikeMatcher.start();
             int endIndex = strikeMatcher.end();
@@ -172,7 +173,7 @@ public class MarkdownToTextConverter {
             }
         }
         // match inline part
-        Matcher inlineMatcher = inlinePattern.matcher(parsedStr);
+        Matcher inlineMatcher = MARKDOWN_INLINE.matcher(parsedStr);
         while (inlineMatcher.find()) {
             int startIndex = inlineMatcher.start();
             int endIndex = inlineMatcher.end();
@@ -186,7 +187,7 @@ public class MarkdownToTextConverter {
             }
         }
         // match enum part
-        Matcher enumMatcher = enumPattern.matcher(parsedStr);
+        Matcher enumMatcher = MARKDOWN_BULLET.matcher(parsedStr);
         while (enumMatcher.find()) {
             int startIndex = enumMatcher.start();
             int endIndex = enumMatcher.end();
@@ -200,7 +201,7 @@ public class MarkdownToTextConverter {
             }
         }
         // match hyperlink part
-        Matcher hyperlinkMatcher = hyperlinkPattern.matcher(parsedStr);
+        Matcher hyperlinkMatcher = MARKDOWN_HYPERLINK.matcher(parsedStr);
         while (hyperlinkMatcher.find()) {
             int startIndex = hyperlinkMatcher.start();
             int endIndex = hyperlinkMatcher.end();
@@ -229,15 +230,15 @@ public class MarkdownToTextConverter {
      * @param tokenType List to store the resulting token types.
      * @param tokenHint List to store the resulting token hints.
      */
-    public static void convertTokens(String text,
-                                    ArrayList<Integer> unitStartIndex, 
-                                    ArrayList<Integer> unitEndIndex, 
-                                    ArrayList<MarkdownUnit> unitType, 
-                                    ArrayList<String> unitText, 
-                                    ArrayList<String> unitHint,
-                                    ArrayList<String> tokenText,
-                                    ArrayList<ArrayList<MarkdownUnit>> tokenType,
-                                    ArrayList<ArrayList<String>> tokenHint) {
+    private static void convertTokens(String text,
+                                    List<Integer> unitStartIndex, 
+                                    List<Integer> unitEndIndex, 
+                                    List<MarkdownUnit> unitType, 
+                                    List<String> unitText, 
+                                    List<String> unitHint,
+                                    List<String> tokenText,
+                                    List<List<MarkdownUnit>> tokenType,
+                                    List<List<String>> tokenHint) {
         int textLength = text.length();
         int unitCount = unitStartIndex.size();
         // Save the position of the text that need to be displayed in each unit
@@ -323,14 +324,14 @@ public class MarkdownToTextConverter {
         }
     }
 
-    private static MutableComponent parseMarkdownTokenToText(ArrayList<String> tokenText, ArrayList<ArrayList<MarkdownUnit>> tokenType, ArrayList<ArrayList<String>> tokenHint) {
+    private static MutableComponent parseMarkdownTokenToText(List<String> tokenText, List<List<MarkdownUnit>> tokenType, List<List<String>> tokenHint) {
         MutableComponent result = Component.empty();
         int tokenCount = tokenText.size();
 
         for (int i = 0; i < tokenCount; i++) {
             String token = tokenText.get(i);
-            ArrayList<MarkdownUnit> type = tokenType.get(i);
-            ArrayList<String> hint = tokenHint.get(i);
+            List<MarkdownUnit> type = tokenType.get(i);
+            List<String> hint = tokenHint.get(i);
             MutableComponent text = Component.literal(token);
 
             boolean alreadyApplyColor = false;
@@ -441,8 +442,8 @@ public class MarkdownToTextConverter {
      * @param tokens An output list where the identified tokens will be stored.
      * @param tokenStyles An output list where the styles for each token will be stored.
      */
-    public static <T> void codeTokenlize(String text, ArrayList<Pattern> patterns, ArrayList<T> styles,
-                                        ArrayList<String> tokens, ArrayList<ArrayList<T>> tokenStyles) {
+    private static <T> void codeTokenize(String text, List<Pattern> patterns, List<T> styles,
+                                        List<String> tokens, List<List<T>> tokenStyles) {
         int n = text.length();
         // Create a list that holds a set of styles (of type T) for each character.
         List<Set<T>> styleAt = new ArrayList<>(n);
@@ -488,17 +489,17 @@ public class MarkdownToTextConverter {
     public static Component parseMarkdownToText(String markdown) {
         MutableComponent result = Component.empty();
 
-        ArrayList<Integer> unitStartIndex = new ArrayList<>();
-        ArrayList<Integer> unitEndIndex = new ArrayList<>();
-        ArrayList<MarkdownUnit> unitType = new ArrayList<>();
-        ArrayList<String> unitText = new ArrayList<>();
-        ArrayList<String> unitHint = new ArrayList<>();
+        List<Integer> unitStartIndex = new ArrayList<>();
+        List<Integer> unitEndIndex = new ArrayList<>();
+        List<MarkdownUnit> unitType = new ArrayList<>();
+        List<String> unitText = new ArrayList<>();
+        List<String> unitHint = new ArrayList<>();
 
         analyzeMarkdownSyntax(markdown, unitStartIndex, unitEndIndex, unitType, unitText, unitHint);
 
-        ArrayList<String> tokenText = new ArrayList<>();
-        ArrayList<ArrayList<MarkdownUnit>> tokenType = new ArrayList<>();
-        ArrayList<ArrayList<String>> tokenHint = new ArrayList<>();
+        List<String> tokenText = new ArrayList<>();
+        List<List<MarkdownUnit>> tokenType = new ArrayList<>();
+        List<List<String>> tokenHint = new ArrayList<>();
 
         convertTokens(markdown, unitStartIndex, unitEndIndex, unitType, unitText, unitHint, tokenText, tokenType, tokenHint);
 
@@ -541,26 +542,25 @@ public class MarkdownToTextConverter {
             );
     }
 
+    private static final Pattern JAVA_COMMENT = Pattern.compile("(?s)/\\*.*?\\*/|//.*?(?=\\r?\\n|$)");
+    private static final Pattern JAVA_STRING = Pattern.compile("(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
+    private static final Pattern JAVA_KEYWORD = Pattern.compile("\\b(?:abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|exports|extends|final|finally|float|for|if|goto|implements|import|instanceof|int|interface|long|module|native|new|package|permits|private|protected|provides|public|record|requires|return|short|static|sealed|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|void|volatile|while|with|true|false|null)\\b");
+    private static final Pattern JAVA_NUMBER = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+(?:[lL])?|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?:[fFdDlL])?)(?![A-Za-z0-9_$])");
+    private static final Pattern JAVA_PUNCTUATION = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
+    private static final Pattern JAVA_CLASS = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,?]*\\s*>|(?<=\\b(class|extends|implements|interface|instanceof|enum|throws|record|permits)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?(\\s*\\[\\s*[0-9]*\\s*\\])?\\s+[A-Za-z_$]\\w*\\b)|(?<=\\b(package|import|exports|module|requires|provides|with)\\s+)(\\w+\\s*\\.\\s*)*\\w+|(?<=(?<![A-Za-z0-9_$]\\s*)@\\s*)[A-Za-z_$]\\w*\\b");
+    private static final Pattern JAVA_FUNCTION = Pattern.compile("\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\()");
+    // May not be able to handle ? symbol in generics, such as List<? extends Number>, and class name with full package path
     private static MutableComponent syntaxHighlightJava(String code) {
-        Pattern commentPattern = Pattern.compile("(?s)/\\*.*?\\*/|//.*?(?=\\r?\\n|$)");
-        Pattern stringPattern = Pattern.compile("(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
-        Pattern keywordPattern = Pattern.compile("\\b(?:abstract|assert|boolean|break|byte|case|catch|char|class|const|continue|default|do|double|else|enum|exports|extends|final|finally|float|for|if|goto|implements|import|instanceof|int|interface|long|module|native|new|package|permits|private|protected|provides|public|record|requires|return|short|static|sealed|strictfp|super|switch|synchronized|this|throw|throws|transient|try|var|void|volatile|while|with|true|false|null)\\b");
-        Pattern numberPattern = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+(?:[lL])?|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?:[fFdDlL])?)(?![A-Za-z0-9_$])");
-        Pattern punctuationPattern = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
-        Pattern classPattern = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,?]*\\s*>|(?<=\\b(class|extends|implements|interface|instanceof|enum|throws|record|permits)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?(\\s*\\[\\s*[0-9]*\\s*\\])?\\s+[A-Za-z_$]\\w*\\b)|(?<=\\b(package|import|exports|module|requires|provides|with)\\s+)(\\w+\\s*\\.\\s*)*\\w+|(?<=(?<![A-Za-z0-9_$]\\s*)@\\s*)[A-Za-z_$]\\w*\\b");
-        Pattern functionPattern = Pattern.compile("\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\()");
-        // May not be able to handle ? symbol in generics, such as List<? extends Number>, and class name with full package path
-        
-        ArrayList<Pattern> patterns = new ArrayList<>();
-        patterns.add(commentPattern);
-        patterns.add(stringPattern);
-        patterns.add(keywordPattern);
-        patterns.add(numberPattern);
-        patterns.add(punctuationPattern);
-        patterns.add(classPattern);
-        patterns.add(functionPattern);
+        List<Pattern> patterns = new ArrayList<>();
+        patterns.add(JAVA_COMMENT);
+        patterns.add(JAVA_STRING);
+        patterns.add(JAVA_KEYWORD);
+        patterns.add(JAVA_NUMBER);
+        patterns.add(JAVA_PUNCTUATION);
+        patterns.add(JAVA_CLASS);
+        patterns.add(JAVA_FUNCTION);
 
-        ArrayList<CodeUnit> codeType = new ArrayList<>();
+        List<CodeUnit> codeType = new ArrayList<>();
         codeType.add(CodeUnit.COMMENT);
         codeType.add(CodeUnit.STRING);
         codeType.add(CodeUnit.KEYWORD);
@@ -569,14 +569,14 @@ public class MarkdownToTextConverter {
         codeType.add(CodeUnit.CLASS);
         codeType.add(CodeUnit.FUNCTION);
 
-        ArrayList<String> tokens = new ArrayList<>();
-        ArrayList<ArrayList<CodeUnit>> tokenTypes = new ArrayList<>();
-        codeTokenlize(code, patterns, codeType, tokens, tokenTypes);
+        List<String> tokens = new ArrayList<>();
+        List<List<CodeUnit>> tokenTypes = new ArrayList<>();
+        codeTokenize(code, patterns, codeType, tokens, tokenTypes);
 
         MutableComponent result = Component.empty();
         for (int i = 0; i < tokens.size(); i++) {
             String token = tokens.get(i);
-            ArrayList<CodeUnit> type = tokenTypes.get(i);
+            List<CodeUnit> type = tokenTypes.get(i);
 
             if (type.size() == 0) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
@@ -600,36 +600,35 @@ public class MarkdownToTextConverter {
         return result;
     }
 
+    private static final Pattern CPP_COMMENT = Pattern.compile("(?s)/\\*.*?\\*/|//.*?(?=\\r?\\n|$)");
+    private static final Pattern CPP_STRING = Pattern.compile("(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
+    private static final Pattern CPP_KEYWORD = Pattern.compile("\\b(?:alignas|alignof|auto|break|case|catch|class|concept|const|constexpr|continue|decltype|default|delete|do|else|enum|explicit|export|extern|for|final|friend|goto|if|import|inline|module|mutable|namespace|noexcept|new|operator|override|private|protected|public|requires|return|sizeof|static|struct|switch|template|this|throw|try|typedef|typeid|typename|union|using|virtual|volatile|while|int|double|float|long|char|unsigned|signed|void|bool|true|false|nullptr|static_cast|dynamic_cast|const_cast|reinterpret_cast|assert|static_assert|thread_local)\\b");
+    private static final Pattern CPP_PREPROCESSOR = Pattern.compile("(?m)^\\s*#\\s*\\w+");
+    private static final Pattern CPP_NUMBER = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+(?:[lL])?|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?:[fFdDlL])?)(?![A-Za-z0-9_$])");
+    private static final Pattern CPP_PUNCTUATION = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
+    private static final Pattern CPP_HEADER = Pattern.compile("(?m)^\\s*#\\s*include\\s+[<\"]\\S+[>\"]");
+    private static final Pattern CPP_CLASS = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,*]*\\s*>|(?<=\\b(class|typename|typedef|enum|using|namespace|struct)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*)\\(\\s*([A-Za-z_$]\\w*\\s*::\\s*)*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*([A-Za-z_$]\\w*\\s*::\\s*)*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*(\\[\\s*([0-9]*|0[xXb][0-9A-Fa-f]+)[lL]?\\s*\\])?(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?\\s+(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?[A-Za-z_$]\\w*\\b)|(?<=\\bclass\\s+[A-Za-z_$]\\w*\\s*:[\\w\\s:<>,*]*\\s*)[A-Za-z_$]\\w*\\b");
+    private static final Pattern CPP_FUNCTION = Pattern.compile("\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*\\()|\\(\\s*(\\*\\s*)*[A-Za-z_$]\\w*\\s*(\\[\\s*([0-9]*|0[xXb][0-9A-Fa-f]+)[lL]?\\s*\\]\\s*)?\\)(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*\\()");  // may not handle nested syntax correctly
+    // Commonly Used Patterns:
+    // (<\s*[A-Za-z_$]?[\w\s:<>,*]*\s*>)? An optional template syntax after a function or a class name, partially handle nested syntax
+    // (\s*(?![&*\s]*&\s*&)[&*][&*\s]*)? An optional pointer or reference syntax while excluding AND && syntax
+    // ([A-Za-z_$]\w*\s*::\s*)* One or more optional namespace or class name before a function or a class name
+    // Class Pattern: Template | Definition | Namespace | Type Cast | Type Cast | Create Object | Inherit
+    // Cannot match newly initialized objects during return, such as "return ArrayList<>()"
+    // Cannot match variadic parameters, such as "template<typename... Args>" or "void func(int a, Args... args)"
     private static MutableComponent syntaxHighlightCpp(String code) {
-        Pattern commentPattern = Pattern.compile("(?s)/\\*.*?\\*/|//.*?(?=\\r?\\n|$)");
-        Pattern stringPattern = Pattern.compile("(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
-        Pattern keywordPattern = Pattern.compile("\\b(?:alignas|alignof|auto|break|case|catch|class|concept|const|constexpr|continue|decltype|default|delete|do|else|enum|explicit|export|extern|for|final|friend|goto|if|import|inline|module|mutable|namespace|noexcept|new|operator|override|private|protected|public|requires|return|sizeof|static|struct|switch|template|this|throw|try|typedef|typeid|typename|union|using|virtual|volatile|while|int|double|float|long|char|unsigned|signed|void|bool|true|false|nullptr|static_cast|dynamic_cast|const_cast|reinterpret_cast|assert|static_assert|thread_local)\\b");
-        Pattern preprocessorPattern = Pattern.compile("(?m)^\\s*#\\s*\\w+");
-        Pattern numberPattern = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+(?:[lL])?|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?(?:[fFdDlL])?)(?![A-Za-z0-9_$])");
-        Pattern punctuationPattern = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
-        Pattern headerPattern = Pattern.compile("(?m)^\\s*#\\s*include\\s+[<\"]\\S+[>\"]");
-        Pattern classPattern = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,*]*\\s*>|(?<=\\b(class|typename|typedef|enum|using|namespace|struct)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*)\\(\\s*([A-Za-z_$]\\w*\\s*::\\s*)*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*([A-Za-z_$]\\w*\\s*::\\s*)*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*(\\[\\s*([0-9]*|0[xXb][0-9A-Fa-f]+)[lL]?\\s*\\])?(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?\\s+(\\s*(?![&*\\s]*&\\s*&)[&*][&*\\s]*)?[A-Za-z_$]\\w*\\b)|(?<=\\bclass\\s+[A-Za-z_$]\\w*\\s*:[\\w\\s:<>,*]*\\s*)[A-Za-z_$]\\w*\\b");
-        Pattern functionPattern = Pattern.compile("\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*\\()|\\(\\s*(\\*\\s*)*[A-Za-z_$]\\w*\\s*(\\[\\s*([0-9]*|0[xXb][0-9A-Fa-f]+)[lL]?\\s*\\]\\s*)?\\)(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,*]*\\s*>)?\\s*\\()");  // may not handle nested syntax correctly
-        // Commonly Used Patterns:
-        // (<\s*[A-Za-z_$]?[\w\s:<>,*]*\s*>)? An optional template syntax after a function or a class name, partially handle nested syntax
-        // (\s*(?![&*\s]*&\s*&)[&*][&*\s]*)? An optional pointer or reference syntax while excluding AND && syntax
-        // ([A-Za-z_$]\w*\s*::\s*)* One or more optional namespace or class name before a function or a class name
-        // Class Pattern: Template | Definition | Namespace | Type Cast | Type Cast | Create Object | Inherit
-        // Cannot match newly initialized objects during return, such as "return ArrayList<>()"
-        // Cannot match variadic parameters, such as "template<typename... Args>" or "void func(int a, Args... args)"
+        List<Pattern> patterns = new ArrayList<>();
+        patterns.add(CPP_COMMENT);
+        patterns.add(CPP_STRING);
+        patterns.add(CPP_KEYWORD);
+        patterns.add(CPP_PREPROCESSOR);
+        patterns.add(CPP_NUMBER);
+        patterns.add(CPP_PUNCTUATION);
+        patterns.add(CPP_HEADER);
+        patterns.add(CPP_CLASS);
+        patterns.add(CPP_FUNCTION);
 
-        ArrayList<Pattern> patterns = new ArrayList<>();
-        patterns.add(commentPattern);
-        patterns.add(stringPattern);
-        patterns.add(keywordPattern);
-        patterns.add(preprocessorPattern);
-        patterns.add(numberPattern);
-        patterns.add(punctuationPattern);
-        patterns.add(headerPattern);
-        patterns.add(classPattern);
-        patterns.add(functionPattern);
-
-        ArrayList<CodeUnit> codeType = new ArrayList<>();
+        List<CodeUnit> codeType = new ArrayList<>();
         codeType.add(CodeUnit.COMMENT);
         codeType.add(CodeUnit.STRING);
         codeType.add(CodeUnit.KEYWORD);
@@ -640,15 +639,15 @@ public class MarkdownToTextConverter {
         codeType.add(CodeUnit.CLASS);
         codeType.add(CodeUnit.FUNCTION);
 
-        ArrayList<String> tokens = new ArrayList<>();
-        ArrayList<ArrayList<CodeUnit>> tokenTypes = new ArrayList<>();
-        codeTokenlize(code, patterns, codeType, tokens, tokenTypes);
+        List<String> tokens = new ArrayList<>();
+        List<List<CodeUnit>> tokenTypes = new ArrayList<>();
+        codeTokenize(code, patterns, codeType, tokens, tokenTypes);
         
         MutableComponent result = Component.empty();
         int tokenCount = tokens.size();
         for (int i = 0; i < tokenCount; i++) {
             String token = tokens.get(i);
-            ArrayList<CodeUnit> type = tokenTypes.get(i);
+            List<CodeUnit> type = tokenTypes.get(i);
             // In code block, each part of the text can only have one style, high priority style first
             // For example, string has a higher priority than keyword, because inside a string may contain keywords
             if (type.size() == 0) {
@@ -677,30 +676,29 @@ public class MarkdownToTextConverter {
         return result;
     }
 
+    private static final Pattern PYTHON_COMMENT = Pattern.compile("#.*");
+    private static final Pattern PYTHON_STRING = Pattern.compile("\"\"\"[\\s\\S]*?\"\"\"|'''[\\s\\S]*?'''|(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
+    private static final Pattern PYTHON_KEYWORD = Pattern.compile("\\b(?:and|as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|not|or|pass|raise|return|try|while|with|yield|True|False|None)\\b");
+    private static final Pattern PYTHON_NUMBER = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?)(?![A-Za-z0-9_$])");
+    private static final Pattern PYTHON_PUNCTUATION = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
+    private static final Pattern PYTHON_CLASS = Pattern.compile("(?<=\\b(class|from)\\s+)[A-Za-z_$][\\w.]*\\b|(?<=\\bimport\\s+)[A-Za-z_$][\\w.]*\\s+as\\s\\s*[A-Za-z_$]\\w*\\b|(?<=\\b(?<!from\\s+[A-Za-z_$][\\w.]*\\s+)import\\s+)[A-Za-z_$]\\w*\\b");
+    private static final Pattern PYTHON_FUNCTION = Pattern.compile("(?<=\\bdef\\s+)[A-Za-z_$]\\w*\\s*(?=\\()|(?m)^\\s*@\\s*\\w+\\s*\\b");
+    // Python has a very flexible syntax, so it is hard to use regex to match all cases
+    // We just give up to match the class name in def fun(a: str, b: tuple = (0, (1, 2)), c) -> str: pass since it is too complex
+    // A possible regex for the above syntax:
+    // (?<=\bdef\s+[A-Za-z_$]\w*\s*\([\w\s={}:\[\],]*:\s*)[A-Za-z_$]\w*\b|(?<=\bdef\s+[A-Za-z_$]\w*\s*\([\w\s={}:\[\],]*\)\s*-\s*>\s*)[A-Za-z_$]\w*(?=\s*:)
+    // This regex will fail if the parameters have a very complex default value
     private static MutableComponent syntaxHighlightPython(String code) {
-        Pattern commentPattern = Pattern.compile("#.*");
-        Pattern stringPattern = Pattern.compile("\"\"\"[\\s\\S]*?\"\"\"|'''[\\s\\S]*?'''|(\"(?:(?:\\\\.)|[^\"\\\\])*?\")|('(?:(?:\\\\.)|[^'\\\\])*')");
-        Pattern keywordPattern = Pattern.compile("\\b(?:and|as|assert|break|class|continue|def|del|elif|else|except|finally|for|from|global|if|import|in|is|lambda|not|or|pass|raise|return|try|while|with|yield|True|False|None)\\b");
-        Pattern numberPattern = Pattern.compile("(?<![A-Za-z0-9_$])(0[xXb][0-9A-Fa-f]+|(?:\\d+\\.\\d*|\\.\\d+|\\d+)(?:[eE][+-]?\\d+)?)(?![A-Za-z0-9_$])");
-        Pattern punctuationPattern = Pattern.compile("[{}()\\[\\];.,<>+\\-*/%&|^!~?:=`\"'@#$\\\\]");
-        Pattern classPattern = Pattern.compile("(?<=\\b(class|from)\\s+)[A-Za-z_$][\\w.]*\\b|(?<=\\bimport\\s+)[A-Za-z_$][\\w.]*\\s+as\\s\\s*[A-Za-z_$]\\w*\\b|(?<=\\b(?<!from\\s+[A-Za-z_$][\\w.]*\\s+)import\\s+)[A-Za-z_$]\\w*\\b");
-        Pattern functionPattern = Pattern.compile("(?<=\\bdef\\s+)[A-Za-z_$]\\w*\\s*(?=\\()|(?m)^\\s*@\\s*\\w+\\s*\\b");
-        // Python has a very flexible syntax, so it is hard to use regex to match all cases
-        // We just give up to match the class name in def fun(a: str, b: tuple = (0, (1, 2)), c) -> str: pass since it is too complex
-        // A possible regex for the above syntax:
-        // (?<=\bdef\s+[A-Za-z_$]\w*\s*\([\w\s={}:\[\],]*:\s*)[A-Za-z_$]\w*\b|(?<=\bdef\s+[A-Za-z_$]\w*\s*\([\w\s={}:\[\],]*\)\s*-\s*>\s*)[A-Za-z_$]\w*(?=\s*:)
-        // This regex will fail if the parameters have a very complex default value
-
-        ArrayList<Pattern> patterns = new ArrayList<>();
-        patterns.add(commentPattern);
-        patterns.add(stringPattern);
-        patterns.add(keywordPattern);
-        patterns.add(numberPattern);
-        patterns.add(punctuationPattern);
-        patterns.add(classPattern);
-        patterns.add(functionPattern);
+        List<Pattern> patterns = new ArrayList<>();
+        patterns.add(PYTHON_COMMENT);
+        patterns.add(PYTHON_STRING);
+        patterns.add(PYTHON_KEYWORD);
+        patterns.add(PYTHON_NUMBER);
+        patterns.add(PYTHON_PUNCTUATION);
+        patterns.add(PYTHON_CLASS);
+        patterns.add(PYTHON_FUNCTION);
         
-        ArrayList<CodeUnit> codeType = new ArrayList<>();
+        List<CodeUnit> codeType = new ArrayList<>();
         codeType.add(CodeUnit.COMMENT);
         codeType.add(CodeUnit.STRING);
         codeType.add(CodeUnit.KEYWORD);
@@ -709,15 +707,15 @@ public class MarkdownToTextConverter {
         codeType.add(CodeUnit.CLASS);
         codeType.add(CodeUnit.FUNCTION);
 
-        ArrayList<String> tokens = new ArrayList<>();
-        ArrayList<ArrayList<CodeUnit>> tokenTypes = new ArrayList<>();
-        codeTokenlize(code, patterns, codeType, tokens, tokenTypes);
+        List<String> tokens = new ArrayList<>();
+        List<List<CodeUnit>> tokenTypes = new ArrayList<>();
+        codeTokenize(code, patterns, codeType, tokens, tokenTypes);
 
         MutableComponent result = Component.empty();
         int tokenCount = tokens.size();
         for (int i = 0; i < tokenCount; i++) {
             String token = tokens.get(i);
-            ArrayList<CodeUnit> type = tokenTypes.get(i);
+            List<CodeUnit> type = tokenTypes.get(i);
             if (type.size() == 0) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {

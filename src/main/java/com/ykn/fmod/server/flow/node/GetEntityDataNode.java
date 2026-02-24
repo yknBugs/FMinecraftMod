@@ -8,6 +8,7 @@ package com.ykn.fmod.server.flow.node;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
@@ -19,6 +20,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 
 /**
@@ -49,74 +51,38 @@ public class GetEntityDataNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.getentity.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.getentity.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.getentity.input.source.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.input.source.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.input.source.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.customtext.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.customtext.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.customtext.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.customraw.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.customraw.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.customraw.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.typeid.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.typeid.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.typeid.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.uuid.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.uuid.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.uuid.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.world.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.world.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.world.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.position.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.position.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.position.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.velocity.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.velocity.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.velocity.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.rotation.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.rotation.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.rotation.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.dimension.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.dimension.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.dimension.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.vehicle.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.vehicle.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.vehicle.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.hand.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.hand.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.hand.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getentity.output.armor.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getentity.output.armor.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getentity.output.armor.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description,
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.getentity.title.name", "fmod.node.getentity.title.feat")
+            .input("fmod.node.getentity.input.source.name", "fmod.node.getentity.input.source.feat", "fmod.node.getentity.input.source.type")
+            .output("fmod.node.getentity.output.customtext.name", "fmod.node.getentity.output.customtext.feat", "fmod.node.getentity.output.customtext.type")
+            .output("fmod.node.getentity.output.customraw.name", "fmod.node.getentity.output.customraw.feat", "fmod.node.getentity.output.customraw.type")
+            .output("fmod.node.getentity.output.typeid.name", "fmod.node.getentity.output.typeid.feat", "fmod.node.getentity.output.typeid.type")
+            .output("fmod.node.getentity.output.uuid.name", "fmod.node.getentity.output.uuid.feat", "fmod.node.getentity.output.uuid.type")
+            .output("fmod.node.getentity.output.world.name", "fmod.node.getentity.output.world.feat", "fmod.node.getentity.output.world.type")
+            .output("fmod.node.getentity.output.position.name", "fmod.node.getentity.output.position.feat", "fmod.node.getentity.output.position.type")
+            .output("fmod.node.getentity.output.velocity.name", "fmod.node.getentity.output.velocity.feat", "fmod.node.getentity.output.velocity.type")
+            .output("fmod.node.getentity.output.rotation.name", "fmod.node.getentity.output.rotation.feat", "fmod.node.getentity.output.rotation.type")
+            .output("fmod.node.getentity.output.dimension.name", "fmod.node.getentity.output.dimension.feat", "fmod.node.getentity.output.dimension.type")
+            .output("fmod.node.getentity.output.vehicle.name", "fmod.node.getentity.output.vehicle.feat", "fmod.node.getentity.output.vehicle.type")
+            .output("fmod.node.getentity.output.hand.name", "fmod.node.getentity.output.hand.feat", "fmod.node.getentity.output.hand.type")
+            .output("fmod.node.getentity.output.armor.name", "fmod.node.getentity.output.armor.feat", "fmod.node.getentity.output.armor.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         Entity entity = parseEntity(resolvedInputs.get(0));
         Component customName = entity.getCustomName();
+        Level world = entity.level();
         status.setOutput(0, customName);
         status.setOutput(1, customName == null ? null : customName.getString());
         status.setOutput(2, EntityType.getKey(entity.getType()));
         status.setOutput(3, entity.getStringUUID());
-        status.setOutput(4, entity.level());
+        status.setOutput(4, world);
         status.setOutput(5, entity.position());
         status.setOutput(6, entity.getDeltaMovement());
         status.setOutput(7, new Vec2(entity.getXRot(), entity.getYRot()));
-        status.setOutput(8, entity.level() == null ? null : entity.level().dimension().location());
+        status.setOutput(8, world == null ? null : world.dimension().location());
         status.setOutput(9, entity.getVehicle());
 
         List<ItemStack> handItems = new ArrayList<>();
@@ -124,26 +90,14 @@ public class GetEntityDataNode extends FlowNode {
             handItems.add(itemStack);
         }
 
-        if (handItems.isEmpty()) {
-            status.setOutput(10, null);
-        } else if (handItems.size() == 1) {
-            status.setOutput(10, handItems.get(0));
-        } else {
-            status.setOutput(10, handItems);
-        }
+        status.setOutput(10, TypeAdaptor.parse(handItems).collapseList());
 
         List<ItemStack> armorItems = new ArrayList<>();
         for (ItemStack itemStack : entity.getArmorSlots()) {
             armorItems.add(itemStack);
         }
         
-        if (armorItems.isEmpty()) {
-            status.setOutput(11, null);
-        } else if (armorItems.size() == 1) {
-            status.setOutput(11, armorItems.get(0));
-        } else {
-            status.setOutput(11, armorItems);
-        }
+        status.setOutput(11, TypeAdaptor.parse(armorItems).collapseList());
     }
 
     private Entity parseEntity(Object entityObject) throws LogicException {

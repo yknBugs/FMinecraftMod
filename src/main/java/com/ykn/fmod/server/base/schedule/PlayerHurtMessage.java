@@ -24,12 +24,12 @@ public class PlayerHurtMessage extends ScheduledTask {
     @Override
     public void onTrigger() {
         double health = player.getHealth();
-        if (lastHealth - health >= Util.serverConfig.getPlayerHurtThreshold() * player.getMaxHealth()) {
+        if (lastHealth - health >= Util.getServerConfig().getPlayerHurtThreshold() * player.getMaxHealth()) {
             double damage = lastHealth - health;
             Component playerName = player.getDisplayName();
             Component mainText = Util.parseTranslatableText("fmod.message.playerhurt.main", playerName, String.format("%.1f", damage), String.format("%.1f", lastHealth), String.format("%.1f", health));
             Component otherText = Util.parseTranslatableText("fmod.message.playerhurt.other", playerName, String.format("%.1f", damage));
-            Util.serverConfig.getPlayerHurtMessage().postMessage(player, mainText, otherText);
+            Util.getServerConfig().getPlayerHurtMessage().postMessage(player, mainText, otherText);
         }
     }
 

@@ -5,8 +5,6 @@
 
 package com.ykn.fmod.server.base.config;
 
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import com.ykn.fmod.server.base.util.PlayerMessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
@@ -16,9 +14,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
 public class ServerConfig extends ConfigReader {
-
-    // Multiple threads may access the config class at the same time, the getters and setters in this class must be locked to ensure thread safety.
-    protected final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     /**
      * If enabled, the server will translate all the messages and then send to the client.
@@ -34,7 +29,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getBooleanValueI18n",
         commandValueHint = "enable"
     )
-    protected boolean serverTranslation;
+    protected volatile boolean serverTranslation;
 
     /**
      * The maximum number of nodes that can be executed in a single flow execution.
@@ -51,7 +46,7 @@ public class ServerConfig extends ConfigReader {
         toSliderValue = "logScaleToSlider",
         fromSliderValue = "logScalefromSlider"
     )
-    protected int maxFlowLength;
+    protected volatile int maxFlowLength;
 
     /**
      * The maximum depth of flow recursion.
@@ -70,7 +65,7 @@ public class ServerConfig extends ConfigReader {
         maxSliderInt = 256,
         commandValueHint = "depth"
     )
-    protected int maxFlowRecursionDepth;
+    protected volatile int maxFlowRecursionDepth;
 
     /**
      * How many history records of flow executions to keep.
@@ -86,7 +81,7 @@ public class ServerConfig extends ConfigReader {
         toSliderValue = "logScaleToSlider",
         fromSliderValue = "logScalefromSlider"
     )
-    protected int maxFlowHistorySize;
+    protected volatile int maxFlowHistorySize;
 
     /**
      * The message sent to the client when a non-hostile and non-passive entity dies.
@@ -98,7 +93,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "entityDeathMessage",
         i18nEntry = "entitydeath"
     )
-    protected ServerMessageType entityDeathMessage;
+    protected volatile ServerMessageType entityDeathMessage;
 
     /**
      * The message sent to the client when a hostile entity dies.
@@ -110,7 +105,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "hostileDeathMessage",
         i18nEntry = "hostiledeath"
     )
-    protected ServerMessageType hostileDeathMessage;
+    protected volatile ServerMessageType hostileDeathMessage;
 
     /**
      * The message sent to the client when a passive entity dies.
@@ -122,7 +117,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "passiveDeathMessage",
         i18nEntry = "passivedeath"
     )
-    protected ServerMessageType passiveDeathMessage;
+    protected volatile ServerMessageType passiveDeathMessage;
 
     /**
      * The message sent to the client when a boss dies.
@@ -134,7 +129,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "bossDeathMessage",
         i18nEntry = "bossdeath"
     )
-    protected ServerMessageType bossDeathMessage;
+    protected volatile ServerMessageType bossDeathMessage;
 
     /**
      * The message sent to the client when a mob with custom name dies.
@@ -146,7 +141,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "namedEntityDeathMessage",
         i18nEntry = "nameddeath"
     )
-    protected ServerMessageType namedEntityDeathMessage;
+    protected volatile ServerMessageType namedEntityDeathMessage;
 
     /**
      * The message sent to the client when a mob - the mod that has once killed a player before - dies.
@@ -158,7 +153,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "killerDeathMessage",
         i18nEntry = "killerdeath"
     )
-    protected ServerMessageType killerDeathMessage;
+    protected volatile ServerMessageType killerDeathMessage;
 
     /**
      * If an entity has a health greater than this value, it will be considered as a boss.
@@ -175,7 +170,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "health"
     )
-    protected double bossMaxHealthThreshold;
+    protected volatile double bossMaxHealthThreshold;
 
     /**
      * The message sent to the player when the player changes the status of can sleep or cannot sleep.
@@ -187,7 +182,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "playerCanSleepMessage",
         i18nEntry = "cansleep"
     )
-    protected PlayerMessageType playerCanSleepMessage;
+    protected volatile PlayerMessageType playerCanSleepMessage;
 
     /**
      * The message sent to the player when the player dies, showing the coordinates of the death location.
@@ -199,7 +194,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "playerDeathCoord",
         i18nEntry = "deathcoord"
     )
-    protected PlayerMessageType playerDeathCoord;
+    protected volatile PlayerMessageType playerDeathCoord;
 
     /**
      * The message sent to the player when a projectile thrown by the player hits another entity.
@@ -211,7 +206,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "projectileHitOthers",
         i18nEntry = "hitothers"
     )
-    protected PlayerMessageType projectileHitOthers;
+    protected volatile PlayerMessageType projectileHitOthers;
 
     /**
      * The message sent to the player when the player is hit by a projectile.
@@ -223,7 +218,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "projectileBeingHit",
         i18nEntry = "beinghit"
     )
-    protected PlayerMessageType projectileBeingHit;
+    protected volatile PlayerMessageType projectileBeingHit;
 
     /**
      * The message sent to the player when the player is suspected of being AFK.
@@ -236,7 +231,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "informAfk",
         i18nEntry = "informafk"
     )
-    protected PlayerMessageType informAfk;
+    protected volatile PlayerMessageType informAfk;
 
     /**
      * The threshold of the time in ticks that a player is suspected of being AFK.
@@ -254,7 +249,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int informAfkThreshold;
+    protected volatile int informAfkThreshold;
 
     /**
      * The message sent to the player when they are confirmed to be AFK.
@@ -267,7 +262,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "broadcastAfk",
         i18nEntry = "bcafk"
     )
-    protected PlayerMessageType broadcastAfk;
+    protected volatile PlayerMessageType broadcastAfk;
 
     /**
      * The threshold of the time in ticks that a player is confirmed to be AFK.
@@ -285,7 +280,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int broadcastAfkThreshold;
+    protected volatile int broadcastAfkThreshold;
 
     /**
      * The message sent to the player when they are back from AFK.
@@ -298,7 +293,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "stopAfk",
         i18nEntry = "stopafk"
     )
-    protected PlayerMessageType stopAfk;
+    protected volatile PlayerMessageType stopAfk;
 
     /**
      * The message sent to the player when a player changes the biome.
@@ -310,7 +305,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "changeBiomeMessage",
         i18nEntry = "changebiome"
     )
-    protected PlayerMessageType changeBiomeMessage;
+    protected volatile PlayerMessageType changeBiomeMessage;
 
     /**
      * The delay in ticks before sending the message when a player changes the biome.
@@ -329,7 +324,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int changeBiomeDelay;
+    protected volatile int changeBiomeDelay;
 
     /**
      * The message sent to the player when a player attacks a boss.
@@ -341,7 +336,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "bossFightMessage",
         i18nEntry = "bossfight"
     )
-    protected PlayerMessageType bossFightMessage;
+    protected volatile PlayerMessageType bossFightMessage;
 
     /**
      * The interval in ticks before sending the message when a player attacks a boss.
@@ -360,7 +355,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int bossFightInterval;
+    protected volatile int bossFightInterval;
 
     /**
      * The message sent to the player when a player is surrounded by monsters.
@@ -372,7 +367,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "monsterSurroundMessage",
         i18nEntry = "monstersurround"
     )
-    protected PlayerMessageType monsterSurroundMessage;
+    protected volatile PlayerMessageType monsterSurroundMessage;
 
     /**
      * The interval in ticks before sending the message when a player is surrounded by monsters.
@@ -391,7 +386,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int monsterSurroundInterval;
+    protected volatile int monsterSurroundInterval;
 
     /**
      * If the number of the monsters near a player is larger than this value, the player will be considered as surrounded by monsters.
@@ -407,7 +402,7 @@ public class ServerConfig extends ConfigReader {
         maxSliderInt = 100,
         commandValueHint = "number"
     )
-    protected int monsterNumberThreshold;
+    protected volatile int monsterNumberThreshold;
 
     /**
      * If the distance between a player and a monster is less than this value, the monster will be considered as near the player.
@@ -424,7 +419,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "meters"
     )
-    protected double monsterDistanceThreshold;
+    protected volatile double monsterDistanceThreshold;
 
     /**
      * The message send to players when the number of entities in the server is larger than the threshold.
@@ -436,7 +431,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "entityNumberWarning",
         i18nEntry = "entitywarning"
     )
-    protected ServerMessageType entityNumberWarning;
+    protected volatile ServerMessageType entityNumberWarning;
 
     /**
      * The message to be sent when the entity density anaylze result is available.
@@ -448,7 +443,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "entityDensityWarning",
         i18nEntry = "densitywarning"
     )
-    protected ServerMessageType entityDensityWarning;
+    protected volatile ServerMessageType entityDensityWarning;
 
     /**
      * If the number of the entities in the server is larger than this value, the warning message will be sent.
@@ -465,7 +460,7 @@ public class ServerConfig extends ConfigReader {
         maxSliderInt = 10000,
         commandValueHint = "number"
     )
-    protected int entityNumberThreshold;
+    protected volatile int entityNumberThreshold;
 
     /**
      * If the number of the entities in the server is larger than this value,
@@ -482,7 +477,7 @@ public class ServerConfig extends ConfigReader {
         maxSliderInt = 10000,
         commandValueHint = "number"
     )
-    protected int entityDensityThreshold;
+    protected volatile int entityDensityThreshold;
 
     /**
      * When anaylzing entity density, the minimum number of entities required for each candidate position.
@@ -498,7 +493,7 @@ public class ServerConfig extends ConfigReader {
         maxSliderInt = 1000,
         commandValueHint = "number"
     )
-    protected int entityDensityNumber;
+    protected volatile int entityDensityNumber;
 
     /**
      * The radius within which to count entities for density checks.
@@ -515,7 +510,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "meters"
     )
-    protected double entityDensityRadius;
+    protected volatile double entityDensityRadius;
 
     /**
      * The interval in ticks to check how many entities are there in the server.
@@ -534,7 +529,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int entityNumberInterval;
+    protected volatile int entityNumberInterval;
 
     /**
      * The interval in ticks to perform entity density analysis.
@@ -553,7 +548,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int entityDensityInterval;
+    protected volatile int entityDensityInterval;
 
     /**
      * The message sent to the player when a player receives a damage larger than a certain percentage of his max health.
@@ -565,7 +560,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "playerHurtMessage",
         i18nEntry = "playerhurt"
     )
-    protected PlayerMessageType playerHurtMessage;
+    protected volatile PlayerMessageType playerHurtMessage;
 
     /**
      * If a player receives a damage larger than this percentage of his max health, he will be considered as seriously hurt.
@@ -583,7 +578,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "percentage"
     )
-    protected double playerHurtThreshold;
+    protected volatile double playerHurtThreshold;
 
     /**
      * The message sent to the player when a player travels a long distance within a short time.
@@ -595,7 +590,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "travelMessage",
         i18nEntry = "travelmessage"
     )
-    protected PlayerMessageType travelMessage;
+    protected volatile PlayerMessageType travelMessage;
 
     /**
      * Controls how often the player can receive the message.
@@ -613,7 +608,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int travelMessageInterval;
+    protected volatile int travelMessageInterval;
 
     /**
      * How many recent ticks to track for long-distance travel detection.
@@ -631,7 +626,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int travelWindow;
+    protected volatile int travelWindow;
 
     /**
      * The total horizontal distance required within the tracked window to consider it long-distance travel.
@@ -648,7 +643,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "meters"
     )
-    protected double travelTotalDistanceThreshold;
+    protected volatile double travelTotalDistanceThreshold;
 
     /**
      * Interval in ticks for partial distance checks within the travel window.
@@ -666,7 +661,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToTick"
     )
-    protected int travelPartialInterval;
+    protected volatile int travelPartialInterval;
 
     /**
      * The minimum horizontal distance required between two positions separated by the partial interval.
@@ -683,7 +678,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "meters"
     )
-    protected double travelPartialDistanceThreshold;
+    protected volatile double travelPartialDistanceThreshold;
 
     /**
      * The maximum allowed single-tick horizontal distance before it is considered a teleport.
@@ -700,7 +695,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "meters"
     )
-    protected double teleportThreshold;
+    protected volatile double teleportThreshold;
 
     /**
      * Controls where to show the message when a player teleports.
@@ -712,7 +707,7 @@ public class ServerConfig extends ConfigReader {
         commandEntry = "teleportMessage",
         i18nEntry = "teleport"
     )
-    protected PlayerMessageType teleportMessage;
+    protected volatile PlayerMessageType teleportMessage;
 
     /**
      * The URL of the target GPT server.
@@ -728,7 +723,7 @@ public class ServerConfig extends ConfigReader {
         maxStringLength = 1024,
         commandValueHint = "url"
     )
-    protected String gptUrl;
+    protected volatile String gptUrl;
 
     /**
      * The access tokens of the GPT server.
@@ -746,7 +741,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getSecureGptAccessTokens",
         commandValueHint = "token"
     )
-    protected String gptAccessTokens;
+    protected volatile String gptAccessTokens;
 
     /**
      * The model of the GPT server.
@@ -760,7 +755,7 @@ public class ServerConfig extends ConfigReader {
         maxStringLength = 1024,
         commandValueHint = "model"
     )
-    protected String gptModel;
+    protected volatile String gptModel;
 
     /**
      * The system prompt of generating the response.
@@ -774,7 +769,7 @@ public class ServerConfig extends ConfigReader {
         maxStringLength = 4096,
         commandValueHint = "prompt"
     )
-    protected String gptSystemPrompt;
+    protected volatile String gptSystemPrompt;
 
     /**
      * The temperature parameter of generating the response.
@@ -791,7 +786,7 @@ public class ServerConfig extends ConfigReader {
         displayValueGetter = "getDoubleConfigDisplayText",
         commandValueHint = "temperature"
     )
-    protected double gptTemperature;
+    protected volatile double gptTemperature;
 
     /**
      * The timeout of the GPT server in milliseconds.
@@ -809,7 +804,7 @@ public class ServerConfig extends ConfigReader {
         commandValueHint = "seconds",
         commandInputToTrueValue = "commandInputSecondToMiniSecond"
     )
-    protected int gptServerTimeout;
+    protected volatile int gptServerTimeout;
 
     public ServerConfig() {
         super("server.json");
@@ -868,1125 +863,605 @@ public class ServerConfig extends ConfigReader {
     }
 
     public boolean getServerTranslation() {
-        lock.readLock().lock();
-        try {
-            return serverTranslation;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return serverTranslation;
     }
 
     public void setServerTranslation(boolean serverTranslation) {
-        lock.writeLock().lock();
-        try {
-            this.serverTranslation = serverTranslation;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.serverTranslation = serverTranslation;
     }
 
     public int getMaxFlowLength() {
-        lock.readLock().lock();
-        try {
-            if (maxFlowLength < 0) {
-                return 0;
-            }
-            return maxFlowLength;
-        } finally {
-            lock.readLock().unlock();
+        if (maxFlowLength < 0) {
+            return 0;
         }
+        return maxFlowLength;
     }
 
     public void setMaxFlowLength(int maxFlowLength) {
-        lock.writeLock().lock();
-        try {
-            if (maxFlowLength < 0) {
-                this.maxFlowLength = 0;
-            } else {
-                this.maxFlowLength = maxFlowLength;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (maxFlowLength < 0) {
+            this.maxFlowLength = 0;
+        } else {
+            this.maxFlowLength = maxFlowLength;
         }
     }
 
     public int getMaxFlowRecursionDepth() {
-        lock.readLock().lock();
-        try {
-            if (maxFlowRecursionDepth < 0) {
-                return 0;
-            }
-            return maxFlowRecursionDepth;
-        } finally {
-            lock.readLock().unlock();
+        if (maxFlowRecursionDepth < 0) {
+            return 0;
         }
+        return maxFlowRecursionDepth;
     }
 
     public void setMaxFlowRecursionDepth(int maxFlowRecursionDepth) {
-        lock.writeLock().lock();
-        try {
-            if (maxFlowRecursionDepth < 0) {
-                this.maxFlowRecursionDepth = 0;
-            } else {
-                this.maxFlowRecursionDepth = maxFlowRecursionDepth;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (maxFlowRecursionDepth < 0) {
+            this.maxFlowRecursionDepth = 0;
+        } else {
+            this.maxFlowRecursionDepth = maxFlowRecursionDepth;
         }
     }
 
     public int getMaxFlowHistorySize() {
-        lock.readLock().lock();
-        try {
-            if (maxFlowHistorySize < 0) {
-                return 0;
-            }
-            return maxFlowHistorySize;
-        } finally {
-            lock.readLock().unlock();
+        if (maxFlowHistorySize < 0) {
+            return 0;
         }
+        return maxFlowHistorySize;
     }
 
     public void setMaxFlowHistorySize(int maxFlowHistorySize) {
-        lock.writeLock().lock();
-        try {
-            if (maxFlowHistorySize < 0) {
-                this.maxFlowHistorySize = 0;
-            } else {
-                this.maxFlowHistorySize = maxFlowHistorySize;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (maxFlowHistorySize < 0) {
+            this.maxFlowHistorySize = 0;
+        } else {
+            this.maxFlowHistorySize = maxFlowHistorySize;
         }
     }
 
     public ServerMessageType getEntityDeathMessage() {
-        lock.readLock().lock();
-        try {
-            return entityDeathMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return entityDeathMessage;
     }
 
     public void setEntityDeathMessage(ServerMessageType entityDeathMessage) {
-        lock.writeLock().lock();
-        try {
-            this.entityDeathMessage = entityDeathMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.entityDeathMessage = entityDeathMessage;
     }
 
     public ServerMessageType getHostileDeathMessage() {
-        lock.readLock().lock();
-        try {
-            return hostileDeathMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return hostileDeathMessage;
     }
 
     public void setHostileDeathMessage(ServerMessageType hostileDeathMessage) {
-        lock.writeLock().lock();
-        try {
-            this.hostileDeathMessage = hostileDeathMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.hostileDeathMessage = hostileDeathMessage;
     }
 
     public ServerMessageType getPassiveDeathMessage() {
-        lock.readLock().lock();
-        try {
-            return passiveDeathMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return passiveDeathMessage;
     }
 
     public void setPassiveDeathMessage(ServerMessageType passiveDeathMessage) {
-        lock.writeLock().lock();
-        try {
-            this.passiveDeathMessage = passiveDeathMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.passiveDeathMessage = passiveDeathMessage;
     }
 
     public ServerMessageType getBossDeathMessage() {
-        lock.readLock().lock();
-        try {
-            return bossDeathMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return bossDeathMessage;
     }
 
     public void setBossDeathMessage(ServerMessageType bossDeathMessage) {
-        lock.writeLock().lock();
-        try {
-            this.bossDeathMessage = bossDeathMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.bossDeathMessage = bossDeathMessage;
     }
 
     public ServerMessageType getNamedEntityDeathMessage() {
-        lock.readLock().lock();
-        try {
-            return namedEntityDeathMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return namedEntityDeathMessage;
     }
 
     public void setNamedEntityDeathMessage(ServerMessageType namedEntityDeathMessage) {
-        lock.writeLock().lock();
-        try {
-            this.namedEntityDeathMessage = namedEntityDeathMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.namedEntityDeathMessage = namedEntityDeathMessage;
     }
 
     public ServerMessageType getKillerDeathMessage() {
-        lock.readLock().lock();
-        try {
-            return killerDeathMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return killerDeathMessage;
     }
 
     public void setKillerDeathMessage(ServerMessageType killerDeathMessage) {
-        lock.writeLock().lock();
-        try {
-            this.killerDeathMessage = killerDeathMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.killerDeathMessage = killerDeathMessage;
     }
 
     public double getBossMaxHealthThreshold() {
-        lock.readLock().lock();
-        try {
-            if (bossMaxHealthThreshold < 0) {
-                return 0;
-            }
-            return bossMaxHealthThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (bossMaxHealthThreshold < 0) {
+            return 0;
         }
+        return bossMaxHealthThreshold;
     }
 
     public void setBossMaxHealthThreshold(double bossMaxHpThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (bossMaxHpThreshold < 0) {
-                this.bossMaxHealthThreshold = 0;
-            } else {
-                this.bossMaxHealthThreshold = bossMaxHpThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (bossMaxHpThreshold < 0) {
+            this.bossMaxHealthThreshold = 0;
+        } else {
+            this.bossMaxHealthThreshold = bossMaxHpThreshold;
         }
     }
 
     public PlayerMessageType getPlayerCanSleepMessage() {
-        lock.readLock().lock();
-        try {
-            return playerCanSleepMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return playerCanSleepMessage;
     }
 
     public void setPlayerCanSleepMessage(PlayerMessageType playerCanSleepMessage) {
-        lock.writeLock().lock();
-        try {
-            this.playerCanSleepMessage = playerCanSleepMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.playerCanSleepMessage = playerCanSleepMessage;
     }
 
     public PlayerMessageType getPlayerDeathCoord() {
-        lock.readLock().lock();
-        try {
-            return playerDeathCoord;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return playerDeathCoord;
     }
 
     public void setPlayerDeathCoord(PlayerMessageType playerDeathCoord) {
-        lock.writeLock().lock();
-        try {
-            this.playerDeathCoord = playerDeathCoord;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.playerDeathCoord = playerDeathCoord;
     }
 
     public PlayerMessageType getProjectileHitOthers() {
-        lock.readLock().lock();
-        try {
-            return projectileHitOthers;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return projectileHitOthers;
     }
 
     public void setProjectileHitOthers(PlayerMessageType projectileHitOthers) {
-        lock.writeLock().lock();
-        try {
-            this.projectileHitOthers = projectileHitOthers;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.projectileHitOthers = projectileHitOthers;
     }
 
     public PlayerMessageType getProjectileBeingHit() {
-        lock.readLock().lock();
-        try {
-            return projectileBeingHit;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return projectileBeingHit;
     }
 
     public void setProjectileBeingHit(PlayerMessageType projectileBeingHit) {
-        lock.writeLock().lock();
-        try {
-            this.projectileBeingHit = projectileBeingHit;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.projectileBeingHit = projectileBeingHit;
     }
 
     public PlayerMessageType getInformAfk() {
-        lock.readLock().lock();
-        try {
-            return informAfk;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return informAfk;
     }
 
     public void setInformAfk(PlayerMessageType informAfk) {
-        lock.writeLock().lock();
-        try {
-            this.informAfk = informAfk;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.informAfk = informAfk;
     }
 
     public int getInformAfkThreshold() {
-        lock.readLock().lock();
-        try {
-            if (informAfkThreshold < 0) {
-                return 0;
-            }
-            return informAfkThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (informAfkThreshold < 0) {
+            return 0;
         }
+        return informAfkThreshold;
     }
 
     public void setInformAfkThreshold(int informAfkThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (informAfkThreshold < 0) {
-                this.informAfkThreshold = 0;
-            } else {
-                this.informAfkThreshold = informAfkThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (informAfkThreshold < 0) {
+            this.informAfkThreshold = 0;
+        } else {
+            this.informAfkThreshold = informAfkThreshold;
         }
     }
 
     public PlayerMessageType getBroadcastAfk() {
-        lock.readLock().lock();
-        try {
-            return broadcastAfk;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return broadcastAfk;
     }
 
     public void setBroadcastAfk(PlayerMessageType broadcastAfk) {
-        lock.writeLock().lock();
-        try {
-            this.broadcastAfk = broadcastAfk;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.broadcastAfk = broadcastAfk;
     }
 
     public int getBroadcastAfkThreshold() {
-        lock.readLock().lock();
-        try {
-            if (broadcastAfkThreshold < 0) {
-                return 0;
-            }
-            return broadcastAfkThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (broadcastAfkThreshold < 0) {
+            return 0;
         }
+        return broadcastAfkThreshold;
     }
 
     public void setBroadcastAfkThreshold(int broadcastAfkThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (broadcastAfkThreshold < 0) {
-                this.broadcastAfkThreshold = 0;
-            } else {
-                this.broadcastAfkThreshold = broadcastAfkThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (broadcastAfkThreshold < 0) {
+            this.broadcastAfkThreshold = 0;
+        } else {
+            this.broadcastAfkThreshold = broadcastAfkThreshold;
         }
     }
 
     public PlayerMessageType getStopAfk() {
-        lock.readLock().lock();
-        try {
-            return stopAfk;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return stopAfk;
     }
 
     public void setStopAfk(PlayerMessageType stopAfk) {
-        lock.writeLock().lock();
-        try {
-            this.stopAfk = stopAfk;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.stopAfk = stopAfk;
     }
 
     public PlayerMessageType getChangeBiomeMessage() {
-        lock.readLock().lock();
-        try {
-            return changeBiomeMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return changeBiomeMessage;
     }
 
     public void setChangeBiomeMessage(PlayerMessageType changeBiomeMessage) {
-        lock.writeLock().lock();
-        try {
-            this.changeBiomeMessage = changeBiomeMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.changeBiomeMessage = changeBiomeMessage;
     }
 
     public int getChangeBiomeDelay() {
-        lock.readLock().lock();
-        try {
-            if (changeBiomeDelay < 0) {
-                return 0;
-            }
-            return changeBiomeDelay;
-        } finally {
-            lock.readLock().unlock();
+        if (changeBiomeDelay < 0) {
+            return 0;
         }
+        return changeBiomeDelay;
     }
 
     public void setChangeBiomeDelay(int changeBiomeDelay) {
-        lock.writeLock().lock();
-        try {
-            if (changeBiomeDelay < 0) {
-                this.changeBiomeDelay = 0;
-            } else {
-                this.changeBiomeDelay = changeBiomeDelay;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (changeBiomeDelay < 0) {
+            this.changeBiomeDelay = 0;
+        } else {
+            this.changeBiomeDelay = changeBiomeDelay;
         }
     }
 
     public PlayerMessageType getBossFightMessage() {
-        lock.readLock().lock();
-        try {
-            return bossFightMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return bossFightMessage;
     }
 
     public void setBossFightMessage(PlayerMessageType bossFightMessage) {
-        lock.writeLock().lock();
-        try {
-            this.bossFightMessage = bossFightMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.bossFightMessage = bossFightMessage;
     }
 
     public int getBossFightInterval() {
-        lock.readLock().lock();
-        try {
-            if (bossFightInterval < 0) {
-                return 0;
-            }
-            return bossFightInterval;
-        } finally {
-            lock.readLock().unlock();
+        if (bossFightInterval < 0) {
+            return 0;
         }
+        return bossFightInterval;
     }
 
     public void setBossFightInterval(int bossFightInterval) {
-        lock.writeLock().lock();
-        try {
-            if (bossFightInterval < 0) {
-                this.bossFightInterval = 0;
-            } else {
-                this.bossFightInterval = bossFightInterval;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (bossFightInterval < 0) {
+            this.bossFightInterval = 0;
+        } else {
+            this.bossFightInterval = bossFightInterval;
         }
     }
 
     public PlayerMessageType getMonsterSurroundMessage() {
-        lock.readLock().lock();
-        try {
-            return monsterSurroundMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return monsterSurroundMessage;
     }
 
     public void setMonsterSurroundMessage(PlayerMessageType monsterSurroundMessage) {
-        lock.writeLock().lock();
-        try {
-            this.monsterSurroundMessage = monsterSurroundMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.monsterSurroundMessage = monsterSurroundMessage;
     }
 
     public int getMonsterSurroundInterval() {
-        lock.readLock().lock();
-        try {
-            if (monsterSurroundInterval < 0) {
-                return 0;
-            }
-            return monsterSurroundInterval;
-        } finally {
-            lock.readLock().unlock();
+        if (monsterSurroundInterval < 0) {
+            return 0;
         }
+        return monsterSurroundInterval;
     }
 
     public void setMonsterSurroundInterval(int monsterSurroundInterval) {
-        lock.writeLock().lock();
-        try {
-            if (monsterSurroundInterval < 0) {
-                this.monsterSurroundInterval = 0;
-            } else {
-                this.monsterSurroundInterval = monsterSurroundInterval;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (monsterSurroundInterval < 0) {
+            this.monsterSurroundInterval = 0;
+        } else {
+            this.monsterSurroundInterval = monsterSurroundInterval;
         }
     }
 
     public int getMonsterNumberThreshold() {
-        lock.readLock().lock();
-        try {
-            if (monsterNumberThreshold < 1) {
-                return 1;
-            }
-            return monsterNumberThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (monsterNumberThreshold < 1) {
+            return 1;
         }
+        return monsterNumberThreshold;
     }
 
     public void setMonsterNumberThreshold(int monsterNumberThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (monsterNumberThreshold < 1) {
-                this.monsterNumberThreshold = 1;
-            } else {
-                this.monsterNumberThreshold = monsterNumberThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (monsterNumberThreshold < 1) {
+            this.monsterNumberThreshold = 1;
+        } else {
+            this.monsterNumberThreshold = monsterNumberThreshold;
         }
     }
 
     public double getMonsterDistanceThreshold() {
-        lock.readLock().lock();
-        try {
-            if (monsterDistanceThreshold < 0) {
-                return 0.0;
-            }
-            return monsterDistanceThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (monsterDistanceThreshold < 0) {
+            return 0.0;
         }
+        return monsterDistanceThreshold;
     }
 
     public void setMonsterDistanceThreshold(double monsterDistanceThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (monsterDistanceThreshold < 0) {
-                this.monsterDistanceThreshold = 0;
-            } else {
-                this.monsterDistanceThreshold = monsterDistanceThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (monsterDistanceThreshold < 0) {
+            this.monsterDistanceThreshold = 0;
+        } else {
+            this.monsterDistanceThreshold = monsterDistanceThreshold;
         }
     }
 
     public ServerMessageType getEntityNumberWarning() {
-        lock.readLock().lock();
-        try {
-            return entityNumberWarning;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return entityNumberWarning;
     }
 
     public void setEntityNumberWarning(ServerMessageType entityNumberWarning) {
-        lock.writeLock().lock();
-        try {
-            this.entityNumberWarning = entityNumberWarning;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.entityNumberWarning = entityNumberWarning;
     }
 
     public ServerMessageType getEntityDensityWarning() {
-        lock.readLock().lock();
-        try {
-            return entityDensityWarning;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return entityDensityWarning;
     }
 
     public void setEntityDensityWarning(ServerMessageType entityDensityWarning) {
-        lock.writeLock().lock();
-        try {
-            this.entityDensityWarning = entityDensityWarning;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.entityDensityWarning = entityDensityWarning;
     }
 
     public int getEntityNumberThreshold() {
-        lock.readLock().lock();
-        try {
-            if (entityNumberThreshold < 1) {
-                return 1;
-            }
-            return entityNumberThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (entityNumberThreshold < 1) {
+            return 1;
         }
+        return entityNumberThreshold;
     }
 
     public void setEntityNumberThreshold(int entityNumberThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (entityNumberThreshold < 1) {
-                this.entityNumberThreshold = 1;
-            } else {
-                this.entityNumberThreshold = entityNumberThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (entityNumberThreshold < 1) {
+            this.entityNumberThreshold = 1;
+        } else {
+            this.entityNumberThreshold = entityNumberThreshold;
         }
     }
 
     public int getEntityDensityThreshold() {
-        lock.readLock().lock();
-        try {
-            if (entityDensityThreshold < 1) {
-                return 1;
-            }
-            return entityDensityThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (entityDensityThreshold < 1) {
+            return 1;
         }
+        return entityDensityThreshold;
     }
 
     public void setEntityDensityThreshold(int entityDensityThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (entityDensityThreshold < 1) {
-                this.entityDensityThreshold = 1;
-            } else {
-                this.entityDensityThreshold = entityDensityThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (entityDensityThreshold < 1) {
+            this.entityDensityThreshold = 1;
+        } else {
+            this.entityDensityThreshold = entityDensityThreshold;
         }
     }
 
     public int getEntityDensityNumber() {
-        lock.readLock().lock();
-        try {
-            if (entityDensityNumber < 2) {
-                return 2;
-            }
-            return entityDensityNumber;
-        } finally {
-            lock.readLock().unlock();
+        if (entityDensityNumber < 2) {
+            return 2;
         }
+        return entityDensityNumber;
     }
 
     public void setEntityDensityNumber(int entityDensityNumber) {
-        lock.writeLock().lock();
-        try {
-            if (entityDensityNumber < 2) {
-                this.entityDensityNumber = 2;
-            } else {
-                this.entityDensityNumber = entityDensityNumber;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (entityDensityNumber < 2) {
+            this.entityDensityNumber = 2;
+        } else {
+            this.entityDensityNumber = entityDensityNumber;
         }
     }
 
     public double getEntityDensityRadius() {
-        lock.readLock().lock();
-        try {
-            if (entityDensityRadius < 0) {
-                return 0.0;
-            }
-            return entityDensityRadius;
-        } finally {
-            lock.readLock().unlock();
+        if (entityDensityRadius < 0) {
+            return 0.0;
         }
+        return entityDensityRadius;
     }
 
     public void setEntityDensityRadius(double entityDensityRadius) {
-        lock.writeLock().lock();
-        try {
-            if (entityDensityRadius < 0) {
-                this.entityDensityRadius = 0.0;
-            } else {
-                this.entityDensityRadius = entityDensityRadius;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (entityDensityRadius < 0) {
+            this.entityDensityRadius = 0.0;
+        } else {
+            this.entityDensityRadius = entityDensityRadius;
         }
     }
 
     public int getEntityNumberInterval() {
-        lock.readLock().lock();
-        try {
-            if (entityNumberInterval <= 0) {
-                return 1;
-            }
-            return entityNumberInterval;
-        } finally {
-            lock.readLock().unlock();
+        if (entityNumberInterval <= 0) {
+            return 1;
         }
+        return entityNumberInterval;
     }
 
     public void setEntityNumberInterval(int entityNumberInterval) {
-        lock.writeLock().lock();
-        try {
-            if (entityNumberInterval <= 0) {
-                this.entityNumberInterval = 1;
-            } else {
-                this.entityNumberInterval = entityNumberInterval;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (entityNumberInterval <= 0) {
+            this.entityNumberInterval = 1;
+        } else {
+            this.entityNumberInterval = entityNumberInterval;
         }
     }
 
     public int getEntityDensityInterval() {
-        lock.readLock().lock();
-        try {
-            if (entityDensityInterval <= 0) {
-                return 1;
-            }
-            return entityDensityInterval;
-        } finally {
-            lock.readLock().unlock();
+        if (entityDensityInterval <= 0) {
+            return 1;
         }
+        return entityDensityInterval;
     }
 
     public void setEntityDensityInterval(int entityDensityInterval) {
-        lock.writeLock().lock();
-        try {
-            if (entityDensityInterval <= 0) {
-                this.entityDensityInterval = 1;
-            } else {
-                this.entityDensityInterval = entityDensityInterval;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (entityDensityInterval <= 0) {
+            this.entityDensityInterval = 1;
+        } else {
+            this.entityDensityInterval = entityDensityInterval;
         }
     }
 
     public PlayerMessageType getPlayerHurtMessage() {
-        lock.readLock().lock();
-        try {
-            return playerHurtMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return playerHurtMessage;
     }
 
     public void setPlayerHurtMessage(PlayerMessageType playerHurtMessage) {
-        lock.writeLock().lock();
-        try {
-            this.playerHurtMessage = playerHurtMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.playerHurtMessage = playerHurtMessage;
     }
 
     public double getPlayerHurtThreshold() {
-        lock.readLock().lock();
-        try {
-            if (playerHurtThreshold < 0) {
-                return 0;
-            }
-            if (playerHurtThreshold > 1) {
-                return 1;
-            }
-            return playerHurtThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (playerHurtThreshold < 0) {
+            return 0;
         }
+        if (playerHurtThreshold > 1) {
+            return 1;
+        }
+        return playerHurtThreshold;
     }
 
     public void setPlayerHurtThreshold(double playerHurtThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (playerHurtThreshold < 0) {
-                this.playerHurtThreshold = 0;
-            } else if (playerHurtThreshold > 1) {
-                this.playerHurtThreshold = 1;
-            } else {
-                this.playerHurtThreshold = playerHurtThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (playerHurtThreshold < 0) {
+            this.playerHurtThreshold = 0;
+        } else if (playerHurtThreshold > 1) {
+            this.playerHurtThreshold = 1;
+        } else {
+            this.playerHurtThreshold = playerHurtThreshold;
         }
     }
 
     public PlayerMessageType getTravelMessage() {
-        lock.readLock().lock();
-        try {
-            return travelMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return travelMessage;
     }
 
     public void setTravelMessage(PlayerMessageType travelMessage) {
-        lock.writeLock().lock();
-        try {
-            this.travelMessage = travelMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.travelMessage = travelMessage;
     }
 
     public int getTravelMessageInterval() {
-        lock.readLock().lock();
-        try {
-            if (travelMessageInterval <= 0) {
-                return 1;
-            }
-            return travelMessageInterval;
-        } finally {
-            lock.readLock().unlock();
+        if (travelMessageInterval <= 0) {
+            return 1;
         }
+        return travelMessageInterval;
     }
 
     public void setTravelMessageInterval(int travelMessageInterval) {
-        lock.writeLock().lock();
-        try {
-            if (travelMessageInterval <= 0) {
-                this.travelMessageInterval = 1;
-            } else {
-                this.travelMessageInterval = travelMessageInterval;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (travelMessageInterval <= 0) {
+            this.travelMessageInterval = 1;
+        } else {
+            this.travelMessageInterval = travelMessageInterval;
         }
     }
 
     public int getTravelWindow() {
-        lock.readLock().lock();
-        try {
-            if (travelWindow <= 0) {
-                return 1;
-            }
-            return travelWindow;
-        } finally {
-            lock.readLock().unlock();
+        if (travelWindow <= 0) {
+            return 1;
         }
+        return travelWindow;
     }
 
     public void setTravelWindow(int travelWindow) {
-        lock.writeLock().lock();
-        try {
-            if (travelWindow <= 0) {
-                this.travelWindow = 1;
-            } else {
-                this.travelWindow = travelWindow;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (travelWindow <= 0) {
+            this.travelWindow = 1;
+        } else {
+            this.travelWindow = travelWindow;
         }
     }
 
     public double getTravelTotalDistanceThreshold() {
-        lock.readLock().lock();
-        try {
-            if (travelTotalDistanceThreshold < 0) {
-                return 0;
-            }
-            return travelTotalDistanceThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (travelTotalDistanceThreshold < 0) {
+            return 0;
         }
+        return travelTotalDistanceThreshold;
     }
 
     public void setTravelTotalDistanceThreshold(double travelTotalDistanceThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (travelTotalDistanceThreshold < 0) {
-                this.travelTotalDistanceThreshold = 0;
-            } else {
-                this.travelTotalDistanceThreshold = travelTotalDistanceThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (travelTotalDistanceThreshold < 0) {
+            this.travelTotalDistanceThreshold = 0;
+        } else {
+            this.travelTotalDistanceThreshold = travelTotalDistanceThreshold;
         }
     }
 
     public int getTravelPartialInterval() {
-        lock.readLock().lock();
-        try {
-            if (travelPartialInterval <= 0) {
-                return 1;
-            }
-            return travelPartialInterval;
-        } finally {
-            lock.readLock().unlock();
+        if (travelPartialInterval <= 0) {
+            return 1;
         }
+        return travelPartialInterval;
     }
 
     public void setTravelPartialInterval(int travelPartialInterval) {
-        lock.writeLock().lock();
-        try {
-            if (travelPartialInterval <= 0) {
-                this.travelPartialInterval = 1;
-            } else {
-                this.travelPartialInterval = travelPartialInterval;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (travelPartialInterval <= 0) {
+            this.travelPartialInterval = 1;
+        } else {
+            this.travelPartialInterval = travelPartialInterval;
         }
     }
 
     public double getTravelPartialDistanceThreshold() {
-        lock.readLock().lock();
-        try {
-            if (travelPartialDistanceThreshold < 0) {
-                return 0;
-            }
-            return travelPartialDistanceThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (travelPartialDistanceThreshold < 0) {
+            return 0;
         }
+        return travelPartialDistanceThreshold;
     }
 
     public void setTravelPartialDistanceThreshold(double travelPartialDistanceThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (travelPartialDistanceThreshold < 0) {
-                this.travelPartialDistanceThreshold = 0;
-            } else {
-                this.travelPartialDistanceThreshold = travelPartialDistanceThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (travelPartialDistanceThreshold < 0) {
+            this.travelPartialDistanceThreshold = 0;
+        } else {
+            this.travelPartialDistanceThreshold = travelPartialDistanceThreshold;
         }
     }
 
     public double getTeleportThreshold() {
-        lock.readLock().lock();
-        try {
-            if (teleportThreshold < 0) {
-                return 0;
-            }
-            return teleportThreshold;
-        } finally {
-            lock.readLock().unlock();
+        if (teleportThreshold < 0) {
+            return 0;
         }
+        return teleportThreshold;
     }
 
     public void setTeleportThreshold(double teleportThreshold) {
-        lock.writeLock().lock();
-        try {
-            if (teleportThreshold < 0) {
-                this.teleportThreshold = 0;
-            } else {
-                this.teleportThreshold = teleportThreshold;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (teleportThreshold < 0) {
+            this.teleportThreshold = 0;
+        } else {
+            this.teleportThreshold = teleportThreshold;
         }
     }
 
     public PlayerMessageType getTeleportMessage() {
-        lock.readLock().lock();
-        try {
-            return teleportMessage;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return teleportMessage;
     }
 
     public void setTeleportMessage(PlayerMessageType teleportMessage) {
-        lock.writeLock().lock();
-        try {
-            this.teleportMessage = teleportMessage;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.teleportMessage = teleportMessage;
     }
 
     public String getGptUrl() {
-        lock.readLock().lock();
-        try {
-            return gptUrl;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return gptUrl;
     }
 
     public void setGptUrl(String gptUrl) {
-        lock.writeLock().lock();
-        try {
-            this.gptUrl = gptUrl;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.gptUrl = gptUrl;
     }
 
     public String getGptAccessTokens() {
-        lock.readLock().lock();
-        try {
-            return gptAccessTokens;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return gptAccessTokens;
     }
 
     public void setGptAccessTokens(String gptAccessTokens) {
-        lock.writeLock().lock();
-        try {
-            this.gptAccessTokens = gptAccessTokens;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.gptAccessTokens = gptAccessTokens;
     }
 
     public String getGptModel() {
-        lock.readLock().lock();
-        try {
-            return gptModel;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return gptModel;
     }
 
     public void setGptModel(String gptModel) {
-        lock.writeLock().lock();
-        try {
-            this.gptModel = gptModel;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.gptModel = gptModel;
     }
 
     public String getGptSystemPrompt() {
-        lock.readLock().lock();
-        try {
-            return gptSystemPrompt;
-        } finally {
-            lock.readLock().unlock();
-        }
+        return gptSystemPrompt;
     }
 
     public void setGptSystemPrompt(String gptSystemPrompt) {
-        lock.writeLock().lock();
-        try {
-            this.gptSystemPrompt = gptSystemPrompt;
-        } finally {
-            lock.writeLock().unlock();
-        }
+        this.gptSystemPrompt = gptSystemPrompt;
     }
 
     public double getGptTemperature() {
-        lock.readLock().lock();
-        try {
-            if (gptTemperature < 0) {
-                return 0;
-            }
-            return gptTemperature;
-        } finally {
-            lock.readLock().unlock();
+        if (gptTemperature < 0) {
+            return 0;
         }
+        return gptTemperature;
     }
 
     public void setGptTemperature(double gptTemperature) {
-        lock.writeLock().lock();
-        try {
-            if (gptTemperature < 0) {
-                this.gptTemperature = 0;
-            } else {
-                this.gptTemperature = gptTemperature;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (gptTemperature < 0) {
+            this.gptTemperature = 0;
+        } else {
+            this.gptTemperature = gptTemperature;
         }
     }
 
     public int getGptServerTimeout() {
-        lock.readLock().lock();
-        try {
-            if (gptServerTimeout < 1000) {
-                return 1000;
-            }
-            return gptServerTimeout;
-        } finally {
-            lock.readLock().unlock();
+        if (gptServerTimeout < 1000) {
+            return 1000;
         }
+        return gptServerTimeout;
     }
 
     public void setGptServerTimeout(int gptServerTimeout) {
-        lock.writeLock().lock();
-        try {
-            if (gptServerTimeout < 1000) {
-                this.gptServerTimeout = 1000;
-            } else {
-                this.gptServerTimeout = gptServerTimeout;
-            }
-        } finally {
-            lock.writeLock().unlock();
+        if (gptServerTimeout < 1000) {
+            this.gptServerTimeout = 1000;
+        } else {
+            this.gptServerTimeout = gptServerTimeout;
         }
     }
 
@@ -2040,7 +1515,7 @@ public class ServerConfig extends ConfigReader {
         } else if (token.length() > 0) {
             secureToken = String.valueOf("*".repeat(token.length()));
         } else {
-            secureToken = "null";
+            secureToken = "";
         }
         return Component.literal(secureToken);
     }

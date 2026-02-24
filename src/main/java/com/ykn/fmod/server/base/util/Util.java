@@ -15,6 +15,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.config.ConfigReader;
@@ -44,13 +46,13 @@ public class Util {
 
     private static final ReentrantReadWriteLock utilLock = new ReentrantReadWriteLock();
 
-    public static final String LOGGERNAME = "FMinecraftMod";
+    public static final Logger LOGGER = LoggerFactory.getLogger("FMinecraftMod");
     public static final String MODID = "fminecraftmod";
 
     /**
      * A static instance of the {@link EntityTypeTest} class that is used to get all the entities that are loaded and not removed in the world.
      */
-    public static final EntityTypeTest<Entity, Entity> PASSTHROUGH_FILTER = new EntityTypeTest<Entity, Entity>(){
+    private static final EntityTypeTest<Entity, Entity> PASSTHROUGH_FILTER = new EntityTypeTest<Entity, Entity>() {
         @Override
         public Entity tryCast(@Nonnull Entity entity) {
             return entity;
@@ -65,13 +67,13 @@ public class Util {
      * A static instance of the {@link ServerConfig} class.
      * This is used to manage and access server configuration settings.
      */
-    public static ServerConfig serverConfig = new ServerConfig();
+    private static volatile ServerConfig serverConfig = new ServerConfig();
 
     /**
      * A static map that associates a MinecraftServer instance with its corresponding ServerData.
      * This map is used to store and manage data related to different Minecraft server instances.
      */
-    public static ConcurrentHashMap<MinecraftServer, ServerData> worldData = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<MinecraftServer, ServerData> worldData = new ConcurrentHashMap<>();
 
     /**
      * Retrieves the version of the mod.
@@ -208,7 +210,7 @@ public class Util {
         } finally {
             utilLock.writeLock().unlock();
         }
-        LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Server config loaded.");
+        LOGGER.info("FMinecraftMod: Server config loaded.");
     }
 
     /**
@@ -222,7 +224,22 @@ public class Util {
         } finally {
             utilLock.writeLock().unlock();
         }
-        LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Server config saved.");
+        LOGGER.info("FMinecraftMod: Server config saved.");
+    }
+
+    /** 
+     * Retrieves the current server configuration.
+     * This method acquires a read lock to ensure thread safety while accessing the configuration.
+     * 
+     * @return The current {@link ServerConfig} instance containing the server configuration settings.
+     */
+    public static ServerConfig getServerConfig() {
+        utilLock.readLock().lock();
+        try {
+            return serverConfig;
+        } finally {
+            utilLock.readLock().unlock();
+        }
     }
 
     /**
@@ -234,13 +251,10 @@ public class Util {
      */
     @Nonnull
     public static ServerData getServerData(@Nonnull MinecraftServer server) {
-        ServerData data = worldData.get(server);
-        if (data == null) {
-            data = new ServerData(server);
-            worldData.put(server, data);
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: A new instance of ServerData was created.");
-        }
-        return data;
+        return worldData.computeIfAbsent(server, s -> {
+            LOGGER.info("FMinecraftMod: A new instance of ServerData was created.");
+            return new ServerData(s);
+        });
     }
 
     /**
@@ -251,6 +265,9 @@ public class Util {
      */
     @Nonnull
     public static PlayerData getPlayerData(@Nonnull ServerPlayer player) {
+        if (player.getServer() == null) {
+            throw new IllegalStateException("PlayerData cannot be retrieved on the client side.");
+        }
         return getServerData(player.getServer()).getPlayerData(player);
     }
 
@@ -435,7 +452,7 @@ public class Util {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.shutdownAsyncTaskPool();
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the thread pool.");
+            LOGGER.info("FMinecraftMod: Existing ServerData instance found and shut down the thread pool.");
         }
         worldData.put(server, data);
     }
@@ -449,7 +466,7 @@ public class Util {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.shutdownAsyncTaskPool();
-            LoggerFactory.getLogger(LOGGERNAME).info("FMinecraftMod: Existing ServerData instance found and shut down the thread pool.");
+            LOGGER.info("FMinecraftMod: Existing ServerData instance found and shut down the thread pool.");
         }
         ServerData data = new ServerData(server);
         worldData.put(server, data);

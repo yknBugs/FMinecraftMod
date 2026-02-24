@@ -11,8 +11,6 @@ import java.util.Objects;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-import org.slf4j.LoggerFactory;
-
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -152,6 +150,7 @@ public class PlayerMessageType extends MessageType {
                 } else {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
                 }
+                break;
             case SELF:
                 if (currentReceiver == null) {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
@@ -165,7 +164,7 @@ public class PlayerMessageType extends MessageType {
                 sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
                 break;
             default:
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Invalid message receiver type: " + this.receiver);
+                Util.LOGGER.error("FMinecraftMod: Invalid message receiver type: " + this.receiver);
                 break;
         }
     }
@@ -202,6 +201,7 @@ public class PlayerMessageType extends MessageType {
         for (ServerPlayer player : players) {
             type.postMessage(sourcePlayer, player, mainMessage, Component.empty());
         }
+        type.postMessage(sourcePlayer, null, mainMessage, Component.empty());
     }
 
     /**
@@ -271,7 +271,7 @@ public class PlayerMessageType extends MessageType {
                 receiver = PlayerMessageType.Receiver.NONE;
                 break;
             default:
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod:Invalid PlayerMessageType receiver: " + serverMessageType.receiver);
+                Util.LOGGER.error("FMinecraftMod: Invalid ServerMessageType receiver: " + serverMessageType.receiver);
                 receiver = PlayerMessageType.Receiver.NONE;
                 break;
         }
@@ -294,6 +294,7 @@ public class PlayerMessageType extends MessageType {
      * @param newMainLocation the new display location for the primary audience
      * @return a new {@code PlayerMessageType} instance with the updated main player location
      */
+    @Override
     public PlayerMessageType updateMain(MessageType.Location newMainLocation) {
         return new PlayerMessageType(newMainLocation, this.otherPlayerLocation, this.receiver);
     }
@@ -304,8 +305,19 @@ public class PlayerMessageType extends MessageType {
      * @param newOtherLocation the new display location for non-primary receivers
      * @return a new {@code PlayerMessageType} instance with the updated other player location
      */
+    @Override
     public PlayerMessageType updateOther(MessageType.Location newOtherLocation) {
         return new PlayerMessageType(this.mainPlayerLocation, newOtherLocation, this.receiver);
+    }
+
+    /**
+     * Returns the receiver filter of this {@code PlayerMessageType}.
+     *
+     * @return the receiver filter
+     */
+    @Override
+    public Enum<?> getReceiver() {
+        return this.receiver;
     }
 
     /**

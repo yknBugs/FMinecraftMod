@@ -16,8 +16,6 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.network.chat.Component;
-
 /**
  * A node to set an object at a specific index in a list.
  * Inputs:
@@ -43,161 +41,134 @@ public class SetObjectAtIndexNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Component displayName = Util.parseTranslatableText("fmod.node.setindexat.title.name");
-        Component description = Util.parseTranslatableText("fmod.node.setindexat.title.feat");
-        List<Component> inputNames = new ArrayList<>();
-        List<Component> inputDescriptions = new ArrayList<>();
-        List<Component> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.setindexat.input.list.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.input.list.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.input.list.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.setindexat.input.index.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.input.index.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.input.index.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.setindexat.input.object.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.input.object.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.input.object.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.setindexat.input.replace.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.input.replace.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.input.replace.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.setindexat.input.flatten.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.input.flatten.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.input.flatten.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.setindexat.input.strip.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.input.strip.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.input.strip.type"));
-        List<Component> outputNames = new ArrayList<>();
-        List<Component> outputDescriptions = new ArrayList<>();
-        List<Component> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.setindexat.output.list.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.output.list.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.output.list.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.setindexat.output.object.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.output.object.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.output.object.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.setindexat.output.sizebefore.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.output.sizebefore.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.output.sizebefore.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.setindexat.output.sizeafter.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.setindexat.output.sizeafter.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.setindexat.output.sizeafter.type"));
-        List<Component> branchNames = new ArrayList<>();
-        List<Component> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.setindexat.title.name", "fmod.node.setindexat.title.feat")
+            .input("fmod.node.setindexat.input.list.name", "fmod.node.setindexat.input.list.feat", "fmod.node.setindexat.input.list.type")
+            .input("fmod.node.setindexat.input.index.name", "fmod.node.setindexat.input.index.feat", "fmod.node.setindexat.input.index.type")
+            .input("fmod.node.setindexat.input.object.name", "fmod.node.setindexat.input.object.feat", "fmod.node.setindexat.input.object.type")
+            .input("fmod.node.setindexat.input.replace.name", "fmod.node.setindexat.input.replace.feat", "fmod.node.setindexat.input.replace.type")
+            .input("fmod.node.setindexat.input.flatten.name", "fmod.node.setindexat.input.flatten.feat", "fmod.node.setindexat.input.flatten.type")
+            .input("fmod.node.setindexat.input.strip.name", "fmod.node.setindexat.input.strip.feat", "fmod.node.setindexat.input.strip.type")
+            .output("fmod.node.setindexat.output.list.name", "fmod.node.setindexat.output.list.feat", "fmod.node.setindexat.output.list.type")
+            .output("fmod.node.setindexat.output.object.name", "fmod.node.setindexat.output.object.feat", "fmod.node.setindexat.output.object.type")
+            .output("fmod.node.setindexat.output.sizebefore.name", "fmod.node.setindexat.output.sizebefore.feat", "fmod.node.setindexat.output.sizebefore.type")
+            .output("fmod.node.setindexat.output.sizeafter.name", "fmod.node.setindexat.output.sizeafter.feat", "fmod.node.setindexat.output.sizeafter.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        List<Object> inputList = parseList(resolvedInputs.get(0));
-        
-        Double indexDouble = TypeAdaptor.parse(resolvedInputs.get(1)).asDouble();
+        try {
+            List<Object> inputList = parseList(resolvedInputs.get(0));
+            
+            Double indexDouble = TypeAdaptor.parse(resolvedInputs.get(1)).asDouble();
 
-        Object objectToSet = resolvedInputs.get(2);
-        
-        Boolean isReplaceBool = TypeAdaptor.parse(resolvedInputs.get(3)).asBoolean();
-        boolean isReplace = isReplaceBool == null ? true : isReplaceBool;
+            Object objectToSet = resolvedInputs.get(2);
+            
+            Boolean isReplaceBool = TypeAdaptor.parse(resolvedInputs.get(3)).asBoolean();
+            boolean isReplace = isReplaceBool == null ? true : isReplaceBool;
 
-        Boolean isFlattenBool = TypeAdaptor.parse(resolvedInputs.get(4)).asBoolean();
-        boolean isFlatten = isFlattenBool == null ? true : isFlattenBool;
+            Boolean isFlattenBool = TypeAdaptor.parse(resolvedInputs.get(4)).asBoolean();
+            boolean isFlatten = isFlattenBool == null ? true : isFlattenBool;
 
-        Boolean isStripBool = TypeAdaptor.parse(resolvedInputs.get(5)).asBoolean();
-        boolean isStrip = isStripBool == null ? true : isStripBool; 
-        
-        int sizeBefore = inputList.size();
-        
-        // Determine index
-        int index = inputList.size();
-        if (indexDouble != null) {
-            index = indexDouble.intValue();
-            if (index < 0) {
-                index = sizeBefore + index;
-                // index can still be negative here
-            }
-        }
-
-        // Append nulls if index is negative and out of bounds
-        if (index < 0) {
-            int nullsToAdd = -index;
-            for (int i = 0; i < nullsToAdd; i++) {
-                inputList.add(0, null);
-            }
-            index = 0;
-        }
-
-        // Append nulls if index is positive and out of bounds
-        if (index > sizeBefore) {
-            while (inputList.size() < index) {
-                inputList.add(null);
-            }
-        }
-
-        // Prepare Elements
-        List<Object> objectsToInsert = new ArrayList<>();
-        if (isFlatten && objectToSet instanceof List) {
-            objectsToInsert.addAll((List<?>) objectToSet);
-        } else {
-            objectsToInsert.add(objectToSet);
-        }
-        
-        if (isReplace) {
-            // Perform replacement
-            List<Object> replacedObjects = new ArrayList<>();
-            for (int i = 0; i < objectsToInsert.size(); i++) {
-                int currentIndex = index + i;
-                if (currentIndex < inputList.size()) {
-                    Object replacedObject = inputList.get(currentIndex);
-                    if (replacedObject != null) {
-                        replacedObjects.add(replacedObject);
-                    }
-                    inputList.set(currentIndex, objectsToInsert.get(i));
-                } else {
-                    while (inputList.size() < currentIndex) {
-                        inputList.add(null);
-                    }
-                    inputList.add(objectsToInsert.get(i));
+            Boolean isStripBool = TypeAdaptor.parse(resolvedInputs.get(5)).asBoolean();
+            boolean isStrip = isStripBool == null ? true : isStripBool; 
+            
+            int sizeBefore = inputList.size();
+            
+            // Determine index
+            int index = inputList.size();
+            if (indexDouble != null) {
+                index = indexDouble.intValue();
+                if (index < 0) {
+                    index = sizeBefore + index;
+                    // index can still be negative here
                 }
             }
 
-            // Set Output value
-            if (replacedObjects.size() == 0) {
-                status.setOutput(1, null);
-            } else if (replacedObjects.size() == 1) {
-                status.setOutput(1, replacedObjects.get(0));
-            } else {
-                status.setOutput(1, replacedObjects);
-            }
-        } else {
-            // Set Output value
-            if (index < inputList.size()) {
-                status.setOutput(1, inputList.get(index));
-            } else {
-                status.setOutput(1, null);
+            // Append nulls if index is negative and out of bounds
+            if (index < 0) {
+                int nullsToAdd = -index;
+                for (int i = 0; i < nullsToAdd; i++) {
+                    inputList.add(0, null);
+                }
+                index = 0;
             }
 
-            // Insert elements
-            for (int i = objectsToInsert.size() - 1; i >= 0; i--) {
-                inputList.add(index, objectsToInsert.get(i));
+            // Append nulls if index is positive and out of bounds
+            if (index > sizeBefore) {
+                while (inputList.size() < index) {
+                    inputList.add(null);
+                }
             }
-        }
 
-        if (isStrip) {
-            // Strip nulls at the beginning
-            while (inputList.size() > 0 && inputList.get(0) == null) {
-                inputList.remove(0);
+            // Prepare Elements
+            List<Object> objectsToInsert = new ArrayList<>();
+            if (isFlatten && objectToSet instanceof List) {
+                objectsToInsert.addAll((List<?>) objectToSet);
+            } else {
+                objectsToInsert.add(objectToSet);
             }
-            // Strip nulls at the end
-            while (inputList.size() > 0 && inputList.get(inputList.size() - 1) == null) {
-                inputList.remove(inputList.size() - 1);
+            
+            if (isReplace) {
+                // Perform replacement
+                List<Object> replacedObjects = new ArrayList<>();
+                for (int i = 0; i < objectsToInsert.size(); i++) {
+                    int currentIndex = index + i;
+                    if (currentIndex < inputList.size()) {
+                        Object replacedObject = inputList.get(currentIndex);
+                        if (replacedObject != null) {
+                            replacedObjects.add(replacedObject);
+                        }
+                        inputList.set(currentIndex, objectsToInsert.get(i));
+                    } else {
+                        while (inputList.size() < currentIndex) {
+                            inputList.add(null);
+                        }
+                        inputList.add(objectsToInsert.get(i));
+                    }
+                }
+
+                // Set Output value
+                if (replacedObjects.isEmpty()) {
+                    status.setOutput(1, null);
+                } else if (replacedObjects.size() == 1) {
+                    status.setOutput(1, replacedObjects.get(0));
+                } else {
+                    status.setOutput(1, replacedObjects);
+                }
+            } else {
+                // Set Output value
+                if (index < inputList.size()) {
+                    status.setOutput(1, inputList.get(index));
+                } else {
+                    status.setOutput(1, null);
+                }
+
+                // Insert elements
+                for (int i = objectsToInsert.size() - 1; i >= 0; i--) {
+                    inputList.add(index, objectsToInsert.get(i));
+                }
             }
-        }
-        
-        // Set outputs
-        status.setOutput(0, inputList);
-        status.setOutput(2, sizeBefore);
-        status.setOutput(3, inputList.size());
+
+            if (isStrip) {
+                // Strip nulls at the beginning
+                while (inputList.size() > 0 && inputList.get(0) == null) {
+                    inputList.remove(0);
+                }
+                // Strip nulls at the end
+                while (inputList.size() > 0 && inputList.get(inputList.size() - 1) == null) {
+                    inputList.remove(inputList.size() - 1);
+                }
+            }
+            
+            // Set outputs
+            status.setOutput(0, inputList);
+            status.setOutput(2, sizeBefore);
+            status.setOutput(3, inputList.size());
+        } catch (OutOfMemoryError e) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.setindexat.error.oom"), null);
+        } 
     }
 
     private List<Object> parseList(Object obj) {

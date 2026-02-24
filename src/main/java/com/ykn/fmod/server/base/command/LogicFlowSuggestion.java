@@ -6,6 +6,7 @@
 package com.ykn.fmod.server.base.command;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import com.mojang.brigadier.context.CommandContext;
@@ -63,6 +64,12 @@ public class LogicFlowSuggestion implements SuggestionProvider<CommandSourceStac
      * Provides suggestions for logic flow names based on the current input.
      * Suggests all loaded flow names that start with the remaining input text.
      * If allowAll is true, also suggests "*" as a wildcard option.
+     * <p>
+     * The suggestion logic is dispatched to the server thread via
+     * {@code server.submit()} to avoid race conditions: the underlying
+     * {@code logicFlows} map and the {@link FlowManager} objects it contains
+     * are owned by the server thread and must not be read from the network
+     * thread without synchronisation.
      *
      * @param context the command context
      * @param builder the suggestions builder
@@ -71,29 +78,32 @@ public class LogicFlowSuggestion implements SuggestionProvider<CommandSourceStac
      */
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
-        Collection<String> flows = Util.getServerData(context.getSource().getServer()).logicFlows.keySet();
-        for (String flow : flows) {
-            String suggestion = flow;
-            FlowManager manager = Util.getServerData(context.getSource().getServer()).logicFlows.get(flow);
-            if (filter != null) {
-                if (manager.flow.getFirstNode() == null || filter.equals(manager.flow.getFirstNode().getType()) == false) {
+        return context.getSource().getServer().submit(() -> {
+            Map<String, FlowManager> logicFlows = Util.getServerData(context.getSource().getServer()).getLogicFlows();
+            Collection<String> flows = logicFlows.keySet();
+            for (String flow : flows) {
+                String suggestion = flow;
+                FlowManager manager = logicFlows.get(flow);
+                if (filter != null) {
+                    if (manager.getFlow().getFirstNode() == null || !filter.equals(manager.getFlow().getFirstNode().getType())) {
+                        continue;
+                    }
+                }
+                if (enabledOnly && !manager.isEnabled()) {
                     continue;
                 }
+                if (needQuote) {
+                    suggestion = "\"" + suggestion + "\"";
+                }
+                if (suggestion.startsWith(builder.getRemaining())) {
+                    builder.suggest(suggestion);
+                }
             }
-            if (enabledOnly && manager.isEnabled == false) {
-                continue;
+            if (allowAll && "*".startsWith(builder.getRemaining())) {
+                builder.suggest("*");
             }
-            if (needQuote) {
-                suggestion = "\"" + suggestion + "\"";
-            }
-            if (suggestion.startsWith(builder.getRemaining())) {
-                builder.suggest(suggestion);
-            }
-        }
-        if (allowAll && "*".startsWith(builder.getRemaining())) {
-            builder.suggest("*");
-        }
-        return builder.buildFuture();
+            return builder.build();
+        });
     }
 
     /**
