@@ -7,6 +7,7 @@ package com.ykn.fmod.server.flow.node;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
@@ -40,32 +41,13 @@ public class BinaryArithmeticNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslatableText("fmod.node.bialu.title.name");
-        Text description = Util.parseTranslatableText("fmod.node.bialu.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.bialu.input.num1.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.input.num1.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.input.num1.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.bialu.input.num2.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.input.num2.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.input.num2.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.bialu.input.op.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.input.op.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.input.op.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.bialu.output.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.bialu.output.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.bialu.output.type"));
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.bialu.title.name", "fmod.node.bialu.title.feat")
+            .input("fmod.node.bialu.input.num1.name", "fmod.node.bialu.input.num1.feat", "fmod.node.bialu.input.num1.type")
+            .input("fmod.node.bialu.input.num2.name", "fmod.node.bialu.input.num2.feat", "fmod.node.bialu.input.num2.type")
+            .input("fmod.node.bialu.input.op.name", "fmod.node.bialu.input.op.feat", "fmod.node.bialu.input.op.type")
+            .output("fmod.node.bialu.output.name", "fmod.node.bialu.output.feat", "fmod.node.bialu.output.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
@@ -390,15 +372,15 @@ public class BinaryArithmeticNode extends FlowNode {
             case "contains":
                 status.setOutput(0, str1.contains(str2));
                 return;
-            case "startsWith":
+            case "startswith":
                 status.setOutput(0, str1.startsWith(str2));
                 return;
-            case "endsWith":
+            case "endswith":
                 status.setOutput(0, str1.endsWith(str2));
                 return;
             case "split":
                 try {
-                    String[] parts = str1.split(str2);
+                    String[] parts = str1.split(Pattern.quote(str2));
                     List<String> listResult = new ArrayList<>();
                     for (String part : parts) {
                         listResult.add(part);
@@ -408,10 +390,10 @@ public class BinaryArithmeticNode extends FlowNode {
                     throw new LogicException(ex, Util.parseTranslatableText("fmod.node.bialu.error.arithmetic", this.name), null);
                 }
                 return;
-            case "indexOf":
+            case "indexof":
                 status.setOutput(0, str1.indexOf(str2));
                 return;
-            case "lastIndexOf":
+            case "lastindexof":
                 status.setOutput(0, str1.lastIndexOf(str2));
                 return;
             default:

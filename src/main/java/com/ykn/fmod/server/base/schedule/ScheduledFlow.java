@@ -50,7 +50,8 @@ public class ScheduledFlow extends ScheduledTask {
     @NotNull
     public Map<String, Object> getContextVariables() {
         if (this.contextVariables == null) {
-            return new HashMap<>();
+            this.contextVariables = new HashMap<>();
+            return this.contextVariables;
         }
         return this.contextVariables;
     }
@@ -68,7 +69,7 @@ public class ScheduledFlow extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (flowManager == null || server == null || flowManager.isEnabled == false) {
+        if (flowManager == null || server == null || !flowManager.isEnabled()) {
             return true;
         }
         return false;
@@ -76,6 +77,6 @@ public class ScheduledFlow extends ScheduledTask {
 
     @Override
     public String toString() {
-        return "ScheduledFlow{flow='" + flowManager.flow.name + "'}";
+        return "ScheduledFlow{flow='" + flowManager.getFlow().getName() + "'}";
     }
 }

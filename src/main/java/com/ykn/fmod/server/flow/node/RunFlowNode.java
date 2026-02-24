@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.data.ServerData;
@@ -21,7 +20,6 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.Text;
 
 /**
  * A flow node that triggers the execution of another flow.
@@ -42,32 +40,13 @@ public class RunFlowNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslatableText("fmod.node.runflow.title.name");
-        Text description = Util.parseTranslatableText("fmod.node.runflow.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.runflow.input.name.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.input.name.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.input.name.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.runflow.input.delay.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.input.delay.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.input.delay.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.runflow.input.keepvar.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.input.keepvar.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.input.keepvar.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.runflow.output.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.runflow.output.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.runflow.output.type"));
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.runflow.title.name", "fmod.node.runflow.title.feat")
+            .input("fmod.node.runflow.input.name.name", "fmod.node.runflow.input.name.feat", "fmod.node.runflow.input.name.type")
+            .input("fmod.node.runflow.input.delay.name", "fmod.node.runflow.input.delay.feat", "fmod.node.runflow.input.delay.type")
+            .input("fmod.node.runflow.input.keepvar.name", "fmod.node.runflow.input.keepvar.feat", "fmod.node.runflow.input.keepvar.type")
+            .output("fmod.node.runflow.output.name", "fmod.node.runflow.output.feat", "fmod.node.runflow.output.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
@@ -78,11 +57,11 @@ public class RunFlowNode extends FlowNode {
 
         MinecraftServer server = context.getServer();
         ServerData data = Util.getServerData(server);
-        FlowManager targetFlow = data.logicFlows.get(flowName);
+        FlowManager targetFlow = data.getLogicFlows().get(flowName);
         if (targetFlow == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.noflow", flowName), null);
         }
-        if (targetFlow.isEnabled == false) {
+        if (!targetFlow.isEnabled()) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.runflow.error.disabled", flowName), null);
         }
         if (delayInput <= 0) {

@@ -5,9 +5,10 @@
 
 package com.ykn.fmod.server.flow.tool;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
-import java.util.Stack;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -66,7 +67,7 @@ public class FlowManager {
      * This flow is modified by the manager's editing operations and can be
      * executed when enabled.
      */
-    public LogicFlow flow;
+    private final LogicFlow flow;
 
     /**
      * Whether this flow is enabled for automatic event triggering.
@@ -74,7 +75,7 @@ public class FlowManager {
      * Only enabled flows will be automatically executed when their triggering
      * events occur (e.g., entity death, player interaction).
      */
-    public boolean isEnabled;
+    private boolean enabled;
 
     /**
      * Stack of operations that can be redone.
@@ -82,7 +83,7 @@ public class FlowManager {
      * Populated when the user performs undo operations. Cleared whenever a new
      * editing operation is performed (you can't redo after making a new change).
      */
-    public Stack<NodeEditPath> redoPath;
+    private final Deque<NodeEditPath> redoPath;
 
     /**
      * Stack of operations that can be undone.
@@ -90,7 +91,7 @@ public class FlowManager {
      * Every editing operation pushes a {@link NodeEditPath} onto this stack,
      * allowing the user to revert changes in reverse order.
      */
-    public Stack<NodeEditPath> undoPath;
+    private final Deque<NodeEditPath> undoPath;
 
     /**
      * Creates a flow manager for an existing logic flow.
@@ -101,9 +102,9 @@ public class FlowManager {
      */
     public FlowManager(LogicFlow flow) {
         this.flow = flow;
-        this.isEnabled = false;
-        this.redoPath = new Stack<>();
-        this.undoPath = new Stack<>();
+        this.enabled = false;
+        this.redoPath = new ArrayDeque<>();
+        this.undoPath = new ArrayDeque<>();
     }
 
     /**
@@ -119,11 +120,14 @@ public class FlowManager {
     public FlowManager(String name, String eventNode, String eventNodeName) {
         this.flow = new LogicFlow(name);
         FlowNode startNode = NodeRegistry.createNode(eventNode, flow.generateId(), eventNodeName);
+        if (startNode == null) {
+            throw new IllegalArgumentException("Unknown event node type: " + eventNode + " for start node " + eventNodeName + ".");
+        }
         this.flow.addNode(startNode);
-        this.flow.startNodeId = startNode.getId();
-        this.isEnabled = false;
-        this.redoPath = new Stack<>();
-        this.undoPath = new Stack<>();
+        this.flow.setStartNodeId(startNode.getId());
+        this.enabled = false;
+        this.redoPath = new ArrayDeque<>();
+        this.undoPath = new ArrayDeque<>();
     }
 
     /**
@@ -138,9 +142,12 @@ public class FlowManager {
     public void createNode(String type, String name) {
         this.redoPath.clear();
         FlowNode node = NodeRegistry.createNode(type, flow.generateId(), name);
+        if (node == null) {
+            throw new IllegalArgumentException("Unknown node type: " + type + " for node " + name + ".");
+        }
         this.flow.addNode(node);
         this.undoPath.add(new NodeEditPath(f -> f.addNode(node), f -> f.removeNode(node.getId())));
-        this.isEnabled = false;
+        this.enabled = false;
     }
 
     /**
@@ -159,7 +166,7 @@ public class FlowManager {
         if (node != null) {
             this.flow.removeNode(node.getId());
             this.undoPath.add(new NodeEditPath(f -> f.removeNode(node.getId()), f -> f.addNode(node)));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -179,23 +186,26 @@ public class FlowManager {
         this.redoPath.clear();
         FlowNode oldNode = this.flow.getFirstNode();
         FlowNode newNode = NodeRegistry.createNode(type, flow.generateId(), name);
+        if (newNode == null) {
+            throw new IllegalArgumentException("Unknown event node type: " + type + " for event node " + name + ".");
+        }
         if (oldNode != null) {
             this.flow.addNode(newNode);
-            this.flow.startNodeId = newNode.getId();
+            this.flow.setStartNodeId(newNode.getId());
             this.flow.removeNode(oldNode.getId());
             this.undoPath.add(new NodeEditPath(
                 f -> {
                     f.addNode(newNode);
-                    f.startNodeId = newNode.getId();
+                    f.setStartNodeId(newNode.getId());
                     f.removeNode(oldNode.getId());
                 },
                 f -> {
                     f.addNode(oldNode);
-                    f.startNodeId = oldNode.getId();
+                    f.setStartNodeId(oldNode.getId());
                     f.removeNode(newNode.getId());
                 }
             ));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -212,22 +222,22 @@ public class FlowManager {
         this.redoPath.clear();
         FlowNode node = this.flow.getNodeByName(oldName);
         if (node != null) {
-            node.name = newName;
+            node.setName(newName);
             this.undoPath.add(new NodeEditPath(
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     if (n != null) {
-                        n.name = newName;
+                        n.setName(newName);
                     }
                 }, 
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     if (n != null) {
-                        n.name = oldName;
+                        n.setName(oldName);
                     }
                 }
             ));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -261,7 +271,7 @@ public class FlowManager {
                     }
                 }
             ));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -299,7 +309,7 @@ public class FlowManager {
                     }
                 }
             ));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -331,7 +341,7 @@ public class FlowManager {
                     }
                 }
             ));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -352,7 +362,7 @@ public class FlowManager {
         FlowNode node = this.flow.getNodeByName(name);
         FlowNode nextNode = this.flow.getNodeByName(next);
         if (node != null && nextNode != null) {
-            long oldNextId = node.nextNodeIds.get(index);
+            long oldNextId = node.getNextNodeIds().get(index);
             node.setNextNodeId(index, nextNode.getId());
             this.undoPath.add(new NodeEditPath(
                 f -> {
@@ -369,7 +379,7 @@ public class FlowManager {
                     }
                 }
             ));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -387,7 +397,7 @@ public class FlowManager {
         this.redoPath.clear();
         FlowNode node = this.flow.getNodeByName(name);
         if (node != null) {
-            long oldNextId = node.nextNodeIds.get(index);
+            long oldNextId = node.getNextNodeIds().get(index);
             node.setNextNodeId(index, -1L);
             this.undoPath.add(new NodeEditPath(
                 f -> {
@@ -403,7 +413,7 @@ public class FlowManager {
                     }
                 }
             ));
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -418,7 +428,7 @@ public class FlowManager {
             NodeEditPath edit = this.redoPath.pop();
             edit.redo(this.flow);
             this.undoPath.push(edit);
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -433,7 +443,7 @@ public class FlowManager {
             NodeEditPath edit = this.undoPath.pop();
             edit.undo(this.flow);
             this.redoPath.push(edit);
-            this.isEnabled = false;
+            this.enabled = false;
         }
     }
 
@@ -458,7 +468,7 @@ public class FlowManager {
      */
     @Nullable
     public LogicException execute(@NotNull ServerData serverData, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
-        return this.execute(serverData, Util.serverConfig.getMaxFlowLength(), Util.serverConfig.getMaxFlowRecursionDepth(), startNodeOutputs, initialVariables);
+        return this.execute(serverData, Util.getServerConfig().getMaxFlowLength(), Util.getServerConfig().getMaxFlowRecursionDepth(), startNodeOutputs, initialVariables);
     }
 
     /**
@@ -482,13 +492,10 @@ public class FlowManager {
      */
     @Nullable
     public LogicException execute(@NotNull ServerData serverData, int maxFlowLength, int maxRecursionDepth, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) {
-        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server, maxFlowLength, maxRecursionDepth);
+        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.getServer(), maxFlowLength, maxRecursionDepth);
         executionContext.execute(startNodeOutputs, initialVariables);
-        serverData.executeHistory.add(executionContext);
-        int historyLimit = Util.serverConfig.getMaxFlowHistorySize();
-        while (serverData.executeHistory.size() > historyLimit) {
-            serverData.executeHistory.remove(0);
-        }
+        int historyLimit = Util.getServerConfig().getMaxFlowHistorySize();
+        serverData.addExecuteHistory(executionContext, historyLimit);
         return executionContext.getException();
     }
 
@@ -512,12 +519,68 @@ public class FlowManager {
      * @throws LogicException If an error occurs during flow execution
      */
     public void execute(@NotNull ServerData serverData, ExecutionContext parentContext, int maxFlowLength, int maxRecursionDepth, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws LogicException {
-        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.server, maxFlowLength, maxRecursionDepth);
-        serverData.executeHistory.add(executionContext);
-        int historyLimit = Util.serverConfig.getMaxFlowHistorySize();
-        while (serverData.executeHistory.size() > historyLimit) {
-            serverData.executeHistory.remove(0);
-        }
+        ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.getServer(), maxFlowLength, maxRecursionDepth);
+        serverData.addExecuteHistory(executionContext, Util.getServerConfig().getMaxFlowHistorySize());
         executionContext.execute(parentContext, startNodeOutputs, initialVariables);
+    }
+
+    /**
+     * Gets the logic flow being managed.
+     * <p>
+     * This flow is modified by the manager's editing operations and can be
+     * executed when enabled.
+     * 
+     * @return The logic flow being managed
+     */
+    public LogicFlow getFlow() {
+        return this.flow;
+    }
+
+    /**
+    * Checks whether this flow is enabled for automatic event triggering.
+    * <p>
+    * Only enabled flows will be automatically executed when their triggering
+    * events occur (e.g., entity death, player interaction).
+    * 
+    * @return True if the flow is enabled, false otherwise
+    */
+    public boolean isEnabled() {
+        return this.enabled;
+    }
+
+    /**
+     * Sets whether this flow is enabled for automatic event triggering.
+     * <p>
+     * Only enabled flows will be automatically executed when their triggering
+     * events occur (e.g., entity death, player interaction).
+     * 
+     * @param enabled True to enable the flow, false to disable it
+     */
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
+    /**
+     * Checks if there are operations available to redo.
+     * <p>
+     * Returns true if the redo stack is not empty, indicating that there are
+     * operations that can be reapplied after an undo.
+     * 
+     * @return True if redo operations are available, false otherwise
+     */
+    public boolean canRedo() {
+        return !this.redoPath.isEmpty();
+    }
+
+    /**
+     * Checks if there are operations available to undo.
+     * <p>
+     * Returns true if the undo stack is not empty, indicating that there are
+     * operations that can be reversed to revert changes made to the flow.
+     * 
+     * @return True if undo operations are available, false otherwise
+     */
+    public boolean canUndo() {
+        return !this.undoPath.isEmpty();
     }
 }

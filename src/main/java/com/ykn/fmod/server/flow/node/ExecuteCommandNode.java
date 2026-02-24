@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.RedirectedCommandOutput;
@@ -18,7 +17,6 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 import net.minecraft.entity.Entity;
-import net.minecraft.text.Text;
 
 /**
  * Node that executes a command string
@@ -40,35 +38,14 @@ public class ExecuteCommandNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslatableText("fmod.node.runcommand.title.name");
-        Text description = Util.parseTranslatableText("fmod.node.runcommand.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.runcommand.input.source.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runcommand.input.source.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runcommand.input.source.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.runcommand.input.command.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.runcommand.input.command.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.runcommand.input.command.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.runcommand.output.feedback.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.runcommand.output.feedback.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.runcommand.output.feedback.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.runcommand.output.raw.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.runcommand.output.raw.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.runcommand.output.raw.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.runcommand.output.result.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.runcommand.output.result.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.runcommand.output.result.type"));
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description,
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.runcommand.title.name", "fmod.node.runcommand.title.feat")
+            .input("fmod.node.runcommand.input.source.name", "fmod.node.runcommand.input.source.feat", "fmod.node.runcommand.input.source.type")
+            .input("fmod.node.runcommand.input.command.name", "fmod.node.runcommand.input.command.feat", "fmod.node.runcommand.input.command.type")
+            .output("fmod.node.runcommand.output.feedback.name", "fmod.node.runcommand.output.feedback.feat", "fmod.node.runcommand.output.feedback.type")
+            .output("fmod.node.runcommand.output.raw.name", "fmod.node.runcommand.output.raw.feat", "fmod.node.runcommand.output.raw.type")
+            .output("fmod.node.runcommand.output.result.name", "fmod.node.runcommand.output.result.feat", "fmod.node.runcommand.output.result.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
@@ -76,7 +53,7 @@ public class ExecuteCommandNode extends FlowNode {
         Entity sourceEntity = parseEntity(resolvedInputs.get(0));
         String command = parseCommand(resolvedInputs.get(1));
         RedirectedCommandOutput output = RedirectedCommandOutput.create();
-        int result = Util.runCommand(output, sourceEntity, command, 4);
+        int result = Util.runCommand(output, sourceEntity, command, 3);
         status.setOutput(0, output.getAllMessage());
         status.setOutput(1, output.getRawOutput());
         status.setOutput(2, result);

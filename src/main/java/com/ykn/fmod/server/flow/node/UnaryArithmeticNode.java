@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
@@ -37,29 +36,12 @@ public class UnaryArithmeticNode extends FlowNode {
 
 	@Override
 	protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-		Text displayName = Util.parseTranslatableText("fmod.node.unalu.title.name");
-		Text description = Util.parseTranslatableText("fmod.node.unalu.title.feat");
-		List<Text> inputNames = new ArrayList<>();
-		List<Text> inputDescriptions = new ArrayList<>();
-		List<Text> inputDataTypes = new ArrayList<>();
-		inputNames.add(Util.parseTranslatableText("fmod.node.unalu.input.num.name"));
-		inputDescriptions.add(Util.parseTranslatableText("fmod.node.unalu.input.num.feat"));
-		inputDataTypes.add(Util.parseTranslatableText("fmod.node.unalu.input.num.type"));
-		inputNames.add(Util.parseTranslatableText("fmod.node.unalu.input.op.name"));
-		inputDescriptions.add(Util.parseTranslatableText("fmod.node.unalu.input.op.feat"));
-		inputDataTypes.add(Util.parseTranslatableText("fmod.node.unalu.input.op.type"));
-		List<Text> outputNames = new ArrayList<>();
-		List<Text> outputDescriptions = new ArrayList<>();
-		List<Text> outputDataTypes = new ArrayList<>();
-		outputNames.add(Util.parseTranslatableText("fmod.node.unalu.output.name"));
-		outputDescriptions.add(Util.parseTranslatableText("fmod.node.unalu.output.feat"));
-		outputDataTypes.add(Util.parseTranslatableText("fmod.node.unalu.output.type"));
-		List<Text> branchNames = new ArrayList<>();
-		List<Text> branchDescriptions = new ArrayList<>();
-		branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-		branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-		return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description,
-			inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+		return NodeMetadata.builder("fmod.node.unalu.title.name", "fmod.node.unalu.title.feat")
+            .input("fmod.node.unalu.input.num.name", "fmod.node.unalu.input.num.feat", "fmod.node.unalu.input.num.type")
+            .input("fmod.node.unalu.input.op.name", "fmod.node.unalu.input.op.feat", "fmod.node.unalu.input.op.type")
+            .output("fmod.node.unalu.output.name", "fmod.node.unalu.output.feat", "fmod.node.unalu.output.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
 	}
 
 	@Override

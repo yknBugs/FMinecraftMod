@@ -8,7 +8,6 @@ package com.ykn.fmod.server.mixin;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 
-import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -35,7 +34,7 @@ public class EntityDeathMixin {
 				entityDeath.onEntityDeath();
 			}
 		} catch (Exception e) {
-			LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught exception from EntityDeathEvent.", e);
+			Util.LOGGER.error("FMinecraftMod: Caught exception from EntityDeathEvent.", e);
 		}
 	}
 }

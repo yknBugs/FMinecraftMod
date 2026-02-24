@@ -9,8 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
-
-import org.slf4j.LoggerFactory;
+import java.util.stream.Stream;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -31,27 +30,40 @@ public class SongFileSuggestion implements SuggestionProvider<ServerCommandSourc
 
     /**
      * Static cache of available .nbs file names in the config directory.
+     * Marked {@code volatile} so that the reference update performed by the constructor
+     * (which runs on the server thread) is immediately visible to the network thread that
+     * calls {@link #getSuggestions}.
      */
-    public static ArrayList<String> cachedSongList = new ArrayList<>();
+    private static volatile ArrayList<String> cachedSongList = new ArrayList<>();
 
     /**
      * Constructs a new SongFileSuggestion and refreshes the cached list of .nbs files.
      * Scans the mod's config directory for files with the .nbs extension.
+     * <p>
+     * The new list is built into a local variable first and then assigned to
+     * {@code cachedSongList} in a single write, so the network thread never sees
+     * a partially-populated list.
      */
     public SongFileSuggestion() {
-        // Refresh the list of .nbs files in the config directory
-        cachedSongList = new ArrayList<>();
+        // Build the list locally to avoid exposing a partially-populated ArrayList
+        // to the network thread that may call getSuggestions() concurrently.
+        ArrayList<String> newList = new ArrayList<>();
         Path absPath = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
         try {
             if (!Files.exists(absPath)) {
                 Files.createDirectories(absPath);
             }
-            Files.list(absPath).filter(path -> path.toString().endsWith(".nbs")).forEach(path -> {
-                cachedSongList.add(path.getFileName().toString());
-            });
+            try (Stream<Path> stream = Files.list(absPath)) {
+                stream.filter(path -> path.toString().endsWith(".nbs")).forEach(path -> {
+                    newList.add(path.getFileName().toString());
+                });
+            }
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Error while getting .nbs file list", e);
+            Util.LOGGER.error("FMinecraftMod: Error while getting .nbs file list", e);
         }
+        // Single volatile write – the network thread either sees the old complete list
+        // or the new complete list, never a half-populated one.
+        cachedSongList = newList;
     }
 
     /**

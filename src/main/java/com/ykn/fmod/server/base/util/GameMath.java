@@ -83,7 +83,7 @@ public class GameMath {
      * @param b the second entity
      * @return the horizontal Euclidean distance between the two entities, or Double.NaN if they are in different worlds
      */
-    public static double getHorizonalEuclideanDistance(Entity a, Entity b) {
+    public static double getHorizontalEuclideanDistance(Entity a, Entity b) {
         double xa = a.getX();
         double za = a.getZ();
         World worlda = a.getWorld();
@@ -108,7 +108,7 @@ public class GameMath {
      * @param zb the z-coordinate of the second point
      * @return the horizontal Euclidean distance between the two points
      */
-    public static double getHorizonalEuclideanDistance(double xa, double za, double xb, double zb) {
+    public static double getHorizontalEuclideanDistance(double xa, double za, double xb, double zb) {
         double dx = xa - xb;
         double dz = za - zb;
         return Math.sqrt(dx * dx + dz * dz);
@@ -122,7 +122,7 @@ public class GameMath {
      * @param b the second vector
      * @return the horizontal Euclidean distance between the two vectors
      */
-    public static double getHorizonalEuclideanDistance(Vec3d a, Vec3d b) {
+    public static double getHorizontalEuclideanDistance(Vec3d a, Vec3d b) {
         double dx = a.getX() - b.getX();
         double dz = a.getZ() - b.getZ();
         return Math.sqrt(dx * dx + dz * dz);
@@ -196,7 +196,7 @@ public class GameMath {
      * @param b the second entity
      * @return the horizontal Manhattan distance between the two entities, or Double.NaN if they are in different worlds
      */
-    public static double getHorizonalManhattanDistance(Entity a, Entity b) {
+    public static double getHorizontalManhattanDistance(Entity a, Entity b) {
         double xa = a.getX();
         double za = a.getZ();
         World worlda = a.getWorld();
@@ -221,7 +221,7 @@ public class GameMath {
      * @param zb the z-coordinate of the second point
      * @return the horizontal Manhattan distance between the two points
      */
-    public static double getHorizonalManhattanDistance(double xa, double za, double xb, double zb) {
+    public static double getHorizontalManhattanDistance(double xa, double za, double xb, double zb) {
         double dx = xa - xb;
         double dz = za - zb;
         return Math.abs(dx) + Math.abs(dz);
@@ -235,7 +235,7 @@ public class GameMath {
      * @param b the second vector
      * @return the horizontal Manhattan distance between the two vectors
      */
-    public static double getHorizonalManhattanDistance(Vec3d a, Vec3d b) {
+    public static double getHorizontalManhattanDistance(Vec3d a, Vec3d b) {
         double dx = a.getX() - b.getX();
         double dz = a.getZ() - b.getZ();
         return Math.abs(dx) + Math.abs(dz);
@@ -309,7 +309,7 @@ public class GameMath {
      * @param b the second entity
      * @return the horizontal Chebyshev distance between the two entities, or Double.NaN if they are in different worlds
      */
-    public static double getHorizonalChebyshevDistance(Entity a, Entity b) {
+    public static double getHorizontalChebyshevDistance(Entity a, Entity b) {
         double xa = a.getX();
         double za = a.getZ();
         World worlda = a.getWorld();
@@ -334,7 +334,7 @@ public class GameMath {
      * @param zb the z-coordinate of the second point
      * @return the horizontal Chebyshev distance between the two points
      */
-    public static double getHorizonalChebyshevDistance(double xa, double za, double xb, double zb) {
+    public static double getHorizontalChebyshevDistance(double xa, double za, double xb, double zb) {
         double dx = xa - xb;
         double dz = za - zb;
         return Math.max(Math.abs(dx), Math.abs(dz));
@@ -348,7 +348,7 @@ public class GameMath {
      * @param b the second vector
      * @return the horizontal Chebyshev distance between the two vectors
      */
-    public static double getHorizonalChebyshevDistance(Vec3d a, Vec3d b) {
+    public static double getHorizontalChebyshevDistance(Vec3d a, Vec3d b) {
         double dx = a.getX() - b.getX();
         double dz = a.getZ() - b.getZ();
         return Math.max(Math.abs(dx), Math.abs(dz));

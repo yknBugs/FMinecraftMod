@@ -79,6 +79,12 @@ public class FlowNodeSuggestion implements SuggestionProvider<ServerCommandSourc
      * Provides suggestions for flow node names based on the extracted flow name and current input.
      * Retrieves the flow from the server data and suggests all node names that start with
      * the remaining input text.
+     * <p>
+     * The suggestion logic is dispatched to the server thread via
+     * {@code server.submit()} to avoid race conditions: the underlying
+     * {@code logicFlows} map and the {@link com.ykn.fmod.server.flow.logic.LogicFlow} it
+     * contains are owned by the server thread and must not be read from the network
+     * thread without synchronisation.
      *
      * @param context the command context
      * @param builder the suggestions builder
@@ -87,21 +93,23 @@ public class FlowNodeSuggestion implements SuggestionProvider<ServerCommandSourc
      */
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
-        String flowName = extractFlowName(builder.getInput());
-        FlowManager flow = Util.getServerData(context.getSource().getServer()).logicFlows.get(flowName);
-        if (flow != null) {
-            Collection<FlowNode> nodeNames = flow.flow.getNodes();
-            for (FlowNode node : nodeNames) {
-                String suggestion = node.name;
-                if (needQuote) {
-                    suggestion = "\"" + suggestion + "\"";
-                }
-                if (suggestion.startsWith(builder.getRemaining())) {
-                    builder.suggest(suggestion);
+        return context.getSource().getServer().submit(() -> {
+            String flowName = extractFlowName(builder.getInput());
+            FlowManager flow = Util.getServerData(context.getSource().getServer()).getLogicFlows().get(flowName);
+            if (flow != null) {
+                Collection<FlowNode> nodeNames = flow.getFlow().getNodes();
+                for (FlowNode node : nodeNames) {
+                    String suggestion = node.getName();
+                    if (needQuote) {
+                        suggestion = "\"" + suggestion + "\"";
+                    }
+                    if (suggestion.startsWith(builder.getRemaining())) {
+                        builder.suggest(suggestion);
+                    }
                 }
             }
-        }
-        return builder.buildFuture();
+            return builder.build();
+        });
     }
 
     /**

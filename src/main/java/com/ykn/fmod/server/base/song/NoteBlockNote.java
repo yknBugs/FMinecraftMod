@@ -11,8 +11,8 @@ import net.minecraft.block.enums.Instrument;
 
 public class NoteBlockNote {
 
-    public Instrument instrument;
-    public int noteLevel;
+    public final Instrument instrument;
+    public final int noteLevel;
 
     public NoteBlockNote(Instrument instrument, int noteLevel) {
         this.instrument = instrument;

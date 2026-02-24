@@ -8,13 +8,13 @@ package com.ykn.fmod.client.base.gui;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Function;
-
-import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.config.ConfigEntry;
 import com.ykn.fmod.server.base.config.ConfigReader;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
+import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.PlayerMessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
@@ -91,13 +91,16 @@ public class OptionScreen extends Screen {
 
     @Override
     public void removed() {
-        Util.saveServerConfig();
+        // Util.saveServerConfig();
         super.removed();
     }
 
     @Override
     public void close() {
         Util.saveServerConfig();
+        if (this.client == null) {
+            return;
+        }
         this.client.setScreen(this.parent);
     }
 
@@ -160,17 +163,18 @@ public class OptionScreen extends Screen {
          *                           method is available
          */
         private void buildNumericSliderEntry(
-                String configCodeEntry,
-                ConfigEntry configAnnotation,
-                ConfigReader configInstance,
-                String i18nTitleKey,
-                String i18nHintKey,
-                boolean isEditable,
-                Object rawValue,
-                double min,
-                double max,
-                double configValueAsDouble,
-                Function<Double, Object> sliderToValue) {
+            String configCodeEntry,
+            ConfigEntry configAnnotation,
+            ConfigReader configInstance,
+            String i18nTitleKey,
+            String i18nHintKey,
+            boolean isEditable,
+            Object rawValue,
+            double min,
+            double max,
+            double configValueAsDouble,
+            Function<Double, Object> sliderToValue
+        ) {
             if (!isEditable) {
                 Text displayText = ServerConfigRegistry.getDisplayValue(configCodeEntry, rawValue);
                 ButtonWidget button = ButtonWidget.builder(displayText, btn -> {}).size(200, 20).build();
@@ -195,7 +199,7 @@ public class OptionScreen extends Screen {
                     toSliderValueMethod.setAccessible(true);
                     sliderInitValue = (double) toSliderValueMethod.invoke(configInstance, rawValue);
                 } catch (Exception e) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to invoke toSliderValue method for " + configCodeEntry, e);
+                    Util.LOGGER.error("FMinecraftMod: Failed to invoke toSliderValue method for " + configCodeEntry, e);
                     sliderInitValue = (max == min) ? 0.0 : (configValueAsDouble - min) / (max - min);
                 }
             }
@@ -216,7 +220,7 @@ public class OptionScreen extends Screen {
                             method.setAccessible(true);
                             return method.invoke(configInstance, this.value);
                         } catch (Exception e) {
-                            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to invoke fromSliderValue method for " + configCodeEntry, e);
+                            Util.LOGGER.error("FMinecraftMod: Failed to invoke fromSliderValue method for " + configCodeEntry, e);
                             return sliderToValue.apply(this.value);
                         }
                     }
@@ -235,6 +239,119 @@ public class OptionScreen extends Screen {
 
             this.addEntry(new NumberConfigEntry(
                 slider,
+                Text.translatable(i18nTitleKey),
+                Text.translatable(i18nHintKey).append("\n").append(Text.translatable("fmod.options.link", "/f options " + configAnnotation.commandEntry()))
+            ));
+        }
+
+        /**
+         * Creates and adds a message-type config row for
+         * {@link ConfigEntry.ConfigType#SERVERMESSAGE} and
+         * {@link ConfigEntry.ConfigType#PLAYERMESSAGE} entries.
+         *
+         * <p>The row contains three cycle-buttons placed to the right of the label:</p>
+         * <ol>
+         *   <li><b>Main location</b> – cycles through {@link MessageType.Location} values
+         *       and updates {@link MessageType#mainPlayerLocation} via
+         *       {@link MessageType#updateMain(MessageType.Location)}.</li>
+         *   <li><b>Other location</b> – cycles through {@link MessageType.Location} values
+         *       and updates {@link MessageType#otherPlayerLocation} via
+         *       {@link MessageType#updateOther(MessageType.Location)}.</li>
+         *   <li><b>Receiver</b> – cycles through the caller-supplied {@code receiverValues}
+         *       list and stores the result via the caller-supplied {@code updateReceiver}
+         *       function, allowing the concrete receiver enum
+         *       ({@link ServerMessageType.Receiver} or {@link PlayerMessageType.Receiver})
+         *       to stay decoupled from this generic helper.</li>
+         * </ol>
+         *
+         * <p>When {@code isEditable} is {@code false} all three buttons are disabled.
+         * If {@link ConfigEntry#notEditableReason()} is non-empty its translation is shown
+         * as a tooltip on every button; otherwise each button shows its own descriptive tooltip
+         * ({@code fmod.options.message.main}, {@code fmod.options.message.other},
+         * {@code fmod.options.message.receiver}).</p>
+         *
+         * @param configCodeEntry  the code-entry name used to read/write the value via
+         *                         {@link ServerConfigRegistry}
+         * @param configAnnotation the {@link ConfigEntry} annotation of the field
+         * @param i18nTitleKey     translation key for the row label text
+         * @param i18nHintKey      translation key for the label tooltip hint text
+         * @param isEditable       whether the three buttons should be interactive
+         * @param messageType      the current {@link MessageType} value of the config field;
+         *                         used to initialise the button labels
+         * @param receiverValues   the ordered list of receiver enum constants to cycle through
+         *                         (e.g. {@code Arrays.asList(ServerMessageType.Receiver.values())})
+         * @param receiverToText   a function that converts a receiver enum constant to its
+         *                         localised display {@link Text}
+         * @param updateReceiver   a {@link BiFunction} that takes the current {@link MessageType}
+         *                         and the newly selected receiver enum constant and returns the
+         *                         updated {@link MessageType} to be stored in the registry
+         */
+        private void buildMessageTypeEntry(
+            String configCodeEntry,
+            ConfigEntry configAnnotation,
+            String i18nTitleKey,
+            String i18nHintKey,
+            boolean isEditable,
+            MessageType messageType,
+            List<Enum<?>> receiverValues,
+            Function<Enum<?>, Text> receiverToText,
+            BiFunction<MessageType, Enum<?>, MessageType> updateReceiver
+        ) {
+            final List<MessageType.Location> locationValues = Arrays.asList(MessageType.Location.values());
+            ButtonWidget mainLocationButton = ButtonWidget.builder(MessageType.getMessageLocationI18n(messageType.mainPlayerLocation), btn -> {
+                MessageType currentValue = (MessageType) ServerConfigRegistry.getValue(configCodeEntry);
+                if (currentValue == null) {
+                    Util.LOGGER.error("FMinecraftMod: Got unexpected null MessageType value for " + configCodeEntry);
+                    return;
+                }
+                int currentIndex = locationValues.indexOf(currentValue.mainPlayerLocation);
+                int nextIndex = (currentIndex + 1) % locationValues.size();
+                MessageType.Location newLocation =  locationValues.get(nextIndex);
+                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateMain(newLocation));
+                btn.setMessage(MessageType.getMessageLocationI18n(newLocation));
+            }).size(60, 20).build();
+
+            ButtonWidget otherLocationButton = ButtonWidget.builder(MessageType.getMessageLocationI18n(messageType.otherPlayerLocation), btn -> {
+                MessageType currentValue = (MessageType) ServerConfigRegistry.getValue(configCodeEntry);
+                if (currentValue == null) {
+                    Util.LOGGER.error("FMinecraftMod: Got unexpected null MessageType value for " + configCodeEntry);
+                    return;
+                }
+                int currentIndex = locationValues.indexOf(currentValue.otherPlayerLocation);
+                int nextIndex = (currentIndex + 1) % locationValues.size();
+                MessageType.Location newLocation =  locationValues.get(nextIndex);
+                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateOther(newLocation));
+                btn.setMessage(MessageType.getMessageLocationI18n(newLocation));
+            }).size(60, 20).build();
+            ButtonWidget receiverButton = ButtonWidget.builder(receiverToText.apply(messageType.getReceiver()), btn -> {
+                MessageType currentValue = (MessageType) ServerConfigRegistry.getValue(configCodeEntry);
+                if (currentValue == null) {
+                    Util.LOGGER.error("FMinecraftMod: Got unexpected null MessageType value for " + configCodeEntry);
+                    return;
+                }
+                int currentIndex = receiverValues.indexOf(currentValue.getReceiver());
+                int nextIndex = (currentIndex + 1) % receiverValues.size();
+                Enum<?> newReceiver = receiverValues.get(nextIndex);
+                ServerConfigRegistry.setValue(configCodeEntry, updateReceiver.apply(currentValue, newReceiver));
+                btn.setMessage(receiverToText.apply(newReceiver));
+            }).size(60, 20).build();
+            mainLocationButton.active = isEditable;
+            otherLocationButton.active = isEditable;
+            receiverButton.active = isEditable;
+            if (!isEditable && !configAnnotation.notEditableReason().isEmpty()) {
+                Tooltip tooltip = Tooltip.of(Text.translatable(configAnnotation.notEditableReason()));
+                mainLocationButton.setTooltip(tooltip);
+                otherLocationButton.setTooltip(tooltip);
+                receiverButton.setTooltip(tooltip);
+            } else {
+                mainLocationButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.main")));
+                otherLocationButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.other")));
+                receiverButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.receiver")));
+            }
+            this.addEntry(new MessageConfigEntry(
+                mainLocationButton,
+                otherLocationButton,
+                receiverButton,
                 Text.translatable(i18nTitleKey),
                 Text.translatable(i18nHintKey).append("\n").append(Text.translatable("fmod.options.link", "/f options " + configAnnotation.commandEntry()))
             ));
@@ -277,10 +394,17 @@ public class OptionScreen extends Screen {
                         {
                             final double min = configAnnotation.minSliderDouble();
                             final double max = configAnnotation.maxSliderDouble();
-                            double configValue = (rawValue instanceof Double) ? (double) rawValue : 0.0;
+                            double configValue = 0.0;
+                            if (rawValue == null) {
+                                Util.LOGGER.error("FMinecraftMod: Got unexpected null Double value for " + configCodeEntry + ", falling back to 0.0");
+                            } else if (rawValue instanceof Double) {
+                                configValue = (double) rawValue;
+                            } else {
+                                Util.LOGGER.error("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as DOUBLE but the value is not of type Double, falling back to 0.0");
+                            }
                             buildNumericSliderEntry(
                                 configCodeEntry, configAnnotation, configInstance,
-                                i18nTitleKey, i18nHintKey, isEditable, rawValue,
+                                i18nTitleKey, i18nHintKey, isEditable, Double.valueOf(configValue),
                                 min, max, configValue,
                                 v -> v * (max - min) + min
                             );
@@ -290,10 +414,17 @@ public class OptionScreen extends Screen {
                         {
                             final int min = configAnnotation.minSliderInt();
                             final int max = configAnnotation.maxSliderInt();
-                            int configValue = (rawValue instanceof Integer) ? (int) rawValue : 0;
+                            int configValue = 0;
+                            if (rawValue == null) {
+                                Util.LOGGER.error("FMinecraftMod: Got unexpected null Integer value for " + configCodeEntry + ", falling back to 0");
+                            } else if (rawValue instanceof Integer) {
+                                configValue = (int) rawValue;
+                            } else {
+                                Util.LOGGER.error("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as INTEGER but the value is not of type Integer, falling back to 0");
+                            }
                             buildNumericSliderEntry(
                                 configCodeEntry, configAnnotation, configInstance,
-                                i18nTitleKey, i18nHintKey, isEditable, rawValue,
+                                i18nTitleKey, i18nHintKey, isEditable, Integer.valueOf(configValue),
                                 min, max, configValue,
                                 v -> (int) Math.round(v * (max - min) + min)
                             );
@@ -301,14 +432,23 @@ public class OptionScreen extends Screen {
                         return;
                     case STRING:
                         {
-                            String configValue = ServerConfigRegistry.getDisplayValue(configCodeEntry, rawValue).getString();
+                            String configValue = "";
+                            if (rawValue == null) {
+                                Util.LOGGER.error("FMinecraftMod: Got unexpected null String value for " + configCodeEntry + ", falling back to empty string");
+                            } else if (rawValue instanceof String) {
+                                configValue = ServerConfigRegistry.getDisplayValue(configCodeEntry, rawValue).getString();
+                            } else {
+                                Util.LOGGER.warn("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as STRING but the value is not of type String, trying to auto-convert it to String");
+                                configValue = ServerConfigRegistry.getDisplayValue(configCodeEntry, String.valueOf(rawValue)).getString();
+                            }
+                            
                             final int maxLength = configAnnotation.maxStringLength();
 
                             TextFieldWidget textField = new TextFieldWidget(client.textRenderer, 0, 0, 200, 20, Text.empty());
                             textField.setMaxLength(maxLength);
                             textField.setEditable(isEditable);
                             textField.setText(configValue);
-                            if (isEditable == false && configAnnotation.notEditableReason().isEmpty() == false) {
+                            if (!isEditable && !configAnnotation.notEditableReason().isEmpty()) {
                                 textField.setTooltip(Tooltip.of(Text.translatable(configAnnotation.notEditableReason())));
                             }
                             textField.setChangedListener(s -> ServerConfigRegistry.setValue(configCodeEntry, s));
@@ -321,9 +461,21 @@ public class OptionScreen extends Screen {
                         return;
                     case BOOLEAN:
                         {
-                            Text displayText = ServerConfigRegistry.getDisplayValue(configCodeEntry, rawValue);
+                            boolean configValue = false;
+                            if (rawValue == null) {
+                                Util.LOGGER.error("FMinecraftMod: Got unexpected null Boolean value for " + configCodeEntry + ", falling back to false");
+                            } else if (rawValue instanceof Boolean) {
+                                configValue = (boolean) rawValue;
+                            } else {
+                                Util.LOGGER.error("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as BOOLEAN but the value is not of type Boolean, falling back to false");
+                            }
+                            Text displayText = ServerConfigRegistry.getDisplayValue(configCodeEntry, configValue);
                             ButtonWidget button = ButtonWidget.builder(displayText, btn -> {
                                 Object currentValue = ServerConfigRegistry.getValue(configCodeEntry);
+                                if (currentValue == null) {
+                                    Util.LOGGER.error("FMinecraftMod: Got unexpected null Boolean value for " + configCodeEntry);
+                                    return;
+                                }
                                 boolean newValue = false;
                                 if (currentValue instanceof Boolean) {
                                     newValue = (boolean) currentValue;
@@ -333,7 +485,7 @@ public class OptionScreen extends Screen {
                                 btn.setMessage(ServerConfigRegistry.getDisplayValue(configCodeEntry, newValue));
                             }).size(200, 20).build();
                             button.active = isEditable;
-                            if (isEditable == false && configAnnotation.notEditableReason().isEmpty() == false) {
+                            if (!isEditable && !configAnnotation.notEditableReason().isEmpty()) {
                                 button.setTooltip(Tooltip.of(Text.translatable(configAnnotation.notEditableReason())));
                             }
                             this.addEntry(new ButtonConfigEntry(
@@ -345,121 +497,41 @@ public class OptionScreen extends Screen {
                         return;
                     case SERVERMESSAGE:
                         {
-                            if (rawValue instanceof ServerMessageType == false) {
-                                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as SERVERMESSAGE but the value is not of type ServerMessageType");
+                            if (!(rawValue instanceof ServerMessageType)) {
+                                Util.LOGGER.error("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as SERVERMESSAGE but the value is not of type ServerMessageType");
                                 return;
                             }
-                            ServerMessageType messageType = (ServerMessageType) rawValue;
-                            ButtonWidget mainLocationButton = ButtonWidget.builder(ServerMessageType.getMessageLocationI18n(messageType.mainPlayerLocation), btn -> {
-                                final List<Enum<?>> values = Arrays.asList(ServerMessageType.Location.values());
-                                ServerMessageType currentValue = (ServerMessageType) ServerConfigRegistry.getValue(configCodeEntry);
-                                int currentIndex = values.indexOf(currentValue.mainPlayerLocation);
-                                int nextIndex = (currentIndex + 1) % values.size();
-                                ServerMessageType.Location newLocation = (ServerMessageType.Location) values.get(nextIndex);
-                                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateMain(newLocation));
-                                btn.setMessage(ServerMessageType.getMessageLocationI18n(newLocation));
-                            }).size(60, 20).build();
-                            ButtonWidget otherLocationButton = ButtonWidget.builder(ServerMessageType.getMessageLocationI18n(messageType.otherPlayerLocation), btn -> {
-                                final List<Enum<?>> values = Arrays.asList(ServerMessageType.Location.values());
-                                ServerMessageType currentValue = (ServerMessageType) ServerConfigRegistry.getValue(configCodeEntry);
-                                int currentIndex = values.indexOf(currentValue.otherPlayerLocation);
-                                int nextIndex = (currentIndex + 1) % values.size();
-                                ServerMessageType.Location newLocation = (ServerMessageType.Location) values.get(nextIndex);
-                                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateOther(newLocation));
-                                btn.setMessage(ServerMessageType.getMessageLocationI18n(newLocation));
-                            }).size(60, 20).build();
-                            ButtonWidget receiverButton = ButtonWidget.builder(ServerMessageType.getMessageReceiverI18n(messageType.receiver), btn -> {
-                                final List<Enum<?>> values = Arrays.asList(ServerMessageType.Receiver.values());
-                                ServerMessageType currentValue = (ServerMessageType) ServerConfigRegistry.getValue(configCodeEntry);
-                                int currentIndex = values.indexOf(currentValue.receiver);
-                                int nextIndex = (currentIndex + 1) % values.size();
-                                ServerMessageType.Receiver newReceiver = (ServerMessageType.Receiver) values.get(nextIndex);
-                                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateReceiver(newReceiver));
-                                btn.setMessage(ServerMessageType.getMessageReceiverI18n(newReceiver));
-                            }).size(60, 20).build();
-                            mainLocationButton.active = isEditable;
-                            otherLocationButton.active = isEditable;
-                            receiverButton.active = isEditable;
-                            if (isEditable == false && configAnnotation.notEditableReason().isEmpty() == false) {
-                                Tooltip tooltip = Tooltip.of(Text.translatable(configAnnotation.notEditableReason()));
-                                mainLocationButton.setTooltip(tooltip);
-                                otherLocationButton.setTooltip(tooltip);
-                                receiverButton.setTooltip(tooltip);
-                            } else {
-                                mainLocationButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.main")));
-                                otherLocationButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.other")));
-                                receiverButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.receiver")));
-                            }
-                            this.addEntry(new MessageConfigEntry(
-                                mainLocationButton,
-                                otherLocationButton,
-                                receiverButton,
-                                Text.translatable(i18nTitleKey),
-                                Text.translatable(i18nHintKey).append("\n").append(Text.translatable("fmod.options.link", "/f options " + configAnnotation.commandEntry()))
-                            ));
+                            buildMessageTypeEntry(
+                                configCodeEntry, configAnnotation, i18nTitleKey, i18nHintKey, isEditable,
+                                (ServerMessageType) rawValue, Arrays.asList(ServerMessageType.Receiver.values()),
+                                receiver -> ServerMessageType.getMessageReceiverI18n((ServerMessageType.Receiver) receiver),
+                                (messageType, newReceiver) -> ((ServerMessageType) messageType).updateReceiver((ServerMessageType.Receiver) newReceiver)
+                            );
                         }
                         return;
                     case PLAYERMESSAGE:
                         {
-                            if (rawValue instanceof PlayerMessageType == false) {
-                                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as PLAYERMESSAGE but the value is not of type PlayerMessageType");
+                            if (!(rawValue instanceof PlayerMessageType)) {
+                                Util.LOGGER.error("FMinecraftMod: Config entry " + configCodeEntry + " is annotated as PLAYERMESSAGE but the value is not of type PlayerMessageType");
                                 return;
                             }
-                            PlayerMessageType messageType = (PlayerMessageType) rawValue;
-                            ButtonWidget mainLocationButton = ButtonWidget.builder(PlayerMessageType.getMessageLocationI18n(messageType.mainPlayerLocation), btn -> {
-                                final List<Enum<?>> values = Arrays.asList(PlayerMessageType.Location.values());
-                                PlayerMessageType currentValue = (PlayerMessageType) ServerConfigRegistry.getValue(configCodeEntry);
-                                int currentIndex = values.indexOf(currentValue.mainPlayerLocation);
-                                int nextIndex = (currentIndex + 1) % values.size();
-                                PlayerMessageType.Location newLocation = (PlayerMessageType.Location) values.get(nextIndex);
-                                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateMain(newLocation));
-                                btn.setMessage(PlayerMessageType.getMessageLocationI18n(newLocation));
-                            }).size(60, 20).build();
-                            ButtonWidget otherLocationButton = ButtonWidget.builder(PlayerMessageType.getMessageLocationI18n(messageType.otherPlayerLocation), btn -> {
-                                final List<Enum<?>> values = Arrays.asList(PlayerMessageType.Location.values());
-                                PlayerMessageType currentValue = (PlayerMessageType) ServerConfigRegistry.getValue(configCodeEntry);
-                                int currentIndex = values.indexOf(currentValue.otherPlayerLocation);
-                                int nextIndex = (currentIndex + 1) % values.size();
-                                PlayerMessageType.Location newLocation = (PlayerMessageType.Location) values.get(nextIndex);
-                                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateOther(newLocation));
-                                btn.setMessage(PlayerMessageType.getMessageLocationI18n(newLocation));
-                            }).size(60, 20).build();
-                            ButtonWidget receiverButton = ButtonWidget.builder(PlayerMessageType.getMessageReceiverI18n(messageType.receiver), btn -> {
-                                final List<Enum<?>> values = Arrays.asList(PlayerMessageType.Receiver.values());
-                                PlayerMessageType currentValue = (PlayerMessageType) ServerConfigRegistry.getValue(configCodeEntry);
-                                int currentIndex = values.indexOf(currentValue.receiver);
-                                int nextIndex = (currentIndex + 1) % values.size();
-                                PlayerMessageType.Receiver newReceiver = (PlayerMessageType.Receiver) values.get(nextIndex);
-                                ServerConfigRegistry.setValue(configCodeEntry, currentValue.updateReceiver(newReceiver));
-                                btn.setMessage(PlayerMessageType.getMessageReceiverI18n(newReceiver));
-                            }).size(60, 20).build();
-                            mainLocationButton.active = isEditable;
-                            otherLocationButton.active = isEditable;
-                            receiverButton.active = isEditable;
-                            if (isEditable == false && configAnnotation.notEditableReason().isEmpty() == false) {
-                                Tooltip tooltip = Tooltip.of(Text.translatable(configAnnotation.notEditableReason()));
-                                mainLocationButton.setTooltip(tooltip);
-                                receiverButton.setTooltip(tooltip);
-                                otherLocationButton.setTooltip(tooltip);
-                            } else {
-                                mainLocationButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.main")));
-                                otherLocationButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.other")));
-                                receiverButton.setTooltip(Tooltip.of(Text.translatable("fmod.options.message.receiver")));
-                            }
-                            this.addEntry(new MessageConfigEntry(
-                                mainLocationButton,
-                                otherLocationButton,
-                                receiverButton,
-                                Text.translatable(i18nTitleKey),
-                                Text.translatable(i18nHintKey).append("\n").append(Text.translatable("fmod.options.link", "/f options " + configAnnotation.commandEntry()))
-                            ));
+                            buildMessageTypeEntry(
+                                configCodeEntry, configAnnotation, i18nTitleKey, i18nHintKey, isEditable,
+                                (PlayerMessageType) rawValue, Arrays.asList(PlayerMessageType.Receiver.values()),
+                                receiver -> PlayerMessageType.getMessageReceiverI18n((PlayerMessageType.Receiver) receiver),
+                                (messageType, newReceiver) -> ((PlayerMessageType) messageType).updateReceiver((PlayerMessageType.Receiver) newReceiver)
+                            );
                         }
                         return;
                     default:
                         return;
                 }
             } catch (Exception e) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to build config entry for " + configCodeEntry, e);
+                Util.LOGGER.error("FMinecraftMod: Failed to build config entry for " + configCodeEntry, e);
+                this.addEntry(new TextHintEntry(
+                    Text.literal("\u26A0 " + configCodeEntry).styled(s -> s.withColor(0xFF5555)),
+                    Text.literal(e.getClass().getSimpleName() + ": " + e.getMessage())
+                ));
             }
         }
     

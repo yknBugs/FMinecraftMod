@@ -9,12 +9,11 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
-
-import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.mojang.brigadier.context.CommandContext;
@@ -43,6 +42,8 @@ import net.minecraft.util.Formatting;
  */
 public class GptCommandExecutor extends AsyncTaskExecutor {
 
+    private static final Gson gson = new Gson();
+
     private final GptData gptData;
     private final CommandContext<ServerCommandSource> context;
 
@@ -65,20 +66,21 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) gptData.getCachedRequestUrl().openConnection();
-            connection.setConnectTimeout(Util.serverConfig.getGptServerTimeout());
-            connection.setReadTimeout(Util.serverConfig.getGptServerTimeout());
+            connection.setConnectTimeout(Util.getServerConfig().getGptServerTimeout());
+            connection.setReadTimeout(Util.getServerConfig().getGptServerTimeout());
             connection.setRequestMethod("POST");
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Accept", "application/json");
-            final String accessTokens = Util.serverConfig.getGptAccessTokens();
+            final String accessTokens = Util.getServerConfig().getGptAccessTokens();
             if (!accessTokens.isEmpty()) {
                 connection.setRequestProperty("Authorization", "Bearer " + accessTokens);
             }
             connection.setDoOutput(true);
 
-            Gson gson = new Gson();
             final String jsonRequest = gptData.getPostMessageJson();
-            connection.getOutputStream().write(jsonRequest.getBytes(StandardCharsets.UTF_8));
+            try (OutputStream os = connection.getOutputStream()) {
+                os.write(jsonRequest.getBytes(StandardCharsets.UTF_8));
+            }
             
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
@@ -102,7 +104,7 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
                 gptData.cancel();
                 this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.httperror", responseCode).formatted(Formatting.RED);
                 this.markAsyncFinished();
-                LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: GPT server response code: " + responseCode);
+                Util.LOGGER.warn("FMinecraftMod: GPT server response code: " + responseCode);
                 InputStream errorStream = connection.getErrorStream();
                 if (errorStream != null) {
                     StringBuilder responseBuilder = new StringBuilder();
@@ -113,29 +115,29 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
                             responseBuilder.append("\n");
                         }
                     }
-                    LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: GPT server response: " + responseBuilder.toString().strip());
+                    Util.LOGGER.warn("FMinecraftMod: GPT server response: " + responseBuilder.toString().strip());
                 }
             }
         } catch (SocketTimeoutException e) {
             gptData.cancel();
             this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.timeout").formatted(Formatting.RED);
             this.markAsyncFinished();
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Connect to the GPT server timeout", e);
+            Util.LOGGER.warn("FMinecraftMod: Connect to the GPT server timeout", e);
         } catch (ConnectException e) {
             gptData.cancel();
             this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.connecterror").formatted(Formatting.RED);
             this.markAsyncFinished();
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Cannot connect to the GPT server", e);
+            Util.LOGGER.warn("FMinecraftMod: Cannot connect to the GPT server", e);
         } catch (FileNotFoundException e) {
             gptData.cancel();
             this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.fileerror").formatted(Formatting.RED);
             this.markAsyncFinished();
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: The GPT server did not return a valid response", e);
+            Util.LOGGER.warn("FMinecraftMod: The GPT server did not return a valid response", e);
         } catch (Exception e) {
             gptData.cancel();
             this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.error").formatted(Formatting.RED);
             this.markAsyncFinished();
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Exception while connecting to the GPT server", e);
+            Util.LOGGER.error("FMinecraftMod: Exception while connecting to the GPT server", e);
         } finally {
             if (connection != null) {
                 connection.disconnect();
@@ -147,16 +149,16 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
     protected void taskAfterCompletion() {
         if (context.getSource().isExecutedByPlayer()) {
             if (this.loggedResponse != null) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).info(this.loggedResponse);
+                Util.LOGGER.info(this.loggedResponse);
             }
             if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: GPT command executed but the player has disconnected.");
+                Util.LOGGER.info("FMinecraftMod: GPT command executed but the player has disconnected.");
                 return;
             }
         }
         if (this.feedbackText == null) {
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.gpt.emptyerror").formatted(Formatting.RED), false);
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: GPT command executed but no feedback text was set.");
+            Util.LOGGER.error("FMinecraftMod: GPT command executed but no feedback text was set.");
             return;
         }
         context.getSource().sendFeedback(() -> this.feedbackText, false);

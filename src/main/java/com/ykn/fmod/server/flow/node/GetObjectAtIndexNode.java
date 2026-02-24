@@ -9,14 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
-
-import net.minecraft.text.Text;
 
 /**
  * A node to get an object at a specific index in a list
@@ -38,35 +35,14 @@ public class GetObjectAtIndexNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslatableText("fmod.node.getindexat.title.name");
-        Text description = Util.parseTranslatableText("fmod.node.getindexat.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.getindexat.input.list.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexat.input.list.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexat.input.list.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getindexat.input.index.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexat.input.index.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexat.input.index.type"));
-        inputNames.add(Util.parseTranslatableText("fmod.node.getindexat.input.name.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexat.input.name.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexat.input.name.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
-        outputNames.add(Util.parseTranslatableText("fmod.node.getindexat.output.object.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexat.output.object.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexat.output.object.type"));
-        outputNames.add(Util.parseTranslatableText("fmod.node.getindexat.output.size.name"));
-        outputDescriptions.add(Util.parseTranslatableText("fmod.node.getindexat.output.size.feat"));
-        outputDataTypes.add(Util.parseTranslatableText("fmod.node.getindexat.output.size.type"));
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.default.branch.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.default.branch.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.getindexat.title.name", "fmod.node.getindexat.title.feat")
+            .input("fmod.node.getindexat.input.list.name", "fmod.node.getindexat.input.list.feat", "fmod.node.getindexat.input.list.type")
+            .input("fmod.node.getindexat.input.index.name", "fmod.node.getindexat.input.index.feat", "fmod.node.getindexat.input.index.type")
+            .input("fmod.node.getindexat.input.name.name", "fmod.node.getindexat.input.name.feat", "fmod.node.getindexat.input.name.type")
+            .output("fmod.node.getindexat.output.object.name", "fmod.node.getindexat.output.object.feat", "fmod.node.getindexat.output.object.type")
+            .output("fmod.node.getindexat.output.size.name", "fmod.node.getindexat.output.size.feat", "fmod.node.getindexat.output.size.type")
+            .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override

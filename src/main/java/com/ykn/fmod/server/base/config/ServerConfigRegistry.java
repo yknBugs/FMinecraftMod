@@ -7,12 +7,14 @@ package com.ykn.fmod.server.base.config;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -21,6 +23,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.PlayerMessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
@@ -77,7 +80,7 @@ public class ServerConfigRegistry {
      * @param config the {@link ConfigReader} whose fields should be scanned and registered;
      *               must not be {@code null}
      */
-    public static void register(ConfigReader config) {
+    public static synchronized void register(@NotNull ConfigReader config) {
         try {
             for (Field field : config.getClass().getDeclaredFields()) {
                 if (field.isAnnotationPresent(ConfigEntry.class)) {
@@ -85,14 +88,14 @@ public class ServerConfigRegistry {
                     ConfigEntry annotation = field.getAnnotation(ConfigEntry.class);
                     String codeEntry = annotation.codeEntry().isEmpty() ? field.getName() : annotation.codeEntry();
                     if (configAnnotations.containsKey(codeEntry) || configInstances.containsKey(codeEntry)) {
-                        LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Duplicate config entry name detected: " + codeEntry + " in class " + config.getClass().getName() + ", overwriting previous entry.");
+                        Util.LOGGER.warn("FMinecraftMod: Duplicate config entry name detected: " + codeEntry + " in class " + config.getClass().getName() + ", overwriting previous entry.");
                     }
                     configAnnotations.put(codeEntry, annotation);
                     configInstances.put(codeEntry, config);
                 }
             }
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to register config entries for " + config.getClass().getName(), e);
+            Util.LOGGER.error("FMinecraftMod: Failed to register config entries for " + config.getClass().getName(), e);
         }
     }
     
@@ -149,7 +152,7 @@ public class ServerConfigRegistry {
      * @throws UnsupportedOperationException if the entry's {@link ConfigEntry.ConfigType} is not handled by this method
      */
     @NotNull
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(String codeEntry) throws Exception {
+    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(String codeEntry) {
         ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
         if (configAnnotation == null) {
             throw new IllegalStateException("No config entry found for name: " + codeEntry);
@@ -233,6 +236,54 @@ public class ServerConfigRegistry {
         return commandNode;
     }
 
+    public static int runMessageTypeOptionsCommand(
+        String codeEntry, String field, Object value, CommandContext<ServerCommandSource> context,
+        Function<MessageType, Text> displayValueFunction,
+        Function<Object, Text> receiverValueFunction,
+        BiFunction<MessageType, Object, MessageType> updateReceiverFunction
+    ) {
+        final ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
+        final Object currentValue = getValue(codeEntry);
+        if (currentValue == null || configAnnotation == null) {
+            throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+        }
+        String i18nEntry = configAnnotation.i18nEntry().isEmpty() ? codeEntry : configAnnotation.i18nEntry();
+        final MessageType currentMessageType = (MessageType) currentValue;
+        String i18nKey = "fmod.options." + i18nEntry;
+        if (field == null || value == null) {
+            Text displayValue = displayValueFunction.apply(currentMessageType);
+            Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.get", Util.parseTranslatableText(i18nKey), displayValue);
+            context.getSource().sendFeedback(() -> feedbackMessage, false);
+            return Command.SINGLE_SUCCESS;
+        }
+
+        Text displayValue = Text.empty();
+        boolean isSuccess = false;
+        switch (field) {
+            case "main":
+                isSuccess = setValue(codeEntry, currentMessageType.updateMain((MessageType.Location) value));
+                displayValue = MessageType.getMessageLocationI18n((MessageType.Location) value);
+                break;
+            case "other":
+                isSuccess = setValue(codeEntry, currentMessageType.updateOther((MessageType.Location) value));
+                displayValue = MessageType.getMessageLocationI18n((MessageType.Location) value);
+                break;
+            case "receiver":
+                isSuccess = setValue(codeEntry, updateReceiverFunction.apply(currentMessageType, value));
+                displayValue = receiverValueFunction.apply(value);
+                break;
+            default:
+                throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+        }
+        if (!isSuccess) {
+            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+        }
+        Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
+        context.getSource().sendFeedback(() -> feedbackMessage, true);
+        Util.saveServerConfig();
+        return Command.SINGLE_SUCCESS;
+    }
+
     /**
      * Executes the options command for a {@link ConfigEntry.ConfigType#SERVERMESSAGE}-typed entry.
      *
@@ -256,54 +307,19 @@ public class ServerConfigRegistry {
      */
     public static int runServerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<ServerCommandSource> context) {
         try {
-            final ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
-            final Object currentValue = getValue(codeEntry);
-            if (currentValue == null || configAnnotation == null) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
-            }
-            String i18nEntry = configAnnotation.i18nEntry().isEmpty() ? codeEntry : configAnnotation.i18nEntry();
-            final ServerMessageType currentMessageType = (ServerMessageType) currentValue;
-            String i18nKey = "fmod.options." + i18nEntry;
-            if (field == null || value == null) {
-                Text displayValue = ServerMessageType.getMessageTypeI18n(currentMessageType);
-                Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.get", Util.parseTranslatableText(i18nKey), displayValue);
-                context.getSource().sendFeedback(() -> feedbackMessage, false);
-                return Command.SINGLE_SUCCESS;
-            }
-
-            Text displayValue = Text.empty();
-            boolean isSuccess = false;
-            switch (field) {
-                case "main":
-                    isSuccess = setValue(codeEntry, currentMessageType.updateMain((ServerMessageType.Location) value));
-                    displayValue = ServerMessageType.getMessageLocationI18n((ServerMessageType.Location) value);
-                    break;
-                case "other":
-                    isSuccess = setValue(codeEntry, currentMessageType.updateOther((ServerMessageType.Location) value));
-                    displayValue = ServerMessageType.getMessageLocationI18n((ServerMessageType.Location) value);
-                    break;
-                case "receiver":
-                    isSuccess = setValue(codeEntry, currentMessageType.updateReceiver((ServerMessageType.Receiver) value));
-                    displayValue = ServerMessageType.getMessageReceiverI18n((ServerMessageType.Receiver) value);
-                    break;
-                default:
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
-            }
-            if (!isSuccess) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
-            }
-            Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
-            context.getSource().sendFeedback(() -> feedbackMessage, true);
-            Util.saveServerConfig();
+            return runMessageTypeOptionsCommand(codeEntry, field, value, context,
+                inputValue -> ServerMessageType.getMessageTypeI18n((ServerMessageType) inputValue),
+                inputValue -> ServerMessageType.getMessageReceiverI18n((ServerMessageType.Receiver) inputValue),
+                (messageType, inputValue) -> ((ServerMessageType) messageType).updateReceiver((ServerMessageType.Receiver) inputValue)
+            );
         } catch (CommandException e) {
             throw e;
         } catch (ClassCastException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
-        return Command.SINGLE_SUCCESS;
     }
 
     /**
@@ -329,54 +345,19 @@ public class ServerConfigRegistry {
      */
     public static int runPlayerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<ServerCommandSource> context) {
         try {
-            final ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
-            final Object currentValue = getValue(codeEntry);
-            if (currentValue == null || configAnnotation == null) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
-            }
-            String i18nEntry = configAnnotation.i18nEntry().isEmpty() ? codeEntry : configAnnotation.i18nEntry();
-            final PlayerMessageType currentMessageType = (PlayerMessageType) currentValue;
-            String i18nKey = "fmod.options." + i18nEntry;
-            if (field == null || value == null) {
-                Text displayValue = PlayerMessageType.getMessageTypeI18n(currentMessageType);
-                Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.get", Util.parseTranslatableText(i18nKey), displayValue);
-                context.getSource().sendFeedback(() -> feedbackMessage, false);
-                return Command.SINGLE_SUCCESS;
-            }
-
-            Text displayValue = Text.empty();
-            boolean isSuccess = false;
-            switch (field) {
-                case "main":
-                    isSuccess = setValue(codeEntry, currentMessageType.updateMain((PlayerMessageType.Location) value));
-                    displayValue = PlayerMessageType.getMessageLocationI18n((PlayerMessageType.Location) value);
-                    break;
-                case "other":
-                    isSuccess = setValue(codeEntry, currentMessageType.updateOther((PlayerMessageType.Location) value));
-                    displayValue = PlayerMessageType.getMessageLocationI18n((PlayerMessageType.Location) value);
-                    break;
-                case "receiver":
-                    isSuccess = setValue(codeEntry, currentMessageType.updateReceiver((PlayerMessageType.Receiver) value));
-                    displayValue = PlayerMessageType.getMessageReceiverI18n((PlayerMessageType.Receiver) value);
-                    break;
-                default:
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
-            }
-            if (!isSuccess) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
-            }
-            Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
-            context.getSource().sendFeedback(() -> feedbackMessage, true);
-            Util.saveServerConfig();
+            return runMessageTypeOptionsCommand(codeEntry, field, value, context,
+                inputValue -> PlayerMessageType.getMessageTypeI18n((PlayerMessageType) inputValue),
+                inputValue -> PlayerMessageType.getMessageReceiverI18n((PlayerMessageType.Receiver) inputValue),
+                (messageType, inputValue) -> ((PlayerMessageType) messageType).updateReceiver((PlayerMessageType.Receiver) inputValue)
+            );
         } catch (CommandException e) {
             throw e;
         } catch (ClassCastException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
-        return Command.SINGLE_SUCCESS;
     }
 
     /**
@@ -426,7 +407,7 @@ public class ServerConfigRegistry {
         } catch (ClassCastException e) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -447,14 +428,16 @@ public class ServerConfigRegistry {
         try {
             ConfigReader config = configInstances.get(name);
             if (config == null) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: No config entry found for name: " + name);
+                Util.LOGGER.error("FMinecraftMod: No config entry found for name: " + name);
                 return null;
             }
 
-            Method getter = config.getClass().getDeclaredMethod("get" + name.substring(0, 1).toUpperCase() + name.substring(1));
+            // Just let try catch block to handle name.isEmpty() or name == null cases.
+            String getterName = "get" + name.substring(0, 1).toUpperCase() + name.substring(1);
+            Method getter = config.getClass().getDeclaredMethod(getterName);
             return getter.invoke(config);
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to get value for config entry: " + name, e);
+            Util.LOGGER.error("FMinecraftMod: Failed to get value for config entry: " + name, e);
             return null;
         }
     }
@@ -477,16 +460,19 @@ public class ServerConfigRegistry {
         try {
             ConfigReader config = configInstances.get(name);
             if (config == null) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: No config entry found for name: " + name);
+                Util.LOGGER.error("FMinecraftMod: No config entry found for name: " + name);
                 return false;
             }
 
+            // Just let try catch block to handle name.isEmpty() or name == null cases.
+            // Need to use field.getType() instead of value.getClass() to allow primitive types.
+            String setterName = "set" + name.substring(0, 1).toUpperCase() + name.substring(1);
             Field field = config.getClass().getDeclaredField(name);
-            Method setter = config.getClass().getDeclaredMethod("set" + name.substring(0, 1).toUpperCase() + name.substring(1), field.getType());
+            Method setter = config.getClass().getDeclaredMethod(setterName, field.getType());
             setter.invoke(config, value);
             return true;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to set value for config entry: " + name, e);
+            Util.LOGGER.error("FMinecraftMod: Failed to set value for config entry: " + name, e);
             return false;
         }
     }
@@ -507,10 +493,14 @@ public class ServerConfigRegistry {
      */
     public static Text getDisplayValue(String name, Object value) {
         try {
+            if (value == null) {
+                Util.LOGGER.warn("FMinecraftMod: Config entry " + name + " got an unexpected null value, falling back to return null.");
+                return Text.literal("null");
+            }
             ConfigEntry configAnnotation = configAnnotations.get(name);
             ConfigReader configInstance = configInstances.get(name);
             if (configAnnotation == null || configInstance == null) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: No config entry found for name: " + name);
+                Util.LOGGER.error("FMinecraftMod: No config entry found for name: " + name);
                 return Text.literal(String.valueOf(value));
             }
             String displayValueGetter = configAnnotation.displayValueGetter();
@@ -518,6 +508,7 @@ public class ServerConfigRegistry {
                 return Text.literal(String.valueOf(value));
             }
             Method displayValueMethod = configInstance.getClass().getDeclaredMethod(displayValueGetter, value.getClass());
+            displayValueMethod.setAccessible(true);
             Object displayValue = displayValueMethod.invoke(configInstance, value);
             if (displayValue instanceof Text) {
                 return (Text) displayValue;
@@ -525,7 +516,7 @@ public class ServerConfigRegistry {
                 return Text.literal(String.valueOf(displayValue));
             }
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to get display value for config entry: " + name, e);
+            Util.LOGGER.error("FMinecraftMod: Failed to get display value for config entry: " + name, e);
             return Text.literal(String.valueOf(value));
         }
     }
@@ -546,10 +537,14 @@ public class ServerConfigRegistry {
      */
     public static Object toTrueValue(String name, Object value) {
         try {
+            if (value == null) {
+                Util.LOGGER.warn("FMinecraftMod: Config entry " + name + " got an unexpected null command input value, falling back to return null.");
+                return null;
+            }
             ConfigEntry configAnnotation = configAnnotations.get(name);
             ConfigReader configInstance = configInstances.get(name);
             if (configAnnotation == null || configInstance == null) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: No config entry found for name: " + name);
+                Util.LOGGER.error("FMinecraftMod: No config entry found for name: " + name);
                 return value;
             }
             String toTrueValueMethodName = configAnnotation.commandInputToTrueValue();
@@ -557,9 +552,10 @@ public class ServerConfigRegistry {
                 return value;
             }
             Method toTrueValueMethod = configInstance.getClass().getDeclaredMethod(toTrueValueMethodName, value.getClass());
+            toTrueValueMethod.setAccessible(true);
             return toTrueValueMethod.invoke(configInstance, value);
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to convert command value to true value for config entry: " + name, e);
+            Util.LOGGER.error("FMinecraftMod: Failed to convert command value to true value for config entry: " + name, e);
             return value;
         }
     }
@@ -574,7 +570,7 @@ public class ServerConfigRegistry {
      * @return the unmodifiable view of the config-annotation map
      */
     public static Map<String, ConfigEntry> getConfigAnnotations() {
-        return configAnnotations;
+        return Collections.unmodifiableMap(configAnnotations);
     }
 
     /**
@@ -587,6 +583,6 @@ public class ServerConfigRegistry {
      * @return the unmodifiable view of the config-instance map
      */
     public static Map<String, ConfigReader> getConfigInstances() {
-        return configInstances;
+        return Collections.unmodifiableMap(configInstances);
     }
 }

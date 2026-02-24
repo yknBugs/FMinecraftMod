@@ -24,12 +24,12 @@ public class RedirectedCommandOutput implements CommandOutput {
     /**
      * List of all messages that have been captured by this redirected output.
      */
-    public final ArrayList<Text> messages;
+    private final ArrayList<Text> messages;
 
     /**
      * Constructs a new {@code RedirectedCommandOutput} with an empty message list.
      */
-    public RedirectedCommandOutput() {
+    private RedirectedCommandOutput() {
         this.messages = new ArrayList<>();
     }
 

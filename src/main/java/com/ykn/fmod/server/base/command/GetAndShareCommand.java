@@ -10,8 +10,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import org.slf4j.LoggerFactory;
-
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -72,7 +70,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return entities.size();
@@ -88,7 +86,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -152,7 +150,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
@@ -164,7 +162,7 @@ public class GetAndShareCommand {
             Vec3d target = player.getPos();
             List<ServerPlayerEntity> onlinePlayers = Util.getOnlinePlayers(context.getSource().getServer());
             for (ServerPlayerEntity onlinePlayer : onlinePlayers) {
-                if (onlinePlayer.getUuid() == player.getUuid()) {
+                if (onlinePlayer.getUuid().equals(player.getUuid())) {
                     ServerMessageType.sendTextMessage(onlinePlayer, Util.parseTranslatableText("fmod.command.share.selfdistance"));
                     continue;
                 }
@@ -193,7 +191,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -212,7 +210,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return entities.size();
@@ -231,7 +229,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -254,7 +252,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return players.size();
@@ -277,7 +275,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -303,7 +301,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when formatting item stack", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when formatting item stack", e);
             itemText = Text.literal("??").formatted(Formatting.RED);
         }
         return itemText;
@@ -409,7 +407,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -428,7 +426,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -439,7 +437,7 @@ public class GetAndShareCommand {
         try {
             for (Entity entity : entities) {
                 Iterable<ItemStack> items = entity.getHandItems();
-                if (items == null || items.iterator().hasNext() == false) {
+                if (items == null || !items.iterator().hasNext()) {
                     final Text name = entity.getDisplayName();
                     context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
                     continue;
@@ -472,7 +470,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
@@ -482,7 +480,7 @@ public class GetAndShareCommand {
         try {
             ServerPlayerEntity player = getShareCommandExecutor(context);
             Iterable<ItemStack> items = player.getHandItems();
-            if (items == null || items.iterator().hasNext() == false) {
+            if (items == null || !items.iterator().hasNext()) {
                 final Text name = player.getDisplayName();
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.noitem", name));
                 return Command.SINGLE_SUCCESS;
@@ -513,7 +511,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
         }
         return Command.SINGLE_SUCCESS;
@@ -523,7 +521,7 @@ public class GetAndShareCommand {
         try {
             for (ServerPlayerEntity player : players) {
                 PlayerData data = Util.getServerData(context.getSource().getServer()).getPlayerData(player);
-                double afkSeconds = data.afkTicks / 20.0;
+                double afkSeconds = data.getAfkTicks() / 20.0;
                 final String afkSecondsStr = String.format("%.1f", afkSeconds);
                 final Text name = player.getDisplayName();
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.afk", name, afkSecondsStr), false);
@@ -531,7 +529,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get afk", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get afk", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return players.size();
@@ -541,12 +539,17 @@ public class GetAndShareCommand {
         try {
             for (ServerPlayerEntity player : players) {
                 PlayerData data = Util.getServerData(context.getSource().getServer()).getPlayerData(player);
-                Vec3d[] snapshot = data.recentPositions.toArray(new Vec3d[0]);
+                Vec3d[] snapshot = data.getRecentPositions();
+                if (snapshot.length < 2) {
+                    final Text name = player.getDisplayName();
+                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.notravel", name), false);
+                    continue;
+                }
                 double seconds = (snapshot.length - 1) / 20.0;
-                double totalDistance = GameMath.getHorizonalEuclideanDistance(snapshot[0], snapshot[snapshot.length - 1]);
+                double totalDistance = GameMath.getHorizontalEuclideanDistance(snapshot[0], snapshot[snapshot.length - 1]);
                 double totalTravelled = 0.0;
                 for (int i = 1; i < snapshot.length; i++) {
-                    totalTravelled += GameMath.getHorizonalEuclideanDistance(snapshot[i - 1], snapshot[i]);
+                    totalTravelled += GameMath.getHorizontalEuclideanDistance(snapshot[i - 1], snapshot[i]);
                 }
                 final Text name = player.getDisplayName();
                 final String secondsStr = String.format("%.1f", seconds);
@@ -559,7 +562,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get travel", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get travel", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return players.size();
@@ -579,7 +582,7 @@ public class GetAndShareCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f get crowd", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get crowd", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return Command.SINGLE_SUCCESS;
@@ -634,7 +637,7 @@ public class GetAndShareCommand {
                         .executes(context -> {return runGetCrowdedPlaceCommand(IntegerArgumentType.getInteger(context, "number"), DoubleArgumentType.getDouble(context, "radius"), context);})
                     )
                 )
-                .executes(context -> {return runGetCrowdedPlaceCommand(Util.serverConfig.getEntityDensityNumber(), Util.serverConfig.getEntityDensityRadius(), context);})
+                .executes(context -> {return runGetCrowdedPlaceCommand(Util.getServerConfig().getEntityDensityNumber(), Util.getServerConfig().getEntityDensityRadius(), context);})
             );
     }
 

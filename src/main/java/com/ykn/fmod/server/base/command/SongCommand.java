@@ -14,13 +14,12 @@ import java.util.Collection;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
-import org.slf4j.LoggerFactory;
-
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.PlaySong;
 import com.ykn.fmod.server.base.schedule.ScheduledTask;
 import com.ykn.fmod.server.base.song.NbsSongDecoder;
@@ -60,7 +59,8 @@ public class SongCommand {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
             }
             // Check if a song is still playing, if so, cancel the task
-            for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+            ServerData data = Util.getServerData(context.getSource().getServer());
+            for (ScheduledTask scheduledTask : data.getScheduledTasks()) {
                 if (scheduledTask instanceof PlaySong) {
                     PlaySong playSong = (PlaySong) scheduledTask;
                     // if (players.contains(playSong.getTarget())) {
@@ -77,8 +77,8 @@ public class SongCommand {
             }
             // Submit song task
             for (ServerPlayerEntity player : players) {
-                PlaySong playSong = new PlaySong(song, songName, player, context);
-                Util.getServerData(context.getSource().getServer()).submitScheduledTask(playSong);
+                PlaySong playSong = new PlaySong(song.copy(), songName, player, context);
+                data.submitScheduledTask(playSong);
                 context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
         } catch (CommandException e) {
@@ -127,7 +127,7 @@ public class SongCommand {
                     }
                 }
             }
-            if (isFound == false) {
+            if (!isFound) {
                 boolean isSuccess = false;
                 if (defaultTask != null) {
                     isSuccess = defaultTask.test(player);
@@ -154,7 +154,7 @@ public class SongCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f song cancel", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song cancel", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
@@ -176,7 +176,7 @@ public class SongCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f song get", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song get", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
@@ -200,7 +200,7 @@ public class SongCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
@@ -220,7 +220,7 @@ public class SongCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
@@ -249,7 +249,7 @@ public class SongCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f song search", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song search", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;
@@ -276,7 +276,7 @@ public class SongCommand {
         } catch (CommandException e) {
             throw e;
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught unexpected exception when executing command /f song speed", e);
+            Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song speed", e);
             throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
         }
         return result;

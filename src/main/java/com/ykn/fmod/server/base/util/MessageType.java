@@ -10,7 +10,6 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
@@ -104,20 +103,20 @@ public class MessageType {
                 break;
             case CHAT:
                 if (player == null) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).info(message.getString());
+                    Util.LOGGER.info(message.getString());
                 } else {
                     sendTextMessage(player, message);
                 }
                 break;
             case ACTIONBAR:
                 if (player == null) {
-                    LoggerFactory.getLogger(Util.LOGGERNAME).debug(message.getString());
+                    Util.LOGGER.debug(message.getString());
                 } else {
                     sendActionBarMessage(player, message);
                 }
                 break;
             default:
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Invalid message type: " + location);
+                Util.LOGGER.error("FMinecraftMod: Invalid message type: " + location);
                 break;
         }
     }
@@ -140,7 +139,7 @@ public class MessageType {
                 broadcastActionBarMessage(server, message);
                 break;
             default:
-                LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Invalid message type: " + location);
+                Util.LOGGER.error("FMinecraftMod: Invalid message type: " + location);
                 break;
         }
     }
@@ -169,7 +168,7 @@ public class MessageType {
         for (ServerPlayerEntity player : players) {
             sendActionBarMessage(player, message);
         }
-        LoggerFactory.getLogger(Util.LOGGERNAME).debug(message.getString());
+        Util.LOGGER.debug(message.getString());
     }
 
     /**
@@ -197,7 +196,58 @@ public class MessageType {
         for (ServerPlayerEntity player : players) {
             sendTextMessage(player, message);
         }
-        LoggerFactory.getLogger(Util.LOGGERNAME).info(message.getString());
+        Util.LOGGER.info(message.getString());
+    }
+    
+    
+    /**
+     * Returns a new {@code MessageType} instance with the same field values as this instance,
+     * except that the {@code mainPlayerLocation} is updated to the specified value.
+     * 
+     * @param newMainLocation the new location for the main player; must not be null
+     * @return a new {@code MessageType} instance with the updated main player location
+     */
+    public MessageType updateMain(MessageType.Location newMainLocation) {
+        throw new UnsupportedOperationException("Only subclasses of MessageType suuport updating the main player location.");
+    }
+
+    /**
+     * Returns a new {@code MessageType} instance with the same field values as this instance,
+     * except that the {@code otherPlayerLocation} is updated to the specified value.
+     * 
+     * @param newOtherLocation the new location for other players; must not be null
+     * @return a new {@code MessageType} instance with the updated other player location
+     */
+    public MessageType updateOther(MessageType.Location newOtherLocation) {
+        throw new UnsupportedOperationException("Only subclasses of MessageType suuport updating the other player location.");
+    }
+
+
+    /**
+     * Returns the receiver type of this {@code MessageType}.
+     *
+     * @return the receiver type
+     */
+    public Enum<?> getReceiver() {
+        throw new UnsupportedOperationException("Only subclasses of MessageType have a receiver field.");
+    }
+
+    /**
+     * Returns the main player location of this {@code MessageType}.
+     *
+     * @return the main player location
+     */
+    public Enum<?> getMainLocation() {
+        return mainPlayerLocation;
+    }
+
+    /**
+     * Returns the other player location of this {@code MessageType}.
+     *
+     * @return the other player location
+     */
+    public Enum<?> getOtherLocation() {
+        return otherPlayerLocation;
     }
 
     /**

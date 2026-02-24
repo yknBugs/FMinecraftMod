@@ -52,7 +52,7 @@ public class DataReference implements Cloneable {
     /**
      * Indicates the type of this data reference (CONSTANT or NODE_OUTPUT).
      */
-    public ReferenceType type;
+    private final ReferenceType type;
 
     /**
      * The actual constant value when type is CONSTANT.
@@ -61,7 +61,7 @@ public class DataReference implements Cloneable {
      * It holds the literal value that will be returned by {@link #resolve}.
      * For NODE_OUTPUT type references, this field should be null.
      */
-    public Object value;
+    private final Object value;
 
     /**
      * The ID of the node that provides the data when type is NODE_OUTPUT.
@@ -70,7 +70,7 @@ public class DataReference implements Cloneable {
      * It identifies which node's output should be retrieved.
      * For CONSTANT type references, this should be set to -1.
      */
-    public long referenceId;
+    private final long referenceId;
 
     /**
      * The output port index when type is NODE_OUTPUT.
@@ -79,7 +79,24 @@ public class DataReference implements Cloneable {
      * Since one node may have multiple outputs, this indicates which output port to use (0-based).
      * For CONSTANT type references, this should be set to -1.
      */
-    public int referenceIndex; 
+    private final int referenceIndex; 
+
+    /**
+     * Private constructor to initialize a DataReference with the specified parameters.
+     * <p>
+     * This constructor is not intended to be called directly; use the static factory methods instead.
+     * 
+     * @param type The type of this data reference (CONSTANT or NODE_OUTPUT)
+     * @param value The constant value (only used if type is CONSTANT, otherwise should be null)
+     * @param referenceId The ID of the referenced node (only used if type is NODE_OUTPUT, otherwise should be -1)
+     * @param referenceIndex The output port index (only used if type is NODE_OUTPUT, otherwise should be -1)
+     */
+    private DataReference(ReferenceType type, Object value, long referenceId, int referenceIndex) {
+        this.type = type;
+        this.value = value;
+        this.referenceId = referenceId;
+        this.referenceIndex = referenceIndex;
+    }
 
     /**
      * Creates a constant data reference with the specified value.
@@ -90,12 +107,7 @@ public class DataReference implements Cloneable {
      * @return A new DataReference of type CONSTANT
      */
     public static DataReference createConstantReference(Object value) {
-        DataReference ref = new DataReference();
-        ref.type = ReferenceType.CONSTANT;
-        ref.value = value;
-        ref.referenceId = -1;
-        ref.referenceIndex = -1;
-        return ref;
+        return new DataReference(ReferenceType.CONSTANT, value, -1, -1);
     }
 
     /**
@@ -108,12 +120,7 @@ public class DataReference implements Cloneable {
      * @return A new DataReference of type NODE_OUTPUT
      */
     public static DataReference createNodeOutputReference(long nodeId, int outputIndex) {
-        DataReference ref = new DataReference();
-        ref.type = ReferenceType.NODE_OUTPUT;
-        ref.value = null;
-        ref.referenceId = nodeId;
-        ref.referenceIndex = outputIndex;
-        return ref;
+        return new DataReference(ReferenceType.NODE_OUTPUT, null, nodeId, outputIndex);
     }
 
     /**
@@ -169,16 +176,64 @@ public class DataReference implements Cloneable {
      */
     @NotNull
     public DataReference copy() {
-        DataReference ref = new DataReference();
-        ref.type = this.type;
-        ref.value = this.value;
-        ref.referenceId = this.referenceId;
-        ref.referenceIndex = this.referenceIndex;
-        return ref;
+        return new DataReference(this.type, this.value, this.referenceId, this.referenceIndex);
     }
 
     @Override
     protected Object clone() throws CloneNotSupportedException {
         return this.copy();
+    }
+
+    /**
+     * Gets the type of this data reference.
+     * 
+     * @return The reference type (CONSTANT or NODE_OUTPUT)
+     */
+    public ReferenceType getType() {
+        return type;
+    }
+
+    /**
+     * Gets the constant value stored in this reference.
+     * <p>
+     * This is only meaningful if the reference type is CONSTANT; otherwise, it may return null.
+     * 
+     * @return The constant value, or null if this reference is not of type CONSTANT
+     */
+    public Object getValue() {
+        return value;
+    }
+
+    /**
+     * Gets the ID of the node that this reference points to (if type is NODE_OUTPUT).
+     * <p>
+     * This is only meaningful if the reference type is NODE_OUTPUT; otherwise, it will return -1.
+     * 
+     * @return The referenced node ID, or -1 if this reference is not of type NODE_OUTPUT
+     */
+    public long getReferenceId() {
+        return referenceId;
+    }
+
+    /**
+     * Gets the output port index that this reference points to (if type is NODE_OUTPUT).
+     * <p>
+     * This is only meaningful if the reference type is NODE_OUTPUT; otherwise, it will return -1.
+     * 
+     * @return The referenced output index, or -1 if this reference is not of type NODE_OUTPUT
+     */
+    public int getReferenceIndex() {
+        return referenceIndex;
+    }
+
+    @Override
+    public String toString() {
+        if (this.type == ReferenceType.CONSTANT) {
+            return "DataReference{type=CONSTANT, value=" + this.value + "}";
+        } else if (this.type == ReferenceType.NODE_OUTPUT) {
+            return "DataReference{type=NODE_OUTPUT, referenceId=" + this.referenceId + ", referenceIndex=" + this.referenceIndex + "}";
+        } else {
+            return "DataReference{type=" + this.type + "}";
+        }
     }
 }

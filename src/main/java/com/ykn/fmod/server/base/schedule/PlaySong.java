@@ -7,8 +7,6 @@ package com.ykn.fmod.server.base.schedule;
 
 import java.util.List;
 
-import org.slf4j.LoggerFactory;
-
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.song.NoteBlockNote;
 import com.ykn.fmod.server.base.song.NoteBlockSong;
@@ -99,11 +97,9 @@ public class PlaySong extends ScheduledTask {
     @Override
     public void onTick() {
         List<NoteBlockNote> notes = song.getNotes(this.tick);
-        if (notes != null) {
-            for (NoteBlockNote note : notes) {
-                // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0));
-                target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
-            }
+        for (NoteBlockNote note : notes) {
+            // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0));
+            target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
         }
         int currentSeconds = (int) (this.song.getVirtualTick(this.tick) / 20.0);
         if (this.showInfo) {
@@ -127,7 +123,7 @@ public class PlaySong extends ScheduledTask {
         this.tick = song.getMaxRealTick();
         if (context.getSource().isExecutedByPlayer()) {
             if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).info(Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName).getString());
+                Util.LOGGER.info(Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName).getString());
                 return;
             }
         }
@@ -138,7 +134,7 @@ public class PlaySong extends ScheduledTask {
     public void onFinish() {
         if (context.getSource().isExecutedByPlayer()) {
             if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).info(Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName).getString());
+                Util.LOGGER.info(Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName).getString());
                 return;
             }
         }
@@ -208,6 +204,10 @@ public class PlaySong extends ScheduledTask {
             return;
         }
         if (virtualTick > song.getMaxVirtualTick()) {
+            this.cancel();
+            return;
+        }
+        if (virtualTick < 0) {
             this.cancel();
             return;
         }

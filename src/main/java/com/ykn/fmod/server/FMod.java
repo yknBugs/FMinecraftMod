@@ -10,9 +10,6 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.ykn.fmod.server.base.command.CommandRegistrater;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
 import com.ykn.fmod.server.base.event.NewLevel;
@@ -22,8 +19,6 @@ import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
 public class FMod implements ModInitializer {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(Util.LOGGERNAME);
-
 	@Override
 	public void onInitialize() {
 		// This code runs as soon as Minecraft is in a mod-load-ready state.
@@ -31,7 +26,10 @@ public class FMod implements ModInitializer {
 
 		// Load config
 		Util.loadServerConfig();
-		ServerConfigRegistry.register(Util.serverConfig);
+		ServerConfigRegistry.register(Util.getServerConfig());
+
+		// Register Nodes
+		NodeRegistry.registerDefaultNodes();
 
 		// Register commands
 		CommandRegistrater.registerCommand();
@@ -47,10 +45,7 @@ public class FMod implements ModInitializer {
 			worldTick.onWorldTick();
 		});
 
-		// Register Nodes
-		NodeRegistry.registerDefaultNodes();
-
 		// Finish initialization
-		LOGGER.info("FMinecraftMod: Server side initialized successfully.");
+		Util.LOGGER.info("FMinecraftMod: Server side initialized successfully.");
 	}
 }

@@ -7,13 +7,13 @@ package com.ykn.fmod.server.flow.logic;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 
 import com.ykn.fmod.server.base.util.Util;
 
@@ -132,7 +132,7 @@ public class ExecutionContext {
      * @param maxAllowedNodes The maximum number of node executions allowed to prevent infinite loops
      * @param maxAllowedRecursions The maximum allowed recursion depth for flow executions
      */
-    public ExecutionContext(LogicFlow flow, MinecraftServer server, int maxAllowedNodes, int maxAllowedRecursions) {
+    public ExecutionContext(@NotNull LogicFlow flow, @NotNull MinecraftServer server, int maxAllowedNodes, int maxAllowedRecursions) {
         this.flow = flow.copy();
         this.server = server;
         this.nodeStatuses = new HashMap<>();
@@ -154,6 +154,7 @@ public class ExecutionContext {
      * 
      * @return The (copied) LogicFlow for this execution
      */
+    @NotNull
     public LogicFlow getFlow() {
         return this.flow;
     }
@@ -163,6 +164,7 @@ public class ExecutionContext {
      * 
      * @return The MinecraftServer where this flow is running
      */
+    @NotNull
     public MinecraftServer getServer() {
         return this.server;
     }
@@ -246,7 +248,7 @@ public class ExecutionContext {
      * @return A map of all variable names to their values
      */
     public Map<String, Object> getVariables() {
-        return this.variables;
+        return Collections.unmodifiableMap(this.variables);
     }
 
     /**
@@ -294,7 +296,7 @@ public class ExecutionContext {
      * @return A list of NodeStatus snapshots representing the execution history
      */
     public List<NodeStatus> getExecutedSequence() {
-        return this.executedSequence;
+        return Collections.unmodifiableList(this.executedSequence);
     }
 
     /**
@@ -303,7 +305,7 @@ public class ExecutionContext {
      * @return a list of parent {@link ExecutionContext} objects, or an empty list if no parent contexts exist
      */
     public List<ExecutionContext> getParentContexts() {
-        return this.parentContexts;
+        return Collections.unmodifiableList(this.parentContexts);
     }
 
     /**
@@ -391,9 +393,9 @@ public class ExecutionContext {
      */
     private void executeFlow(@Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws Exception {
         if (startNodeOutputs != null) {
-            NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.startNodeId);
+            NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.getStartNodeId());
             if (startNodeStatus != null) {
-                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.node.getMetadata().outputNumber; i++) {
+                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.getNode().getMetadata().outputNumber; i++) {
                     startNodeStatus.setOutput(i, startNodeOutputs.get(i));
                 }
             }
@@ -446,13 +448,16 @@ public class ExecutionContext {
             this.executeFlow(startNodeOutputs, initialVariables);
         } catch (LogicException e) {
             this.exception = e;
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Logic flow " + flow.name + " terminated with exception", e);
+            Util.LOGGER.debug("FMinecraftMod: Logic flow " + flow.getName() + " terminated with exception", e);
         } catch (StackOverflowError e) {
             this.exception = new LogicException(null, Util.parseTranslatableText("fmod.flow.error.overflow"), null);
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Logic flow " + flow.name + " terminated with stack overflow", e);
+            Util.LOGGER.warn("FMinecraftMod: Logic flow " + flow.getName() + " terminated with stack overflow", e);
+        } catch (OutOfMemoryError e) {
+            this.exception = new LogicException(null, Util.parseTranslatableText("fmod.flow.error.oom"), null);
+            Util.LOGGER.warn("FMinecraftMod: Logic flow " + flow.getName() + " terminated with out of memory", e);
         } catch (Exception e) {
             this.exception = new LogicException(e, null, null);
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Logic flow " + flow.name + " terminated with unexpected exception", e);
+            Util.LOGGER.warn("FMinecraftMod: Logic flow " + flow.getName() + " terminated with unexpected exception", e);
         }
     }
 
@@ -480,6 +485,9 @@ public class ExecutionContext {
         } catch (StackOverflowError e) {
             this.exception = new LogicException(null, Util.parseTranslatableText("fmod.flow.error.overflow"), null);
             throw this.exception;
+        } catch (OutOfMemoryError e) {
+            this.exception = new LogicException(null, Util.parseTranslatableText("fmod.flow.error.oom"), null);
+            throw this.exception;
         } catch (Exception e) {
             this.exception = new LogicException(e, null, null);
             throw this.exception;
@@ -505,11 +513,11 @@ public class ExecutionContext {
      * @return A Text object suitable for display in Minecraft with hover events
      */
     public Text render() {
-        MutableText title = Text.literal(this.flow.name).append(" ");
+        MutableText title = Text.literal(this.flow.getName()).append(" ");
         for (int i = 0; i < this.executedSequence.size(); i++) { 
             NodeStatus node = this.executedSequence.get(i);
             Text nodeText = node.render(i + 1, this.flow);
-            MutableText nodeEntry = Text.literal("[").append(node.node.name).append("] ");
+            MutableText nodeEntry = Text.literal("[").append(node.getNode().getName()).append("] ");
             nodeEntry = nodeEntry.styled(s -> s
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, nodeText))
             );

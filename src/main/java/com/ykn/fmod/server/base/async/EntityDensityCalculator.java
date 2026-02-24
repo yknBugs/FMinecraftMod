@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
-import org.slf4j.LoggerFactory;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.util.Util;
@@ -452,7 +451,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
 
         if (bestEntity == null) {
             // Unlikely to happen
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Failed to find candidate entity for density calculation.");
+            Util.LOGGER.error("FMinecraftMod: Failed to find candidate entity for density calculation.");
             resultEntity = null;
             resultCause = null;
             finalRadius = Double.NaN;
@@ -474,7 +473,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
 
         if (entitiesInRange.size() < minNumber || bestRadiusSquared < minRadiusSquared) {
             // Unlikely to happen
-            LoggerFactory.getLogger(Util.LOGGERNAME).warn("FMinecraftMod: Failed to validate the candidate entity's neighborhood.");
+            Util.LOGGER.warn("FMinecraftMod: Failed to validate the candidate entity's neighborhood.");
         }
 
         List<EntitySnapshot> dominantEntities = getDominantEntities(entitiesInRange);
@@ -508,7 +507,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
 
         if (context.getSource().isExecutedByPlayer()) {
             if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
-                LoggerFactory.getLogger(Util.LOGGERNAME).info("FMinecraftMod: Get entity density command executed but the player has disconnected.");
+                Util.LOGGER.info("FMinecraftMod: Get entity density command executed but the player has disconnected.");
                 return;
             }
         }

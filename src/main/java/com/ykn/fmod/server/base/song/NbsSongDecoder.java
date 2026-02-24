@@ -99,12 +99,7 @@ public class NbsSongDecoder {
     }
 
     private static void setNote(double ticks, NoteBlockNote note, HashMap<Double, List<NoteBlockNote>> notesMap) {
-        List<NoteBlockNote> notes = notesMap.get(ticks);
-        if (notes == null) {
-            notes = new ArrayList<>();
-            notesMap.put(ticks, notes);
-        }
-        notes.add(note);
+        notesMap.computeIfAbsent(ticks, k -> new ArrayList<>()).add(note);
     }
 
     private static short readShort(DataInputStream dataInputStream) throws IOException {

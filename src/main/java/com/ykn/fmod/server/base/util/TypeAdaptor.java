@@ -359,25 +359,58 @@ public class TypeAdaptor {
     @Nullable
     public Object autoCast() {
         String s = this.asString();
-        Vec3d vec3d = this.asVec3d();
-        Vec2f vec2f = this.asVec2f();
-        List<Object> list = this.asList();
-        Double d = this.asDouble();
-        Boolean b = this.asBoolean();
         if (s == null || "null".equals(s)) {
             return null;
-        } else if (vec3d != null) {
+        }
+        Vec3d vec3d = this.asVec3d();
+        if (vec3d != null) {
             return vec3d;
-        } else if (vec2f != null) {
+        }
+        Vec2f vec2f = this.asVec2f();
+        if (vec2f != null) {
             return vec2f;
-        } else if (list != null) {
+        }
+        List<Object> list = this.asList();
+        if (list != null) {
             return list;
-        } else if (d != null) {
+        }
+        Double d = this.asDouble();
+        if (d != null) {
             return d;
-        } else if (b != null) {
+        }
+        Boolean b = this.asBoolean();
+        if (b != null) {
             return b;
+        }
+        return s;
+    }
+
+    /**
+     * Collapses a list into a single object or null.
+     * 
+     * <p>This method attempts to reduce a list to its simplest form:
+     * <ul>
+     *   <li>If the list is null, returns null</li>
+     *   <li>If the list contains exactly one element, returns that element</li>
+     *   <li>If the list is empty, returns null</li>
+     *   <li>Otherwise, returns the list itself</li>
+     * </ul>
+     * </p>
+     * 
+     * @return the collapsed result - a single object, the original list, or null
+     * @see #asList()
+     */
+    @Nullable
+    public Object collapseList() {
+        List<Object> list = this.asList();
+        if (list == null) {
+            return null;
+        } else if (list.size() == 1) {
+            return list.get(0);
+        } else if (list.isEmpty()) {
+            return null;
         } else {
-            return s;
+            return list;
         }
     }
 }   

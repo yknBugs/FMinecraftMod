@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.mixin;
 
-import org.slf4j.LoggerFactory;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -27,7 +26,7 @@ public class ProjectileHitEntityMixin {
             ProjectileHitEntity projectileHitEntity = new ProjectileHitEntity(projectile, entityHitResult);
             projectileHitEntity.onProjectileHitEntity();
         } catch (Exception e) {
-            LoggerFactory.getLogger(Util.LOGGERNAME).error("FMinecraftMod: Caught exception from ProjectileHitEntityEvent.", e);
+            Util.LOGGER.error("FMinecraftMod: Caught exception from ProjectileHitEntityEvent.", e);
         }
     }
 }

@@ -10,7 +10,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import com.ykn.fmod.server.base.util.Util;
 
 /**
  * Represents a NoteBlock song with support for variable playback speed,
@@ -122,27 +125,6 @@ public class NoteBlockSong {
     }
 
     /**
-     * Adds a value to a list associated with a specific key in the given map. 
-     * If the key does not exist in the map, a new list is created and added to the map.
-     *
-     * @param <K>  The type of keys in the map.
-     * @param <T>  The type of elements in the list.
-     * @param map  The map where the key-value pair will be added.
-     * @param key  The key to which the value should be associated.
-     * @param value The value to be added to the list associated with the key.
-     * @return The updated map with the new key-value association.
-     */
-    public static <K, T> HashMap<K, List<T>> put(HashMap<K, List<T>> map, K key, T value) {
-        List<T> list = map.get(key);
-        if (list == null) {
-            list = new ArrayList<>();
-            map.put(key, list);
-        }
-        list.add(value);
-        return map;
-    }
-
-    /**
      * Constructs a new NoteBlock song with the specified notes map, title, and author.
      *
      * @param notesMap A map of virtual ticks to lists of notes scheduled at those ticks.
@@ -173,7 +155,17 @@ public class NoteBlockSong {
      * and that each note may have an associated instrument.
      */
     public void createIndex() {
+        // Check if the notes map is empty
         Set<Double> keyTicks = this.notesMap.keySet();
+        if (keyTicks.isEmpty()) {
+            Util.LOGGER.warn("FMinecraftMod: Trying to create index for an empty song " + this.title + " by " + this.author);
+            this.maxVirtualTick = 0;
+            this.realTickIndex = new HashMap<>();
+            this.maxRealTick = 0;
+            this.requirements = new HashSet<>();
+            return;
+        }
+        // Build the real tick index based on the virtual ticks and the current speed
         this.maxVirtualTick = Collections.max(keyTicks);
         this.realTickIndex = new HashMap<>();
         for (Double keyTick : keyTicks) {
@@ -181,11 +173,19 @@ public class NoteBlockSong {
             List<NoteBlockNote> notes = this.notesMap.get(keyTick);
             if (notes != null) {
                 for (NoteBlockNote note : notes) {
-                    this.realTickIndex = put(this.realTickIndex, nearestTick, note);
+                    this.realTickIndex.computeIfAbsent(nearestTick, k -> new ArrayList<>()).add(note);
                 }
             }
         }
-        this.maxRealTick = Collections.max(this.realTickIndex.keySet());
+        // Determine all kinds of required instruments for this song
+        if (this.realTickIndex.isEmpty()) {
+            // Unlikely to happen
+            Util.LOGGER.warn("FMinecraftMod: Building index for song " + this.title + " by " + this.author + " but no notes were found after indexing.");
+            this.maxRealTick = 0;
+            this.requirements = new HashSet<>();
+            return;
+        }
+        this.maxRealTick = Collections.max(this.realTickIndex.keySet()); 
         this.requirements = new HashSet<>();
         this.notesMap.values().stream().distinct().forEach(notes -> {
             notes.forEach(note -> {
@@ -194,6 +194,24 @@ public class NoteBlockSong {
                 }
             });
         });
+    }
+
+    /**
+     * Creates a deep copy of this NoteBlockSong instance.
+     * <p>
+     * The method creates a new NoteBlockSong object with a copied notes map, while keeping the same title and author.
+     * The copied notes map is constructed by creating new lists for each tick, ensuring that modifications to the
+     * notes in the copied song do not affect the original song.
+     *
+     * @return A new NoteBlockSong instance that is a deep copy of the original.
+     */
+    public NoteBlockSong copy() {
+        HashMap<Double, List<NoteBlockNote>> copiedNotesMap = new HashMap<>();
+        for (Map.Entry<Double, List<NoteBlockNote>> entry : this.notesMap.entrySet()) {
+            copiedNotesMap.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+        }
+        NoteBlockSong copied = new NoteBlockSong(copiedNotesMap, this.title, this.author);
+        return copied;
     }
 
     /**
@@ -322,8 +340,8 @@ public class NoteBlockSong {
      *
      * @return The notes map with virtual tick keys.
      */
-    public HashMap<Double, List<NoteBlockNote>> getNotesMap() {
-        return this.notesMap;
+    public Map<Double, List<NoteBlockNote>> getNotesMap() {
+        return Collections.unmodifiableMap(this.notesMap);
     }
 
     /**
@@ -332,8 +350,8 @@ public class NoteBlockSong {
      *
      * @return The notes map with real tick keys.
      */
-    public HashMap<Integer, List<NoteBlockNote>> getRealTicksMap() {
-        return this.realTickIndex;
+    public Map<Integer, List<NoteBlockNote>> getRealTicksMap() {
+        return Collections.unmodifiableMap(this.realTickIndex);
     }
 
     /**
@@ -342,7 +360,7 @@ public class NoteBlockSong {
      * @return The set of required notes.
      */
     public Set<NoteBlockNote> getRequirements() {
-        return this.requirements;
+        return Collections.unmodifiableSet(this.requirements);
     }
 
     /**

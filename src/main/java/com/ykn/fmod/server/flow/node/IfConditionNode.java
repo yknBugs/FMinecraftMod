@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
@@ -15,8 +14,6 @@ import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
-
-import net.minecraft.text.Text;
 
 /**
  * A flow node that evaluates a boolean condition and branches accordingly.
@@ -36,25 +33,11 @@ public class IfConditionNode extends FlowNode {
 
     @Override
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
-        Text displayName = Util.parseTranslatableText("fmod.node.if.title.name");
-        Text description = Util.parseTranslatableText("fmod.node.if.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
-        inputNames.add(Util.parseTranslatableText("fmod.node.if.input.name"));
-        inputDescriptions.add(Util.parseTranslatableText("fmod.node.if.input.feat"));
-        inputDataTypes.add(Util.parseTranslatableText("fmod.node.if.input.type"));
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
-        branchNames.add(Util.parseTranslatableText("fmod.node.if.branch.true.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.if.branch.true.feat"));
-        branchNames.add(Util.parseTranslatableText("fmod.node.if.branch.false.name"));
-        branchDescriptions.add(Util.parseTranslatableText("fmod.node.if.branch.false.feat"));
-        return new NodeMetadata(inputNumber, outputNumber, branchNumber, displayName, description, 
-            inputNames, inputDescriptions, inputDataTypes, outputNames, outputDescriptions, outputDataTypes, branchNames, branchDescriptions);
+        return NodeMetadata.builder("fmod.node.if.title.name", "fmod.node.if.title.feat")
+            .input("fmod.node.if.input.name", "fmod.node.if.input.feat", "fmod.node.if.input.type")
+            .branch("fmod.node.if.branch.true.name", "fmod.node.if.branch.true.feat")
+            .branch("fmod.node.if.branch.false.name", "fmod.node.if.branch.false.feat")
+            .build(inputNumber, outputNumber, branchNumber);
     }
 
     @Override
@@ -64,9 +47,9 @@ public class IfConditionNode extends FlowNode {
         if (condition == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.if.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
         } else if (condition == true) {
-            return this.nextNodeIds.get(0); // True branch
+            return this.getNextNodeIds().get(0); // True branch
         } else {
-            return this.nextNodeIds.get(1); // False branch
+            return this.getNextNodeIds().get(1); // False branch
         }
     }
 }
