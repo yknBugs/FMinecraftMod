@@ -149,6 +149,8 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
     protected void taskAfterCompletion() {
         if (context.getSource().isExecutedByPlayer()) {
             if (this.loggedResponse != null) {
+                // If source is NOT a player, the sendFeedback function can already sent the feedback to console
+                // Only log the response when console cannot see the feedback
                 Util.LOGGER.info(this.loggedResponse);
             }
             if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {

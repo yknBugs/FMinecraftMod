@@ -44,11 +44,11 @@ public class BiomeMessage extends ScheduledTask {
         Identifier currentBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
         if (currentBiomeId == null && biomeId == null) {
             return false;
-        } else if (currentBiomeId.equals(biomeId)) {
-            return false;
+        } else if (currentBiomeId == null || biomeId == null) {
+            return true;
         } else {
             // During delay period, if the player changes to a new biome, the scheduled task should be cancelled.
-            return true;
+            return !currentBiomeId.equals(biomeId);
         }
     }
 

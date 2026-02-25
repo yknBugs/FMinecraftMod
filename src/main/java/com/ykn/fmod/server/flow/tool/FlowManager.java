@@ -519,6 +519,10 @@ public class FlowManager {
      * @throws LogicException If an error occurs during flow execution
      */
     public void execute(@NotNull ServerData serverData, ExecutionContext parentContext, int maxFlowLength, int maxRecursionDepth, @Nullable List<Object> startNodeOutputs, @Nullable Map<String, Object> initialVariables) throws LogicException {
+        // If the flow is executed by another flow i.e. in another execution context
+        // Exception will not be caught and returned, but directly thrown to let the parent flow to handle it
+        // Therefore, we specially need to put history before execution only in this special case
+        // Or exception thrown by this flow will prevent the history from being recorded, which may cause issues for debugging
         ExecutionContext executionContext = new ExecutionContext(this.flow, serverData.getServer(), maxFlowLength, maxRecursionDepth);
         serverData.addExecuteHistory(executionContext, Util.getServerConfig().getMaxFlowHistorySize());
         executionContext.execute(parentContext, startNodeOutputs, initialVariables);

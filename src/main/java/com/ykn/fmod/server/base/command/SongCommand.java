@@ -59,7 +59,7 @@ public class SongCommand {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
             }
             // Check if a song is still playing, if so, cancel the task
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             for (ScheduledTask scheduledTask : data.getScheduledTasks()) {
                 if (scheduledTask instanceof PlaySong) {
                     PlaySong playSong = (PlaySong) scheduledTask;
@@ -112,7 +112,7 @@ public class SongCommand {
         int result = 0;
         for (ServerPlayerEntity player : players) {
             boolean isFound = false;
-            for (ScheduledTask scheduledTask : Util.getServerData(context.getSource().getServer()).getScheduledTasks()) {
+            for (ScheduledTask scheduledTask : Util.getServerData(Util.requireNotNullServer(context)).getScheduledTasks()) {
                 if (scheduledTask instanceof PlaySong) {
                     PlaySong playSong = (PlaySong) scheduledTask;
                     if (playSong.getTarget().getUuid().equals(player.getUuid())) {

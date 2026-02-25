@@ -261,6 +261,7 @@ public class FlowSerializer {
             int index = getIntOrDefault(json, "index", 0);
             return DataReference.createNodeOutputReference(id, index);
         } else {
+            Util.LOGGER.warn("FMinecraftMod: Unknown data reference type '" + type + "' in JSON. Using empty reference.");
             return DataReference.createEmptyReference();
         }
     }
@@ -418,6 +419,7 @@ public class FlowSerializer {
             flow.addNode(node);
         }
         flow.setStartNodeId(getLongOrDefault(json, "startNodeId", -1L));
+        flow.verifyIntegrity();
         return flow;
     }
 

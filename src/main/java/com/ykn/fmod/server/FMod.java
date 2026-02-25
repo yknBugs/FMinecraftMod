@@ -41,8 +41,7 @@ public class FMod implements ModInitializer {
 		});
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
-			WorldTick worldTick = new WorldTick(server);
-			worldTick.onWorldTick();
+			WorldTick.onWorldTick(server);
 		});
 
 		// Finish initialization

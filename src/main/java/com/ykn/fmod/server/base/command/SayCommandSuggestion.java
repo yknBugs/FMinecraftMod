@@ -5,8 +5,8 @@
 
 package com.ykn.fmod.server.base.command;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -126,27 +126,6 @@ public class SayCommandSuggestion implements SuggestionProvider<ServerCommandSou
     }
 
     /**
-     * Adds a value to a list associated with a specific key in the given map. 
-     * If the key does not exist in the map, a new list is created and added to the map.
-     *
-     * @param <K>  The type of keys in the map.
-     * @param <T>  The type of elements in the list.
-     * @param map  The map where the key-value pair will be added.
-     * @param key  The key to which the value should be associated.
-     * @param value The value to be added to the list associated with the key.
-     * @return The updated map with the new key-value association.
-     */
-    public static <K, T> Map<K, List<T>> put(Map<K, List<T>> map, K key, T value) {
-        List<T> list = map.get(key);
-        if (list == null) {
-            list = new LinkedList<>();
-            map.put(key, list);
-        }
-        list.add(value);
-        return map;
-    }
-
-    /**
      * Adds a list of suggestions associated with a specific key.
      *
      * @param key the key (formatting prefix) to associate with the suggestions
@@ -174,7 +153,7 @@ public class SayCommandSuggestion implements SuggestionProvider<ServerCommandSou
         }
         for (String suggestion : suggestions) {
             if (suggestion != null && !suggestion.isEmpty()) {
-                put(this.suggestionsMap, key, suggestion);
+                this.suggestionsMap.computeIfAbsent(key, k -> new ArrayList<>()).add(suggestion);
             }
         }
         return this;

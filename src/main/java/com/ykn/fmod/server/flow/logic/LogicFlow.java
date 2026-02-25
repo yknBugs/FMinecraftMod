@@ -355,6 +355,71 @@ public class LogicFlow implements Cloneable {
     }
 
     /**
+     * Verifies the integrity of the flow and all its nodes.
+     * 
+     * Performs comprehensive validation checks including:
+     * <ul>
+     *   <li>Verifies each node's internal integrity</li>
+     *   <li>Validates that all node IDs do not exceed the flow's idCounter</li>
+     *   <li>Ensures node IDs match their corresponding keys in the nodes map</li>
+     *   <li>Validates all input data references:
+     *     <ul>
+     *       <li>Referenced nodes exist in the flow</li>
+     *       <li>Nodes do not reference themselves</li>
+     *       <li>Referenced output indices are within valid bounds</li>
+     *     </ul>
+     *   </li>
+     *   <li>Validates all next node references exist in the flow</li>
+     *   <li>Validates that the start node ID exists in the flow if set</li>
+     * </ul>
+     * 
+     * Logs a warning message for each validation failure encountered.
+     * 
+     * @return {@code true} if all integrity checks pass, {@code false} otherwise
+     */
+    public boolean verifyIntegrity() {
+        boolean passed = true;
+        for (Map.Entry<Long, FlowNode> entry : this.nodes.entrySet()) {
+            FlowNode node = entry.getValue();
+            passed = passed && node.verifyIntegrity();
+            if (node.getId() > this.idCounter) {
+                passed = false;
+                Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with ID " + node.getId() + " which is greater than the flow's idCounter " + this.idCounter);
+            }
+            if (node.getId() != entry.getKey()) {
+                passed = false;
+                Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with ID " + node.getId() + " which does not match its key " + entry.getKey() + " in the flow's nodes map");
+            }
+            for (DataReference input : node.getInputs()) {
+                if (input.getType() == DataReference.ReferenceType.NODE_OUTPUT) {
+                    FlowNode referencedNode = this.nodes.get(input.getReferenceId());
+                    if (referencedNode == null) {
+                        passed = false;
+                        Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with input referencing node ID " + input.getReferenceId() + " which does not exist in the flow");
+                    } else if (referencedNode == node) {
+                        passed = false;
+                        Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with input referencing itself with node ID " + input.getReferenceId());
+                    } else if (input.getReferenceIndex() < 0 || input.getReferenceIndex() >= referencedNode.getMetadata().outputNumber) {
+                        passed = false;
+                        Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with input referencing node ID " + input.getReferenceId() + " with invalid output index " + input.getReferenceIndex());
+                    }
+                }
+            }
+            for (Long nextNodeId : node.getNextNodeIds()) {
+                if (nextNodeId > 0 && !this.nodes.containsKey(nextNodeId)) {
+                    passed = false;
+                    Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with next node ID " + nextNodeId + " which does not exist in the flow");
+                }
+            }
+        }
+        if (this.startNodeId > 0 && !this.nodes.containsKey(this.startNodeId)) {
+            passed = false;
+            Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has startNodeId " + this.startNodeId + " which does not exist in the flow");
+        }
+        return passed;
+    }
+
+    /**
      * Renders the static information about this flow as displayable text.
      * <p>
      * The rendered text includes:
