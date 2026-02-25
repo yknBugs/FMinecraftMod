@@ -162,6 +162,7 @@
     "fmod.command.options.get": "%s: %s",
     "fmod.command.options.unknownoption": "未知选项: %s",
     "fmod.command.options.classcast": "无法将 %2$s 的值设置为 %1$s: %3$s",
+    "fmod.command.error.client": "此命令只能在服务端执行",
     "fmod.command.unknownerror": "在执行命令时发生了未知错误",
     "fmod.flow.node.title": "%s\n%s: %s",
     "fmod.flow.node.input": "输入: [%s] %s",

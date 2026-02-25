@@ -78,6 +78,9 @@ public class LogicFlowSuggestion implements SuggestionProvider<CommandSourceStac
      */
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+        if (context.getSource() == null || context.getSource().getServer() == null) {
+            return builder.buildFuture();
+        }
         return context.getSource().getServer().submit(() -> {
             Map<String, FlowManager> logicFlows = Util.getServerData(context.getSource().getServer()).getLogicFlows();
             Collection<String> flows = logicFlows.keySet();

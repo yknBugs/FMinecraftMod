@@ -27,32 +27,26 @@ import net.minecraft.world.phys.Vec3;
 
 public class WorldTick {
 
-    private final MinecraftServer server;
-
-    public WorldTick(MinecraftServer server) {
-        this.server = server;
-    }
-
     /**
      * This method is called every tick.
      */
-    public void onWorldTick() {
-        checkEntityNumber();
+    public static void onWorldTick(MinecraftServer server) {
+        ServerData serverData = Util.getServerData(server);
+        checkEntityNumber(server, serverData);
         List<ServerPlayer> players = server.getPlayerList().getPlayers();
         for (ServerPlayer player : players) {
-            PlayerData playerData = Util.getServerData(server).getPlayerData(player);
+            PlayerData playerData = serverData.getPlayerData(player);
             handleAfkPlayers(player, playerData);
-            handleChangeBiomePlayer(player, playerData);
+            handleChangeBiomePlayer(player, serverData, playerData);
             handlePlayerTravelStatus(player, playerData);
             handlePlayerCanSleepStatus(player, playerData);
             playerData.updateLastTickData(player);
         }
 
-        Util.getServerData(server).tick();
+        serverData.tick();
     }
 
-    private void checkEntityNumber() {
-        ServerData serverData = Util.getServerData(server);
+    private static void checkEntityNumber(MinecraftServer server, ServerData serverData) {
         // Check if have finished previous calculation (Happens every tick because async result must be feeded back immediately after finishing)
         EntityDensityCalculator activeCalculator = serverData.getActiveDensityCalculator();
         if (activeCalculator != null && activeCalculator.isAfterCompletionExecuted()) {
@@ -139,7 +133,7 @@ public class WorldTick {
         }
     }
 
-    private void handleAfkPlayers(ServerPlayer player, PlayerData playerData) {
+    private static void handleAfkPlayers(ServerPlayer player, PlayerData playerData) {
         if (playerData.isFacingDirectionChanged(player)) {
             postMessageToBackPlayer(player, playerData);
             playerData.resetAfkTicks();
@@ -149,7 +143,7 @@ public class WorldTick {
         }
     }
 
-    private void postMessageToAfkingPlayer(ServerPlayer player, PlayerData playerData) {
+    private static void postMessageToAfkingPlayer(ServerPlayer player, PlayerData playerData) {
         if (playerData.getAfkTicks() > Util.getServerConfig().getInformAfkThreshold() && playerData.getAfkTicks() % 20 == 0) {
             Component mainText = Util.parseTranslatableText("fmod.message.afk.inform.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
             Component otherText = Util.parseTranslatableText("fmod.message.afk.inform.other", player.getDisplayName());
@@ -164,7 +158,7 @@ public class WorldTick {
         }
     }
 
-    private void postMessageToBackPlayer(ServerPlayer player, PlayerData playerData) {
+    private static void postMessageToBackPlayer(ServerPlayer player, PlayerData playerData) {
         if (playerData.getAfkTicks() >= Util.getServerConfig().getBroadcastAfkThreshold()) {
             Component mainText = Util.parseTranslatableText("fmod.message.afk.stop.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
             Component otherText = Util.parseTranslatableText("fmod.message.afk.stop.other", player.getDisplayName());
@@ -172,14 +166,14 @@ public class WorldTick {
         }
     }
 
-    private void handleChangeBiomePlayer(ServerPlayer player, PlayerData playerData) {
+    private static void handleChangeBiomePlayer(ServerPlayer player, ServerData serverData, PlayerData playerData) {
         ResourceLocation biomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         if (playerData.isBiomeChanged(player)) {
-            Util.getServerData(server).submitScheduledTask(new BiomeMessage(player, biomeId));
+            serverData.submitScheduledTask(new BiomeMessage(player, biomeId));
         }
     }
 
-    private void handlePlayerCanSleepStatus(ServerPlayer player, PlayerData playerData) {
+    private static void handlePlayerCanSleepStatus(ServerPlayer player, PlayerData playerData) {
         boolean canSleep = player.level().dimensionType().natural() && !player.level().isDay() && BedBlock.canSetSpawn(player.level());
         boolean cannotSleep = player.level().dimensionType().natural() && player.level().isDay() && BedBlock.canSetSpawn(player.level());
         Boolean currentCanSleepStatus = null;
@@ -202,7 +196,7 @@ public class WorldTick {
         playerData.setLastCanSleep(currentCanSleepStatus);
     }
 
-    private void handlePlayerTravelStatus(ServerPlayer player, PlayerData playerData) {
+    private static void handlePlayerTravelStatus(ServerPlayer player, PlayerData playerData) {
         int window = Util.getServerConfig().getTravelWindow();
 
         // Update positions history
@@ -262,7 +256,7 @@ public class WorldTick {
         playerData.setLastTravelMessageTick();
     }
 
-    private void handleTeleportedPlayer(ServerPlayer player, PlayerData playerData, Vec3 fromPos, Vec3 toPos) {
+    private static void handleTeleportedPlayer(ServerPlayer player, PlayerData playerData, Vec3 fromPos, Vec3 toPos) {
         Component playerName = player.getDisplayName();
         Component fromCoord = Util.parseCoordText(playerData.getLastDimensionId(), playerData.getLastBiomeId(), fromPos.x, fromPos.y, fromPos.z);
         Component toCoord = Util.parseCoordText(player);

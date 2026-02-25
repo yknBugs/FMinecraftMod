@@ -158,10 +158,17 @@ public class DataReference implements Cloneable {
             LogicFlow flow = context.getFlow();
             FlowNode node = flow.getNode(this.referenceId);
             if (node == null) {
+                if (this.referenceId > 0) {
+                    Util.LOGGER.warn("FMinecraftMod: Referenced to deleted node with ID " + this.referenceId);
+                }
                 throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullnode", currentNode.name), null);
+            }
+            if (this.referenceId == currentNode.getId() || node == currentNode) {
+                Util.LOGGER.warn("FMinecraftMod: " + currentNode.name + " is referencing itself for output, which may cause issues.");
             }
             return node.getOutput(context, this.referenceIndex);
         } else {
+            Util.LOGGER.error("FMinecraftMod: Invalid DataReference type: " + this.type);
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.assert"), null);
         }
     }

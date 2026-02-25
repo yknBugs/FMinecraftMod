@@ -31,7 +31,7 @@ public class GptCommand {
         try {
             String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             GptData gptData = data.getGptData(context.getSource().getTextName());
             GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
             boolean postResult = gptData.newConversation(text, url, Util.getServerConfig().getGptModel(), Util.getServerConfig().getGptTemperature());
@@ -63,7 +63,7 @@ public class GptCommand {
         try {
             String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             GptData gptData = data.getGptData(context.getSource().getTextName());
             GptCommandExecutor gptHelper = new GptCommandExecutor(gptData, context);
             boolean postResult = gptData.reply(text, url, Util.getServerConfig().getGptModel(), Util.getServerConfig().getGptTemperature());
@@ -91,7 +91,7 @@ public class GptCommand {
         try {
             String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             GptData gptData = data.getGptData(context.getSource().getTextName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
@@ -124,7 +124,7 @@ public class GptCommand {
         try {
             String urlString = Util.getServerConfig().getGptUrl();
             URL url = new URI(urlString).toURL();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             GptData gptData = data.getGptData(context.getSource().getTextName());
             int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
@@ -158,7 +158,7 @@ public class GptCommand {
 
     private static int runGptHistoryCommand(int index, CommandContext<CommandSourceStack> context) {
         try {
-            GptData gptData = Util.getServerData(context.getSource().getServer()).getGptData(context.getSource().getTextName());
+            GptData gptData = Util.getServerData(Util.requireNotNullServer(context)).getGptData(context.getSource().getTextName());
             final int gptDataLength = gptData.getHistorySize();
             if (gptDataLength == 0) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.gpt.nohistory"));

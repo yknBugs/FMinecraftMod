@@ -30,6 +30,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.RegisterCommandsEvent;
 
@@ -38,6 +39,8 @@ public class CommandRegistrater {
     private static Object devFunction(CommandContext<CommandSourceStack> context) {
         // This function is used for development purposes. Execute command /f dev to run this function.
         // This function should be removed in the final release.
+        // Add any code you want to test here, and you can return any kinds of value.
+        // Exception will be gracefully handled and printed in the command feedback.
         return null;
     }
 
@@ -76,6 +79,7 @@ public class CommandRegistrater {
 
     private static int runSayCommand(String message, CommandContext<CommandSourceStack> context) {
         try {
+            MinecraftServer server = Util.requireNotNullServer(context);
             ServerPlayer player = context.getSource().getPlayer();
             MutableComponent text = null;
             if (player == null) {
@@ -87,7 +91,7 @@ public class CommandRegistrater {
                     TextPlaceholderFactory.ofDefault().parse(message, player)
                 );
             }
-            ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
+            ServerMessageType.broadcastTextMessage(server, text);
         } catch (CommandRuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -99,7 +103,7 @@ public class CommandRegistrater {
 
     private static int runTriggerFlowCommand(String name, String param, CommandContext<CommandSourceStack> context) {
         try {
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager targetFlow = data.getLogicFlows().get(name);
             // Player without permission should not know the status of the trigger, always show not exists
             if (targetFlow == null) {

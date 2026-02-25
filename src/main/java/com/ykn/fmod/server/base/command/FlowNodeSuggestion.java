@@ -93,6 +93,9 @@ public class FlowNodeSuggestion implements SuggestionProvider<CommandSourceStack
      */
     @Override
     public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+        if (context.getSource() == null || context.getSource().getServer() == null) {
+            return builder.buildFuture();
+        }
         return context.getSource().getServer().submit(() -> {
             String flowName = extractFlowName(builder.getInput());
             FlowManager flow = Util.getServerData(context.getSource().getServer()).getLogicFlows().get(flowName);

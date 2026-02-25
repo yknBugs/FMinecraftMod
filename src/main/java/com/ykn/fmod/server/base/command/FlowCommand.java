@@ -44,7 +44,7 @@ public class FlowCommand {
             if (name == null || name.isEmpty()) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.empty"));
             }
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             if (data.getLogicFlows().get(name) != null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.exists", name));
             }
@@ -70,7 +70,7 @@ public class FlowCommand {
     private static int runCopyFlowCommand(String sourceName, String targetName, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager sourceFlow = data.getLogicFlows().get(sourceName);
             if (sourceFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", sourceName));
@@ -99,7 +99,7 @@ public class FlowCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.hint"), false);
             }
             Path flowFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             if ("*".equals(name)) {
                 // Load all flow files
                 int loadedCount = 0;
@@ -154,7 +154,7 @@ public class FlowCommand {
     private static int runSaveFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             Path flowFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             if ("*".equals(name)) {
                 // Save all flows
                 int savedCount = 0;
@@ -202,7 +202,7 @@ public class FlowCommand {
     private static int runListFlowCommand(CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             if (data.getLogicFlows().isEmpty()) {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.list.empty"), false);
                 return Command.SINGLE_SUCCESS;
@@ -252,7 +252,7 @@ public class FlowCommand {
     private static int runRenameFlowCommand(String oldName, String newName, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager targetFlow = data.getLogicFlows().get(oldName);
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", oldName));
@@ -279,7 +279,7 @@ public class FlowCommand {
     private static int runGetEnableFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager targetFlow = data.getLogicFlows().get(name);
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
@@ -301,7 +301,7 @@ public class FlowCommand {
     private static int runSetEnableFlowCommand(String name, boolean enable, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager targetFlow = data.getLogicFlows().get(name);
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
@@ -324,7 +324,7 @@ public class FlowCommand {
     private static int runExecuteFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager targetFlow = data.getLogicFlows().get(name);
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
@@ -345,7 +345,7 @@ public class FlowCommand {
     private static int runDeleteFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager targetFlow = data.getLogicFlows().get(name);
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
@@ -364,7 +364,7 @@ public class FlowCommand {
     private static int runFlowHistoryCommand(int pageIndex, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             List<ExecutionContext> history = data.getExecuteHistory();
             // 5 entries per page
             int maxPage = (history.size() + 4) / 5;
@@ -421,7 +421,7 @@ public class FlowCommand {
     private static int runViewFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             FlowManager targetFlow = data.getLogicFlows().get(name);
             if (targetFlow == null) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", name));
@@ -440,7 +440,7 @@ public class FlowCommand {
     private static int runLogFlowCommand(int index, CommandContext<CommandSourceStack> context) {
         try {
             FlowFileSuggestion.suggest();
-            ServerData data = Util.getServerData(context.getSource().getServer());
+            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
             List<ExecutionContext> history = data.getExecuteHistory();
             if (index <= 0 || index > history.size()) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.log.indexerror", String.valueOf(index)));
@@ -459,7 +459,7 @@ public class FlowCommand {
 
     private static FlowManager getRequiredFlow(CommandContext<CommandSourceStack> context, String name) {
         FlowFileSuggestion.suggest();
-        ServerData data = Util.getServerData(context.getSource().getServer());
+        ServerData data = Util.getServerData(Util.requireNotNullServer(context));
         FlowManager targetFlow = data.getLogicFlows().get(name);
         if (targetFlow == null) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.flow.notexists", name));

@@ -133,7 +133,7 @@ public class ScheduledTask {
      */
     public void reschedule(int delay, int duration) {
         if (delay < 0 || duration < 0) {
-            Util.LOGGER.warn("FMincraftMod: Attempted to reschedule a task with delay " + delay + " and duration " + duration + ".");
+            Util.LOGGER.warn("FMincraftMod: Attempted to reschedule a task with delay " + delay + " and duration " + duration + ". onTrigger and onFinish may not be called properly.");
         }
         this.delay = delay;
         this.duration = duration;

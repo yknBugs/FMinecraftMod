@@ -74,8 +74,7 @@ public class FMod {
 		if (event.phase != ServerTickEvent.Phase.END) {
 			return;
 		}
-        WorldTick worldTick = new WorldTick(event.getServer());
-        worldTick.onWorldTick();
+        WorldTick.onWorldTick(event.getServer());
 	}
 
 	@SubscribeEvent

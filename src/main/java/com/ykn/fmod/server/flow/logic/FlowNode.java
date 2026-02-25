@@ -266,6 +266,14 @@ public class FlowNode implements Cloneable {
     }
 
     /**
+     * Gets an unmodifiable list of the input data references for this node.
+     * @return An unmodifiable list of DataReference objects representing the inputs
+     */
+    public List<DataReference> getInputs() {
+        return Collections.unmodifiableList(this.inputs);
+    }
+
+    /**
      * Gets the data reference for the specified input port.
      * 
      * @param index The index of the input port (0-based)
@@ -428,6 +436,47 @@ public class FlowNode implements Cloneable {
     @Override
     protected Object clone() throws CloneNotSupportedException {
         return this.copy();
+    }
+
+    /**
+     * Verifies the integrity of this flow node by checking its configuration against expected values.
+     * 
+     * <p>This method performs the following validation checks:
+     * <ul>
+     *   <li>Ensures the node ID is non-negative</li>
+     *   <li>Verifies the node type is registered in either NodeRegistry's node list or event node list</li>
+     *   <li>Validates the node's metadata integrity</li>
+     *   <li>Checks that the number of inputs matches the metadata definition</li>
+     *   <li>Checks that the number of branches matches the metadata definition</li>
+     * </ul>
+     * </p>
+     * 
+     * <p>All validation failures are logged as warnings with details about the node and the specific issue.
+     * The method aggregates all validation results and returns false if any check fails.</p>
+     * 
+     * @return {@code true} if all integrity checks pass, {@code false} if any validation fails
+     * @see FlowNodeMetadata#verifyMetadataIntegrity()
+     */
+    public boolean verifyIntegrity() {
+        boolean passed = true;
+        if (this.id < 0) {
+            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has an invalid ID: " + this.id);
+            passed = false;
+        }
+        if (!NodeRegistry.getNodeList().contains(this.type) && !NodeRegistry.getEventNodeList().contains(this.type)) {
+            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has an unregistered type: " + this.type);
+            passed = false;
+        }
+        passed = this.metadata.verifyMetadataIntegrity() && passed;
+        if (this.inputs.size() != this.metadata.inputNumber) {
+            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has " + this.inputs.size() + " inputs but metadata defines " + this.metadata.inputNumber);
+            passed = false;
+        }
+        if (this.nextNodeIds.size() != this.metadata.branchNumber) {
+            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has " + this.nextNodeIds.size() + " branches but metadata defines " + this.metadata.branchNumber);
+            passed = false;
+        }
+        return passed;
     }
 
     /**

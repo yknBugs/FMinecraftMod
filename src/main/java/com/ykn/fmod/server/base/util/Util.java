@@ -19,6 +19,7 @@ import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.config.ConfigReader;
 import com.ykn.fmod.server.base.config.ServerConfig;
 import com.ykn.fmod.server.base.data.PlayerData;
@@ -26,6 +27,7 @@ import com.ykn.fmod.server.base.data.ServerData;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
+import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
@@ -269,6 +271,21 @@ public class Util {
             throw new IllegalStateException("PlayerData cannot be retrieved on the client side.");
         }
         return getServerData(player.getServer()).getPlayerData(player);
+    }
+
+    /**
+     * Safely retrieves the MinecraftServer instance from the given CommandContext.
+     * 
+     * @param context The CommandContext from which to retrieve the MinecraftServer. Can be null.
+     * @return The MinecraftServer instance if it can be retrieved successfully.
+     * @throws CommandException If the MinecraftServer instance cannot be retrieved from the context.
+     */
+    @Nonnull
+    public static MinecraftServer requireNotNullServer(@Nullable CommandContext<CommandSourceStack> context) throws CommandRuntimeException {
+        if (context == null || context.getSource() == null || context.getSource().getServer() == null) {
+            throw new CommandRuntimeException(parseTranslatableText("fmod.command.error.client"));
+        }
+        return context.getSource().getServer();
     }
 
     /**

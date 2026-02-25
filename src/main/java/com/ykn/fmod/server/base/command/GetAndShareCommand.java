@@ -30,6 +30,7 @@ import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -51,6 +52,10 @@ public class GetAndShareCommand {
         ServerPlayer player = source.getPlayer();
         if (player == null) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.playeronly"));
+        }
+        MinecraftServer server = source.getServer();
+        if (server == null) {
+            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.error.client"));
         }
         return player;
         // return Optional.ofNullable(context)
@@ -519,8 +524,9 @@ public class GetAndShareCommand {
 
     private static int runGetAfkTimeCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
+            MinecraftServer server = Util.requireNotNullServer(context);
             for (ServerPlayer player : players) {
-                PlayerData data = Util.getServerData(context.getSource().getServer()).getPlayerData(player);
+                PlayerData data = Util.getServerData(server).getPlayerData(player);
                 double afkSeconds = data.getAfkTicks() / 20.0;
                 final String afkSecondsStr = String.format("%.1f", afkSeconds);
                 final Component name = player.getDisplayName();
@@ -537,8 +543,9 @@ public class GetAndShareCommand {
 
     private static int runGetTravelRecordCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
+            MinecraftServer server = Util.requireNotNullServer(context);
             for (ServerPlayer player : players) {
-                PlayerData data = Util.getServerData(context.getSource().getServer()).getPlayerData(player);
+                PlayerData data = Util.getServerData(server).getPlayerData(player);
                 Vec3[] snapshot = data.getRecentPositions();
                 if (snapshot.length < 2) {
                     final Component name = player.getDisplayName();
@@ -570,13 +577,14 @@ public class GetAndShareCommand {
 
     private static int runGetCrowdedPlaceCommand(int number, double radius, CommandContext<CommandSourceStack> context) {
         try {
+            MinecraftServer server = Util.requireNotNullServer(context);
             List<Entity> allEntities = new ArrayList<>();
-            for (ServerLevel world : context.getSource().getServer().getAllLevels()) {
+            for (ServerLevel world : server.getAllLevels()) {
                 List<Entity> entities = Util.getAllEntities(world);
                 allEntities.addAll(entities);
             }
             EntityDensityCalculator calculator = new EntityDensityCalculator(context, allEntities, radius, number);
-            ServerData serverData = Util.getServerData(context.getSource().getServer());
+            ServerData serverData = Util.getServerData(server);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.crowd"), false);
             serverData.submitAsyncTask(calculator);
         } catch (CommandRuntimeException e) {
