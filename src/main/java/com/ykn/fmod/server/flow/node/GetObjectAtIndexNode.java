@@ -29,8 +29,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 public class GetObjectAtIndexNode extends FlowNode {
     
     public GetObjectAtIndexNode(long id, String name) {
-        super(id, name, 3, 2, 1);
-        this.type = "GetObjectAtIndexNode";
+        super(id, name, 3, 2, 1, "GetObjectAtIndexNode");
     }
 
     @Override

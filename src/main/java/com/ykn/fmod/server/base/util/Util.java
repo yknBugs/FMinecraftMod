@@ -51,6 +51,7 @@ public class Util {
 
     public static final Logger LOGGER = LoggerFactory.getLogger("FMinecraftMod");
     public static final String MODID = "fminecraftmod";
+    public static final ModVersion MOD_VERSION = ModVersion.fromString(getModVersion());
 
     /**
      * A static instance of the {@link TypeFilter} class that is used to get all the entities that are loaded and not removed in the world.
@@ -84,7 +85,7 @@ public class Util {
      * @return The version of the mod as a String.
      * @throws IllegalStateException If the mod container cannot be found.
      */
-    public static String getModVersion() {
+    private static String getModVersion() {
         return FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getMetadata().getVersion().toString();
     }
 

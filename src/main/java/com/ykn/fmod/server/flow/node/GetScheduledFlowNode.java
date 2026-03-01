@@ -41,8 +41,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 public class GetScheduledFlowNode extends FlowNode {
 
     public GetScheduledFlowNode(long id, String name) {
-        super(id, name, 7, 5, 1);
-        this.type = "GetScheduledFlowNode";
+        super(id, name, 7, 5, 1, "GetScheduledFlowNode");
     }
 
     @Override

@@ -29,8 +29,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 public class AddVariableToScheduledFlowNode extends FlowNode {
 
     public AddVariableToScheduledFlowNode(long id, String name) {
-        super(id, name, 3, 1, 1);
-        this.type = "AddVariableToScheduledFlowNode";
+        super(id, name, 3, 1, 1, "AddVariableToScheduledFlowNode");
     }
     
     @Override

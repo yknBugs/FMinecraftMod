@@ -45,8 +45,7 @@ import net.minecraft.world.World;
 public class GetEntityDataNode extends FlowNode {
 
     public GetEntityDataNode(long id, String name) {
-        super(id, name, 1, 12, 1);
-        this.type = "GetEntityDataNode";
+        super(id, name, 1, 12, 1, "GetEntityDataNode");
     }
 
     @Override

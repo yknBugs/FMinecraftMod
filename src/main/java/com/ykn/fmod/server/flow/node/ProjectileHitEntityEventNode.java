@@ -22,8 +22,7 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 public class ProjectileHitEntityEventNode extends EventNode {
 
     public ProjectileHitEntityEventNode(long id, String name) {
-        super(id, name, 0, 5, 1);
-        this.type = "ProjectileHitEntityEventNode";
+        super(id, name, 0, 5, 1, "ProjectileHitEntityEventNode");
     }
 
     @Override

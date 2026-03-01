@@ -40,6 +40,10 @@ import net.minecraft.text.Text;
  * cyclic graph. The flow can be executed multiple times simultaneously using separate
  * {@link ExecutionContext} instances.
  * <p>
+ * Note: Since flows need to access Minecraft mutable objects, all flows and nodes are designed 
+ * to run on the main server thread. And they are expected to finish execution in one tick.
+ * Long running tasks should be split into multiple flows and executed by specific nodes.
+ * <p>
  * Example usage:
  * <pre>
  * LogicFlow flow = new LogicFlow("MyFlow");
@@ -177,7 +181,11 @@ public class LogicFlow implements Cloneable {
         for (FlowNode node : nodeList) {
             nodeInDegrees.putIfAbsent(node.getId(), 0);
             for (long neighborId : node.getNextNodeIds()) {
-                nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(neighborId, 0) + 1);
+                if (!this.nodes.containsKey(neighborId)) {
+                    nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(-1, 0) + 1);
+                } else {
+                    nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(neighborId, 0) + 1);
+                }
             }
         }
 
@@ -381,7 +389,7 @@ public class LogicFlow implements Cloneable {
         boolean passed = true;
         for (Map.Entry<Long, FlowNode> entry : this.nodes.entrySet()) {
             FlowNode node = entry.getValue();
-            passed = passed && node.verifyIntegrity();
+            passed = node.verifyIntegrity() && passed;
             if (node.getId() > this.idCounter) {
                 passed = false;
                 Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with ID " + node.getId() + " which is greater than the flow's idCounter " + this.idCounter);

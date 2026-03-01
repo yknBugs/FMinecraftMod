@@ -19,8 +19,7 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 public class TriggerNode extends EventNode {
 
     public TriggerNode(long id, String name) {
-        super(id, name, 0, 2, 1);
-        this.type = "TriggerNode";
+        super(id, name, 0, 2, 1, "TriggerNode");
     }
 
     @Override

@@ -49,7 +49,7 @@ public class FlowNode implements Cloneable {
      * The type name of this node, used for node registration and factory creation.
      * This should match the type name used in {@link com.ykn.fmod.server.flow.tool.NodeRegistry}.
      */
-    protected String type;
+    private final String type;
 
     /**
      * The user-defined name of this node instance.
@@ -103,9 +103,12 @@ public class FlowNode implements Cloneable {
      * @param outputNumber The number of output ports this node has
      * @param branchNumber The number of branch connections this node has
      */
-    public FlowNode(long id, String name, int inputNumber, int outputNumber, int branchNumber) {
+    public FlowNode(long id, String name, int inputNumber, int outputNumber, int branchNumber, String type) {
+        if (inputNumber < 0 || outputNumber < 0 || branchNumber < 0) {
+            throw new IllegalArgumentException("Input, output, and branch numbers must be non-negative");
+        }
         this.id = id;
-        this.type = "AbstractNode";
+        this.type = type;
         this.name = name;
         this.inputs = new ArrayList<>();
         for (int i = 0; i < inputNumber; i++) {
@@ -312,6 +315,8 @@ public class FlowNode implements Cloneable {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullself", this.name), null);
         } else if (!status.isExecuted()) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.notexecuted", this.name), null);
+        } else if (index < 0 || index >= this.metadata.outputNumber) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.indexout", this.name, String.valueOf(index)), null);
         }
         return status.getOutputs().get(index);
     }
@@ -329,6 +334,9 @@ public class FlowNode implements Cloneable {
         NodeStatus status = context.getNodeStatus(this.id);
         if (status == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullself", this.name), null);
+        }
+        if (index < 0 || index >= this.metadata.outputNumber) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.indexout", this.name, String.valueOf(index)), null);
         }
         status.setOutput(index, value);
     }
@@ -455,7 +463,7 @@ public class FlowNode implements Cloneable {
      * The method aggregates all validation results and returns false if any check fails.</p>
      * 
      * @return {@code true} if all integrity checks pass, {@code false} if any validation fails
-     * @see FlowNodeMetadata#verifyMetadataIntegrity()
+     * @see FlowNodeMetadata#verifyIntegrity()
      */
     public boolean verifyIntegrity() {
         boolean passed = true;
@@ -467,7 +475,7 @@ public class FlowNode implements Cloneable {
             Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has an unregistered type: " + this.type);
             passed = false;
         }
-        passed = this.metadata.verifyMetadataIntegrity() && passed;
+        passed = this.metadata.verifyIntegrity() && passed;
         if (this.inputs.size() != this.metadata.inputNumber) {
             Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has " + this.inputs.size() + " inputs but metadata defines " + this.metadata.inputNumber);
             passed = false;

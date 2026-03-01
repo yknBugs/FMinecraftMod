@@ -25,8 +25,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 public class GetVariableNode extends FlowNode {
 
     public GetVariableNode(long id, String name) {
-        super(id, name, 1, 1, 1);
-        this.type = "GetVariableNode";
+        super(id, name, 1, 1, 1, "GetVariableNode");
     }
 
     @Override

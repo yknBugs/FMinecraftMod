@@ -34,8 +34,7 @@ import net.minecraft.server.MinecraftServer;
 public class RunFlowNode extends FlowNode {
 
     public RunFlowNode(long id, String name) {
-        super(id, name, 3, 1, 1);
-        this.type = "RunFlowNode";
+        super(id, name, 3, 1, 1, "RunFlowNode");
     }
 
     @Override

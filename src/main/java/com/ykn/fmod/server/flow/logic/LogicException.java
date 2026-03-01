@@ -47,7 +47,7 @@ public class LogicException extends Exception {
      * This provides technical details for debugging and logging purposes.
      * May be null if the error doesn't have an underlying exception (e.g., validation errors).
      */
-    private Exception reason;
+    private final Exception reason;
 
     /**
      * The user-facing message text in Minecraft's Text format.
@@ -55,7 +55,7 @@ public class LogicException extends Exception {
      * This should be a translatable text object that can be displayed to players
      * in their preferred language. May be null if only a plain string message is needed.
      */
-    private Text messageText;
+    private final Text messageText;
 
     /**
      * Constructs a LogicException with the specified details.

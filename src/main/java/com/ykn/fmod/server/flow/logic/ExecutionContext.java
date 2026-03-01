@@ -133,7 +133,14 @@ public class ExecutionContext {
      * @param maxAllowedRecursions The maximum allowed recursion depth for flow executions
      */
     public ExecutionContext(@NotNull LogicFlow flow, @NotNull MinecraftServer server, int maxAllowedNodes, int maxAllowedRecursions) {
-        this.flow = flow.copy();
+        try {
+            this.flow = flow.copy();
+        } catch (Exception e) {
+            Util.LOGGER.error("FMinecraftMod: Failed to copy logic flow for execution context, using original flow (this may cause issues if the flow is modified during execution)");
+            Util.LOGGER.error("FMinecraftMod: Please check if all the nodes in the flow are properly registered in the NodeFactory and if they are correctly implemented to support copying.");
+            Util.LOGGER.error("FMinecraftMod: Failed to copy flow: " + flow.getName(), e);
+            this.flow = flow;
+        }
         this.server = server;
         this.nodeStatuses = new HashMap<>();
         Collection<FlowNode> nodes = this.flow.getNodes();
@@ -398,6 +405,11 @@ public class ExecutionContext {
                 for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.getNode().getMetadata().outputNumber; i++) {
                     startNodeStatus.setOutput(i, startNodeOutputs.get(i));
                 }
+                if (startNodeOutputs.size() != startNodeStatus.getNode().getMetadata().outputNumber) {
+                    Util.LOGGER.warn("FMinecraftMod: Provided " + startNodeOutputs.size() + " start node outputs for flow " + this.flow.getName() + ", but the start node has " + startNodeStatus.getNode().getMetadata().outputNumber + " outputs. Extra outputs will be ignored, and missing outputs will be set to null.");
+                }
+            } else {
+                Util.LOGGER.warn("FMinecraftMod: Provided start node outputs to flow " + this.flow.getName() + " that does not have a start node.");
             }
         }
         if (initialVariables != null) {

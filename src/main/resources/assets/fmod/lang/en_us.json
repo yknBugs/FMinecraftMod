@@ -181,6 +181,8 @@
     "fmod.flow.error.nullinput": "Cannot get input of node %s because the input is null.",
     "fmod.flow.error.nullnode": "Cannot get input of node %s because the source node does not exist.",
     "fmod.flow.error.nullself": "Cannot get the execution status of node %s because the node itself does not exist.",
+    "fmod.flow.error.indexin": "Node %s does not have an input with index %s.",
+    "fmod.flow.error.indexout": "Node %s does not have an output with index %s.",
     "fmod.flow.error.deadloop": "Execution forcibly stopped after %s nodes reached the limit.",
     "fmod.flow.error.recursion": "Execution forcibly stopped due to excessive recursion depth.",
     "fmod.flow.error.overflow": "Execution forcibly stopped due to stack overflow.",

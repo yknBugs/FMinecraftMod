@@ -119,7 +119,7 @@ public class OptionScreen extends Screen {
             super(client, width, height, top, bottom, 24);
             // Copyright Info
             this.addEntry(new TextHintEntry(
-                Text.translatable("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors()),
+                Text.translatable("fmod.misc.version", Util.getMinecraftVersion(), Util.MOD_VERSION.toString(), Util.getModAuthors()),
                 Text.translatable("fmod.options.tip")
             ));
             // Config entries

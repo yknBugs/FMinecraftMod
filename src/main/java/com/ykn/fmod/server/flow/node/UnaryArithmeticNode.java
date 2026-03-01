@@ -30,8 +30,7 @@ import net.minecraft.util.math.Vec3d;
  */
 public class UnaryArithmeticNode extends FlowNode {
 	public UnaryArithmeticNode(long id, String name) {
-		super(id, name, 2, 1, 1);
-		this.type = "UnaryArithmeticNode";
+		super(id, name, 2, 1, 1, "UnaryArithmeticNode");
 	}
 
 	@Override

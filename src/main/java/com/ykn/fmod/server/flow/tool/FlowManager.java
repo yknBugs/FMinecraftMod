@@ -46,6 +46,15 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  * <p>
  * Note: Any kinds of editing operations will automatically disable the flow to prevent unintended executions.
  * <p>
+ * Note: This class is designed to be an interface between user interactions and the underlying logic flow data structure.
+ * (i.e. Be an intermediate layer between commands and the {@link LogicFlow} class). It is not recommended for developers
+ * to use this class for programmatically manipulating flows in code, as it is optimized for user-driven editing with undo/redo 
+ * support rather than direct flow manipulation. Instead, please dirctly use the {@link LogicFlow} class for flow manipulation in code.
+ * <p>
+ * Note: User should not see the node ids, because ids are internal immutable identifiers for nodes and what we used to
+ * identify nodes in code. For users, they should always use node names to manage nodes. While node names are mutable and 
+ * can be changed by users, command side should always validate the node name to make sure it exists and is unique.
+ * <p>
  * Example usage:
  * <pre>
  * FlowManager manager = new FlowManager("MyFlow", "EntityDeathEventNode", "OnDeath");
@@ -75,7 +84,7 @@ public class FlowManager {
      * Only enabled flows will be automatically executed when their triggering
      * events occur (e.g., entity death, player interaction).
      */
-    private boolean enabled;
+    private volatile boolean enabled;
 
     /**
      * Stack of operations that can be redone.

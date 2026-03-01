@@ -46,7 +46,7 @@ public class CommandRegistrater {
 
     private static int runFModCommand(CommandContext<ServerCommandSource> context) {
         try {
-            MutableText commandFeedback = Util.parseTranslatableText("fmod.misc.version", Util.getMinecraftVersion(), Util.getModVersion(), Util.getModAuthors());
+            MutableText commandFeedback = Util.parseTranslatableText("fmod.misc.version", Util.getMinecraftVersion(), Util.MOD_VERSION.toString(), Util.getModAuthors());
             context.getSource().sendFeedback(() -> commandFeedback, false);
             return Command.SINGLE_SUCCESS;
         } catch (CommandException e) {
