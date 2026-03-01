@@ -45,7 +45,7 @@ public class NodeEditPath {
      * <p>
      * This function is called when redoing the operation after it was undone.
      */
-    private Consumer<LogicFlow> redoLogic;
+    private final Consumer<LogicFlow> redoLogic;
 
     /**
      * The lambda function that reverses this edit operation on a flow.
@@ -53,7 +53,7 @@ public class NodeEditPath {
      * This function is called when undoing the operation, restoring the
      * flow to its previous state.
      */
-    private Consumer<LogicFlow> undoLogic;
+    private final Consumer<LogicFlow> undoLogic;
 
     /**
      * Creates a new reversible edit operation.

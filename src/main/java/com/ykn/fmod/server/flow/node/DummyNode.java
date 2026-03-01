@@ -18,8 +18,7 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 public class DummyNode extends EventNode {
 
     public DummyNode(long id, String name) {
-        super(id, name, 0, 0, 1);
-        this.type = "DummyNode";
+        super(id, name, 0, 0, 1, "DummyNode");
     }
 
     @Override

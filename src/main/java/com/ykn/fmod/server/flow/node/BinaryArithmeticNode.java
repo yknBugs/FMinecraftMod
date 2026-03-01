@@ -35,8 +35,7 @@ import net.minecraft.world.phys.Vec3;
 public class BinaryArithmeticNode extends FlowNode {
 
     public BinaryArithmeticNode(long id, String name) {
-        super(id, name, 3, 1, 1);
-        this.type = "BinaryArithmeticNode";
+        super(id, name, 3, 1, 1, "BinaryArithmeticNode");
     }
 
     @Override

@@ -18,6 +18,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.ykn.fmod.server.base.util.ModVersion;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.DataReference;
@@ -95,6 +96,12 @@ public class FlowSerializer {
      * Shared Gson instance with pretty printing enabled for consistent JSON formatting 
      */
     private static final Gson gson = buildGson();
+
+    /**
+     * The last compatible mod version for logic flows. Flows created with versions
+     * newer than this may not be loadable in older versions of the mod.
+     */
+    public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.1");
 
     /**
      * Builds a Gson instance with pretty printing enabled.
@@ -223,7 +230,7 @@ public class FlowSerializer {
      * @param ref The DataReference to serialize
      * @return A JsonObject representing the reference
      */
-    private static JsonObject serializeDataReference(DataReference ref) {
+    public static JsonObject serializeDataReference(DataReference ref) {
         JsonObject json = new JsonObject();
         switch (ref.getType()) {
             case CONSTANT:
@@ -251,7 +258,7 @@ public class FlowSerializer {
      * @param json The JsonObject containing the serialized reference
      * @return A DataReference reconstructed from the JSON
      */
-    private static DataReference deserializeDataReference(JsonObject json) {
+    public static DataReference deserializeDataReference(JsonObject json) {
         String type = getStringOrDefault(json, "type", "const");
         if ("const".equals(type)) {
             String valueStr = getStringOrDefault(json, "value", "null");
@@ -279,7 +286,7 @@ public class FlowSerializer {
      * @param node The FlowNode to serialize
      * @return A JsonObject representing the node
      */
-    private static JsonObject serializeNode(FlowNode node) {
+    public static JsonObject serializeNode(FlowNode node) {
         JsonObject json = new JsonObject();
         json.addProperty("id", node.getId());
         json.addProperty("type", node.getType());
@@ -313,7 +320,7 @@ public class FlowSerializer {
      * @param json The JsonObject containing the serialized node
      * @return A FlowNode reconstructed from the JSON
      */
-    private static FlowNode deserializeNode(JsonObject json) {
+    public static FlowNode deserializeNode(JsonObject json) {
         long id = getLongOrDefault(json, "id", -1L);
         if (id < 0) {
             throw new IllegalStateException("Invalid node ID: " + id + " (Malformed Json).");
@@ -371,10 +378,11 @@ public class FlowSerializer {
      * @return A JsonObject representing the complete serialized LogicFlow
      */
     public static JsonObject toJson(LogicFlow flow) {
+        flow.verifyIntegrity();
         JsonObject json = new JsonObject();
         json.addProperty("name", flow.getName());
         json.addProperty("version", Util.getMinecraftVersion());
-        json.addProperty("mod", Util.getModVersion());
+        json.addProperty("mod", Util.MOD_VERSION.toString());
         json.addProperty("startNodeId", flow.getStartNodeId());
         JsonArray nodesArray = new JsonArray();
         List<FlowNode> nodes = flow.getSortedNodes();
@@ -408,8 +416,14 @@ public class FlowSerializer {
         if (!Util.getMinecraftVersion().equals(version)) {
             Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " was created in Minecraft version " + version + ", but the current version is " + Util.getMinecraftVersion() + ". This may cause compatibility issues.");
         }
-        if (!Util.getModVersion().equals(mod)) {
-            Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " was created with mod version " + mod + ", but the current version is " + Util.getModVersion() + ". This may cause compatibility issues.");
+        ModVersion flowVersion = null;
+        try {
+            flowVersion = ModVersion.fromString(mod);
+        } catch (Exception e) {
+            Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " has an invalid mod version string: " + mod + ". This may cause compatibility issues.", e);
+        }
+        if (flowVersion != null && flowVersion.compareTo(LAST_COMPATIBLE_MOD_VERSION) < 0) {
+            Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " was created with mod version " + mod + ", but the current version is " + Util.MOD_VERSION.toString() + ". This may cause compatibility issues.");
         }
         LogicFlow flow = new LogicFlow(name);
         JsonArray nodesArray = getArrayOrEmpty(json, "nodes");
@@ -434,7 +448,6 @@ public class FlowSerializer {
      */
     public static String serializeToString(LogicFlow flow) {
         JsonObject json = toJson(flow);
-        
         String jsonString = gson.toJson(json);
         return jsonString;
     }
@@ -477,9 +490,6 @@ public class FlowSerializer {
      */
     public static boolean saveFile(LogicFlow flow, Path path, boolean replace) {
         JsonObject json = toJson(flow);
-        GsonBuilder builder = new GsonBuilder();
-        builder.setPrettyPrinting();
-        Gson gson = builder.create();
         if (replace) {
             Path dir = path.getParent();
             Path tmp = dir.resolve(path.getFileName() + ".tmp");

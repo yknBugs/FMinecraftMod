@@ -23,8 +23,7 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 public class EntityDeathEventNode extends EventNode {
 
     public EntityDeathEventNode(long id, String name) {
-        super(id, name, 0, 6, 1);
-        this.type = "EntityDeathEventNode";
+        super(id, name, 0, 6, 1, "EntityDeathEventNode");
     }
 
     @Override

@@ -27,8 +27,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 public class IfConditionNode extends FlowNode {
 
     public IfConditionNode(long id, String name) {
-        super(id, name, 1, 0, 2);
-        this.type = "IfConditionNode";
+        super(id, name, 1, 0, 2, "IfConditionNode");
     }
 
     @Override

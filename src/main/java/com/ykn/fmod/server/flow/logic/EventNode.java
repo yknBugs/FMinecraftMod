@@ -53,9 +53,8 @@ public class EventNode extends FlowNode {
      * @param outputNumber The number of output ports (event parameters)
      * @param branchNumber The number of branch connections (typically 1)
      */
-    public EventNode(long id, String name, int inputNumber, int outputNumber, int branchNumber) {
-        super(id, name, inputNumber, outputNumber, branchNumber);
-        this.type = "AbstractEventNode";
+    public EventNode(long id, String name, int inputNumber, int outputNumber, int branchNumber, String type) {
+        super(id, name, inputNumber, outputNumber, branchNumber, type);
     }
 
     /**

@@ -30,8 +30,7 @@ import net.minecraft.server.level.ServerLevel;
 public class GetWorldListNode extends FlowNode {
 
     public GetWorldListNode(long id, String name) {
-        super(id, name, 1, 1, 1);
-        this.type = "GetWorldListNode";
+        super(id, name, 1, 1, 1, "GetWorldListNode");
     }
 
     @Override

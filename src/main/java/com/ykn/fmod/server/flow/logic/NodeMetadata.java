@@ -96,18 +96,18 @@ public class NodeMetadata {
         this.branchNumber = branchNumber;
         this.displayName = displayName;
         this.description = description;
-        this.inputNames = Collections.unmodifiableList(inputNames);
-        this.inputDescriptions = Collections.unmodifiableList(inputDescriptions);
-        this.inputDataTypes = Collections.unmodifiableList(inputDataTypes);
-        this.outputNames = Collections.unmodifiableList(outputNames);
-        this.outputDescriptions = Collections.unmodifiableList(outputDescriptions);
-        this.outputDataTypes = Collections.unmodifiableList(outputDataTypes);
-        this.branchNames = Collections.unmodifiableList(branchNames);
-        this.branchDescriptions = Collections.unmodifiableList(branchDescriptions);
-        verifyMetadataIntegrity();
+        this.inputNames = Collections.unmodifiableList(new ArrayList<>(inputNames));
+        this.inputDescriptions = Collections.unmodifiableList(new ArrayList<>(inputDescriptions));
+        this.inputDataTypes = Collections.unmodifiableList(new ArrayList<>(inputDataTypes));
+        this.outputNames = Collections.unmodifiableList(new ArrayList<>(outputNames));
+        this.outputDescriptions = Collections.unmodifiableList(new ArrayList<>(outputDescriptions));
+        this.outputDataTypes = Collections.unmodifiableList(new ArrayList<>(outputDataTypes));
+        this.branchNames = Collections.unmodifiableList(new ArrayList<>(branchNames));
+        this.branchDescriptions = Collections.unmodifiableList(new ArrayList<>(branchDescriptions));
+        verifyIntegrity();
     }
 
-    public boolean verifyMetadataIntegrity() {
+    public boolean verifyIntegrity() {
         boolean valid = true;
         if (this.inputNames.size() != this.inputNumber) {
             Util.LOGGER.warn("FMinecraftMod: NodeMetadata integrity check failed: inputNames size = " + this.inputNames.size() + ", expected " + this.inputNumber);

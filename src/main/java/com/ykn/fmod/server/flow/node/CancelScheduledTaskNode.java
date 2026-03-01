@@ -27,8 +27,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 public class CancelScheduledTaskNode extends FlowNode {
 
     public CancelScheduledTaskNode(long id, String name) {
-        super(id, name, 1, 2, 1);
-        this.type = "CancelScheduledTaskNode";
+        super(id, name, 1, 2, 1, "CancelScheduledTaskNode");
     }
 
     @Override

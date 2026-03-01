@@ -39,8 +39,7 @@ import net.minecraft.world.phys.Vec3;
 public class GatherEntityNode extends FlowNode {
 
     public GatherEntityNode(long id, String name) {
-        super(id, name, 5, 1, 1);
-        this.type = "GatherEntityNode";
+        super(id, name, 5, 1, 1, "GatherEntityNode");
     }
 
     @Override

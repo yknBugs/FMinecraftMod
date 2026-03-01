@@ -181,6 +181,8 @@
     "fmod.flow.error.nullinput": "无法获取节点 %s 的输入，因为输入为 null。",
     "fmod.flow.error.nullnode": "无法获取节点 %s 的输入，因为输入源节点不存在。",
     "fmod.flow.error.nullself": "无法获取节点 %s 的执行状态，因为该节点已被删除或不存在。",
+    "fmod.flow.error.indexin": "节点 %s 不存在索引为 %s 的输入。",
+    "fmod.flow.error.indexout": "节点 %s 不存在索引为 %s 的输出。",
     "fmod.flow.error.deadloop": "已执行节点的数量 %s 达到上限，强制终止执行。",
     "fmod.flow.error.recursion": "流程图递归调用层数达到上限，强制终止执行。",
     "fmod.flow.error.overflow": "流程图递归调用层数过多，无法继续执行。",

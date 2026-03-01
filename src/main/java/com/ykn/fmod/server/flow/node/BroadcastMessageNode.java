@@ -34,8 +34,7 @@ import net.minecraft.server.level.ServerPlayer;
 public class BroadcastMessageNode extends FlowNode {
 
     public BroadcastMessageNode(long id, String name) {
-        super(id, name, 4, 0, 1);
-        this.type = "BroadcastMessageNode";
+        super(id, name, 4, 0, 1, "BroadcastMessageNode");
     }
 
     @Override

@@ -51,8 +51,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 public class GetNbtValueNode extends FlowNode {
 
     public GetNbtValueNode(long id, String name) {
-        super(id, name, 3, 1, 1);
-        this.type = "GetNbtValueNode";
+        super(id, name, 3, 1, 1, "GetNbtValueNode");
     }
 
     @Override

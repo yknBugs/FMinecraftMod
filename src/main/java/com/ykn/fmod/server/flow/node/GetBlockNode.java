@@ -38,8 +38,7 @@ import net.minecraftforge.registries.ForgeRegistries;
 public class GetBlockNode extends FlowNode {
 
     public GetBlockNode(long id, String name) {
-        super(id, name, 2, 3, 1);
-        this.type = "GetBlockNode";
+        super(id, name, 2, 3, 1, "GetBlockNode");
     }
 
     @Override

@@ -32,8 +32,7 @@ import net.minecraft.world.entity.Entity;
 public class ExecuteCommandNode extends FlowNode {
 
     public ExecuteCommandNode(long id, String name) {
-        super(id, name, 2, 3, 1);
-        this.type = "ExecuteCommandNode";
+        super(id, name, 2, 3, 1, "ExecuteCommandNode");
     }
 
     @Override
@@ -53,6 +52,10 @@ public class ExecuteCommandNode extends FlowNode {
         Entity sourceEntity = parseEntity(resolvedInputs.get(0));
         String command = parseCommand(resolvedInputs.get(1));
         RedirectedCommandOutput output = RedirectedCommandOutput.create();
+        // To create a flow or load a flow from file, user must have a permission level of at least 3
+        // Although non-op players can call trigger command to run existing flows,
+        // flows with a event node of trigger can still only be created by ops.
+        // So we use a permission level of 3 here to mimic vanilla trigger command behavior.
         int result = Util.runCommand(output, sourceEntity, command, 3);
         status.setOutput(0, output.getAllMessage());
         status.setOutput(1, output.getRawOutput());

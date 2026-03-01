@@ -35,8 +35,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 public class SetObjectAtIndexNode extends FlowNode {
     
     public SetObjectAtIndexNode(long id, String name) {
-        super(id, name, 6, 4, 1);
-        this.type = "SetObjectAtIndexNode";
+        super(id, name, 6, 4, 1, "SetObjectAtIndexNode");
     }
 
     @Override
