@@ -30,6 +30,8 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
+import com.ykn.fmod.server.rule.core.RuleContext;
+import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -67,6 +69,18 @@ public class ServerData {
      * Maintains a chronological record of all flow execution contexts.
      */
     private final List<ExecutionContext> executeHistory;
+
+    /**
+     * List of all custom rules registered on the server.
+     * Used for rule management and execution.
+     */
+    private final HashMap<String, RuleManager> customRules;
+
+    /**
+     * List of execution contexts for all triggered rules.
+     * Maintains a history of rule executions for debugging and analysis.
+     */
+    private final List<RuleContext> ruleExecutionHistory;
     
     /**
      * List of scheduled tasks to be executed.
@@ -153,6 +167,8 @@ public class ServerData {
         playerData = new HashMap<>();
         logicFlows = new HashMap<>();
         executeHistory = new ArrayList<>();
+        customRules = new HashMap<>();
+        ruleExecutionHistory = new ArrayList<>();
         scheduledTasks = new ArrayList<>();
         pendingScheduledTasks = new ArrayList<>();
         isTickingScheduledTasks = false;
@@ -411,12 +427,30 @@ public class ServerData {
     }
 
     /**
+    * Returns the mutable map of custom rules, keyed by rule name.
+    *
+    * @return the {@link HashMap} of rule name to {@link RuleManager}
+    */
+    public HashMap<String, RuleManager> getCustomRules() {
+        return customRules;
+    }
+
+    /**
      * Returns an unmodifiable view of the execution history.
      *
      * @return an unmodifiable {@link List} of {@link ExecutionContext} instances
      */
     public List<ExecutionContext> getExecuteHistory() {
         return Collections.unmodifiableList(executeHistory);
+    }
+
+    /**
+     * Returns an unmodifiable view of the rule execution history.
+     *
+     * @return an unmodifiable {@link List} of {@link RuleContext} instances
+     */
+    public List<RuleContext> getRuleExecutionHistory() {
+        return Collections.unmodifiableList(ruleExecutionHistory);
     }
 
     /**
@@ -430,6 +464,20 @@ public class ServerData {
         executeHistory.add(context);
         while (executeHistory.size() > maxHistorySize) {
             executeHistory.remove(0);
+        }
+    }
+
+    /**
+     * Appends a {@link RuleContext} to the rule execution history and trims the history
+     * to the specified maximum size by removing the oldest entries.
+     *
+     * @param context      the rule context to add; must not be null
+     * @param maxHistorySize the maximum number of entries to retain
+     */
+    public void addRuleHistory(RuleContext context, int maxHistorySize) {
+        ruleExecutionHistory.add(context);
+        while (ruleExecutionHistory.size() > maxHistorySize) {
+            ruleExecutionHistory.remove(0);
         }
     }
 

@@ -32,6 +32,7 @@ import com.ykn.fmod.server.base.event.ProjectileHitEntity;
 import com.ykn.fmod.server.base.event.WorldTick;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
+import com.ykn.fmod.server.rule.tool.RuleRegistry;
 
 @Mod(Util.MODID)
 public class FMod {
@@ -46,6 +47,9 @@ public class FMod {
 
 		// Register Nodes
 		NodeRegistry.registerDefaultNodes();
+
+		// Register rules
+		RuleRegistry.registerDefault();
 
 		// Register events
 		MinecraftForge.EVENT_BUS.register(this);
