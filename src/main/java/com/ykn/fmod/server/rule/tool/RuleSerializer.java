@@ -18,7 +18,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.ykn.fmod.server.base.util.ModVersion;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.rule.core.ConstCondition;
 import com.ykn.fmod.server.rule.core.CustomRule;
+import com.ykn.fmod.server.rule.core.DummyEvent;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleEvent;
@@ -71,6 +73,43 @@ public class RuleSerializer {
     }
 
     /**
+     * Utility method to safely extract a string value from a JsonObject with a default fallback.
+     * <p>
+     * This method checks if the key exists and is not null before attempting to retrieve the value.
+     * If the key is missing or null, it logs a warning and returns the provided default value.
+     * 
+     * @param json The JsonObject to extract from
+     * @param key The key to look for
+     * @param defaultValue The default value to return if the key is missing or null
+     * @return The extracted string value, or the default value if not found
+     */
+    private static String getStringOrDefault(JsonObject json, String key, String defaultValue) {
+        if (json == null || !json.has(key) || json.get(key).isJsonNull()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing or null key '" + key + "' in JSON. Using default value: " + defaultValue);
+            return defaultValue;
+        }
+        return json.get(key).getAsString();
+    }
+
+    /**
+     * Utility method to safely extract a JsonArray from a JsonObject with an empty array fallback.
+     * <p>
+     * This method checks if the key exists and is a JsonArray before attempting to retrieve it.
+     * If the key is missing, null, or not an array, it logs a warning and returns an empty JsonArray.
+     * 
+     * @param json The JsonObject to extract from
+     * @param key The key to look for
+     * @return The extracted JsonArray, or an empty array if not found or invalid
+     */
+    private static JsonArray getArrayOrEmpty(JsonObject json, String key) {
+        if (json == null || !json.has(key) || !json.get(key).isJsonArray()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing or invalid key '" + key + "' in JSON. Using empty array.");
+            return new JsonArray();
+        }
+        return json.getAsJsonArray(key);
+    }
+
+    /**
      * Serializes a {@link CustomRule} to a {@link com.google.gson.JsonObject}.
      *
      * <p>The resulting object includes the current Minecraft and mod versions as
@@ -116,13 +155,12 @@ public class RuleSerializer {
      * @return the reconstructed {@link CustomRule}
      */
     public static CustomRule fromJson(JsonObject json) {
-        String name = json.get("name").getAsString();
-        String version = json.has("version") ? json.get("version").getAsString() : "unknown";
-        String mod = json.has("mod") ? json.get("mod").getAsString() : "unknown";
+        String name = getStringOrDefault(json, "name", "Unnamed Rule");
+        String version = getStringOrDefault(json, "version", "unknown");
+        String mod = getStringOrDefault(json, "mod", "unknown");
         if (!Util.getMinecraftVersion().equals(version)) {
             Util.LOGGER.warn("FMinecraftMod: The rule " + name + " was created in Minecraft version " + version + ", but the current version is " + Util.getMinecraftVersion() + ". This may cause compatibility issues.");
         }
-
         ModVersion ruleVersion = null;
         try {
             ruleVersion = ModVersion.fromString(mod);
@@ -135,25 +173,69 @@ public class RuleSerializer {
         if (ruleVersion != null && Util.MOD_VERSION.compareTo(ruleVersion) < 0) {
             Util.LOGGER.warn("FMinecraftMod: The rule " + name + " was created with a newer mod version " + mod + ", but the current version is " + Util.MOD_VERSION.toString() + ". This may cause compatibility issues.");
         }
-        RuleEvent event = RuleRegistry.createRuleEvent(json.get("event").getAsString());
-        RuleCondition condition = RuleRegistry.createCondition(json.get("condition").getAsJsonObject());
+        
+        String eventType = getStringOrDefault(json, "event", "Dummy");
+        RuleEvent event = RuleRegistry.createRuleEvent(eventType);
+        if (event == null) {
+            Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an unrecognized event type: " + eventType + ". Defaulting to Dummy.");
+            event = DummyEvent.getInstance();
+        }
+
+        RuleCondition condition = null;
+        if (json.has("condition") && json.get("condition").isJsonObject()) {
+            condition = RuleRegistry.createCondition(json.getAsJsonObject("condition"));
+        } else {
+            Util.LOGGER.warn("FMinecraftMod: The rule " + name + " is missing a valid 'condition' object. Defaulting to false.");
+            condition = ConstCondition.of(false);
+        }
+        if (condition == null) {
+            Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an unrecognized condition. Defaulting to false.");
+            condition = ConstCondition.of(false);
+        }
 
         List<RuleCondition> extraList = new ArrayList<>();
-        JsonArray extraArray = json.get("extra").getAsJsonArray();
+        JsonArray extraArray = getArrayOrEmpty(json, "extra");
         for (JsonElement el : extraArray) {
-            extraList.add(RuleRegistry.createCondition(el.getAsJsonObject()));
+            if (!el.isJsonObject()) {
+                Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an invalid extra condition entry that is not a JSON object. Skipping.");
+                continue;
+            }
+            RuleCondition extraCondition = RuleRegistry.createCondition(el.getAsJsonObject());
+            if (extraCondition == null) {
+                Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an unrecognized extra condition. Skipping.");
+                continue;
+            }
+            extraList.add(extraCondition);
         }
 
         List<RuleAction> satisfiedActions = new ArrayList<>();
-        JsonArray satisfiedArray = json.get("actionIfSatisfied").getAsJsonArray();
+        JsonArray satisfiedArray = getArrayOrEmpty(json, "actionIfSatisfied");
         for (JsonElement el : satisfiedArray) {
-            satisfiedActions.add(RuleRegistry.createRuleAction(el.getAsJsonObject()));
+            if (!el.isJsonObject()) {
+                Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an invalid actionIfSatisfied entry that is not a JSON object. Skipping.");
+                continue;
+            }
+            RuleAction ruleAction = RuleRegistry.createRuleAction(el.getAsJsonObject());
+            if (ruleAction == null) {
+                Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an unrecognized actionIfSatisfied. Skipping.");
+                continue;
+            }
+            satisfiedActions.add(ruleAction);
         }
 
         List<RuleAction> violatedActions = new ArrayList<>();
-        JsonArray violatedArray = json.get("actionIfViolated").getAsJsonArray();
+        JsonArray violatedArray = getArrayOrEmpty(json, "actionIfViolated");
         for (JsonElement el : violatedArray) {
-            violatedActions.add(RuleRegistry.createRuleAction(el.getAsJsonObject()));
+            if (!el.isJsonObject()) {
+                Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an invalid actionIfViolated entry that is not a JSON object. Skipping.");
+                continue;
+            }
+            RuleAction ruleAction = RuleRegistry.createRuleAction(el.getAsJsonObject());
+            if (ruleAction == null) {
+                Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an unrecognized actionIfViolated. Skipping.");
+                continue;
+            }
+            violatedActions.add(ruleAction);
         }
 
         CustomRule rule = CustomRule.build(name, event, condition, satisfiedActions, violatedActions);

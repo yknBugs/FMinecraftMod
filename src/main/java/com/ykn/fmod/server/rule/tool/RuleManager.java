@@ -11,6 +11,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import com.ykn.fmod.server.base.data.ServerData;
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.CustomRule;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleCondition;
@@ -78,7 +79,11 @@ public class RuleManager {
      * @param event the event type string (looked up via {@link RuleRegistry#createRuleEvent(String)})
      */
     public RuleManager(String name, String event) {
-        this.rule = CustomRule.build(name, RuleRegistry.createRuleEvent(event));
+        RuleEvent ruleEvent = RuleRegistry.createRuleEvent(event);
+        if (ruleEvent == null) {
+            throw new IllegalArgumentException("Unknown rule event type: " + event);
+        }
+        this.rule = CustomRule.build(name, ruleEvent);
         this.optimizedRule = rule.optimize();
         this.enabled = false;
     }
@@ -91,7 +96,11 @@ public class RuleManager {
      * @param event the event type string
      */
     public void setEvent(String event) {
-        this.rule.setEvent(RuleRegistry.createRuleEvent(event));
+        RuleEvent ruleEvent = RuleRegistry.createRuleEvent(event);
+        if (ruleEvent == null) {
+            throw new IllegalArgumentException("Unknown rule event type: " + event);
+        }
+        this.rule.setEvent(ruleEvent);
         this.enabled = false;
     }
 
@@ -156,10 +165,13 @@ public class RuleManager {
      * @param newName the desired new name
      */
     public void renameCondition(String oldName, String newName) {
-        RuleCondition newCondition = this.rule.getExtraCondition(oldName).setName(newName);
-        this.rule.removeCondition(oldName);
-        this.rule.addCondition(newCondition);
-        this.enabled = false;
+        RuleCondition oldCondition = this.rule.getExtraCondition(oldName);
+        if (oldCondition != null) {
+            RuleCondition newCondition = oldCondition.setName(newName);
+            this.rule.removeCondition(oldName);
+            this.rule.addCondition(newCondition);
+            this.enabled = false;
+        }
     }
 
     /**
@@ -195,10 +207,13 @@ public class RuleManager {
      * @param newName the desired new name
      */
     public void renameActionIfSatisfied(String oldName, String newName) {
-        RuleAction newAction = this.rule.getActionIfSatisfied(oldName).setName(newName);
-        this.rule.removeAction(oldName);
-        this.rule.addAction(newAction);
-        this.enabled = false;
+        RuleAction oldAction = this.rule.getActionIfSatisfied(oldName);
+        if (oldAction != null) {
+            RuleAction newAction = oldAction.setName(newName);
+            this.rule.removeAction(oldName);
+            this.rule.addAction(newAction);
+            this.enabled = false;
+        }
     }
 
     /**
@@ -234,10 +249,13 @@ public class RuleManager {
      * @param newName the desired new name
      */
     public void renameActionIfViolated(String oldName, String newName) {
-        RuleAction newAction = this.rule.getActionIfViolated(oldName).setName(newName);
-        this.rule.removePunishment(oldName);
-        this.rule.addPunishment(newAction);
-        this.enabled = false;
+        RuleAction oldAction = this.rule.getActionIfViolated(oldName);
+        if (oldAction != null) {
+            RuleAction newAction = oldAction.setName(newName);
+            this.rule.removePunishment(oldName);
+            this.rule.addPunishment(newAction);
+            this.enabled = false;
+        }
     }
 
     /**
@@ -282,7 +300,7 @@ public class RuleManager {
      */
     public RuleContext test(@Nonnull ServerData data, @Nullable Map<String, Object> variables) {
         RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
-        data.addRuleHistory(context, Integer.MAX_VALUE);
+        data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
         context.test();
         return context;
     }
@@ -307,7 +325,7 @@ public class RuleManager {
      */
     public RuleContext trigger(@Nonnull ServerData data, @Nullable Map<String, Object> variables) {
         RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
-        data.addRuleHistory(context, Integer.MAX_VALUE);
+        data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
         context.trigger();
         return context;
     }

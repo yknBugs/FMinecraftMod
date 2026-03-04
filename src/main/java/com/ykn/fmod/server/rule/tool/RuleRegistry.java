@@ -215,6 +215,9 @@ public class RuleRegistry {
      */
     @Nullable
     public static RuleCondition createCondition(JsonObject json) {
+        if (!json.has("type") || !json.get("type").isJsonPrimitive()) {
+            return null;
+        }
         String type = json.get("type").getAsString();
         return createCondition(type, json);
     }
@@ -244,6 +247,9 @@ public class RuleRegistry {
      */
     @Nullable
     public static RuleAction createRuleAction(JsonObject json) {
+        if (!json.has("type") || !json.get("type").isJsonPrimitive()) {
+            return null;
+        }
         String type = json.get("type").getAsString();
         return createRuleAction(type, json);
     }

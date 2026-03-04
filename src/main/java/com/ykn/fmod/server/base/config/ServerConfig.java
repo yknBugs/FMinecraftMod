@@ -84,6 +84,22 @@ public class ServerConfig extends ConfigReader {
     protected volatile int maxFlowHistorySize;
 
     /**
+     * How many history records of rule executions to keep.
+     * Default: 32767
+     */
+    @ConfigEntry(
+        type = ConfigEntry.ConfigType.INTEGER,
+        codeEntry = "maxRuleHistorySize",
+        commandEntry = "maxRuleHistorySize",
+        i18nEntry = "rulehistory",
+        minCommandInt = 0,
+        commandValueHint = "size",
+        toSliderValue = "logScaleToSlider",
+        fromSliderValue = "logScalefromSlider"
+    )
+    protected volatile int maxRuleHistorySize;
+
+    /**
      * The message sent to the client when a non-hostile and non-passive entity dies.
      * Default: NONE
      */
@@ -812,6 +828,7 @@ public class ServerConfig extends ConfigReader {
         this.maxFlowLength = 32767;
         this.maxFlowRecursionDepth = 16;
         this.maxFlowHistorySize = 32767;
+        this.maxRuleHistorySize = 32767;
         this.entityDeathMessage = ServerMessageType.empty();
         this.hostileDeathMessage = ServerMessageType.empty();
         this.passiveDeathMessage = ServerMessageType.empty();
@@ -912,6 +929,21 @@ public class ServerConfig extends ConfigReader {
             this.maxFlowHistorySize = 0;
         } else {
             this.maxFlowHistorySize = maxFlowHistorySize;
+        }
+    }
+
+    public int getMaxRuleHistorySize() {
+        if (maxRuleHistorySize < 0) {
+            return 0;
+        }
+        return maxRuleHistorySize;
+    }
+
+    public void setMaxRuleHistorySize(int maxRuleHistorySize) {
+        if (maxRuleHistorySize < 0) {
+            this.maxRuleHistorySize = 0;
+        } else {
+            this.maxRuleHistorySize = maxRuleHistorySize;
         }
     }
 

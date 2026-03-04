@@ -211,14 +211,19 @@ public class UnaryConditionExpression implements IterableCondition {
      * @throws IllegalArgumentException if {@code "value"} does not parse to a unary expression
      */
     public static UnaryConditionExpression fromJson(JsonObject json) {
-        String name = json.has("name") ? json.get("name").getAsString() : "";
-        String formula = json.has("value") ? json.get("value").getAsString() : "";
-        RuleCondition condition = ConditionFormulaParser.parse(formula);
-        if (condition instanceof UnaryConditionExpression) {
-            UnaryConditionExpression unaryCondition = (UnaryConditionExpression) condition;
-            return new UnaryConditionExpression(name, unaryCondition.getOperand(), unaryCondition.getRelationship());
-        } else {
-            throw new IllegalArgumentException("JSON does not represent a valid UnaryConditionExpression, but represent " + condition.getType() + " instead.");
+        try {
+            String name = json.has("name") ? json.get("name").getAsString() : "";
+            String formula = json.has("value") ? json.get("value").getAsString() : "";
+            RuleCondition condition = ConditionFormulaParser.parse(formula);
+            if (condition instanceof UnaryConditionExpression) {
+                UnaryConditionExpression unaryCondition = (UnaryConditionExpression) condition;
+                return new UnaryConditionExpression(name, unaryCondition.getOperand(), unaryCondition.getRelationship());
+            } else {
+                throw new IllegalArgumentException("JSON does not represent a valid UnaryConditionExpression, but represent " + condition.getType() + " instead.");
+            }
+        } catch (Exception e) {
+            Util.LOGGER.warn("FMinecraftMod: Failed to parse UnaryConditionExpression from JSON, defaulting to false.", e);
+            return new UnaryConditionExpression("", ConstCondition.of(false), ConditionRelationship.FALSE);
         }
     }
 }
