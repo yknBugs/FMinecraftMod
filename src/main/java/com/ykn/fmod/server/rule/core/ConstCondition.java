@@ -6,6 +6,7 @@
 package com.ykn.fmod.server.rule.core;
 
 import com.google.gson.JsonObject;
+import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.text.Text;
 
@@ -120,12 +121,13 @@ public class ConstCondition implements RuleCondition {
      * @throws IllegalArgumentException if the required {@code "value"} field is absent
      */
     public static ConstCondition fromJson(JsonObject json) {
-        if (json.has("value")) {
+        if (json.has("value") && json.get("value").isJsonPrimitive() && json.get("value").getAsJsonPrimitive().isBoolean()) {
             boolean value = json.get("value").getAsBoolean();
             String name = json.has("name") ? json.get("name").getAsString() : String.valueOf(value);
             return ConstCondition.of(name, value);
         } else {
-            throw new IllegalArgumentException("JSON for ConstCondition must contain 'value' field to specify the boolean value.");
+            Util.LOGGER.warn("FMinecraftMod: Invalid ConstCondition JSON: " + json.toString() + ". 'value' field is missing or not a boolean. Defaulting to false.");
+            return ConstCondition.of(false);
         }
     }
 }

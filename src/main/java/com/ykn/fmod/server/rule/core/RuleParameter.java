@@ -245,7 +245,16 @@ public class RuleParameter<T> {
      * @return a new {@code RuleParameter}
      */
     public static <T> RuleParameter<T> fromJson(JsonObject json, String memberName, Function<JsonElement, T> constantDeserializer) {
-        JsonObject valueJson = json.getAsJsonObject("value").getAsJsonObject(memberName);
+        if (!json.has("value") || !json.get("value").isJsonObject()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing 'value' object for parameter '" + memberName + "'. Defaulting to null.");
+            return new RuleParameter<>(null, null);
+        }
+        JsonObject valueObj = json.getAsJsonObject("value");
+        if (!valueObj.has(memberName) || !valueObj.get(memberName).isJsonObject()) {
+            Util.LOGGER.warn("FMinecraftMod: Missing '" + memberName + "' object for parameter. Defaulting to null.");
+            return new RuleParameter<>(null, null);
+        }
+        JsonObject valueJson = valueObj.getAsJsonObject(memberName);
         String variableName = valueJson.has("variable") ? valueJson.get("variable").getAsString() : null;
         T constantValue = valueJson.has("constant") ? constantDeserializer.apply(valueJson.get("constant")) : null;
         return new RuleParameter<>(variableName, constantValue);

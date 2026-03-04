@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) ykn
+ * This file is under the MIT License
+ */
+
 package com.ykn.fmod.server.base.command;
 
 import java.nio.file.Path;
@@ -540,6 +545,9 @@ public class RuleCommand {
             if (targetRule.getRule().hasExtraCondition(newName)) {
                 throw new CommandException(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", rule, newName));
             }
+            if (!RuleCondition.NAME_PATTERN.matcher(newName).matches()) {
+                throw new CommandException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", newName));
+            }
             targetRule.renameCondition(oldName, newName);
             context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.rename.success", rule, oldName, newName), true);
         } catch (CommandException e) {
@@ -649,6 +657,9 @@ public class RuleCommand {
         RuleManager targetRule = getRequiredRule(context, name);
         if (targetRule.getRule().hasExtraCondition(condition.getName())) {
             throw new CommandException(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", name, condition.getName()));
+        }
+        if (!condition.getName().isEmpty() && !RuleCondition.NAME_PATTERN.matcher(condition.getName()).matches()) {
+            throw new CommandException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", condition.getName()));
         }
         targetRule.addCondition(condition);
         context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.add.success", name, condition.getName()), true);
@@ -808,11 +819,13 @@ public class RuleCommand {
                         )
                         .then(CommandManager.literal("remove")
                             .then(CommandManager.argument("condition", StringArgumentType.string())
+                                .suggests(RuleComponentSuggestion.suggestCondition(true, 3))
                                 .executes(context -> {return runEditRuleConditionRemoveCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "condition"), context);})
                             )
                         )
                         .then(CommandManager.literal("rename")
                             .then(CommandManager.argument("oldName", StringArgumentType.string())
+                                .suggests(RuleComponentSuggestion.suggestCondition(true, 3))
                                 .then(CommandManager.argument("newName", StringArgumentType.string())
                                     .executes(context -> {return runEditRuleConditionRenameCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "oldName"), StringArgumentType.getString(context, "newName"), context);})
                                 )
@@ -823,11 +836,13 @@ public class RuleCommand {
                         .then(buildAddActionCommand(false))
                         .then(CommandManager.literal("remove")
                             .then(CommandManager.argument("action", StringArgumentType.string())
+                                .suggests(RuleComponentSuggestion.suggestAction(true, 3))
                                 .executes(context -> {return runEditRuleActionRemoveCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "action"), context);})
                             )
                         )
                         .then(CommandManager.literal("rename")
                             .then(CommandManager.argument("oldName", StringArgumentType.string())
+                                .suggests(RuleComponentSuggestion.suggestAction(true, 3))
                                 .then(CommandManager.argument("newName", StringArgumentType.string())
                                     .executes(context -> {return runEditRuleActionRenameCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "oldName"), StringArgumentType.getString(context, "newName"), context);})
                                 )
@@ -838,11 +853,13 @@ public class RuleCommand {
                         .then(buildAddActionCommand(true))
                         .then(CommandManager.literal("remove")
                             .then(CommandManager.argument("action", StringArgumentType.string())
+                                .suggests(RuleComponentSuggestion.suggestPunish(true, 3))
                                 .executes(context -> {return runEditRulePunishRemoveCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "action"), context);})
                             )
                         )
                         .then(CommandManager.literal("rename")
                             .then(CommandManager.argument("oldName", StringArgumentType.string())
+                                .suggests(RuleComponentSuggestion.suggestPunish(true, 3))
                                 .then(CommandManager.argument("newName", StringArgumentType.string())
                                     .executes(context -> {return runEditRulePunishRenameCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "oldName"), StringArgumentType.getString(context, "newName"), context);})
                                 )

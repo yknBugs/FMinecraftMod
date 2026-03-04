@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.gson.JsonObject;
+import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.text.Text;
 
@@ -172,15 +173,15 @@ public class ConditionReference implements RuleCondition {
      *
      * @param json the JSON object to deserialise
      * @return a new {@code ConditionReference}
-     * @throws IllegalArgumentException if the required {@code "require"} field is absent
      */
     public static ConditionReference fromJson(JsonObject json) {
-        if (json.has("require")) {
+        if (json.has("require") && json.get("require").isJsonPrimitive()) {
             String referenceName = json.get("require").getAsString();
             String name = json.has("name") ? json.get("name").getAsString() : "";
             return ConditionReference.of(name, referenceName);
         } else {
-            throw new IllegalArgumentException("JSON for ConditionReference must contain 'require' field to specify the reference name.");
+            Util.LOGGER.warn("FMinecraftMod: Invalid ConditionReference JSON: " + json.toString() + ". 'require' field is missing or not a string. Defaulting to null reference.");
+            return ConditionReference.of("", "null");
         }
     }
 }

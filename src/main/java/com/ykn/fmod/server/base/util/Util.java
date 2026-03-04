@@ -516,11 +516,8 @@ public class Util {
      */
     public static boolean saveFile(Consumer<BufferedWriter> writer, Path path, boolean replace) {
         if (replace) {
-            Path dir = path.getParent();
-            Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
-            if (dir != null) {
-                tmp = dir.resolve(path.getFileName() + ".tmp");
-            }
+            Path dir = path.toAbsolutePath().getParent();
+            Path tmp = dir.resolve(path.getFileName() + ".tmp");
             try {
                 Files.createDirectories(dir);
                 try (BufferedWriter bw = Files.newBufferedWriter(tmp)) {

@@ -16,13 +16,14 @@ import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 
 /**
- * Immutable execution context that is created for each rule evaluation.
+ * Execution context that is created for each rule evaluation with immutable input fields and mutable status fields.
  *
  * <p>A {@code RuleContext} bundles together everything needed to evaluate a rule:
  * the {@link MinecraftServer}, the optimised {@link CustomRule}, and the
@@ -215,12 +216,21 @@ public class RuleContext {
      * @return {@code true} if the condition is satisfied
      */
     public boolean test() {
-        resetStatus();
-        boolean result = this.rule.test(this);
-        this.executed = true;
-        this.passed = result;
-        this.skipActions = true;
-        return result;
+        try {
+            resetStatus();
+            boolean result = this.rule.test(this);
+            this.executed = true;
+            this.passed = result;
+            this.skipActions = true;
+            return result;
+        } catch (Exception e) {
+            Util.LOGGER.warn("FMinecraftMod: Exception during rule condition evaluation", e);
+            this.executed = true;
+            this.passed = false;
+            this.skipActions = true;
+            this.errorMessage = Text.literal(e.getMessage());
+            return false;
+        }
     }
 
     /**
@@ -239,12 +249,21 @@ public class RuleContext {
      * @return {@code true} if the condition is satisfied
      */
     public boolean trigger() {
-        resetStatus();
-        boolean result = this.rule.trigger(this);
-        this.executed = true;
-        this.passed = result;
-        this.skipActions = false;
-        return result;
+        try {
+            resetStatus();
+            boolean result = this.rule.trigger(this);
+            this.executed = true;
+            this.passed = result;
+            this.skipActions = false;
+            return result;
+        } catch (Exception e) {
+            Util.LOGGER.warn("FMinecraftMod: Exception during rule evaluation", e);
+            this.executed = true;
+            this.passed = false;
+            this.skipActions = false;
+            this.errorMessage = Text.literal(e.getMessage());
+            return false;
+        }
     }
 
     public Text render() {

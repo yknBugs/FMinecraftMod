@@ -253,17 +253,21 @@ public class BinaryConditionExpression implements IterableCondition {
      *
      * @param json the JSON object to deserialise
      * @return a new {@code BinaryConditionExpression}
-     * @throws IllegalArgumentException if {@code "value"} does not parse to a binary expression
      */
     public static BinaryConditionExpression fromJson(JsonObject json) {
-        String name = json.has("name") ? json.get("name").getAsString() : "";
-        String formula = json.has("value") ? json.get("value").getAsString() : "";
-        RuleCondition condition = ConditionFormulaParser.parse(formula);
-        if (condition instanceof BinaryConditionExpression) {
-            BinaryConditionExpression binaryCondition = (BinaryConditionExpression) condition;
-            return new BinaryConditionExpression(name, binaryCondition.getLeftOperand(), binaryCondition.getRightOperand(), binaryCondition.getRelationship());
-        } else {
-            throw new IllegalArgumentException("JSON does not represent a valid BinaryConditionExpression, but represent " + condition.getType() + " instead.");
+        try {
+            String name = json.has("name") ? json.get("name").getAsString() : "";
+            String formula = json.has("value") ? json.get("value").getAsString() : "";
+            RuleCondition condition = ConditionFormulaParser.parse(formula);
+            if (condition instanceof BinaryConditionExpression) {
+                BinaryConditionExpression binaryCondition = (BinaryConditionExpression) condition;
+                return new BinaryConditionExpression(name, binaryCondition.getLeftOperand(), binaryCondition.getRightOperand(), binaryCondition.getRelationship());
+            } else {
+                throw new IllegalArgumentException("JSON does not represent a valid BinaryConditionExpression, but represent " + condition.getType() + " instead.");
+            }
+        } catch (Exception e) {
+            Util.LOGGER.warn("FMinecraftMod: Failed to parse BinaryConditionExpression from JSON, defaulting to false.", e);
+            return new BinaryConditionExpression("", ConstCondition.of(false), ConstCondition.of(false), ConditionRelationship.FALSE);
         }
     }
 }

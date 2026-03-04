@@ -41,7 +41,7 @@ public interface RuleCondition extends RuleComponent {
      * <p>Names are referenced inside boolean formula strings (e.g. {@code "inZone && !isOp"}),
      * so they must be valid identifiers.
      */
-    public static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]+");
+    public static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
 
     /**
      * Evaluates this condition in the given execution context.
