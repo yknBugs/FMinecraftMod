@@ -5,6 +5,13 @@
 
 package com.ykn.fmod.server.base.util;
 
+import java.io.BufferedWriter;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -12,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
@@ -483,5 +491,77 @@ public class Util {
         }
         ServerData data = new ServerData(server);
         worldData.put(server, data);
+    }
+
+    /**
+     * Saves content to a file using the provided writer consumer.
+     * <p>
+     * This method provides two modes:
+     * <ul>
+     *   <li><b>Atomic replacement (replace=true):</b> Writes to a temporary file first,
+     *       then atomically moves it to the target path. This prevents data corruption
+     *       if the write is interrupted. Will overwrite existing files.</li>
+     *   <li><b>Safe creation (replace=false):</b> Creates the file only if it doesn't
+     *       exist. Returns false if the file already exists.</li>
+     * </ul>
+     * <p>
+     * Parent directories are created automatically if they don't exist.
+     * Errors are logged but also returned as boolean status.
+     *
+     * @param writer  A consumer that receives an open {@link BufferedWriter} and writes content to it.
+     *                The writer will be flushed and closed automatically.
+     * @param path    The file path to save to
+     * @param replace Whether to replace the file atomically if it already exists
+     * @return {@code true} if the save operation was successful, {@code false} otherwise
+     */
+    public static boolean saveFile(Consumer<BufferedWriter> writer, Path path, boolean replace) {
+        if (replace) {
+            Path dir = path.getParent();
+            Path tmp = path.resolveSibling(path.getFileName() + ".tmp");
+            if (dir != null) {
+                tmp = dir.resolve(path.getFileName() + ".tmp");
+            }
+            try {
+                Files.createDirectories(dir);
+                try (BufferedWriter bw = Files.newBufferedWriter(tmp)) {
+                    writer.accept(bw);
+                    bw.flush();
+                } catch (Exception e) {
+                    LOGGER.error("FMinecraftMod: Could not write to temporary file " + tmp.toString(), e);
+                    return false;
+                }
+                try {
+                    Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+                } catch (AtomicMoveNotSupportedException e) {
+                    LOGGER.warn("FMinecraftMod: Atomic move not supported, falling back to non-atomic move for file " + path.toString());
+                    Files.move(tmp, path, StandardCopyOption.REPLACE_EXISTING);
+                }
+                return true;
+            } catch (Exception e) {
+                LOGGER.error("FMinecraftMod: Could not move temporary file to " + path.toString(), e);
+                try {
+                    Files.deleteIfExists(tmp);
+                } catch (Exception ex) {
+                    LOGGER.error("FMinecraftMod: Could not delete temporary file " + tmp.toString(), ex);
+                }
+                return false;
+            }
+        }
+        try {
+            Files.createDirectories(path.getParent());
+            try (BufferedWriter bw = Files.newBufferedWriter(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
+                writer.accept(bw);
+            } catch (FileAlreadyExistsException e) {
+                LOGGER.warn("FMinecraftMod: Cannot overwrite existing file " + path.toString());
+                return false;
+            } catch (Exception e) {
+                LOGGER.error("FMinecraftMod: Could not write to file " + path.toString(), e);
+                return false;
+            }
+        } catch (Exception e) {
+            LOGGER.error("FMinecraftMod: Could not create the target directory " + path.getParent().toString(), e);
+            return false;
+        }
+        return true;
     }
 }

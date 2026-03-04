@@ -75,6 +75,7 @@ public class TextPlaceholderFactory<T> {
      */
     public TextPlaceholderFactory(Map<String, Function<T, Text>> placeholders) {
         this.placeholders = placeholders;
+        this.customStyles = new LinkedHashMap<>();
     }
 
     /**

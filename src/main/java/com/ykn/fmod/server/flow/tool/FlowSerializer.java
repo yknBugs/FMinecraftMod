@@ -6,12 +6,8 @@
 package com.ykn.fmod.server.flow.tool;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import com.google.gson.Gson;
@@ -95,7 +91,7 @@ public class FlowSerializer {
     /** 
      * Shared Gson instance with pretty printing enabled for consistent JSON formatting 
      */
-    private static final Gson gson = buildGson();
+    private static final Gson GSON = buildGson();
 
     /**
      * The last compatible mod version for logic flows. Flows created with versions
@@ -425,6 +421,9 @@ public class FlowSerializer {
         if (flowVersion != null && flowVersion.compareTo(LAST_COMPATIBLE_MOD_VERSION) < 0) {
             Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " was created with mod version " + mod + ", but the current version is " + Util.MOD_VERSION.toString() + ". This may cause compatibility issues.");
         }
+        if (flowVersion != null && Util.MOD_VERSION.compareTo(flowVersion) < 0) {
+            Util.LOGGER.warn("FMinecraftMod: The logic flow " + name + " was created with a newer mod version " + mod + ", but the current version is " + Util.MOD_VERSION.toString() + ". This may cause compatibility issues.");
+        }
         LogicFlow flow = new LogicFlow(name);
         JsonArray nodesArray = getArrayOrEmpty(json, "nodes");
         for (int i = 0; i < nodesArray.size(); i++) {
@@ -448,7 +447,7 @@ public class FlowSerializer {
      */
     public static String serializeToString(LogicFlow flow) {
         JsonObject json = toJson(flow);
-        String jsonString = gson.toJson(json);
+        String jsonString = GSON.toJson(json);
         return jsonString;
     }
 
@@ -463,7 +462,7 @@ public class FlowSerializer {
      * @throws com.google.gson.JsonSyntaxException If the JSON is malformed
      */
     public static LogicFlow deserializeFromString(String jsonString) {
-        JsonObject json = gson.fromJson(jsonString, JsonObject.class);
+        JsonObject json = GSON.fromJson(jsonString, JsonObject.class);
         LogicFlow flow = fromJson(json);
         return flow;
     }
@@ -490,46 +489,7 @@ public class FlowSerializer {
      */
     public static boolean saveFile(LogicFlow flow, Path path, boolean replace) {
         JsonObject json = toJson(flow);
-        if (replace) {
-            Path dir = path.getParent();
-            Path tmp = dir.resolve(path.getFileName() + ".tmp");
-            try {
-                Files.createDirectories(dir);
-                try (BufferedWriter writer = Files.newBufferedWriter(tmp)) {
-                    gson.toJson(json, writer);
-                    writer.flush();
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Could not write the logic flow " + flow.getName() + " to temporary file " + tmp.toString(), e);
-                    return false;
-                }
-                Files.move(tmp, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
-                return true;
-            } catch (Exception e) {
-                Util.LOGGER.error("FMinecraftMod: Could not move temporary file to " + path.toString(), e);
-                try {
-                    Files.deleteIfExists(tmp);
-                } catch (Exception ex) {
-                    Util.LOGGER.error("FMinecraftMod: Could not delete temporary file " + tmp.toString(), ex);
-                }
-                return false;
-            }
-        }
-        try {
-            Files.createDirectories(path.getParent());
-            try (BufferedWriter writer = Files.newBufferedWriter(path, StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE)) {
-                gson.toJson(json, writer);
-            } catch (FileAlreadyExistsException e) {
-                Util.LOGGER.warn("FMinecraftMod: Cannot overwrite existing file " + path.toString());
-                return false;
-            } catch (Exception e) {
-                Util.LOGGER.error("FMinecraftMod: Could not write the logic flow " + flow.getName() + " to file " + path.toString(), e);
-                return false;
-            }
-        } catch (Exception e) {
-            Util.LOGGER.error("FMinecraftMod: Could not create the target directory " + path.getParent().toString(), e);
-            return false;
-        }
-        return true;
+        return Util.saveFile(writer -> GSON.toJson(json, writer), path, replace);
     }
 
     /**
@@ -553,7 +513,7 @@ public class FlowSerializer {
             return null;
         }
         try (BufferedReader reader = Files.newBufferedReader(path)) {
-            JsonObject json = gson.fromJson(reader, JsonObject.class);
+            JsonObject json = GSON.fromJson(reader, JsonObject.class);
             LogicFlow flow = fromJson(json);
             return flow;
         } catch (Exception e) {

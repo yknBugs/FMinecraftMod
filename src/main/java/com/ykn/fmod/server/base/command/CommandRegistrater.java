@@ -184,6 +184,7 @@ public class CommandRegistrater {
                     )
                 )
                 .then(FlowCommand.buildCommand())
+                .then(RuleCommand.buildCommand())
                 .then(ServerConfigRegistry.buildCommand());
 
             CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {

@@ -62,6 +62,7 @@ public class NodeRegistry {
      * Implementations should construct a node of the appropriate type with the given ID and name.
      * The factory is typically a method reference to the node's constructor.
      */
+    @FunctionalInterface
     public interface NodeFactory {
         /**
          * Creates a new node instance.

@@ -16,6 +16,7 @@ import com.ykn.fmod.server.base.event.NewLevel;
 import com.ykn.fmod.server.base.event.WorldTick;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
+import com.ykn.fmod.server.rule.tool.RuleRegistry;
 
 public class FMod implements ModInitializer {
 
@@ -30,6 +31,9 @@ public class FMod implements ModInitializer {
 
 		// Register Nodes
 		NodeRegistry.registerDefaultNodes();
+
+		// Register rules
+		RuleRegistry.registerDefault();
 
 		// Register commands
 		CommandRegistrater.registerCommand();

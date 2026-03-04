@@ -155,7 +155,7 @@ public class FlowManager {
             throw new IllegalArgumentException("Unknown node type: " + type + " for node " + name + ".");
         }
         this.flow.addNode(node);
-        this.undoPath.add(new NodeEditPath(f -> f.addNode(node), f -> f.removeNode(node.getId())));
+        this.undoPath.push(new NodeEditPath(f -> f.addNode(node), f -> f.removeNode(node.getId())));
         this.enabled = false;
     }
 
@@ -174,7 +174,7 @@ public class FlowManager {
         FlowNode node = this.flow.getNodeByName(name);
         if (node != null) {
             this.flow.removeNode(node.getId());
-            this.undoPath.add(new NodeEditPath(f -> f.removeNode(node.getId()), f -> f.addNode(node)));
+            this.undoPath.push(new NodeEditPath(f -> f.removeNode(node.getId()), f -> f.addNode(node)));
             this.enabled = false;
         }
     }
@@ -202,7 +202,7 @@ public class FlowManager {
             this.flow.addNode(newNode);
             this.flow.setStartNodeId(newNode.getId());
             this.flow.removeNode(oldNode.getId());
-            this.undoPath.add(new NodeEditPath(
+            this.undoPath.push(new NodeEditPath(
                 f -> {
                     f.addNode(newNode);
                     f.setStartNodeId(newNode.getId());
@@ -232,7 +232,7 @@ public class FlowManager {
         FlowNode node = this.flow.getNodeByName(oldName);
         if (node != null) {
             node.setName(newName);
-            this.undoPath.add(new NodeEditPath(
+            this.undoPath.push(new NodeEditPath(
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     if (n != null) {
@@ -266,7 +266,7 @@ public class FlowManager {
         if (node != null) {
             DataReference oldValue = node.getInput(index);
             node.setInput(index, DataReference.createConstantReference(value));
-            this.undoPath.add(new NodeEditPath(
+            this.undoPath.push(new NodeEditPath(
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     if (n != null) {
@@ -303,7 +303,7 @@ public class FlowManager {
         if (node != null && ref != null) {
             DataReference oldValue = node.getInput(index);
             node.setInput(index, DataReference.createNodeOutputReference(ref.getId(), refIndex));
-            this.undoPath.add(new NodeEditPath(
+            this.undoPath.push(new NodeEditPath(
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     FlowNode r = f.getNode(ref.getId());
@@ -336,7 +336,7 @@ public class FlowManager {
         if (node != null) {
             DataReference oldValue = node.getInput(index);
             node.setInput(index, DataReference.createEmptyReference());
-            this.undoPath.add(new NodeEditPath(
+            this.undoPath.push(new NodeEditPath(
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     if (n != null) {
@@ -373,7 +373,7 @@ public class FlowManager {
         if (node != null && nextNode != null) {
             long oldNextId = node.getNextNodeIds().get(index);
             node.setNextNodeId(index, nextNode.getId());
-            this.undoPath.add(new NodeEditPath(
+            this.undoPath.push(new NodeEditPath(
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     FlowNode nn = f.getNode(nextNode.getId());
@@ -408,7 +408,7 @@ public class FlowManager {
         if (node != null) {
             long oldNextId = node.getNextNodeIds().get(index);
             node.setNextNodeId(index, -1L);
-            this.undoPath.add(new NodeEditPath(
+            this.undoPath.push(new NodeEditPath(
                 f -> {
                     FlowNode n = f.getNode(node.getId());
                     if (n != null) {
