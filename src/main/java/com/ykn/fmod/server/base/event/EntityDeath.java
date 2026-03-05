@@ -7,13 +7,17 @@ package com.ykn.fmod.server.base.event;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowManager;
+import com.ykn.fmod.server.rule.event.EntityDeathEvent;
+import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
@@ -107,7 +111,36 @@ public class EntityDeath {
             isOtherBroadcasted.add(type.otherPlayerLocation);
         }
 
-        // Trigger the event for LogicFlow
+        runCustomRule(data);
+        runLogicFlow(data);
+    }
+
+    private void runCustomRule(ServerData data) {
+        List<RuleManager> deathEventRules = data.gatherRuleByEventType(EntityDeathEvent.class, true);
+        for (RuleManager rule : deathEventRules) {
+            Map<String, Object> eventVariables = new HashMap<>();
+            eventVariables.put("entity", this.livingEntity.getUuid());
+            eventVariables.put("cause", this.damageSource.getAttacker() == null ? null : this.damageSource.getAttacker().getUuid());
+            eventVariables.put("source", this.damageSource.getSource() == null ? null : this.damageSource.getSource().getUuid());
+            eventVariables.put("x", this.livingEntity.getX());
+            eventVariables.put("y", this.livingEntity.getY());
+            eventVariables.put("z", this.livingEntity.getZ());
+            eventVariables.put("position", this.livingEntity.getPos());
+            eventVariables.put("dimension", this.livingEntity.getWorld().getRegistryKey().getValue());
+            eventVariables.put("biome", this.livingEntity.getWorld().getBiome(this.livingEntity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
+            eventVariables.put("message", this.livingEntity.getDamageTracker().getDeathMessage().getString());
+            eventVariables.put("name", this.livingEntity.getDisplayName().getString());
+            eventVariables.put("__entity__", this.livingEntity);
+            eventVariables.put("__cause__", this.damageSource.getAttacker());
+            eventVariables.put("__source__", this.damageSource.getSource());
+            eventVariables.put("__world__", this.livingEntity.getWorld());
+            eventVariables.put("__message__", this.livingEntity.getDamageTracker().getDeathMessage());
+            eventVariables.put("__name__", this.livingEntity.getDisplayName());
+            rule.trigger(data, eventVariables);
+        }
+    }
+
+    private void runLogicFlow(ServerData data) {
         List<FlowManager> deathEventFlow = data.gatherFlowByFirstNodeType("EntityDeathEventNode", true);
         for (FlowManager flow : deathEventFlow) {
             List<Object> eventOutput = new ArrayList<>();

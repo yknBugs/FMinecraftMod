@@ -201,6 +201,26 @@ public class RuleParameter<T> {
     }
 
     /**
+     * Returns the variable name if this parameter is variable-backed, or {@code null} if it is constant-only.
+     * 
+     * @return the variable name, or {@code null} if none
+     */
+    @Nullable
+    public String getVariableName() {
+        return variableName;
+    }
+
+    /**
+     * Returns the constant value if this parameter is constant-backed, or {@code null} if it is variable-only.
+     * 
+     * @return the constant value, or {@code null} if none
+     */
+    @Nullable
+    public T getConstantValue() {
+        return constantValue;
+    }
+
+    /**
      * Serializes this parameter to a {@link JsonObject}.
      *
      * <p>The resulting JSON may contain a {@code "variable"} string and/or a {@code "constant"}
@@ -256,7 +276,12 @@ public class RuleParameter<T> {
         }
         JsonObject valueJson = valueObj.getAsJsonObject(memberName);
         String variableName = valueJson.has("variable") ? valueJson.get("variable").getAsString() : null;
-        T constantValue = valueJson.has("constant") ? constantDeserializer.apply(valueJson.get("constant")) : null;
+        T constantValue = null;
+        try {
+            constantValue = valueJson.has("constant") ? constantDeserializer.apply(valueJson.get("constant")) : null;
+        } catch (Exception e) {
+            Util.LOGGER.warn("FMinecraftMod: Failed to deserialize constant for parameter '" + memberName + "'. Defaulting to null.", e);
+        }
         return new RuleParameter<>(variableName, constantValue);
     }
 }

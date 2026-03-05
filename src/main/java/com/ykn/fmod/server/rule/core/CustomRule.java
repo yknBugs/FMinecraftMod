@@ -11,8 +11,6 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.ykn.fmod.server.base.util.Util;
-
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
@@ -287,15 +285,30 @@ public class CustomRule implements Cloneable {
     /**
      * Evaluates the main condition without executing any actions.
      *
-     * <p>If {@link RuleEvent#validateVariables(RuleContext)} returns {@code false}, a
+     * <p>If {@link RuleEvent#validateVariables(RuleContext)} returns {@code false}, the
      * warning is logged but evaluation continues.
      *
      * @param context the execution context
      * @return {@code true} if the condition is satisfied
      */
     public boolean test(RuleContext context) {
-        if (!event.validateVariables(context)) {
-            Util.LOGGER.warn("FMinecraftMod: Rule " + name + " failed to validate variables for event " + event.getType() + ". Check your event dispatcher implementation.");
+        return this.test(context, false);
+    }
+
+    /**
+     * Variant of {@link #test} that allows skipping the variable validation step.
+     *
+     * <p>When {@code skipVariableCheck} is {@code true}, this method behaves like a pure condition
+     * evaluation without any side-effects. Only call this when this rule is manually triggered by
+     * an admin command (not by an event dispatcher) when no variables are available.
+     *
+     * @param context           the execution context
+     * @param skipVariableCheck if {@code true}, skips the call to {@link RuleEvent#validateVariables(RuleContext)}
+     * @return {@code true} if the condition is satisfied
+     */
+    public boolean test(RuleContext context, boolean skipVariableCheck) {
+        if (!skipVariableCheck) {
+            event.validateVariables(context);
         }
         return this.condition.evaluate(context);
     }
@@ -311,7 +324,22 @@ public class CustomRule implements Cloneable {
      * @return {@code true} if the condition is satisfied
      */
     public boolean trigger(RuleContext context) {
-        boolean result = this.test(context);
+        return this.trigger(context, false);
+    }
+
+    /**
+     * Variant of {@link #trigger} that allows skipping the variable validation step.
+     *
+     * <p>When {@code skipVariableCheck} is {@code true}, this method behaves like a pure condition
+     * evaluation without any side-effects. Only call this when this rule is manually triggered by
+     * an admin command (not by an event dispatcher) when no variables are available.
+     *
+     * @param context           the execution context
+     * @param skipVariableCheck if {@code true}, skips the call to {@link RuleEvent#validateVariables(RuleContext)}
+     * @return {@code true} if the condition is satisfied
+     */
+    public boolean trigger(RuleContext context, boolean skipVariableCheck) {
+        boolean result = this.test(context, skipVariableCheck);
         if (result) {
             for (RuleAction action : this.actionIfSatisfied) {
                 boolean shouldContinue = action.execute(context);

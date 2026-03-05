@@ -16,6 +16,7 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.ykn.fmod.server.base.command.RuleComponentSuggestion;
 
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.command.ServerCommandSource;
@@ -108,16 +109,19 @@ public class RecursiveCommandBuilder {
     }
 
     private LiteralArgumentBuilder<ServerCommandSource> addTailAfterVariableLiteral(LiteralArgumentBuilder<ServerCommandSource> variableLiteral, int index, Set<String> branchHasArgument) {
+        RuleComponentSuggestion variableSuggestion = RuleComponentSuggestion.suggestVariable(false, 3);
         Set<String> newBranchHasArgument = new HashSet<>(branchHasArgument);
         newBranchHasArgument.add(arguments.get(index).getVariableArgumentName());
-        return variableLiteral.then(addTailAfterArgument(CommandManager.argument(arguments.get(index).getVariableArgumentName(), StringArgumentType.string()), index + 1, newBranchHasArgument));
+        return variableLiteral.then(addTailAfterArgument(CommandManager.argument(arguments.get(index).getVariableArgumentName(), StringArgumentType.string()).suggests(variableSuggestion), index + 1, newBranchHasArgument));
     }
 
     private LiteralArgumentBuilder<ServerCommandSource> addTailAfterMixLiteral(LiteralArgumentBuilder<ServerCommandSource> mixLiteral, int index, Set<String> branchHasArgument) {
+        RuleComponentSuggestion variableSuggestion = RuleComponentSuggestion.suggestVariable(false, 3);
         Set<String> newBranchHasArgument = new HashSet<>(branchHasArgument);
         newBranchHasArgument.add(arguments.get(index).getVariableArgumentName());
         newBranchHasArgument.add(arguments.get(index).getConstArgumentName());
         return mixLiteral.then(CommandManager.argument(arguments.get(index).getVariableArgumentName(), StringArgumentType.string())
+                .suggests(variableSuggestion)
                 .then(addTailAfterArgument(arguments.get(index).getConstArgumentNode(), index + 1, newBranchHasArgument))
             );
     }

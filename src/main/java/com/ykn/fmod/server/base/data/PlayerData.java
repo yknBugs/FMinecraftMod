@@ -268,6 +268,24 @@ public class PlayerData {
     }
 
     /**
+     * Returns the player's view pitch from the last tick.
+     *
+     * @return the last known pitch value
+     */
+    public float getLastPitch() {
+        return this.lastPitch;
+    }
+
+    /**
+     * Returns the player's view yaw from the last tick.
+     *
+     * @return the last known yaw value
+     */
+    public float getLastYaw() {
+        return this.lastYaw;
+    }
+
+    /**
      * Returns the biome identifier recorded during the last tick, or {@code null} if unavailable.
      *
      * @return the last known biome {@link Identifier}, or {@code null}

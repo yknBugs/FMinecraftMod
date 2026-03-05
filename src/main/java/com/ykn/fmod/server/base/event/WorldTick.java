@@ -6,13 +6,18 @@
 package com.ykn.fmod.server.base.event;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.ykn.fmod.server.base.async.EntityDensityCalculator;
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.BiomeMessage;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.rule.event.PlayerTickEvent;
+import com.ykn.fmod.server.rule.event.ServerTickEvent;
+import com.ykn.fmod.server.rule.tool.RuleManager;
 import com.ykn.fmod.server.base.util.GameMath;
 
 import net.minecraft.block.BedBlock;
@@ -24,6 +29,7 @@ import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.math.Vec2f;
 import net.minecraft.util.math.Vec3d;
 
 public class WorldTick {
@@ -44,6 +50,7 @@ public class WorldTick {
             playerData.updateLastTickData(player);
         }
 
+        runCustomRule(serverData);
         serverData.tick();
     }
 
@@ -265,4 +272,46 @@ public class WorldTick {
         Text otherText = Util.parseTranslatableText("fmod.message.teleport.other", playerName);
         Util.getServerConfig().getTeleportMessage().postMessage(player, mainText, otherText);
     }
+
+    private static void runCustomRule(ServerData serverData) {
+        List<RuleManager> tickEventRules = serverData.gatherRuleByEventType(ServerTickEvent.class, true);
+        for (RuleManager rule : tickEventRules) {
+            Map<String, Object> eventVariables = new HashMap<>();
+            eventVariables.put("tick", serverData.getServerTick());
+            rule.trigger(serverData, eventVariables);
+        }
+        tickEventRules = serverData.gatherRuleByEventType(PlayerTickEvent.class, true);
+        List<ServerPlayerEntity> onlinePlayers = Util.getOnlinePlayers(serverData.getServer());
+        for (RuleManager rule : tickEventRules) {
+            for (ServerPlayerEntity player : onlinePlayers) {
+                PlayerData playerData = serverData.getPlayerData(player);
+                Map<String, Object> eventVariables = new HashMap<>();
+                eventVariables.put("tick", serverData.getServerTick());
+                eventVariables.put("player", player.getUuid());
+                eventVariables.put("x", player.getX());
+                eventVariables.put("y", player.getY());
+                eventVariables.put("z", player.getZ());
+                eventVariables.put("position", player.getPos());
+                eventVariables.put("dimension", player.getWorld().getRegistryKey().getValue());
+                eventVariables.put("biome", player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
+                eventVariables.put("pitch", Double.valueOf(player.getPitch()));
+                eventVariables.put("yaw", Double.valueOf(player.getYaw()));
+                eventVariables.put("rotation", player.getRotationClient());
+                eventVariables.put("health", Double.valueOf(player.getHealth()));
+                eventVariables.put("name", player.getDisplayName().getString());
+                eventVariables.put("afk", playerData.getAfkTicks());
+                eventVariables.put("lastpitch", Double.valueOf(playerData.getLastPitch()));
+                eventVariables.put("lastyaw", Double.valueOf(playerData.getLastYaw()));
+                eventVariables.put("lastrotation", new Vec2f(playerData.getLastPitch(), playerData.getLastYaw()));
+                eventVariables.put("lastbiome", playerData.getLastBiomeId());
+                eventVariables.put("lastdimension", playerData.getLastDimensionId());
+                eventVariables.put("cansleep", playerData.getLastCanSleep());
+                eventVariables.put("__player__", player);
+                eventVariables.put("__world__", player.getWorld());
+                eventVariables.put("__name__", player.getDisplayName());
+                rule.trigger(serverData, eventVariables);
+            }
+        }
+    }
+
 }

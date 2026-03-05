@@ -6,6 +6,7 @@
 package com.ykn.fmod.server.base.event;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +16,8 @@ import com.ykn.fmod.server.base.schedule.FightMessage;
 import com.ykn.fmod.server.base.schedule.PlayerHurtMessage;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowManager;
+import com.ykn.fmod.server.rule.event.EntityDamageEvent;
+import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -92,12 +95,46 @@ public class LivingEntityDamage {
             serverData.submitScheduledTask(new PlayerHurtMessage(player, player.getHealth()));
         }
 
-        // Trigger flow events
+        runCustomRule(serverData);
+        runLogicFlow(serverData);
+    }
+
+    private void runCustomRule(ServerData serverData) {
+        List<RuleManager> damageEventRules = serverData.gatherRuleByEventType(EntityDamageEvent.class, true);
+        for (RuleManager rule : damageEventRules) {
+            Map<String, Object> eventVariables = new HashMap<>();
+            eventVariables.put("entity", this.entity.getUuid());
+            eventVariables.put("damage", Double.valueOf(amount));
+            eventVariables.put("cause", this.damageSource.getAttacker() == null ? null : this.damageSource.getAttacker().getUuid());
+            eventVariables.put("source", this.damageSource.getSource() == null ? null : this.damageSource.getSource().getUuid());
+            eventVariables.put("x", this.entity.getX());
+            eventVariables.put("y", this.entity.getY());
+            eventVariables.put("z", this.entity.getZ());
+            eventVariables.put("position", this.entity.getPos());
+            eventVariables.put("dimension", this.entity.getWorld().getRegistryKey().getValue());
+            eventVariables.put("biome", this.entity.getWorld().getBiome(this.entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
+            eventVariables.put("pitch", Double.valueOf(this.entity.getPitch()));
+            eventVariables.put("yaw", Double.valueOf(this.entity.getYaw()));
+            eventVariables.put("rotation", this.entity.getRotationClient());
+            eventVariables.put("message", this.damageSource.getType().msgId());
+            eventVariables.put("exhaustion", Double.valueOf(this.damageSource.getType().exhaustion()));
+            eventVariables.put("health", Double.valueOf(this.entity.getHealth()));
+            eventVariables.put("name", this.entity.getDisplayName().getString());
+            eventVariables.put("__entity__", this.entity);
+            eventVariables.put("__cause__", this.damageSource.getAttacker());
+            eventVariables.put("__source__", this.damageSource.getSource());
+            eventVariables.put("__world__", this.entity.getWorld());
+            eventVariables.put("__name__", this.entity.getDisplayName());
+            rule.trigger(serverData, eventVariables);
+        }
+    }
+
+    private void runLogicFlow(ServerData serverData) {
         List<FlowManager> damageEventFlow = serverData.gatherFlowByFirstNodeType("EntityDamageEventNode", true);
         for (FlowManager flow : damageEventFlow) {
             List<Object> eventOutput = new ArrayList<>();
             eventOutput.add(this.entity);
-            eventOutput.add((double)this.amount);
+            eventOutput.add(this.amount);
             eventOutput.add(this.damageSource.getType());
             eventOutput.add(this.damageSource.getAttacker());
             eventOutput.add(this.damageSource.getSource());
