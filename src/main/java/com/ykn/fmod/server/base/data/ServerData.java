@@ -31,6 +31,7 @@ import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.rule.core.RuleContext;
+import com.ykn.fmod.server.rule.core.RuleEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.server.MinecraftServer;
@@ -393,6 +394,26 @@ public class ServerData {
             FlowNode firstNode = manager.getFlow().getFirstNode();
             if (firstNode != null && firstNode.getType().equals(type)) {
                 if (!enabledOnly || manager.isEnabled()) {
+                    result.add(manager);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Gathers all RuleManager instances whose associated RuleEvent is an instance of the given type.
+     * Optionally filters to include only enabled rules.
+     * 
+     * @param type the RuleEvent class type to match
+     * @param enableOnly if true, only include enabled rules; if false, include all rules
+     * @return a list of matching RuleManager instances, never null
+     */
+    public List<RuleManager> gatherRuleByEventType(Class<? extends RuleEvent> type, boolean enableOnly) {
+        List<RuleManager> result = new ArrayList<>();
+        for (RuleManager manager : customRules.values()) {
+            if (type.isInstance(manager.getRule().getEvent())) {
+                if (!enableOnly || manager.isEnabled()) {
                     result.add(manager);
                 }
             }

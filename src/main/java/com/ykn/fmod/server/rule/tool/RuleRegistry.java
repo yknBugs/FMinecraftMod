@@ -272,15 +272,31 @@ public class RuleRegistry {
     public static void registerDefault() {
         registerCore();
 
-        RuleRegistry.register("TickEvent", TickEvent::getInstance);
+        RuleRegistry.register("ServerTickEvent", ServerTickEvent::getInstance);
+        RuleRegistry.register("EntityDamageEvent", EntityDamageEvent::getInstance);
+        RuleRegistry.register("EntityDeathEvent", EntityDeathEvent::getInstance);
+        RuleRegistry.register("PlayerTickEvent", PlayerTickEvent::getInstance);
+        RuleRegistry.register("ProjectileHitEntityEvent", ProjectileHitEntityEvent::getInstance);
 
         RuleRegistry.register("EntityPosition", EntityPosition::fromJson);
+        RuleRegistry.register("CheckPermission", CheckPermission::fromJson);
 
         RuleRegistry.register("BroadcastMessage", BroadcastMessage::fromJson);
+        RuleRegistry.register("SendMessage", SendMessage::fromJson);
+        RuleRegistry.register("BroadcastActionbar", BroadcastActionbar::fromJson);
+        RuleRegistry.register("SendActionbar", SendActionbar::fromJson);
+        RuleRegistry.register("ExecuteCommand", ExecuteCommandAction::fromJson);
+        RuleRegistry.register("RunFlow", RunFlowAction::fromJson);
 
         RuleRegistry.register("EntityPosition", EntityPosition::buildCommand);
+        RuleRegistry.register("CheckPermission", CheckPermission::buildCommand);
 
         RuleRegistry.register("BroadcastMessage", BroadcastMessage::buildCommand);
+        RuleRegistry.register("SendMessage", SendMessage::buildCommand);
+        RuleRegistry.register("BroadcastActionbar", BroadcastActionbar::buildCommand);
+        RuleRegistry.register("SendActionbar", SendActionbar::buildCommand);
+        RuleRegistry.register("ExecuteCommand", ExecuteCommandAction::buildCommand);
+        RuleRegistry.register("RunFlow", RunFlowAction::buildCommand);
     }
 
     /**

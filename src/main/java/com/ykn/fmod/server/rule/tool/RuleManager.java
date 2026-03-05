@@ -68,7 +68,7 @@ public class RuleManager {
      */
     public RuleManager(CustomRule rule) {
         this.rule = rule;
-        this.optimizedRule = rule.optimize();
+        this.optimizedRule = rule.copy().optimize();
         this.enabled = false;
     }
     
@@ -84,7 +84,7 @@ public class RuleManager {
             throw new IllegalArgumentException("Unknown rule event type: " + event);
         }
         this.rule = CustomRule.build(name, ruleEvent);
-        this.optimizedRule = rule.optimize();
+        this.optimizedRule = rule.copy().optimize();
         this.enabled = false;
     }
 
@@ -287,7 +287,7 @@ public class RuleManager {
      */
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-        this.optimizedRule = this.rule.optimize();
+        this.optimizedRule = this.rule.copy().optimize();
     }
 
     /**
@@ -296,13 +296,30 @@ public class RuleManager {
      *
      * @param data      the server data containing the history buffer
      * @param variables the event-supplied variable map; may be {@code null}
+     * @param skipVariableCheck if {@code true}, skips the call to {@link RuleEvent#validateVariables(RuleContext)}
+     * @return the populated {@link RuleContext} after condition evaluation
+     */
+    public RuleContext test(@Nonnull ServerData data, @Nullable Map<String, Object> variables, boolean skipVariableCheck) {
+        RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
+        data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
+        context.test(skipVariableCheck);
+        return context;
+    }
+
+    /**
+     * Evaluates the rule's condition (without running actions) and records the result in
+     * the server data history.
+     * 
+     * @param data      the server data containing the history buffer
+     * @param variables the event-supplied variable map; may be {@code null}
      * @return the populated {@link RuleContext} after condition evaluation
      */
     public RuleContext test(@Nonnull ServerData data, @Nullable Map<String, Object> variables) {
-        RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
-        data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
-        context.test();
-        return context;
+        if (variables == null) {
+            return this.test(data, null, true);
+        } else {
+            return this.test(data, variables, false);
+        }
     }
 
     /**
@@ -312,7 +329,23 @@ public class RuleManager {
      * @return the populated {@link RuleContext} after condition evaluation
      */
     public RuleContext test(@Nonnull ServerData data) {
-        return this.test(data, null);
+        return this.test(data, null, true);
+    }
+
+    /**
+     * Evaluates the rule's condition and executes the appropriate action list, then records
+     * the result in the server data history.
+     *
+     * @param data      the server data containing the history buffer
+     * @param variables the event-supplied variable map; may be {@code null}
+     * @param skipVariableCheck if {@code true}, skips the call to {@link RuleEvent#validateVariables(RuleContext)}
+     * @return the populated {@link RuleContext} after full rule execution
+     */
+    public RuleContext trigger(@Nonnull ServerData data, @Nullable Map<String, Object> variables, boolean skipVariableCheck) {
+        RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
+        data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
+        context.trigger(skipVariableCheck);
+        return context;
     }
 
     /**
@@ -324,10 +357,11 @@ public class RuleManager {
      * @return the populated {@link RuleContext} after full rule execution
      */
     public RuleContext trigger(@Nonnull ServerData data, @Nullable Map<String, Object> variables) {
-        RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
-        data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
-        context.trigger();
-        return context;
+        if (variables == null) {
+            return this.trigger(data, null, true);
+        } else {
+            return this.trigger(data, variables, false);
+        }
     }
 
     /**
@@ -337,6 +371,6 @@ public class RuleManager {
      * @return the populated {@link RuleContext} after full rule execution
      */
     public RuleContext trigger(@Nonnull ServerData data) {
-        return this.trigger(data, null);
+        return this.trigger(data, null, true);
     }
 }

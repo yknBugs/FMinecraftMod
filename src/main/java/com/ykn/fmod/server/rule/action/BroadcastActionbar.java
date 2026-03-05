@@ -31,36 +31,35 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * A {@link RuleAction} that broadcasts a text message to all online players.
+ * A {@link RuleAction} that broadcasts a message to all online players via the action bar
+ * (above the hotbar).
  *
- * <p>The message is resolved from the {@code message} {@link RuleParameter}: if a variable
- * binding is set and the context variable resolves to a non-null {@link String}, that value
- * is used; otherwise the constant fallback string is used, but you can still use placeholders
- * ${var:variableName} to refer to context variables in the message. If both resolve to {@code null},
- * no message is sent and the action returns {@code true} (execution continues).
+ * <p>The message is resolved from the {@code message} {@link RuleParameter} and supports
+ * the same {@code ${var:variableName}} placeholder syntax as {@link BroadcastMessage}.
  *
  * <p>JSON value format:
  * <pre>{@code
  * "value": {
- *   "message": {"constant": "Player ${var:player} has entered restricted area!"}
+ *   "message": {"constant": "Server restarting in 60 seconds!"}
  * }
  * }</pre>
  *
- * @see com.ykn.fmod.server.base.util.ServerMessageType
+ * @see MessageType#broadcastActionBarMessage
+ * @see BroadcastMessage
  */
-public class BroadcastMessage implements RuleAction {
+public class BroadcastActionbar implements RuleAction {
 
     private final String name;
 
     private final RuleParameter<String> message;
 
     /**
-     * Creates a {@code BroadcastMessage} action.
+     * Creates a {@code BroadcastActionbar} action.
      *
      * @param name    the unique name of this action instance within the rule
      * @param message the message parameter (variable reference and/or constant string)
      */
-    public BroadcastMessage(String name, RuleParameter<String> message) {
+    public BroadcastActionbar(String name, RuleParameter<String> message) {
         this.name = name;
         this.message = message;
     }
@@ -75,9 +74,9 @@ public class BroadcastMessage implements RuleAction {
                 Component toShow = value == null ? Component.literal("${var:" + variable + "}") : Component.literal(TypeAdaptor.parse(value).asString());
                 factory = factory.add("${var:" + variable + "}", player -> toShow);
             }
-            MessageType.broadcastTextMessage(context.getServer(), factory.parse(message, null));
+            MessageType.broadcastActionBarMessage(context.getServer(), factory.parse(message, null));
         }
-        return true;   
+        return true;
     }
 
     @Override
@@ -87,34 +86,34 @@ public class BroadcastMessage implements RuleAction {
 
     @Override
     public RuleAction setName(String name) {
-        return new BroadcastMessage(name, this.message);
+        return new BroadcastActionbar(name, this.message);
     }
 
     @Override
     public String getType() {
-        return "BroadcastMessage";
+        return "BroadcastActionbar";
     }
 
     @Override
     public Component render() {
-        return Util.parseTranslatableText("fmod.rule.action.bcmessage", this.getName(), this.getType(), this.message.render());
+        return Util.parseTranslatableText("fmod.rule.action.bcactionbar", this.getName(), this.getType(), this.message.render());
     }
-    
+
     @Override
     public JsonObject getValueJson() {
         JsonObject json = new JsonObject();
-        json.add("message", RuleParameter.toJson(message, e -> new JsonPrimitive(e)));
+        json.add("message", RuleParameter.toJson(message, JsonPrimitive::new));
         return json;
     }
 
-    public static JsonObject toJson(BroadcastMessage action) {
+    public static JsonObject toJson(BroadcastActionbar action) {
         return action.toJson();
     }
 
-    public static BroadcastMessage fromJson(JsonObject json) {
+    public static BroadcastActionbar fromJson(JsonObject json) {
         String name = json.get("name").getAsString();
         RuleParameter<String> message = RuleParameter.fromJson(json, "message", e -> e.getAsString());
-        return new BroadcastMessage(name, message);
+        return new BroadcastActionbar(name, message);
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
@@ -125,7 +124,7 @@ public class BroadcastMessage implements RuleAction {
                     RuleParameter<String> messageParameter = RuleParameter.fromCommandContext("message", "var.message", () -> {
                         return StringArgumentType.getString(ctx, "message");
                     }, arguments, ctx);
-                    BroadcastMessage action = new BroadcastMessage(name, messageParameter);
+                    BroadcastActionbar action = new BroadcastActionbar(name, messageParameter);
                     actionConsumer.accept(ctx, action);
                 } catch (CommandRuntimeException e) {
                     throw e;

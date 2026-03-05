@@ -6,6 +6,7 @@
 package com.ykn.fmod.server.base.command;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import com.mojang.brigadier.context.CommandContext;
@@ -25,7 +26,9 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
     private static enum SuggestionType {
         CONDITION,
         DOIFSATISFIED,
-        DOIFVIOLATED
+        DOIFVIOLATED,
+        VARIABLE,
+        PLACEHOLDER
     }
 
     private final boolean needQuote;
@@ -111,6 +114,38 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
                             }
                         }
                         break;
+                    case VARIABLE:
+                        {
+                            Set<String> availableVariables = ruleManager.getRule().getEvent().variablesType().keySet();
+                            for (String variable : availableVariables) {
+                                String suggestion = variable;
+                                if (needQuote) {
+                                    suggestion = "\"" + suggestion + "\"";
+                                }
+                                if (suggestion.startsWith(builder.getRemaining())) {
+                                    builder.suggest(suggestion);
+                                }
+                            }
+                        }
+                        break;
+                    case PLACEHOLDER:
+                        {
+                            Set<String> availableVariables = ruleManager.getRule().getEvent().variablesType().keySet();
+                            String placeholderPrefix = "${";
+                            String builderRemaining = builder.getRemaining();
+                            int lastIndexOfPlaceholder = builderRemaining.lastIndexOf(placeholderPrefix);
+                            if (lastIndexOfPlaceholder >= 0 && lastIndexOfPlaceholder < builderRemaining.length()) {
+                                String variablePart = builderRemaining.substring(lastIndexOfPlaceholder);
+                                for (String variable : availableVariables) {
+                                    String expectedVariable = placeholderPrefix + "var:" + variable + "}";
+                                    if (expectedVariable.startsWith(variablePart)) {
+                                        String suggestion = builderRemaining.substring(0, lastIndexOfPlaceholder) + expectedVariable;
+                                        builder.suggest(suggestion);
+                                    }
+                                }
+                            }
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -129,5 +164,13 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
     
     public static RuleComponentSuggestion suggestPunish(boolean needQuote, int ruleNameIndex) {
         return new RuleComponentSuggestion(needQuote, SuggestionType.DOIFVIOLATED, ruleNameIndex);
+    }
+
+    public static RuleComponentSuggestion suggestVariable(boolean needQuote, int ruleNameIndex) {
+        return new RuleComponentSuggestion(needQuote, SuggestionType.VARIABLE, ruleNameIndex);
+    }
+
+    public static RuleComponentSuggestion suggestPlaceholder(int ruleNameIndex) {
+        return new RuleComponentSuggestion(false, SuggestionType.PLACEHOLDER, ruleNameIndex);
     }
 }

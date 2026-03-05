@@ -213,12 +213,13 @@ public class RuleContext {
      *   <li>{@link #isSkipActions()} → {@code true}</li>
      * </ul>
      *
+     * @param skipVariableCheck if {@code true}, skips the call to {@link RuleEvent#validateVariables(RuleContext)}
      * @return {@code true} if the condition is satisfied
      */
-    public boolean test() {
+    public boolean test(boolean skipVariableCheck) {
         try {
             resetStatus();
-            boolean result = this.rule.test(this);
+            boolean result = this.rule.test(this, skipVariableCheck);
             this.executed = true;
             this.passed = result;
             this.skipActions = true;
@@ -248,10 +249,30 @@ public class RuleContext {
      *
      * @return {@code true} if the condition is satisfied
      */
-    public boolean trigger() {
+    public boolean test() {
+        return test(false);
+    }
+
+    /**
+     * Evaluates the rule's condition and executes actions according to the result.
+     *
+     * <p>Status is reset beforehand. After the call:
+     * <ul>
+     *   <li>{@link #isExecuted()} → {@code true}</li>
+     *   <li>{@link #isPassed()} → the condition result</li>
+     *   <li>{@link #isSkipActions()} → {@code false}</li>
+     * </ul>
+     *
+     * <p>If the condition is satisfied, each action in {@code actionIfSatisfied} is called
+     * in order until one returns {@code false}. Otherwise, {@code actionIfViolated} is used.
+     *
+     * @param skipVariableCheck if {@code true}, skips the call to {@link RuleEvent#validateVariables(RuleContext)}
+     * @return {@code true} if the condition is satisfied
+     */
+    public boolean trigger(boolean skipVariableCheck) {
         try {
             resetStatus();
-            boolean result = this.rule.trigger(this);
+            boolean result = this.rule.trigger(this, skipVariableCheck);
             this.executed = true;
             this.passed = result;
             this.skipActions = false;
@@ -264,6 +285,25 @@ public class RuleContext {
             this.errorMessage = Component.literal(e.getMessage());
             return false;
         }
+    }
+
+    /**
+     * Evaluates the rule's condition and executes actions according to the result.
+     *
+     * <p>Status is reset beforehand. After the call:
+     * <ul>
+     *   <li>{@link #isExecuted()} → {@code true}</li>
+     *   <li>{@link #isPassed()} → the condition result</li>
+     *   <li>{@link #isSkipActions()} → {@code false}</li>
+     * </ul>
+     *
+     * <p>If the condition is satisfied, each action in {@code actionIfSatisfied} is called
+     * in order until one returns {@code false}. Otherwise, {@code actionIfViolated} is used.
+     *
+     * @return {@code true} if the condition is satisfied
+     */
+    public boolean trigger() {
+        return trigger(false);
     }
 
     public Component render() {

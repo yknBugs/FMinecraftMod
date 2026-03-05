@@ -8,6 +8,8 @@ package com.ykn.fmod.server.rule.core;
 import java.util.Map;
 import java.util.Set;
 
+import com.ykn.fmod.server.base.util.Util;
+
 /**
  * Represents a game event that can trigger a {@link CustomRule}.
  *
@@ -33,54 +35,102 @@ import java.util.Set;
 public interface RuleEvent extends RuleComponent {
 
     /**
-     * Returns the set of variable names that the event dispatcher must populate before
-     * this rule is evaluated.
+     * Returns the set of variable names that the event dispatcher <em>must</em> supply as
+     * non-null values before this rule is evaluated.
      *
-     * <p>For example, {@code TickEvent} declares {@code {"tick"}}; the dispatcher is
-     * expected to put the current tick counter into the context's variable map under
-     * that key.
+     * <p>This is the <b>non-null subset</b> of the variables declared in {@link #variablesType()}.
+     * During {@link #validateVariables(RuleContext)}, any variable in this set that resolves
+     * to {@code null} in the context is treated as a validation failure and a warning is logged.
      *
-     * @return an unmodifiable set of required variable names; never {@code null}
+     * <p>Variables that may legitimately be {@code null} at runtime should be declared only in
+     * {@link #variablesType()} and omitted from this set.
+     *
+     * @return an unmodifiable set of variable names that must be non-null; never {@code null}
      */
     public Set<String> variablesList();
 
     /**
-     * Returns a map from each variable name to its expected {@link Class} type.
+     * Returns a map from <em>every</em> declared variable name to its expected boxed {@link Class} type.
      *
-     * <p>This map is used by {@link #validateVariables(RuleContext)} to check that every
-     * required variable is present and has the correct runtime type.
+     * <p>This map covers all variables the event dispatcher may place into the context —
+     * both those required to be non-null (see {@link #variablesList()}) and those that are
+     * optionally present.
      *
-     * @return an unmodifiable map of variable name -> expected type; never {@code null}
+     * <p><b>Important:</b> always use boxed types (e.g. {@link Integer}, {@link Double}) rather
+     * than primitives ({@code int}, {@code double}). Due to auto-boxing, an
+     * {@code instanceof} check against a primitive type will always fail. If a primitive type
+     * is declared, {@link #validateVariables(RuleContext)} will log a warning accordingly.
+     *
+     * <p>This map is iterated by {@link #validateVariables(RuleContext)} to verify that every
+     * present variable has the correct runtime type.
+     *
+     * @return an unmodifiable map of variable name → expected boxed type; never {@code null}
      */
     public Map<String, Class<? extends Object>> variablesType();
 
     /**
      * Validates that the variables supplied in {@code context} satisfy this event's contract.
      *
-     * <p>Checks that every variable listed in {@link #variablesList()} is present in
-     * {@link RuleContext#getVariables()} and assignable to its declared type from
-     * {@link #variablesType()}.
+     * <p>Iterates over every variable declared in {@link #variablesType()} and performs three checks:
+     * <ol>
+     *   <li><b>Null check</b> - if the variable is in {@link #variablesList()} (i.e. required
+     *       non-null) but resolves to {@code null} in the context, validation fails and a warning
+     *       is logged.  Variables absent from {@link #variablesList()} are allowed to be
+     *       {@code null} and are skipped for the remaining checks.</li>
+     *   <li><b>Type declaration check</b> - if no expected type is declared in
+     *       {@link #variablesType()} for a given variable, validation fails and a warning is
+     *       logged.</li>
+     *   <li><b>Primitive type check</b> - if the declared type is a primitive, a warning is logged
+     *       because auto-boxing makes {@code instanceof} checks against primitive types always
+     *       fail at runtime. Use boxed types (e.g. {@link Integer}) instead.</li>
+     *   <li><b>Type match check</b> - if the variable's runtime type is not assignable to the
+     *       declared expected type, validation fails and a warning is logged.</li>
+     * </ol>
      *
-     * <p>A warning is logged by {@link CustomRule#test(RuleContext)} when this returns
-     * {@code false}, but rule execution is not aborted — the condition evaluation proceeds
+     * <p>A warning is produced by {@link CustomRule#test(RuleContext)} when this returns
+     * {@code false}, but rule execution is not aborted — condition evaluation proceeds
      * and individual {@link RuleParameter}s fall back to their constant values as needed.
      *
-     * @param context the execution context to validate against
-     * @return {@code true} if all required variables are present with correct types
+     * @param context the execution context whose variable map is checked
+     * @return {@code true} if all declared variables that are present have the correct types,
+     *         and all required-non-null variables are indeed non-null
      */
     default public boolean validateVariables(RuleContext context) {
-        Set<String> requiredVariables = variablesList();
-        for (String variable : requiredVariables) {
+        Set<String> requiredNotNullVariables = variablesList();
+        Map<String, Class<? extends Object>> expectedTypes = variablesType();
+        Set<String> requiredNullableVariables = expectedTypes.keySet();
+        boolean isPassed = true;
+        for (String variable : requiredNullableVariables) {
             Object value = context.getVariable(variable);
+            boolean shouldBeNotNull = requiredNotNullVariables.contains(variable);
+            Class<? extends Object> expectedType = expectedTypes.get(variable);
             if (value == null) {
-                return false;
+                if (shouldBeNotNull) {
+                    isPassed = false;
+                    Util.LOGGER.warn("FMinecraftMod: Variable " + variable + " is required to be non-null for event " + getType() + ", but was null. Check your event dispatcher implementation.");
+                } 
+                continue;
             }
-            Class<? extends Object> expectedType = variablesType().get(variable);
+            if (expectedType == null) {
+                Util.LOGGER.warn("FMinecraftMod: No expected type declared for variable " + variable + " in event " + getType() + ".");
+                isPassed = false;
+                continue;
+            }
+            if (expectedType.isPrimitive()) {
+                Util.LOGGER.warn("FMinecraftMod: Due to auto-boxing, type check will always fail for primitives. Please use their boxed counterparts (e.g. Integer instead of int) in variablesType() declarations for your variable " + variable + " in event " + getType() + ".");
+            }  
             if (!expectedType.isInstance(value)) {
-                return false;
+                Util.LOGGER.warn("FMinecraftMod: Variable " + variable + " is expected to be of type " + expectedType.getName() + " for event " + getType() + ", but was " + value.getClass().getName() + ". Check your event dispatcher implementation.");
+                isPassed = false;
             }
         }
-        return true;
+        for (String variable : requiredNotNullVariables) {
+            if (!requiredNullableVariables.contains(variable)) {
+                Util.LOGGER.warn("FMinecraftMod: Variable " + variable + " is required to be non-null for event " + getType() + ", but no expected type was declared in variablesType(). Check your event implementation.");
+                isPassed = false;
+            }
+        }
+        return isPassed;
     }
     
     // default Text renderVariablesInfo(String eventI18nKey) {

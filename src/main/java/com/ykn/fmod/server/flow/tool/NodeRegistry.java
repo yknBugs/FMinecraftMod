@@ -172,6 +172,7 @@ public class NodeRegistry {
         NodeRegistry.register("SetObjectAtIndexNode", SetObjectAtIndexNode::new);
         NodeRegistry.register("SetVariableNode", SetVariableNode::new);
         NodeRegistry.register("RunFlowNode", RunFlowNode::new);
+        NodeRegistry.register("TriggerRuleNode", TriggerRuleNode::new);
         NodeRegistry.register("UnaryArithmeticNode", UnaryArithmeticNode::new);
 
         NodeRegistry.registerEvent("DummyNode", DummyNode::new);

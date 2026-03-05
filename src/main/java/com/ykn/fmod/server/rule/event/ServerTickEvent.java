@@ -31,34 +31,34 @@ import net.minecraft.network.chat.Component;
  * <p>Variable contract:
  * <table border="1">
  *   <tr><th>Name</th><th>Type</th><th>Description</th></tr>
- *   <tr><td>{@code tick}</td><td>{@code int}</td><td>The server tick counter at the time of dispatch.</td></tr>
+ *   <tr><td>{@code tick}</td><td>{@code Integer}</td><td>The server tick counter at the time of dispatch.</td></tr>
  * </table>
  *
  * <p>This class is a singleton; obtain the instance via {@link #getInstance()}.
  */
-public class TickEvent implements RuleEvent {
+public class ServerTickEvent implements RuleEvent {
 
-    private static final TickEvent INSTANCE = new TickEvent();
+    private static final ServerTickEvent INSTANCE = new ServerTickEvent();
 
     private final Map<String, Class<? extends Object>> variableTypes;
 
-    private final Map<String, Class<? extends Object>> createVariablesType() {
+    private static final Map<String, Class<? extends Object>> createVariablesType() {
         Map<String, Class<? extends Object>> map = new HashMap<>();
-        map.put("tick", int.class);
+        map.put("tick", Integer.class);
         return Collections.unmodifiableMap(map);
     }
 
-    private TickEvent() {
+    private ServerTickEvent() {
         this.variableTypes = createVariablesType();
     }
 
-    public static TickEvent getInstance() {
+    public static ServerTickEvent getInstance() {
         return INSTANCE;
     }
 
     @Override
     public String getType() {
-        return "TickEvent";
+        return "ServerTickEvent";
     }
 
     @Override
@@ -73,6 +73,6 @@ public class TickEvent implements RuleEvent {
 
     @Override
     public Component render() {
-        return Util.parseTranslatableText("fmod.rule.event.tick");
+        return Util.parseTranslatableText("fmod.rule.event.servertick");
     }
 }
