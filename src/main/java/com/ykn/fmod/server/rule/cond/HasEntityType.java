@@ -29,6 +29,7 @@ import net.minecraft.command.CommandException;
 import net.minecraft.command.argument.DimensionArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
 import net.minecraft.command.argument.Vec3ArgumentType;
+import net.minecraft.command.suggestion.SuggestionProviders;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.registry.RegistryKey;
@@ -194,7 +195,7 @@ public class HasEntityType implements SourceCondition {
             .add("dimension", "var.dimension", () -> CommandManager.argument("dimension", DimensionArgumentType.dimension()))
             .add("position", "var.position", () -> CommandManager.argument("position", Vec3ArgumentType.vec3()))
             .add("radius", "var.radius", () -> CommandManager.argument("radius", DoubleArgumentType.doubleArg(0)))
-            .add("type", "var.type", () -> CommandManager.argument("type", IdentifierArgumentType.identifier()))
+            .add("type", "var.type", () -> CommandManager.argument("type", IdentifierArgumentType.identifier()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
             .build(CommandManager.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }

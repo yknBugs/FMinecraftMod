@@ -26,6 +26,7 @@ import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 import net.minecraft.command.CommandException;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.command.argument.IdentifierArgumentType;
+import net.minecraft.command.suggestion.SuggestionProviders;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.server.command.CommandManager;
@@ -152,7 +153,7 @@ public class CheckEntityType implements SourceCondition {
                 return Command.SINGLE_SUCCESS;
             })
             .add("entity", "var.entity", () -> CommandManager.argument("entity", EntityArgumentType.entity()))
-            .add("type", "var.type", () -> CommandManager.argument("type", IdentifierArgumentType.identifier()))
+            .add("type", "var.type", () -> CommandManager.argument("type", IdentifierArgumentType.identifier()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
             .build(CommandManager.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
