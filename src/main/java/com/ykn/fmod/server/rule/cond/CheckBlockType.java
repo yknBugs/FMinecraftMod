@@ -5,14 +5,13 @@
 
 package com.ykn.fmod.server.rule.cond;
 
-import java.util.UUID;
 import java.util.function.BiConsumer;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -29,97 +28,86 @@ import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.DimensionArgument;
-import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.registries.ForgeRegistries;
 
 /**
- * A {@link SourceCondition} that tests whether an entity is within a given radius
- * of a specified world position.
+ * A {@link SourceCondition} that tests whether the block at a given world position
+ * matches a specific block identifier.
  *
- * <p>All four parameters ({@code entityId}, {@code dimension}, {@code position}, {@code radius})
- * are represented as {@link RuleParameter}s, meaning each can be resolved from a
- * context variable or fall back to a constant.
- *
- * <p>The condition evaluates to {@code false} when any parameter resolves to {@code null},
- * or when no entity with the given UUID is found in the specified dimension.
+ * <p>When the target chunk is not loaded, or when the position is outside the build
+ * limit, the condition evaluates to the value of the {@code defaultValue} parameter.
  *
  * <p>JSON value format:
  * <pre>{@code
  * "value": {
- *   "entityId":  {"variable": "playerId"},
- *   "dimension": {"constant": "minecraft:overworld"},
- *   "position":  {"variable": "worldSpawn", "constant": {"x": 0, "y": 64, "z": 0}},
- *   "radius":    {"constant": 128.0}
+ *   "dimension":    {"constant": "minecraft:overworld"},
+ *   "position":     {"variable": "pos"},
+ *   "block":        {"constant": "minecraft:stone"},
+ *   "defaultValue": {"constant": false}
  * }
  * }</pre>
  *
  * @see RuleParameter
  */
-public class EntityPosition implements SourceCondition {
+public class CheckBlockType implements SourceCondition {
 
     private final String name;
-
-    private final RuleParameter<UUID> entityId;
 
     private final RuleParameter<ResourceLocation> dimension;
 
     private final RuleParameter<Vec3> position;
 
-    private final RuleParameter<Double> radius;
+    private final RuleParameter<ResourceLocation> block;
 
-    /**
-     * Creates a new {@code EntityPosition} condition.
-     *
-     * @param name      the unique name of this condition instance within the rule
-     * @param entityId  the UUID of the entity to check
-     * @param dimension the dimension identifier where the entity and reference position reside
-     * @param position  the centre of the search sphere
-     * @param radius    the maximum allowed Euclidean distance from {@code position}
-     */
-    public EntityPosition(String name, RuleParameter<UUID> entityId, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<Double> radius) {
+    private final RuleParameter<Boolean> defaultValue;
+
+    public CheckBlockType(String name, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<ResourceLocation> block, RuleParameter<Boolean> defaultValue) {
         this.name = name;
-        this.entityId = entityId;
         this.dimension = dimension;
         this.position = position;
-        this.radius = radius;
+        this.block = block;
+        this.defaultValue = defaultValue;
     }
 
     @Override
     public boolean onEvaluate(RuleContext context) {
-        UUID entityId = this.entityId.resolve(context, UUID.class);
         ResourceLocation dimension = this.dimension.resolve(context, ResourceLocation.class);
         Vec3 position = this.position.resolve(context, Vec3.class);
-        Double radius = this.radius.resolve(context, Double.class);
+        ResourceLocation block = this.block.resolve(context, ResourceLocation.class);
+        Boolean defaultValue = this.defaultValue.resolve(context, Boolean.class);
 
-        if (entityId == null || dimension == null || position == null || radius == null) {
-            return false;
+        if (dimension == null || position == null || block == null) {
+            return defaultValue != null && defaultValue;
         }
 
-        Entity entity = null;
         ServerLevel world = context.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
-        if (world != null) {
-            entity = world.getEntity(entityId);
-        }
-        if (entity == null) {
-            return false;
+        if (world == null) {
+            return defaultValue != null && defaultValue;
         }
 
-        Vec3 entityPos = entity.position();
-        double distance = position.distanceTo(entityPos);
-        return distance <= radius;
+        BlockPos blockPos = BlockPos.containing(position);
+        if (!world.isInWorldBounds(blockPos) || !world.hasChunk(SectionPos.blockToSectionCoord(blockPos.getX()), SectionPos.blockToSectionCoord(blockPos.getZ()))) {
+            return defaultValue != null && defaultValue;
+        }
+
+        ResourceLocation actualBlockId = ForgeRegistries.BLOCKS.getKey(world.getBlockState(blockPos).getBlock());
+        return block.equals(actualBlockId);
     }
 
     @Override
     public String getType() {
-        return "EntityPosition";
+        return "CheckBlockType";
     }
 
     @Override
@@ -129,19 +117,18 @@ public class EntityPosition implements SourceCondition {
 
     @Override
     public RuleCondition setName(String name) {
-        return new EntityPosition(name, this.entityId, this.dimension, this.position, this.radius);
+        return new CheckBlockType(name, this.dimension, this.position, this.block, this.defaultValue);
     }
 
     @Override
     public Component render() {
-        return Util.parseTranslatableText("fmod.rule.condition.entityposition", this.getName(), this.getType(), 
-            this.entityId.render(), this.dimension.render(), this.position.render(), this.radius.render());
+        return Util.parseTranslatableText("fmod.rule.condition.blocktype", this.getName(), this.getType(),
+            this.dimension.render(), this.position.render(), this.block.render(), this.defaultValue.render());
     }
 
     @Override
     public JsonObject getValueJson() {
         JsonObject json = new JsonObject();
-        json.add("entityId", RuleParameter.toJson(entityId, e -> new JsonPrimitive(e.toString())));
         json.add("dimension", RuleParameter.toJson(dimension, e -> new JsonPrimitive(e.toString())));
         json.add("position", RuleParameter.toJson(position, e -> {
             JsonObject obj = new JsonObject();
@@ -150,16 +137,16 @@ public class EntityPosition implements SourceCondition {
             obj.addProperty("z", e.z);
             return obj;
         }));
-        json.add("radius", RuleParameter.toJson(radius, JsonPrimitive::new));
+        json.add("block", RuleParameter.toJson(block, e -> new JsonPrimitive(e.toString())));
+        json.add("defaultValue", RuleParameter.toJson(defaultValue, JsonPrimitive::new));
         return json;
     }
 
-    public static JsonObject toJson(EntityPosition condition) {
+    public static JsonObject toJson(CheckBlockType condition) {
         return condition.toJson();
     }
 
-    public static EntityPosition fromJson(JsonObject json) {
-        RuleParameter<UUID> entityId = RuleParameter.fromJson(json, "entityId", e -> UUID.fromString(e.getAsString()));
+    public static CheckBlockType fromJson(JsonObject json) {
         RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> new ResourceLocation(e.getAsString()));
         RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
             JsonObject obj = e.getAsJsonObject();
@@ -168,31 +155,29 @@ public class EntityPosition implements SourceCondition {
             double z = obj.get("z").getAsDouble();
             return new Vec3(x, y, z);
         });
-        RuleParameter<Double> radius = RuleParameter.fromJson(json, "radius", JsonElement::getAsDouble);
-        return new EntityPosition(json.get("name").getAsString(), entityId, dimension, position, radius);
+        RuleParameter<ResourceLocation> block = RuleParameter.fromJson(json, "block", e -> new ResourceLocation(e.getAsString()));
+        RuleParameter<Boolean> defaultValue = RuleParameter.fromJson(json, "defaultValue", JsonElement::getAsBoolean);
+        return new CheckBlockType(json.get("name").getAsString(), dimension, position, block, defaultValue);
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
         RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<UUID> entityIdParameter = RuleParameter.fromCommandContext("entity", "var.entity", () -> {
-                        Entity entity = EntityArgument.getEntity(ctx, "entity");
-                        return entity.getUUID();
-                    }, arguments, ctx);
                     RuleParameter<ResourceLocation> dimensionParameter = RuleParameter.fromCommandContext("dimension", "var.dimension", () -> {
                         ServerLevel serverWorld = DimensionArgument.getDimension(ctx, "dimension");
-                        ResourceLocation dimensionId = serverWorld.dimension().location();
-                        return dimensionId;
+                        return serverWorld.dimension().location();
                     }, arguments, ctx);
                     RuleParameter<Vec3> positionParameter = RuleParameter.fromCommandContext("position", "var.position", () -> {
                         return Vec3Argument.getVec3(ctx, "position");
                     }, arguments, ctx);
-                    RuleParameter<Double> radiusParameter = RuleParameter.fromCommandContext("radius", "var.radius", () -> {
-                        double radius = DoubleArgumentType.getDouble(ctx, "radius");
-                        return radius;
+                    RuleParameter<ResourceLocation> blockParameter = RuleParameter.fromCommandContext("block", "var.block", () -> {
+                        return ResourceLocationArgument.getId(ctx, "block");
                     }, arguments, ctx);
-                    EntityPosition condition = new EntityPosition(name, entityIdParameter, dimensionParameter, positionParameter, radiusParameter);
+                    RuleParameter<Boolean> defaultValueParameter = RuleParameter.fromCommandContext("default", "var.default", () -> {
+                        return BoolArgumentType.getBool(ctx, "default");
+                    }, arguments, ctx);
+                    CheckBlockType condition = new CheckBlockType(name, dimensionParameter, positionParameter, blockParameter, defaultValueParameter);
                     conditionConsumer.accept(ctx, condition);
                 } catch (CommandRuntimeException e) {
                     throw e;
@@ -204,10 +189,10 @@ public class EntityPosition implements SourceCondition {
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("entity", "var.entity", () -> Commands.argument("entity", EntityArgument.entity()))
             .add("dimension", "var.dimension", () -> Commands.argument("dimension", DimensionArgument.dimension()))
             .add("position", "var.position", () -> Commands.argument("position", Vec3Argument.vec3()))
-            .add("radius", "var.radius", () -> Commands.argument("radius", DoubleArgumentType.doubleArg(0)))
+            .add("block", "var.block", () -> Commands.argument("block", ResourceLocationArgument.id()))
+            .add("default", "var.default", () -> Commands.argument("default", BoolArgumentType.bool()))
             .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }

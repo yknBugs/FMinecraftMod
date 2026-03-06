@@ -81,7 +81,7 @@ public class CheckPermission implements SourceCondition {
     }
 
     @Override
-    public boolean evaluate(RuleContext context) {
+    public boolean onEvaluate(RuleContext context) {
         UUID playerId = this.player.resolve(context, UUID.class);
         Integer min = this.min.resolve(context, Integer.class);
         Integer max = this.max.resolve(context, Integer.class);

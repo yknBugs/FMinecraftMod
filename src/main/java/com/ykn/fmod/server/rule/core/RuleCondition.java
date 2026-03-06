@@ -5,9 +5,11 @@
 
 package com.ykn.fmod.server.rule.core;
 
+import java.util.HashSet;
 import java.util.regex.Pattern;
 
 import com.google.gson.JsonObject;
+import com.ykn.fmod.server.base.util.Util;
 
 /**
  * Represents a boolean condition that can be evaluated in the context of a rule execution.
@@ -36,21 +38,65 @@ public interface RuleCondition extends RuleComponent {
 
     /**
      * Regex pattern that valid condition names must match: starts with a letter or underscore,
-     * followed by one or more letters, digits, or underscores.
+     * followed by one or more letters, digits, or underscores, and is not the boolean literal
+     * {@code true} or {@code false}.
      *
      * <p>Names are referenced inside boolean formula strings (e.g. {@code "inZone && !isOp"}),
-     * so they must be valid identifiers.
+     * so they must be valid identifiers.  The keywords {@code true} and {@code false} are
+     * reserved by {@link com.ykn.fmod.server.rule.tool.ConditionFormulaParser} as constant
+     * literals and must not be used as condition names to avoid ambiguity during parsing.
+     *
+     * <p>Names that merely begin with these words (e.g. {@code trueZone}, {@code falseAlarm})
+     * are still accepted; only the exact strings {@code "true"} and {@code "false"} are rejected.
+     * This is achieved by the negative lookahead {@code (?!true$|false$)} at the start of the
+     * pattern, where the anchored {@code $} restricts rejection to whole-word matches.
      */
-    public static final Pattern NAME_PATTERN = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_]*");
+    public static final Pattern NAME_PATTERN = Pattern.compile("(?!true$|false$)[a-zA-Z_][a-zA-Z0-9_]*");
 
     /**
-     * Evaluates this condition in the given execution context.
+     * Evaluates this condition in the given execution context, with cyclic-reference protection.
+     *
+     * <p>This is a <em>template method</em>: it registers {@code this} in
+     * {@link RuleContext#addTestingConditions(RuleCondition)} before delegating to
+     * {@link #onEvaluate(RuleContext)}, and removes it afterwards.
+     * If the same condition instance is already being evaluated on the current call stack
+     * (i.e. a cycle is detected), the method immediately sets an error message on the
+     * context and returns {@code false} — preventing a {@link StackOverflowError}.
+     *
+     * <p><b>Do not override this method.</b>  Override {@link #onEvaluate(RuleContext)} instead.
      *
      * @param context the current rule execution context, providing access to the server,
      *                event-supplied variables, and the owning rule
+     * @return {@code true} if the condition is satisfied; {@code false} if unsatisfied
+     *         <em>or</em> if a cyclic reference was detected
+     */
+    default public boolean evaluate(RuleContext context) {
+        boolean isNotTesting = context.addTestingConditions(this);
+        if (!isNotTesting) {
+            context.setErrorMessage(Util.parseTranslatableText("fmod.rule.error.condition.cyclic", context.getRule().getName(), this.getName()));
+            return false;
+        }
+        boolean result = this.onEvaluate(context);
+        context.removeTestingConditions(this);
+        return result;
+    };
+
+    /**
+     * Performs the actual condition evaluation logic.
+     *
+     * <p>This is the <em>implementation hook</em> called by {@link #evaluate(RuleContext)}
+     * after cycle detection has been performed.  Condition implementors should override
+     * this method rather than {@link #evaluate(RuleContext)}.
+     *
+     * <p>When this method is invoked, it is guaranteed that {@code this} has already been
+     * added to the {@code testingConditions} set of {@code context}.  Recursive calls to
+     * evaluate other conditions are safe — any cycle will be caught by
+     * {@link #evaluate(RuleContext)} before reaching infinite recursion.
+     *
+     * @param context the current rule execution context
      * @return {@code true} if the condition is satisfied, {@code false} otherwise
      */
-    public boolean evaluate(RuleContext context);
+    public boolean onEvaluate(RuleContext context);
 
     /**
      * Combines this condition with {@code operand} using the given logical/bitwise relationship,
@@ -124,16 +170,59 @@ public interface RuleCondition extends RuleComponent {
     }
 
     /**
-     * Returns an optimised version of this condition for the given rule.
+     * Returns an optimised version of this condition for the given rule, with cyclic-reference
+     * protection.
      *
-     * <p>The default implementation returns {@code this} unchanged. Composite conditions
-     * (e.g. {@link BinaryConditionExpression}) override this to recursively inline
-     * {@link ConditionReference} nodes, eliminating repeated map look-ups during evaluation.
+     * <p>This is a <em>template method</em>: it checks whether {@code this} is already present
+     * in {@code optimizingConditions} (indicating a cycle).  If so, it returns {@code this}
+     * immediately to prevent infinite recursion.  Otherwise it registers {@code this},
+     * delegates to {@link #onOptimize(CustomRule, HashSet)}, then de-registers.
      *
-     * @param rule the rule whose {@code extra} list is used to resolve references
-     * @return an optimised substitute for this condition, or {@code this} if no optimisation applies
+     * <p>The default implementation returns {@code this} unchanged via {@link #onOptimize}.
+     * Composite conditions (e.g. {@link BinaryConditionExpression}) override
+     * {@link #onOptimize} to recursively inline {@link ConditionReference} nodes, eliminating
+     * repeated map look-ups at evaluation time.
+     *
+     * <p><b>Do not override this method.</b>  Override {@link #onOptimize(CustomRule, HashSet)}
+     * instead.
+     *
+     * @param rule                 the rule whose {@code extra} condition list is used to resolve
+     *                             {@link ConditionReference} nodes
+     * @param optimizingConditions the set of conditions currently being optimised on the call
+     *                             stack; used for cycle detection — pass the same set through
+     *                             all recursive calls
+     * @return an optimised substitute for this condition, or {@code this} if no optimisation
+     *         applies or if a cycle is detected
      */
-    default public RuleCondition optimize(CustomRule rule) {
+    default public RuleCondition optimize(CustomRule rule, HashSet<RuleCondition> optimizingConditions) {
+        if (optimizingConditions.contains(this)) {
+            // Circular reference detected; bail out to prevent infinite recursion.
+            return this;
+        }
+        optimizingConditions.add(this);
+        RuleCondition optimized = onOptimize(rule, optimizingConditions);
+        optimizingConditions.remove(this);
+        return optimized;
+    }
+
+    /**
+     * Performs the actual optimisation logic.
+     *
+     * <p>This is the <em>implementation hook</em> called by
+     * {@link #optimize(CustomRule, HashSet)} after cycle detection has been performed.
+     * Condition implementors should override this method rather than
+     * {@link #optimize(CustomRule, HashSet)}.
+     *
+     * <p>The default implementation simply returns {@code this}.
+     *
+     * @param rule                 the rule whose {@code extra} condition list is used to resolve
+     *                             {@link ConditionReference} nodes
+     * @param optimizingConditions the cycle-detection set — must be forwarded unchanged to
+     *                             any recursive calls to {@link #optimize(CustomRule, HashSet)}
+     * @return an optimised substitute for this condition, or {@code this} if no optimisation
+     *         applies
+     */
+    default public RuleCondition onOptimize(CustomRule rule, HashSet<RuleCondition> optimizingConditions) {
         return this;
     }
 

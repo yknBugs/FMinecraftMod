@@ -5,6 +5,8 @@
 
 package com.ykn.fmod.server.rule.core;
 
+import java.util.HashSet;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
@@ -72,13 +74,18 @@ public class ConditionReference implements RuleCondition {
     }
 
     @Override
-    public boolean evaluate( RuleContext context) {
+    public boolean onEvaluate(RuleContext context) {
         CustomRule rule = context.getRule();
+        if (referenceName.isEmpty()) {
+            context.setErrorMessage(Util.parseTranslatableText("fmod.rule.error.condition.empty", rule.getName(), this.getName()));
+            return false;
+        }
         for (RuleCondition condition : rule.getExtra()) {
             if (condition.getName().equals(referenceName)) {
                 return condition.evaluate(context);
             }
         }
+        context.setErrorMessage(Util.parseTranslatableText("fmod.rule.error.condition.notexist", rule.getName(), this.getName(), referenceName));
         return false;
     }
     
@@ -124,8 +131,15 @@ public class ConditionReference implements RuleCondition {
         if (condition == null) {
             return null;
         }
+        HashSet<RuleCondition> visitedNode = new HashSet<>();
+        visitedNode.add(this);
         while (condition instanceof ConditionReference) {
             ConditionReference reference = (ConditionReference) condition;
+            if (visitedNode.contains(reference)) {
+                // Circular reference detected; bail out to prevent infinite recursion.
+                return null;
+            }
+            visitedNode.add(reference);
             condition = reference.collapse(rule);
             if (condition == null) {
                 return null;
@@ -135,7 +149,7 @@ public class ConditionReference implements RuleCondition {
     }
 
     @Override
-    public RuleCondition optimize(CustomRule rule) {
+    public RuleCondition onOptimize(CustomRule rule, HashSet<RuleCondition> optimizingConditions) {
         RuleCondition resolved = collapseToLeaf(rule);
         if (resolved != null) {
             return resolved;
@@ -157,7 +171,7 @@ public class ConditionReference implements RuleCondition {
         JsonObject json = new JsonObject();
         json.addProperty("name", getName());
         json.addProperty("type", getType());
-        json.addProperty("require", referenceName);
+        json.addProperty("value", referenceName);
         return json;
     }
 
@@ -168,19 +182,19 @@ public class ConditionReference implements RuleCondition {
     /**
      * Deserializes a {@code ConditionReference} from its JSON representation.
      *
-     * <p>The JSON must contain a {@code "require"} string field. An optional {@code "name"}
+     * <p>The JSON must contain a {@code "value"} string field. An optional {@code "name"}
      * field may be present; if omitted the name defaults to empty string.
      *
      * @param json the JSON object to deserialise
      * @return a new {@code ConditionReference}
      */
     public static ConditionReference fromJson(JsonObject json) {
-        if (json.has("require") && json.get("require").isJsonPrimitive()) {
-            String referenceName = json.get("require").getAsString();
+        if (json.has("value") && json.get("value").isJsonPrimitive()) {
+            String referenceName = json.get("value").getAsString();
             String name = json.has("name") ? json.get("name").getAsString() : "";
             return ConditionReference.of(name, referenceName);
         } else {
-            Util.LOGGER.warn("FMinecraftMod: Invalid ConditionReference JSON: " + json.toString() + ". 'require' field is missing or not a string. Defaulting to null reference.");
+            Util.LOGGER.warn("FMinecraftMod: Invalid ConditionReference JSON: " + json.toString() + ". 'value' field is missing or not a string. Defaulting to null reference.");
             return ConditionReference.of("", "null");
         }
     }

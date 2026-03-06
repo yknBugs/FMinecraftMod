@@ -6,6 +6,7 @@
 package com.ykn.fmod.server.rule.core;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import com.google.gson.JsonObject;
@@ -70,7 +71,7 @@ public class BinaryConditionExpression implements IterableCondition {
     private static String conditionToFormula(RuleCondition condition) {
         if (condition instanceof IterableCondition) {
             IterableCondition nestedIterableCondition = (IterableCondition) condition;
-            return nestedIterableCondition.toFormula();
+            return "(" + nestedIterableCondition.toFormula() + ")";
         } else if (condition instanceof SourceCondition) {
             SourceCondition sourceCondition = (SourceCondition) condition;
             return sourceCondition.getName();
@@ -121,7 +122,7 @@ public class BinaryConditionExpression implements IterableCondition {
     }
 
     @Override
-    public boolean evaluate(RuleContext context) {
+    public boolean onEvaluate(RuleContext context) {
         switch (relationship) {
             case AND:
                 return leftOperand.evaluate(context) && rightOperand.evaluate(context);
@@ -192,14 +193,14 @@ public class BinaryConditionExpression implements IterableCondition {
     }
 
     @Override
-    public RuleCondition optimize(CustomRule rule) {
+    public RuleCondition onOptimize(CustomRule rule, HashSet<RuleCondition> optimizingConditions) {
         if (this.relationship == ConditionRelationship.TRUE) {
             return ConstCondition.of(true);
         } else if (this.relationship == ConditionRelationship.FALSE) {
             return ConstCondition.of(false);
         }
-        RuleCondition left = leftOperand.optimize(rule);
-        RuleCondition right = rightOperand.optimize(rule);
+        RuleCondition left = leftOperand.optimize(rule, optimizingConditions);
+        RuleCondition right = rightOperand.optimize(rule, optimizingConditions);
         if (left == leftOperand && right == rightOperand) {
             return this;
         }

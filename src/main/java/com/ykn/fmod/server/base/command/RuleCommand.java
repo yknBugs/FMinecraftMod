@@ -639,6 +639,9 @@ public class RuleCommand {
             if (targetRule.getRule().hasExtraCondition(condition)) {
                 throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", name, condition));
             }
+            if (!RuleCondition.NAME_PATTERN.matcher(condition).matches()) {
+                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", condition));
+            }
             RuleCondition ruleCondition = ConditionFormulaParser.parse(formula).setName(condition);
             targetRule.addCondition(ruleCondition);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.add.success", name, formula), true);
@@ -658,7 +661,7 @@ public class RuleCommand {
         if (targetRule.getRule().hasExtraCondition(condition.getName())) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", name, condition.getName()));
         }
-        if (!condition.getName().isEmpty() && !RuleCondition.NAME_PATTERN.matcher(condition.getName()).matches()) {
+        if (!RuleCondition.NAME_PATTERN.matcher(condition.getName()).matches()) {
             throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", condition.getName()));
         }
         targetRule.addCondition(condition);
