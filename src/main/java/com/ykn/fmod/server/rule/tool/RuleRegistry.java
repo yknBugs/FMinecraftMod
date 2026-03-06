@@ -280,6 +280,11 @@ public class RuleRegistry {
 
         RuleRegistry.register("EntityPosition", EntityPosition::fromJson);
         RuleRegistry.register("CheckPermission", CheckPermission::fromJson);
+        RuleRegistry.register("SmallerThan", SmallerThan::fromJson);
+        RuleRegistry.register("EqualsTo", EqualsTo::fromJson);
+        RuleRegistry.register("CheckBlockType", CheckBlockType::fromJson);
+        RuleRegistry.register("CheckEntityType", CheckEntityType::fromJson);
+        RuleRegistry.register("HasEntityType", HasEntityType::fromJson);
 
         RuleRegistry.register("BroadcastMessage", BroadcastMessage::fromJson);
         RuleRegistry.register("SendMessage", SendMessage::fromJson);
@@ -290,6 +295,11 @@ public class RuleRegistry {
 
         RuleRegistry.register("EntityPosition", EntityPosition::buildCommand);
         RuleRegistry.register("CheckPermission", CheckPermission::buildCommand);
+        RuleRegistry.register("SmallerThan", SmallerThan::buildCommand);
+        RuleRegistry.register("EqualsTo", EqualsTo::buildCommand);
+        RuleRegistry.register("BlockType", CheckBlockType::buildCommand);
+        RuleRegistry.register("CheckEntityType", CheckEntityType::buildCommand);
+        RuleRegistry.register("HasEntityType", HasEntityType::buildCommand);
 
         RuleRegistry.register("BroadcastMessage", BroadcastMessage::buildCommand);
         RuleRegistry.register("SendMessage", SendMessage::buildCommand);

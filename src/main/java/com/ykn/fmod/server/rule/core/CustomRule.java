@@ -7,6 +7,7 @@ package com.ykn.fmod.server.rule.core;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
@@ -278,7 +279,7 @@ public class CustomRule implements Cloneable {
      * @return {@code this}, for method chaining
      */
     public CustomRule optimize() {
-        this.condition = this.condition.optimize(this);
+        this.condition = this.condition.optimize(this, new HashSet<>());
         return this;
     }
 

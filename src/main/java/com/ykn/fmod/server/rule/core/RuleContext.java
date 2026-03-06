@@ -8,6 +8,7 @@ package com.ykn.fmod.server.rule.core;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -75,6 +76,21 @@ public class RuleContext {
      */
     private boolean passed;
 
+    /**
+     * Tracks the set of {@link RuleCondition} instances that are currently on the evaluation
+     * call stack for this context.
+     *
+     * <p>This set is the foundation of the cyclic-reference detection mechanism: before
+     * evaluating a condition, {@link RuleCondition#evaluate(RuleContext)} calls
+     * {@link #addTestingConditions(RuleCondition)}; if the condition is already present
+     * (i.e. it is an ancestor on the current call stack), a cycle is detected and evaluation
+     * is short-circuited with an error.  The condition is removed by
+     * {@link #removeTestingConditions(RuleCondition)} after evaluation completes.
+     *
+     * <p>The set is cleared by {@link #resetStatus()} before each new evaluation.
+     */
+    private HashSet<RuleCondition> testingConditions;
+
     /** 
      * Optional error text set when an unexpected exception occurs during evaluation. 
      */
@@ -99,6 +115,7 @@ public class RuleContext {
         this.executed = false;
         this.passed = false;
         this.skipActions = false;
+        this.testingConditions = new HashSet<>();
         this.errorMessage = null;
     }
 
@@ -174,6 +191,40 @@ public class RuleContext {
     }
 
     /**
+     * Registers {@code condition} as currently being evaluated, for cyclic-reference detection.
+     *
+     * <p>Called by {@link RuleCondition#evaluate(RuleContext)} before delegating to
+     * {@link RuleCondition#onEvaluate(RuleContext)}.  If {@code condition} is already
+     * present in the set, the call stack contains a cycle and this method returns
+     * {@code false} so that the caller can bail out immediately.
+     *
+     * @param condition the condition about to be evaluated
+     * @return {@code true} if the condition was successfully added (no cycle);
+     *         {@code false} if it was already present, indicating a cyclic reference
+     */
+    public boolean addTestingConditions(RuleCondition condition) {
+        if (this.testingConditions.contains(condition)) {
+            return false;
+        }
+        this.testingConditions.add(condition);
+        return true;
+    }
+
+    /**
+     * Removes {@code condition} from the currently-evaluating set after its evaluation is done.
+     *
+     * <p>Called by {@link RuleCondition#evaluate(RuleContext)} after
+     * {@link RuleCondition#onEvaluate(RuleContext)} returns, to pop the condition off
+     * the logical call-stack tracker.
+     *
+     * @param condition the condition that has finished evaluating
+     * @return {@code true} if the condition was present and successfully removed
+     */
+    public boolean removeTestingConditions(RuleCondition condition) {
+        return this.testingConditions.remove(condition);
+    }
+
+    /**
      * Returns the error message set during execution, or {@code null} if none occurred.
      *
      * @return the error {@link Text}, or {@code null}
@@ -194,12 +245,16 @@ public class RuleContext {
 
     /**
      * Resets all execution status fields to their initial state
-     * (not executed, not passed, actions not skipped, no error message).
+     * (not executed, not passed, actions not skipped, no error message, no testing conditions).
+     *
+     * <p>Also clears the {@code testingConditions} set so that cyclic-reference detection
+     * state from a previous evaluation does not bleed into the next one.
      */
     public void resetStatus() {
         this.executed = false;
         this.passed = false;
         this.skipActions = false;
+        this.testingConditions.clear();
         this.errorMessage = null;
     }
 
@@ -229,7 +284,7 @@ public class RuleContext {
             this.executed = true;
             this.passed = false;
             this.skipActions = true;
-            this.errorMessage = Text.literal(e.getMessage());
+            this.errorMessage = Text.literal(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
             return false;
         }
     }
@@ -282,7 +337,7 @@ public class RuleContext {
             this.executed = true;
             this.passed = false;
             this.skipActions = false;
-            this.errorMessage = Text.literal(e.getMessage());
+            this.errorMessage = Text.literal(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
             return false;
         }
     }

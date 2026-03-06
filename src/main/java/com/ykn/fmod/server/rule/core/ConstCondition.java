@@ -60,7 +60,7 @@ public class ConstCondition implements RuleCondition {
     }
 
     @Override
-    public boolean evaluate(RuleContext context) {
+    public boolean onEvaluate(RuleContext context) {
         return value;
     }
 

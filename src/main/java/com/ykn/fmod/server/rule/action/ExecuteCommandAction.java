@@ -174,6 +174,8 @@ public class ExecuteCommandAction implements RuleAction {
         int permissionLevel = 0;
         if (json.has("value") && json.get("value").isJsonObject() && json.getAsJsonObject("value").has("permissionLevel") && json.getAsJsonObject("value").get("permissionLevel").isJsonPrimitive()) {
             permissionLevel = json.getAsJsonObject("value").get("permissionLevel").getAsInt();
+        } else {
+            Util.LOGGER.warn("FMinecraftMod: ExecuteCommandAction JSON is missing 'permissionLevel' field or it is not an integer. Defaulting to 0.");
         }
         if (permissionLevel < 0 || permissionLevel > 4) {
             Util.LOGGER.warn("FMinecraftMod: ExecuteCommandAction has an invalid permission level " + permissionLevel);

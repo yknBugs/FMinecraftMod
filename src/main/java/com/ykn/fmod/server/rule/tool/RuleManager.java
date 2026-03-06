@@ -300,6 +300,9 @@ public class RuleManager {
      * @return the populated {@link RuleContext} after condition evaluation
      */
     public RuleContext test(@NotNull ServerData data, @Nullable Map<String, Object> variables, boolean skipVariableCheck) {
+        if (!this.enabled) {
+            this.optimizedRule = this.rule.copy().optimize();
+        }
         RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
         data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
         context.test(skipVariableCheck);
@@ -342,6 +345,9 @@ public class RuleManager {
      * @return the populated {@link RuleContext} after full rule execution
      */
     public RuleContext trigger(@NotNull ServerData data, @Nullable Map<String, Object> variables, boolean skipVariableCheck) {
+        if (!this.enabled) {
+            this.optimizedRule = this.rule.copy().optimize();
+        }
         RuleContext context = new RuleContext(data.getServer(), this.optimizedRule, variables);
         data.addRuleHistory(context, Util.getServerConfig().getMaxRuleHistorySize());
         context.trigger(skipVariableCheck);

@@ -6,6 +6,7 @@
 package com.ykn.fmod.server.rule.core;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import com.google.gson.JsonObject;
@@ -76,7 +77,7 @@ public class UnaryConditionExpression implements IterableCondition {
     }
 
     @Override
-    public boolean evaluate(RuleContext context) {
+    public boolean onEvaluate(RuleContext context) {
         switch (relationship) {
             case NOT:
                 return !operand.evaluate(context);
@@ -158,13 +159,13 @@ public class UnaryConditionExpression implements IterableCondition {
     }
 
     @Override
-    public RuleCondition optimize(CustomRule rule) {
+    public RuleCondition onOptimize(CustomRule rule, HashSet<RuleCondition> optimizingConditions) {
         if (this.relationship == ConditionRelationship.TRUE) {
             return ConstCondition.of(true);
         } else if (this.relationship == ConditionRelationship.FALSE) {
             return ConstCondition.of(false);
         }
-        RuleCondition operand = this.operand.optimize(rule);
+        RuleCondition operand = this.operand.optimize(rule, optimizingConditions);
         if (operand == this.operand) {
             return this;
         }
