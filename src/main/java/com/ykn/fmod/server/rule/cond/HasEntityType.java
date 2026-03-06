@@ -31,6 +31,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
+import net.minecraft.commands.synchronization.SuggestionProviders;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
@@ -194,7 +195,7 @@ public class HasEntityType implements SourceCondition {
             .add("dimension", "var.dimension", () -> Commands.argument("dimension", DimensionArgument.dimension()))
             .add("position", "var.position", () -> Commands.argument("position", Vec3Argument.vec3()))
             .add("radius", "var.radius", () -> Commands.argument("radius", DoubleArgumentType.doubleArg(0)))
-            .add("type", "var.type", () -> Commands.argument("type", ResourceLocationArgument.id()))
+            .add("type", "var.type", () -> Commands.argument("type", ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
             .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }

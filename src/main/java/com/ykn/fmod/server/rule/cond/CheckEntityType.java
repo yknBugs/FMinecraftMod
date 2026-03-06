@@ -28,6 +28,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.synchronization.SuggestionProviders;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.resources.ResourceLocation;
@@ -152,7 +153,7 @@ public class CheckEntityType implements SourceCondition {
                 return Command.SINGLE_SUCCESS;
             })
             .add("entity", "var.entity", () -> Commands.argument("entity", EntityArgument.entity()))
-            .add("type", "var.type", () -> Commands.argument("type", ResourceLocationArgument.id()))
+            .add("type", "var.type", () -> Commands.argument("type", ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
             .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }

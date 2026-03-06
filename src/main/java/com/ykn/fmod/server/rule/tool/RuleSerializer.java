@@ -192,9 +192,6 @@ public class RuleSerializer {
             Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an unrecognized condition. Defaulting to false.");
             condition = ConstCondition.of(false);
         }
-        if (!RuleCondition.NAME_PATTERN.matcher(condition.getName()).matches()) {
-            Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an invalid condition name: " + condition.getName() + ".");
-        }
 
         List<RuleCondition> extraList = new ArrayList<>();
         JsonArray extraArray = getArrayOrEmpty(json, "extra");
@@ -207,6 +204,9 @@ public class RuleSerializer {
             if (extraCondition == null) {
                 Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an unrecognized extra condition. Skipping.");
                 continue;
+            }
+            if (!RuleCondition.NAME_PATTERN.matcher(extraCondition.getName()).matches()) {
+                Util.LOGGER.warn("FMinecraftMod: The rule " + name + " has an invalid extra condition name: " + extraCondition.getName() + ".");
             }
             extraList.add(extraCondition);
         }
