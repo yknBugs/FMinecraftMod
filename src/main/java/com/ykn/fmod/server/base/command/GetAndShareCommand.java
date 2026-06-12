@@ -22,85 +22,80 @@ import com.ykn.fmod.server.base.util.GameMath;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.item.ItemStack;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.Vec3;
 
 public class GetAndShareCommand {
 
-    private static ServerPlayerEntity getShareCommandExecutor(CommandContext<ServerCommandSource> context) {
+    private static ServerPlayer getShareCommandExecutor(CommandContext<CommandSourceStack> context) {
         if (context == null) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.playeronly"));
+            return null;
         }
-        ServerCommandSource source = context.getSource();
+        CommandSourceStack source = context.getSource();
         if (source == null) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.playeronly"));
+            return null;
         }
-        ServerPlayerEntity player = source.getPlayer();
+        ServerPlayer player = source.getPlayer();
         if (player == null) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.playeronly"));
+            return null;
         }
         MinecraftServer server = source.getServer();
         if (server == null) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.error.client"));
+            return null;
         }
         return player;
-        // return Optional.ofNullable(context)
-        //     .map(CommandContext::getSource)
-        //     .map(ServerCommandSource::getPlayer)
-        //     .orElseThrow(() -> new CommandException(Util.parseTranslateableText("fmod.command.share.playeronly")));
     }
 
-    private static int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         try {
             for (Entity entity : entities) {
-                Text name = entity.getDisplayName();
-                Text coord = Util.parseCoordText(entity);
-                MutableText text = Util.parseTranslatableText("fmod.command.get.coord", name, coord);
-                context.getSource().sendFeedback(() -> text, false);
+                Component name = entity.getDisplayName();
+                Component coord = Util.parseCoordText(entity);
+                MutableComponent text = Util.parseTranslatableText("fmod.command.get.coord", name, coord);
+                context.getSource().sendSuccess(() -> text, false);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return entities.size();
     }
 
-    private static int runShareCoordCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareCoordCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            Text name = player.getDisplayName();
-            Text coord = Util.parseCoordText(player);
-            MutableText text = Util.parseTranslatableText("fmod.command.share.coord", name, coord);
+            ServerPlayer player = getShareCommandExecutor(context);
+            Component name = player.getDisplayName();
+            Component coord = Util.parseCoordText(player);
+            MutableComponent text = Util.parseTranslatableText("fmod.command.share.coord", name, coord);
             ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static MutableText getDirectionText(Vec3d source, Vec3d target) {
+    private static MutableComponent getDirectionText(Vec3 source, Vec3 target) {
         double pitch = GameMath.getPitch(source, target);
         double yaw = GameMath.getYaw(source, target);
-        MutableText direction = Text.empty();
+        MutableComponent direction = Component.empty();
         if (pitch > 60.0) {
             direction = Util.parseTranslatableText("fmod.misc.diru");
         } else if (pitch < -60.0) {
@@ -125,17 +120,17 @@ public class GetAndShareCommand {
         return direction;
     }
 
-    private static int runGetDistanceCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetDistanceCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
-            Vec3d source = context.getSource().getPosition();
+            Vec3 source = context.getSource().getPosition();
             for (Entity entity : entities) {
-                if (context.getSource().getWorld() != entity.getWorld()) {
-                    final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.dimdistance", name), false);
+                if (context.getSource().getLevel() != entity.level()) {
+                    final Component name = entity.getDisplayName();
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.dimdistance", name), false);
                     continue;
                 }
-                Vec3d target = entity.getPos();
+                Vec3 target = entity.position();
                 double distance = GameMath.getEuclideanDistance(source, target);
                 double pitch = GameMath.getPitch(source, target);
                 double yaw = GameMath.getYaw(source, target);
@@ -145,38 +140,37 @@ public class GetAndShareCommand {
                 } else if (pitch < -60.0) {
                     degree = -pitch;
                 }
-                final Text name = entity.getDisplayName();
+                final Component name = entity.getDisplayName();
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
-                final MutableText dirTxt = getDirectionText(source, target);
-                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
+                final MutableComponent dirTxt = getDirectionText(source, target);
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
 
-    private static int runShareDistanceCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareDistanceCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            Vec3d target = player.getPos();
-            List<ServerPlayerEntity> onlinePlayers = Util.getOnlinePlayers(context.getSource().getServer());
-            for (ServerPlayerEntity onlinePlayer : onlinePlayers) {
-                if (onlinePlayer.getUuid().equals(player.getUuid())) {
+            ServerPlayer player = getShareCommandExecutor(context);
+            Vec3 target = player.position();
+            List<ServerPlayer> onlinePlayers = Util.getOnlinePlayers(context.getSource().getServer());
+            for (ServerPlayer onlinePlayer : onlinePlayers) {
+                if (onlinePlayer.getUUID().equals(player.getUUID())) {
                     ServerMessageType.sendTextMessage(onlinePlayer, Util.parseTranslatableText("fmod.command.share.selfdistance"));
                     continue;
                 }
-                if (player.getWorld() != onlinePlayer.getWorld()) {
-                    final Text name = player.getDisplayName();
+                if (player.level() != onlinePlayer.level()) {
+                    final Component name = player.getDisplayName();
                     ServerMessageType.sendTextMessage(onlinePlayer, Util.parseTranslatableText("fmod.command.share.dimdistance", name));
                     continue;
                 }
-                Vec3d source = onlinePlayer.getPos();
+                Vec3 source = onlinePlayer.position();
                 double distance = GameMath.getEuclideanDistance(source, target);
                 double pitch = GameMath.getPitch(source, target);
                 double yaw = GameMath.getYaw(source, target);
@@ -186,370 +180,370 @@ public class GetAndShareCommand {
                 } else if (pitch < -60.0) {
                     degree = -pitch;
                 }
-                final Text name = player.getDisplayName();
+                final Component name = player.getDisplayName();
                 final String degStr = String.format("%.2f°", degree);
                 final String distStr = String.format("%.2f", distance);
-                final MutableText dirTxt = getDirectionText(source, target);
-                final MutableText text = Util.parseTranslatableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
+                final MutableComponent dirTxt = getDirectionText(source, target);
+                final MutableComponent text = Util.parseTranslatableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
                 ServerMessageType.sendTextMessage(onlinePlayer, text);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runGetHealthCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetHealthCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         try {
             for (Entity entity : entities) {
-                final Text name = entity.getDisplayName();
+                final Component name = entity.getDisplayName();
                 double hp = Util.getHealth(entity);
                 double maxhp = Util.getMaxHealth(entity);
                 final String hpStr = String.format("%.2f", hp);
                 final String maxhpStr = String.format("%.2f", maxhp);
-                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return entities.size();
     }
 
-    private static int runShareHealthCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareHealthCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
+            ServerPlayer player = getShareCommandExecutor(context);
             double hp = Util.getHealth(player);
             double maxhp = Util.getMaxHealth(player);
-            final Text name = player.getDisplayName();
+            final Component name = player.getDisplayName();
             final String hpStr = String.format("%.2f", hp);
             final String maxhpStr = String.format("%.2f", maxhp);
-            MutableText text = Util.parseTranslatableText("fmod.command.share.health", name, hpStr, maxhpStr);
+            MutableComponent text = Util.parseTranslatableText("fmod.command.share.health", name, hpStr, maxhpStr);
             ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runGetStatusCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+    private static int runGetStatusCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
-            for (ServerPlayerEntity player : players) {
+            for (ServerPlayer player : players) {
                 double hp = player.getHealth();
-                int hunger = player.getHungerManager().getFoodLevel();
-                double saturation = player.getHungerManager().getSaturationLevel();
+                int hunger = player.getFoodData().getFoodLevel();
+                double saturation = player.getFoodData().getSaturationLevel();
                 int level = player.experienceLevel;
-                final Text name = player.getDisplayName();
+                final Component name = player.getDisplayName();
                 final String hpStr = String.format("%.2f", hp);
                 final String hungerStr = String.valueOf(hunger);
                 final String saturationStr = String.format("%.2f", saturation);
                 final String levelStr = String.valueOf(level);
-                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return players.size();
     }
 
-    private static int runShareStatusCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareStatusCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
+            ServerPlayer player = getShareCommandExecutor(context);
             double hp = player.getHealth();
-            int hunger = player.getHungerManager().getFoodLevel();
-            double saturation = player.getHungerManager().getSaturationLevel();
+            int hunger = player.getFoodData().getFoodLevel();
+            double saturation = player.getFoodData().getSaturationLevel();
             int level = player.experienceLevel;
-            final Text name = player.getDisplayName();
+            final Component name = player.getDisplayName();
             final String hpStr = String.format("%.2f", hp);
             final String hungerStr = String.valueOf(hunger);
             final String saturationStr = String.format("%.2f", saturation);
             final String levelStr = String.valueOf(level);
-            MutableText text = Util.parseTranslatableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
+            MutableComponent text = Util.parseTranslatableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
             ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static MutableText formatInventoryItemStack(ItemStack item) {
-        MutableText itemText = Text.empty();
+    private static MutableComponent formatInventoryItemStack(ItemStack item) {
+        MutableComponent itemText = Component.empty();
         try {
             if (item == null || item.isEmpty()) {
-                itemText = Text.literal("00").formatted(Formatting.GRAY).styled(s -> s
+                itemText = Component.literal("00").withStyle(ChatFormatting.GRAY).withStyle(s -> s
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.command.get.emptyslot")))
                 );
             } else if (item.getCount() < 100) {
                 String itemCount = String.format("%02d", item.getCount());
-                itemText = Text.literal(itemCount).formatted(Formatting.AQUA).styled(s -> s
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
+                itemText = Component.literal(itemCount).withStyle(ChatFormatting.AQUA).withStyle(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item)))
                 );
             } else {
-                itemText = Text.literal("9+").formatted(Formatting.AQUA).styled(s -> s
-                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackContent(item)))
+                itemText = Component.literal("9+").withStyle(ChatFormatting.AQUA).withStyle(s -> s
+                    .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item)))
                 );
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when formatting item stack", e);
-            itemText = Text.literal("??").formatted(Formatting.RED);
+            itemText = Component.literal("??").withStyle(ChatFormatting.RED);
         }
         return itemText;
     }
 
-    private static List<MutableText> getInventoryTexts(ServerPlayerEntity player) {
-        PlayerInventory inventory = player.getInventory();
+    private static List<MutableComponent> getInventoryTexts(ServerPlayer player) {
+        Inventory inventory = player.getInventory();
         // Text Structure:
         // [x] [x] [x] [x] [-] [-] [S] [+] [1]   (x: Armor, -: Placeholder, +: Offhand, 1: Current Chosen Slot Index)
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, S: Survival Gamemode [S: Survival, C: Creative, A: Adventure, V: Spectator])
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
-        MutableText armorText = Text.empty();
+        MutableComponent armorText = Component.empty();
         for (int i = 0; i < 4; i++) {
-            ItemStack item = inventory.getArmorStack(i);
-            armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+            ItemStack item = inventory.getArmor(i);
+            armorText.append(Component.literal("[").withStyle(ChatFormatting.LIGHT_PURPLE));
             armorText.append(formatInventoryItemStack(item));
-            armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(Component.literal("]").withStyle(ChatFormatting.LIGHT_PURPLE));
+            armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         }
         // Placeholder
         for (int i = 0; i < 2; i++) {
-            armorText.append(Text.literal("[--]").formatted(Formatting.GRAY));
-            armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+            armorText.append(Component.literal("[--]").withStyle(ChatFormatting.GRAY));
+            armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         }
         // Gamemode
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-        GameMode gamemode = player.interactionManager.getGameMode();
-        MutableText gamemodeText = Text.literal("+S");
-        if (gamemode == GameMode.CREATIVE) {
-            gamemodeText = Text.literal("+C");
-        } else if (gamemode == GameMode.ADVENTURE) {
-            gamemodeText = Text.literal("+A");
-        } else if (gamemode == GameMode.SPECTATOR) {
-            gamemodeText = Text.literal("+V");
+        armorText.append(Component.literal("[").withStyle(ChatFormatting.GOLD));
+        GameType gamemode = player.gameMode.getGameModeForPlayer();
+        MutableComponent gamemodeText = Component.literal("+S");
+        if (gamemode == GameType.CREATIVE) {
+            gamemodeText = Component.literal("+C");
+        } else if (gamemode == GameType.ADVENTURE) {
+            gamemodeText = Component.literal("+A");
+        } else if (gamemode == GameType.SPECTATOR) {
+            gamemodeText = Component.literal("+V");
         }
-        gamemodeText = gamemodeText.formatted(Formatting.RED).styled(s -> s
-            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.translatable("gameMode." + gamemode.getName())))
+        gamemodeText = gamemodeText.withStyle(ChatFormatting.RED).withStyle(s -> s
+            .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.translatable("gameMode." + gamemode.getName())))
         );
         armorText.append(gamemodeText);
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(Component.literal("]").withStyle(ChatFormatting.GOLD));
+        armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         // Offhand
-        ItemStack offhandItem = inventory.getStack(PlayerInventory.OFF_HAND_SLOT);
-        armorText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+        ItemStack offhandItem = inventory.getItem(Inventory.SLOT_OFFHAND);
+        armorText.append(Component.literal("[").withStyle(ChatFormatting.LIGHT_PURPLE));
         armorText.append(formatInventoryItemStack(offhandItem));
-        armorText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(Component.literal("]").withStyle(ChatFormatting.LIGHT_PURPLE));
+        armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         // Selected Slot
-        armorText.append(Text.literal("[").formatted(Formatting.GOLD));
-        armorText.append(Text.literal("0" + String.valueOf(inventory.selectedSlot + 1)).formatted(Formatting.RED));
-        armorText.append(Text.literal("]").formatted(Formatting.GOLD));
-        armorText.append(Text.literal(" ").formatted(Formatting.RESET));
+        armorText.append(Component.literal("[").withStyle(ChatFormatting.GOLD));
+        armorText.append(Component.literal("0" + String.valueOf(inventory.selected + 1)).withStyle(ChatFormatting.RED));
+        armorText.append(Component.literal("]").withStyle(ChatFormatting.GOLD));
+        armorText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         // Inventory
-        MutableText[] inventoryText = {Text.empty(), Text.empty(), Text.empty()};
+        MutableComponent[] inventoryText = {Component.empty(), Component.empty(), Component.empty()};
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 9; j++) {
                 // Index 0 ~ 8 belongs to Hotbar, Index 9 ~ 35 belongs to Inventory
                 int index = (i + 1) * 9 + j;
-                ItemStack item = inventory.getStack(index);
-                inventoryText[i].append(Text.literal("[").formatted(Formatting.GREEN));
+                ItemStack item = inventory.getItem(index);
+                inventoryText[i].append(Component.literal("[").withStyle(ChatFormatting.GREEN));
                 inventoryText[i].append(formatInventoryItemStack(item));
-                inventoryText[i].append(Text.literal("]").formatted(Formatting.GREEN));
-                inventoryText[i].append(Text.literal(" ").formatted(Formatting.RESET));
+                inventoryText[i].append(Component.literal("]").withStyle(ChatFormatting.GREEN));
+                inventoryText[i].append(Component.literal(" ").withStyle(ChatFormatting.RESET));
             }
         }
         // Hotbar
-        MutableText hotbarText = Text.empty();
+        MutableComponent hotbarText = Component.empty();
         for (int i = 0; i < 9; i++) {
-            ItemStack item = inventory.getStack(i);
-            if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("[").formatted(Formatting.GOLD));
+            ItemStack item = inventory.getItem(i);
+            if (i == inventory.selected) {
+                hotbarText.append(Component.literal("[").withStyle(ChatFormatting.GOLD));
             } else {
-                hotbarText.append(Text.literal("[").formatted(Formatting.LIGHT_PURPLE));
+                hotbarText.append(Component.literal("[").withStyle(ChatFormatting.LIGHT_PURPLE));
             }
             hotbarText.append(formatInventoryItemStack(item));
-            if (i == inventory.selectedSlot) {
-                hotbarText.append(Text.literal("]").formatted(Formatting.GOLD));
+            if (i == inventory.selected) {
+                hotbarText.append(Component.literal("]").withStyle(ChatFormatting.GOLD));
             } else {
-                hotbarText.append(Text.literal("]").formatted(Formatting.LIGHT_PURPLE));
+                hotbarText.append(Component.literal("]").withStyle(ChatFormatting.LIGHT_PURPLE));
             }
-            hotbarText.append(Text.literal(" ").formatted(Formatting.RESET));
+            hotbarText.append(Component.literal(" ").withStyle(ChatFormatting.RESET));
         }
         // Feedback
-        final MutableText linea = armorText;
-        final MutableText lineb = inventoryText[0];
-        final MutableText linec = inventoryText[1];
-        final MutableText lined = inventoryText[2];
-        final MutableText linee = hotbarText;
+        final MutableComponent linea = armorText;
+        final MutableComponent lineb = inventoryText[0];
+        final MutableComponent linec = inventoryText[1];
+        final MutableComponent lined = inventoryText[2];
+        final MutableComponent linee = hotbarText;
         return Arrays.asList(linea, lineb, linec, lined, linee);
     }
 
-    private static int runGetInventoryCommand(ServerPlayerEntity player, CommandContext<ServerCommandSource> context) {
+    private static int runGetInventoryCommand(ServerPlayer player, CommandContext<CommandSourceStack> context) {
         try {
-            List<MutableText> inventoryText = getInventoryTexts(player);
-            final Text name = player.getDisplayName();
-            final Text title = Util.parseTranslatableText("fmod.command.get.inventory", name);
-            context.getSource().sendFeedback(() -> title, false);
-            for (MutableText text : inventoryText) {
-                context.getSource().sendFeedback(() -> text, false);
+            List<MutableComponent> inventoryText = getInventoryTexts(player);
+            final Component name = player.getDisplayName();
+            final Component title = Util.parseTranslatableText("fmod.command.get.inventory", name);
+            context.getSource().sendSuccess(() -> title, false);
+            for (MutableComponent text : inventoryText) {
+                context.getSource().sendSuccess(() -> text, false);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runShareInventoryCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareInventoryCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            List<MutableText> inventoryText = getInventoryTexts(player);
-            final Text name = player.getDisplayName();
-            final Text title = Util.parseTranslatableText("fmod.command.share.inventory", name);
+            ServerPlayer player = getShareCommandExecutor(context);
+            List<MutableComponent> inventoryText = getInventoryTexts(player);
+            final Component name = player.getDisplayName();
+            final Component title = Util.parseTranslatableText("fmod.command.share.inventory", name);
             ServerMessageType.broadcastTextMessage(context.getSource().getServer(), title);
-            for (MutableText text : inventoryText) {
+            for (MutableComponent text : inventoryText) {
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runGetItemCommand(Collection<? extends Entity> entities, CommandContext<ServerCommandSource> context) {
+    private static int runGetItemCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
         int result = 0;
         try {
             for (Entity entity : entities) {
-                Iterable<ItemStack> items = entity.getHandItems();
-                if (items == null || !items.iterator().hasNext()) {
-                    final Text name = entity.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
+                if (!(entity instanceof LivingEntity)) {
+                    final Component name = entity.getDisplayName();
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
                     continue;
                 }
-                MutableText itemList = Text.empty();
+                LivingEntity livingEntity = (LivingEntity) entity;
+                Iterable<ItemStack> items = List.of(livingEntity.getItemBySlot(EquipmentSlot.MAINHAND), livingEntity.getItemBySlot(EquipmentSlot.OFFHAND));
+                if (items == null || !items.iterator().hasNext()) {
+                    final Component name = entity.getDisplayName();
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
+                    continue;
+                }
+                MutableComponent itemList = Component.empty();
                 int itemCountSum = 0;
                 for (ItemStack item : items) {
                     if (item.isEmpty()) {
                         continue;
                     }
-                    Text itemText = item.toHoverableText();
+                    Component itemText = item.getDisplayName();
                     int itemCount = item.getCount();
                     result += itemCount;
                     itemCountSum += itemCount;
                     itemList.append(itemText);
                     if (itemCount > 1) {
-                        itemList.append(Text.literal("x" + itemCount + " "));
+                        itemList.append(Component.literal("x" + itemCount + " "));
                     } else {
-                        itemList.append(Text.literal(" "));
+                        itemList.append(Component.literal(" "));
                     }
                 }
-                final Text name = entity.getDisplayName();
-                final MutableText itemTxt = itemList;
+                final Component name = entity.getDisplayName();
+                final MutableComponent itemTxt = itemList;
                 if (itemCountSum <= 0) {
-                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
                 } else {
-                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.item", name, itemTxt), false);
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.item", name, itemTxt), false);
                 }
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
 
-    private static int runShareItemCommand(CommandContext<ServerCommandSource> context) {
+    private static int runShareItemCommand(CommandContext<CommandSourceStack> context) {
         try {
-            ServerPlayerEntity player = getShareCommandExecutor(context);
-            Iterable<ItemStack> items = player.getHandItems();
+            ServerPlayer player = getShareCommandExecutor(context);
+            Iterable<ItemStack> items = List.of(player.getItemBySlot(EquipmentSlot.MAINHAND), player.getItemBySlot(EquipmentSlot.OFFHAND));
             if (items == null || !items.iterator().hasNext()) {
-                final Text name = player.getDisplayName();
+                final Component name = player.getDisplayName();
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.noitem", name));
                 return Command.SINGLE_SUCCESS;
             }
-            MutableText itemList = Text.empty();
+            MutableComponent itemList = Component.empty();
             int itemCountSum = 0;
             for (ItemStack item : items) {
                 if (item.isEmpty()) {
                     continue;
                 }
-                Text itemText = item.toHoverableText();
+                Component itemText = item.getDisplayName();
                 int itemCount = item.getCount();
                 itemCountSum += itemCount;
                 itemList.append(itemText);
                 if (itemCount > 1) {
-                    itemList.append(Text.literal("x" + itemCount + " "));
+                    itemList.append(Component.literal("x" + itemCount + " "));
                 } else {
-                    itemList.append(Text.literal(" "));
+                    itemList.append(Component.literal(" "));
                 }
             }
-            final Text name = player.getDisplayName();
-            final MutableText itemTxt = itemList;
+            final Component name = player.getDisplayName();
+            final MutableComponent itemTxt = itemList;
             if (itemCountSum <= 0) {
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.noitem", name));
             } else {
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.item", name, itemTxt));
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runGetAfkTimeCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+    private static int runGetAfkTimeCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
             MinecraftServer server = Util.requireNotNullServer(context);
-            for (ServerPlayerEntity player : players) {
+            if (server == null) {
+                return 0;
+            }
+            for (ServerPlayer player : players) {
                 PlayerData data = Util.getServerData(server).getPlayerData(player);
                 double afkSeconds = data.getAfkTicks() / 20.0;
                 final String afkSecondsStr = String.format("%.1f", afkSeconds);
-                final Text name = player.getDisplayName();
-                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.afk", name, afkSecondsStr), false);
+                final Component name = player.getDisplayName();
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.afk", name, afkSecondsStr), false);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get afk", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return players.size();
     }
 
-    private static int runGetTravelRecordCommand(Collection<ServerPlayerEntity> players, CommandContext<ServerCommandSource> context) {
+    private static int runGetTravelRecordCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
             MinecraftServer server = Util.requireNotNullServer(context);
-            for (ServerPlayerEntity player : players) {
+            if (server == null) {
+                return 0;
+            }
+            for (ServerPlayer player : players) {
                 PlayerData data = Util.getServerData(server).getPlayerData(player);
-                Vec3d[] snapshot = data.getRecentPositions();
+                Vec3[] snapshot = data.getRecentPositions();
                 if (snapshot.length < 2) {
-                    final Text name = player.getDisplayName();
-                    context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.notravel", name), false);
+                    final Component name = player.getDisplayName();
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.notravel", name), false);
                     continue;
                 }
                 double seconds = (snapshot.length - 1) / 20.0;
@@ -558,90 +552,91 @@ public class GetAndShareCommand {
                 for (int i = 1; i < snapshot.length; i++) {
                     totalTravelled += GameMath.getHorizontalEuclideanDistance(snapshot[i - 1], snapshot[i]);
                 }
-                final Text name = player.getDisplayName();
+                final Component name = player.getDisplayName();
                 final String secondsStr = String.format("%.1f", seconds);
                 final String totalDistanceStr = String.format("%.1f", totalDistance);
                 final String avgSpeedStr = String.format("%.1f", (totalDistance / seconds));
                 final String totalTravelledStr = String.format("%.1f", totalTravelled);
                 final String avgTravelSpeedStr = String.format("%.1f", (totalTravelled / seconds));
-                context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.travel", name, secondsStr, totalDistanceStr, avgSpeedStr, totalTravelledStr, avgTravelSpeedStr), false);
+                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.travel", name, secondsStr, totalDistanceStr, avgSpeedStr, totalTravelledStr, avgTravelSpeedStr), false);
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get travel", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return players.size();
     }
 
-    private static int runGetCrowdedPlaceCommand(int number, double radius, CommandContext<ServerCommandSource> context) {
+    private static int runGetCrowdedPlaceCommand(int number, double radius, CommandContext<CommandSourceStack> context) {
         try {
             MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
             List<Entity> allEntities = new ArrayList<>();
-            for (ServerWorld world : server.getWorlds()) {
+            for (ServerLevel world : server.getAllLevels()) {
                 List<Entity> entities = Util.getAllEntities(world);
                 allEntities.addAll(entities);
             }
             EntityDensityCalculator calculator = new EntityDensityCalculator(context, allEntities, radius, number);
             ServerData serverData = Util.getServerData(server);
-            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.get.crowd"), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.crowd"), false);
             serverData.submitAsyncTask(calculator);
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get crowd", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildGetCommand() {
-        return CommandManager.literal("get")
-            .requires(source -> source.hasPermissionLevel(2))
-            .then(CommandManager.literal("coord")
-                .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                    .executes(context -> {return runGetCoordCommand(EntityArgumentType.getEntities(context, "entity"), context);})
+    public static LiteralArgumentBuilder<CommandSourceStack> buildGetCommand() {
+        return Commands.literal("get")
+            .requires(source -> source.hasPermission(2))
+            .then(Commands.literal("coord")
+                .then(Commands.argument("entity", EntityArgument.entities())
+                    .executes(context -> {return runGetCoordCommand(EntityArgument.getEntities(context, "entity"), context);})
                 )
             )
-            .then(CommandManager.literal("distance")
-                .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                    .executes(context -> {return runGetDistanceCommand(EntityArgumentType.getEntities(context, "entity"), context);})
+            .then(Commands.literal("distance")
+                .then(Commands.argument("entity", EntityArgument.entities())
+                    .executes(context -> {return runGetDistanceCommand(EntityArgument.getEntities(context, "entity"), context);})
                 )
             )
-            .then(CommandManager.literal("health")
-                .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                    .executes(context -> {return runGetHealthCommand(EntityArgumentType.getEntities(context, "entity"), context);})
+            .then(Commands.literal("health")
+                .then(Commands.argument("entity", EntityArgument.entities())
+                    .executes(context -> {return runGetHealthCommand(EntityArgument.getEntities(context, "entity"), context);})
                 )
             )
-            .then(CommandManager.literal("status")
-                .then(CommandManager.argument("player", EntityArgumentType.players())
-                    .executes(context -> {return runGetStatusCommand(EntityArgumentType.getPlayers(context, "player"), context);})
+            .then(Commands.literal("status")
+                .then(Commands.argument("player", EntityArgument.players())
+                    .executes(context -> {return runGetStatusCommand(EntityArgument.getPlayers(context, "player"), context);})
                 )
             )
-            .then(CommandManager.literal("inventory")
-                .then(CommandManager.argument("player", EntityArgumentType.player())
-                    .executes(context -> {return runGetInventoryCommand(EntityArgumentType.getPlayer(context, "player"), context);})
+            .then(Commands.literal("inventory")
+                .then(Commands.argument("player", EntityArgument.player())
+                    .executes(context -> {return runGetInventoryCommand(EntityArgument.getPlayer(context, "player"), context);})
                 )
             )
-            .then(CommandManager.literal("item")
-                .then(CommandManager.argument("entity", EntityArgumentType.entities())
-                    .executes(context -> {return runGetItemCommand(EntityArgumentType.getEntities(context, "entity"), context);})
+            .then(Commands.literal("item")
+                .then(Commands.argument("entity", EntityArgument.entities())
+                    .executes(context -> {return runGetItemCommand(EntityArgument.getEntities(context, "entity"), context);})
                 )
             )
-            .then(CommandManager.literal("afk")
-                .then(CommandManager.argument("player", EntityArgumentType.players())
-                    .executes(context -> {return runGetAfkTimeCommand(EntityArgumentType.getPlayers(context, "player"), context);})
+            .then(Commands.literal("afk")
+                .then(Commands.argument("player", EntityArgument.players())
+                    .executes(context -> {return runGetAfkTimeCommand(EntityArgument.getPlayers(context, "player"), context);})
                 )
             )
-            .then(CommandManager.literal("travel")
-                .then(CommandManager.argument("player", EntityArgumentType.players())
-                    .executes(context -> {return runGetTravelRecordCommand(EntityArgumentType.getPlayers(context, "player"), context);})
+            .then(Commands.literal("travel")
+                .then(Commands.argument("player", EntityArgument.players())
+                    .executes(context -> {return runGetTravelRecordCommand(EntityArgument.getPlayers(context, "player"), context);})
                 )
             )
-            .then(CommandManager.literal("crowd")
-                .then(CommandManager.argument("number", IntegerArgumentType.integer(1))
-                    .then(CommandManager.argument("radius", DoubleArgumentType.doubleArg(0.0))
+            .then(Commands.literal("crowd")
+                .then(Commands.argument("number", IntegerArgumentType.integer(1))
+                    .then(Commands.argument("radius", DoubleArgumentType.doubleArg(0.0))
                         .executes(context -> {return runGetCrowdedPlaceCommand(IntegerArgumentType.getInteger(context, "number"), DoubleArgumentType.getDouble(context, "radius"), context);})
                     )
                 )
@@ -649,15 +644,15 @@ public class GetAndShareCommand {
             );
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildShareCommand() {
-        return CommandManager.literal("share")
-            .requires(source -> source.hasPermissionLevel(0))
-            .then(CommandManager.literal("coord").executes(context -> {return runShareCoordCommand(context);}))
-            .then(CommandManager.literal("distance").executes(context -> {return runShareDistanceCommand(context);}))
-            .then(CommandManager.literal("health").executes(context -> {return runShareHealthCommand(context);}))
-            .then(CommandManager.literal("status").executes(context -> {return runShareStatusCommand(context);}))
-            .then(CommandManager.literal("inventory").executes(context -> {return runShareInventoryCommand(context);}))
-            .then(CommandManager.literal("item").executes(context -> {return runShareItemCommand(context);}));
+    public static LiteralArgumentBuilder<CommandSourceStack> buildShareCommand() {
+        return Commands.literal("share")
+            .requires(source -> source.hasPermission(0))
+            .then(Commands.literal("coord").executes(context -> {return runShareCoordCommand(context);}))
+            .then(Commands.literal("distance").executes(context -> {return runShareDistanceCommand(context);}))
+            .then(Commands.literal("health").executes(context -> {return runShareHealthCommand(context);}))
+            .then(Commands.literal("status").executes(context -> {return runShareStatusCommand(context);}))
+            .then(Commands.literal("inventory").executes(context -> {return runShareInventoryCommand(context);}))
+            .then(Commands.literal("item").executes(context -> {return runShareItemCommand(context);}));
     }
     
 }

@@ -13,7 +13,7 @@ import java.util.Set;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A {@link RuleEvent} that fires on every server world tick.
@@ -72,7 +72,7 @@ public class ServerTickEvent implements RuleEvent {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.event.servertick");
     }
 }

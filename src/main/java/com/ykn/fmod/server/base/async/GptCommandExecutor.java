@@ -21,9 +21,9 @@ import com.ykn.fmod.server.base.data.GptData;
 import com.ykn.fmod.server.base.util.MarkdownToTextConverter;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
 
 /**
  * Executes a GPT request asynchronously and delivers the result back to the
@@ -45,12 +45,12 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
     private static final Gson gson = new Gson();
 
     private final GptData gptData;
-    private final CommandContext<ServerCommandSource> context;
+    private final CommandContext<CommandSourceStack> context;
 
-    private volatile Text feedbackText;
+    private volatile Component feedbackText;
     private volatile String loggedResponse;
 
-    public GptCommandExecutor(GptData gptData, CommandContext<ServerCommandSource> context) {
+    public GptCommandExecutor(GptData gptData, CommandContext<CommandSourceStack> context) {
         this.gptData = gptData;
         this.context = context;
         this.feedbackText = null;
@@ -95,14 +95,14 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
                 final String responseJson = responseBuilder.toString().strip();
                 final String response = gson.fromJson(responseJson, ChatResponse.class).getMessageContent().strip();
                 final String responseModel = gptData.getCachedGptModel();
-                final Text formattedText = MarkdownToTextConverter.parseMarkdownToText(response);
+                final Component formattedText = MarkdownToTextConverter.parseMarkdownToText(response);
                 gptData.receiveMessage(response, formattedText, responseJson);
-                this.feedbackText = Text.literal("<").append(responseModel.isBlank() ? "GPT" : responseModel).append("> ").append(formattedText);
+                this.feedbackText = Component.literal("<").append(responseModel.isBlank() ? "GPT" : responseModel).append("> ").append(formattedText);
                 this.loggedResponse = "<" + (responseModel.isBlank() ? "GPT" : responseModel) + "> " + response;
                 this.markAsyncFinished();
             } else {
                 gptData.cancel();
-                this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.httperror", responseCode).formatted(Formatting.RED);
+                this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.httperror", responseCode).withStyle(ChatFormatting.RED);
                 this.markAsyncFinished();
                 Util.LOGGER.warn("FMinecraftMod: GPT server response code: " + responseCode);
                 InputStream errorStream = connection.getErrorStream();
@@ -120,22 +120,22 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
             }
         } catch (SocketTimeoutException e) {
             gptData.cancel();
-            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.timeout").formatted(Formatting.RED);
+            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.timeout").withStyle(ChatFormatting.RED);
             this.markAsyncFinished();
             Util.LOGGER.warn("FMinecraftMod: Connect to the GPT server timeout", e);
         } catch (ConnectException e) {
             gptData.cancel();
-            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.connecterror").formatted(Formatting.RED);
+            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.connecterror").withStyle(ChatFormatting.RED);
             this.markAsyncFinished();
             Util.LOGGER.warn("FMinecraftMod: Cannot connect to the GPT server", e);
         } catch (FileNotFoundException e) {
             gptData.cancel();
-            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.fileerror").formatted(Formatting.RED);
+            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.fileerror").withStyle(ChatFormatting.RED);
             this.markAsyncFinished();
             Util.LOGGER.warn("FMinecraftMod: The GPT server did not return a valid response", e);
         } catch (Exception e) {
             gptData.cancel();
-            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.error").formatted(Formatting.RED);
+            this.feedbackText = Util.parseTranslatableText("fmod.command.gpt.error").withStyle(ChatFormatting.RED);
             this.markAsyncFinished();
             Util.LOGGER.error("FMinecraftMod: Exception while connecting to the GPT server", e);
         } finally {
@@ -147,23 +147,23 @@ public class GptCommandExecutor extends AsyncTaskExecutor {
 
     @Override
     protected void taskAfterCompletion() {
-        if (context.getSource().isExecutedByPlayer()) {
+        if (context.getSource().isPlayer()) {
             if (this.loggedResponse != null) {
                 // If source is NOT a player, the sendFeedback function can already sent the feedback to console
                 // Only log the response when console cannot see the feedback
                 Util.LOGGER.info(this.loggedResponse);
             }
-            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
+            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().hasDisconnected()) {
                 Util.LOGGER.info("FMinecraftMod: GPT command executed but the player has disconnected.");
                 return;
             }
         }
         if (this.feedbackText == null) {
-            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.gpt.emptyerror").formatted(Formatting.RED), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.gpt.emptyerror").withStyle(ChatFormatting.RED), false);
             Util.LOGGER.error("FMinecraftMod: GPT command executed but no feedback text was set.");
             return;
         }
-        context.getSource().sendFeedback(() -> this.feedbackText, false);
+        context.getSource().sendSuccess(() -> this.feedbackText, false);
     }
 
     @SuppressWarnings("unused")

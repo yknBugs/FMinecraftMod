@@ -13,7 +13,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.google.gson.Gson;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Most functions in this class are thread-safe.
@@ -23,7 +23,7 @@ public class GptData {
     private final transient ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private List<String> postMessages;
-    private List<Text> responseTexts;
+    private List<Component> responseTexts;
     private List<String> responseMessages;
     private List<String> responseJson;
     private List<URL> requestUrls;
@@ -60,7 +60,7 @@ public class GptData {
      * @param responseJson The JSON response associated with the message.
      * @return true if the message was successfully received and stored, false if a response has already been received.
      */
-    public boolean receiveMessage(String message, Text text, String responseJson) {
+    public boolean receiveMessage(String message, Component text, String responseJson) {
         boolean result = false;
         this.lock.writeLock().lock();
         try {
@@ -346,7 +346,7 @@ public class GptData {
         }
     }
 
-    public Text getResponseText(int index) {
+    public Component getResponseText(int index) {
         this.lock.readLock().lock();
         try {
             return this.responseTexts.get(index);

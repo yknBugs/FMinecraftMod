@@ -13,9 +13,9 @@ import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Stores runtime data for a player on the server.
@@ -64,19 +64,19 @@ public class PlayerData {
      * Used for biome change detection and related logic.
      */
     @Nullable
-    private Identifier lastBiomeId;
+    private ResourceLocation lastBiomeId;
     
     /**
      * The dimension ID the player was in during the last tick.
      * Used for dimension change detection and related logic.
      */
-    private Identifier lastDimensionId;
+    private ResourceLocation lastDimensionId;
 
     /**
      * Recent positions for travel detection, ordered from oldest to newest.
      * Used to calculate player movement distance and detect travel patterns.
      */
-    private final Deque<Vec3d> recentPositions;
+    private final Deque<Vec3> recentPositions;
 
     /**
      * The last known "can sleep" status of the player.
@@ -112,8 +112,8 @@ public class PlayerData {
      * Constructs a new PlayerData instance with default values.
      * All counters are initialized to 0, all objects to null, and collections to empty.
      */
-    public PlayerData(PlayerEntity player, ServerData serverData) {
-        this.playerUuid = player.getUuid();
+    public PlayerData(ServerPlayer player, ServerData serverData) {
+        this.playerUuid = player.getUUID();
         this.serverData = serverData;
         this.afkTicks = 0;
         this.lastPitch = 0;
@@ -131,15 +131,15 @@ public class PlayerData {
      * Updates the cached last-tick state (pitch, yaw, dimension, biome) to the player's current values.
      * Should be called once per tick after all per-tick logic has been processed.
      */
-    public void updateLastTickData(PlayerEntity player) {
-        if (player == null || !player.getUuid().equals(this.playerUuid)) {
+    public void updateLastTickData(ServerPlayer player) {
+        if (player == null || !player.getUUID().equals(this.playerUuid)) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to update PlayerData with a player entity that does not match the stored UUID. Skipping.");
             return;
         }
-        this.lastPitch = player.getPitch();
-        this.lastYaw = player.getYaw();
-        this.lastDimensionId = player.getWorld().getRegistryKey().getValue();
-        this.lastBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        this.lastPitch = player.getXRot();
+        this.lastYaw = player.getYRot();
+        this.lastDimensionId = player.level().dimension().location();
+        this.lastBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
     }
 
     /**
@@ -148,12 +148,12 @@ public class PlayerData {
      *
      * @param maxHistorySize the maximum number of positions to retain
      */
-    public void updatePositionHistory(PlayerEntity player, int maxHistorySize) {
-        if (player == null || !player.getUuid().equals(this.playerUuid)) {
+    public void updatePositionHistory(ServerPlayer player, int maxHistorySize) {
+        if (player == null || !player.getUUID().equals(this.playerUuid)) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to update PlayerData (recentPositions) with a player entity that does not match the stored UUID. Skipping.");
             return;
         }
-        this.recentPositions.addLast(player.getPos());
+        this.recentPositions.addLast(player.position());
         while (this.recentPositions.size() > maxHistorySize) {
             this.recentPositions.removeFirst();
         }
@@ -162,13 +162,13 @@ public class PlayerData {
     /**
      * Clears the recent positions history and seeds it with the player's current position.
      */
-    public void clearPositionHistory(PlayerEntity player) {
-        if (player == null || !player.getUuid().equals(this.playerUuid)) {
+    public void clearPositionHistory(ServerPlayer player) {
+        if (player == null || !player.getUUID().equals(this.playerUuid)) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to clear PlayerData position history with a player entity that does not match the stored UUID. Skipping.");
             return;
         }
         this.recentPositions.clear();
-        this.recentPositions.addLast(player.getPos());
+        this.recentPositions.addLast(player.position());
     }
 
     /**
@@ -177,13 +177,13 @@ public class PlayerData {
      *
      * @return {@code true} if the facing direction has changed; {@code false} otherwise
      */
-    public boolean isFacingDirectionChanged(PlayerEntity player) {
-        if (player == null || !player.getUuid().equals(this.playerUuid)) {
+    public boolean isFacingDirectionChanged(ServerPlayer player) {
+        if (player == null || !player.getUUID().equals(this.playerUuid)) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to check facing direction change with a player entity that does not match the stored UUID. Returning false.");
             return false;
         }
-        float pitch = player.getPitch();
-        float yaw = player.getYaw();
+        float pitch = player.getXRot();
+        float yaw = player.getYRot();
         return Math.abs(pitch - this.lastPitch) > FACING_DIRECTION_EPSILON || Math.abs(yaw - this.lastYaw) > FACING_DIRECTION_EPSILON;
     }
 
@@ -192,12 +192,12 @@ public class PlayerData {
      *
      * @return {@code true} if the biome has changed; {@code false} otherwise
      */
-    public boolean isBiomeChanged(PlayerEntity player) {
-        if (player == null || !player.getUuid().equals(this.playerUuid)) {
+    public boolean isBiomeChanged(ServerPlayer player) {
+        if (player == null || !player.getUUID().equals(this.playerUuid)) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to check biome change with a player entity that does not match the stored UUID. Returning false.");
             return false;
         }
-        Identifier currentBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         if (this.lastBiomeId == null && currentBiomeId == null) {
             return false; 
         } else if (this.lastBiomeId == null || currentBiomeId == null) {
@@ -212,12 +212,12 @@ public class PlayerData {
      *
      * @return {@code true} if the dimension has changed; {@code false} otherwise
      */
-    public boolean isDimensionChanged(PlayerEntity player) {
-        if (player == null || !player.getUuid().equals(this.playerUuid)) {
+    public boolean isDimensionChanged(ServerPlayer player) {
+        if (player == null || !player.getUUID().equals(this.playerUuid)) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to check dimension change with a player entity that does not match the stored UUID. Returning false.");
             return false;
         }
-        Identifier currentDimId = player.getWorld().getRegistryKey().getValue();
+        ResourceLocation currentDimId = player.level().dimension().location();
         return !currentDimId.equals(this.lastDimensionId);
     }
 
@@ -243,10 +243,10 @@ public class PlayerData {
     /**
      * Returns the player entity associated with this data instance.
      *
-     * @return the associated {@link PlayerEntity}
+     * @return the associated {@link ServerPlayer}
      */
-    public PlayerEntity getPlayer() {
-        return this.serverData.getServer().getPlayerManager().getPlayer(playerUuid);
+    public ServerPlayer getPlayer() {
+        return this.serverData.getServer().getPlayerList().getPlayer(playerUuid);
     }
 
     /**
@@ -288,29 +288,29 @@ public class PlayerData {
     /**
      * Returns the biome identifier recorded during the last tick, or {@code null} if unavailable.
      *
-     * @return the last known biome {@link Identifier}, or {@code null}
+     * @return the last known biome {@link ResourceLocation}, or {@code null}
      */
     @Nullable
-    public Identifier getLastBiomeId() {
+    public ResourceLocation getLastBiomeId() {
         return this.lastBiomeId;
     }
 
     /**
      * Returns the dimension identifier recorded during the last tick.
      *
-     * @return the last known dimension {@link Identifier}
+     * @return the last known dimension {@link ResourceLocation}
      */
-    public Identifier getLastDimensionId() {
+    public ResourceLocation getLastDimensionId() {
         return this.lastDimensionId;
     }
 
     /**
      * Returns a snapshot of the recent positions history as an array, ordered from oldest to newest.
      *
-     * @return array of recent {@link Vec3d} positions
+     * @return array of recent {@link Vec3} positions
      */
-    public Vec3d[] getRecentPositions() {
-        return this.recentPositions.toArray(new Vec3d[0]);
+    public Vec3[] getRecentPositions() {
+        return this.recentPositions.toArray(new Vec3[0]);
     }
 
     /**

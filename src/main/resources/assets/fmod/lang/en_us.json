@@ -663,6 +663,7 @@
     "fmod.node.trigger.output.param.type": "String",
     "fmod.node.error.inputnull": "Input %2$s of Node %1$s cannot be null.",
     "fmod.node.error.classcast": "Cannot cast the type of input %2$s in node %1$s to %3$s",
+    "fmod.node.error.id": "Invalid Identifier %2$s in node %1$s",
     "fmod.rule.status.true": "Passed",
     "fmod.rule.status.false": "Violated",
     "fmod.rule.status.pass": "Executed",

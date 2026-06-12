@@ -31,13 +31,12 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * A {@link RuleAction} that sends an action-bar message to a specific set of players.
@@ -123,14 +122,14 @@ public class SendActionbar implements RuleAction {
         if (playerIds == null || message == null) {
             return true;
         }
-        TextPlaceholderFactory<ServerPlayerEntity> factory = TextPlaceholderFactory.ofDefault();
+        TextPlaceholderFactory<ServerPlayer> factory = TextPlaceholderFactory.ofDefault();
         for (String variable : context.getVariables().keySet()) {
             Object value = context.getVariable(variable);
-            Text toShow = value == null ? Text.literal("${var:" + variable + "}") : Text.literal(TypeAdaptor.parse(value).asString());
+            Component toShow = value == null ? Component.literal("${var:" + variable + "}") : Component.literal(TypeAdaptor.parse(value).asString());
             factory = factory.add("${var:" + variable + "}", player -> toShow);
         }
         for (UUID playerId : playerIds) {
-            ServerPlayerEntity player = context.getServer().getPlayerManager().getPlayer(playerId);
+            ServerPlayer player = context.getServer().getPlayerList().getPlayer(playerId);
             if (player != null) {
                 MessageType.sendActionBarMessage(player, factory.parse(message, player));
             }
@@ -154,7 +153,7 @@ public class SendActionbar implements RuleAction {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.action.sendactionbar", this.getName(), this.getType(),
             this.players.render(), this.message.render());
     }
@@ -191,16 +190,16 @@ public class SendActionbar implements RuleAction {
         return new SendActionbar(name, players, message);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleAction> actionConsumer) {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         SayCommandSuggestion suggestion = SayCommandSuggestion.suggestDefault().add("${", "var:");
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<List<UUID>> playersParameter = RuleParameter.fromCommandContext("players", "var.players", () -> {
-                        Collection<ServerPlayerEntity> entities = EntityArgumentType.getPlayers(ctx, "players");
+                        Collection<ServerPlayer> entities = EntityArgument.getPlayers(ctx, "players");
                         List<UUID> uuids = new ArrayList<>();
-                        for (ServerPlayerEntity entity : entities) {
-                            uuids.add(entity.getUuid());
+                        for (ServerPlayer entity : entities) {
+                            uuids.add(entity.getUUID());
                         }
                         return uuids;
                     }, arguments, ctx);
@@ -209,19 +208,19 @@ public class SendActionbar implements RuleAction {
                     }, arguments, ctx);
                     SendActionbar action = new SendActionbar(name, playersParameter, messageParameter);
                     actionConsumer.accept(ctx, action);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("players", "var.players", () -> CommandManager.argument("players", EntityArgumentType.players()))
-            .add("message", "var.message", () -> CommandManager.argument("message", StringArgumentType.greedyString()).suggests(suggestion))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("players", "var.players", () -> Commands.argument("players", EntityArgument.players()))
+            .add("message", "var.message", () -> Commands.argument("message", StringArgumentType.greedyString()).suggests(suggestion))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 }

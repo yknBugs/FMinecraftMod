@@ -11,8 +11,8 @@ import java.util.List;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
  * Tracks the execution state of a single node within an {@link ExecutionContext}.
@@ -283,9 +283,9 @@ public class NodeStatus implements Cloneable {
      * @param flow The logic flow (used to resolve next node references)
      * @return A Text object suitable for display in Minecraft
      */
-    public Text render(long index, LogicFlow flow) {
+    public Component render(long index, LogicFlow flow) {
         // Render title
-        MutableText text = Util.parseTranslatableText("fmod.flow.execute.node", String.valueOf(index), this.node.name, this.node.metadata.displayName);
+        MutableComponent text = Util.parseTranslatableText("fmod.flow.execute.node", String.valueOf(index), this.node.name, this.node.metadata.displayName);
         text = text.append("\n");
         // Render inputs
         for (int i = 0; i < this.node.metadata.inputNumber; i++) {

@@ -16,14 +16,14 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Style;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * A factory for creating and parsing text with placeholders and custom styles.
@@ -52,12 +52,12 @@ public class TextPlaceholderFactory<T> {
     /**
      * Map of placeholder keys to their corresponding text generation functions.
      */
-    private Map<String, Function<T, Text>> placeholders;
+    private Map<String, Function<T, Component>> placeholders;
 
     /**
      * Map of custom style regex patterns to their corresponding style application functions.
      */
-    private Map<String, BiFunction<String, MutableText, MutableText>> customStyles;
+    private Map<String, BiFunction<String, MutableComponent, MutableComponent>> customStyles;
 
     /**
      * Constructs a new empty TextPlaceholderFactory with no placeholders or custom styles.
@@ -73,7 +73,7 @@ public class TextPlaceholderFactory<T> {
      *
      * @param placeholders A map of placeholder keys to their corresponding text generation functions
      */
-    public TextPlaceholderFactory(Map<String, Function<T, Text>> placeholders) {
+    public TextPlaceholderFactory(Map<String, Function<T, Component>> placeholders) {
         this.placeholders = placeholders;
         this.customStyles = new LinkedHashMap<>();
     }
@@ -85,7 +85,7 @@ public class TextPlaceholderFactory<T> {
      * @param value A function that generates Text based on the context object
      * @return This factory instance for method chaining
      */
-    public TextPlaceholderFactory<T> add(String key, Function<T, Text> value) {
+    public TextPlaceholderFactory<T> add(String key, Function<T, Component> value) {
         this.placeholders.put(key, value);
         return this;
     }
@@ -97,7 +97,7 @@ public class TextPlaceholderFactory<T> {
      * @param value The static Text value to use for this placeholder
      * @return This factory instance for method chaining
      */
-    public TextPlaceholderFactory<T> add(String key, Text value) {
+    public TextPlaceholderFactory<T> add(String key, Component value) {
         this.placeholders.put(key, t -> value);
         return this;
     }
@@ -110,7 +110,7 @@ public class TextPlaceholderFactory<T> {
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> add(String key, String value) {
-        this.placeholders.put(key, t -> Text.literal(value));
+        this.placeholders.put(key, t -> Component.literal(value));
         return this;
     }
 
@@ -128,7 +128,7 @@ public class TextPlaceholderFactory<T> {
      * @param styleFunction A function that applies the style, taking the captured parameter and the text to style
      * @return This factory instance for method chaining
      */
-    public TextPlaceholderFactory<T> style(String styleRegex, BiFunction<String, MutableText, MutableText> styleFunction) {
+    public TextPlaceholderFactory<T> style(String styleRegex, BiFunction<String, MutableComponent, MutableComponent> styleFunction) {
         this.customStyles.put(styleRegex, styleFunction);
         return this;
     }
@@ -140,7 +140,7 @@ public class TextPlaceholderFactory<T> {
      * @param placeholders A map of placeholders to add
      * @return This factory instance for method chaining
      */
-    public TextPlaceholderFactory<T> append(Map<String, Function<T, Text>> placeholders) {
+    public TextPlaceholderFactory<T> append(Map<String, Function<T, Component>> placeholders) {
         this.placeholders.putAll(placeholders);
         return this;
     }
@@ -339,7 +339,7 @@ public class TextPlaceholderFactory<T> {
      * @param t The context object passed to placeholder functions
      * @return The parsed text with all placeholders replaced
      */
-    public MutableText parsePlaceholders(String text, T t) {
+    public MutableComponent parsePlaceholders(String text, T t) {
         List<String> keys = new ArrayList<>(this.placeholders.keySet());
         // We must sort the keys by length in descending order to avoid replacing smaller keys first
         keys.sort((a, b) -> Integer.compare(b.length(), a.length()));
@@ -361,32 +361,32 @@ public class TextPlaceholderFactory<T> {
             splitText = currentParts;
         }
 
-        List<Text> finalText = new ArrayList<>();
+        List<Component> finalText = new ArrayList<>();
         for (int i = 0; i < splitText.size(); i++) {
             String part = splitText.get(i);
             if (i % 2 == 0) {
                 // Even indexes are the strings that should be splited
-                finalText.add(Text.literal(part));
+                finalText.add(Component.literal(part));
             } else {
                 // Odd indexes are the delimiters that should be kept
-                Function<T, Text> placeholderFunction = this.placeholders.get(part);
+                Function<T, Component> placeholderFunction = this.placeholders.get(part);
                 if (placeholderFunction == null) {
                     // Unlikely to happen
                     Util.LOGGER.error("FMinecraftMod: Missing placeholder: " + part);
-                    finalText.add(Text.literal(part));
+                    finalText.add(Component.literal(part));
                 } else {
                     try {
                         finalText.add(placeholderFunction.apply(t));
                     } catch (Exception e) {
                         Util.LOGGER.error("FMinecraftMod: Error while parsing placeholder: " + part, e);
-                        finalText.add(Text.literal(part));
+                        finalText.add(Component.literal(part));
                     }
                 }
             }
         }
         
-        MutableText result = Text.empty();
-        for (Text part : finalText) {
+        MutableComponent result = Component.empty();
+        for (Component part : finalText) {
             result.append(part);
         }
         return result;
@@ -408,9 +408,9 @@ public class TextPlaceholderFactory<T> {
      * @param t The context object passed to placeholder functions
      * @return The fully parsed and styled text
      */
-    public MutableText parse(String text, T t) {
+    public MutableComponent parse(String text, T t) {
         // Tokenize the text first based on custom styles
-        List<Text> finalTexts = new ArrayList<>();
+        List<MutableComponent> finalTexts = new ArrayList<>();
         List<String> textTokens = new ArrayList<>();
         List<List<String>> styleTokens = new ArrayList<>();
         List<List<String>> styleParams = new ArrayList<>();
@@ -434,10 +434,10 @@ public class TextPlaceholderFactory<T> {
             }
             
             // Apply the active styles to the text token
-            MutableText textToken = parsePlaceholders(currentText, t);
+            MutableComponent textToken = parsePlaceholders(currentText, t);
             Set<String> styleKeys = activeStyles.keySet();
             for (String styleKey : styleKeys) {
-                BiFunction<String, MutableText, MutableText> styleFunction = this.customStyles.get(styleKey);
+                BiFunction<String, MutableComponent, MutableComponent> styleFunction = this.customStyles.get(styleKey);
                 if (styleFunction == null) {
                     // Unlikely to happen
                     Util.LOGGER.error("FMinecraftMod: Missing custom style: " + styleKey);
@@ -453,8 +453,8 @@ public class TextPlaceholderFactory<T> {
             finalTexts.add(textToken);
         }
         // Combine all final texts
-        MutableText result = Text.empty();
-        for (Text part : finalTexts) {
+        MutableComponent result = Component.empty();
+        for (Component part : finalTexts) {
             result.append(part);
         }
         return result;
@@ -477,7 +477,7 @@ public class TextPlaceholderFactory<T> {
      * @param placeholders A map of placeholder keys to their corresponding text generation functions
      * @return A new factory instance with the given placeholders
      */
-    public static <U> TextPlaceholderFactory<U> of(Map<String, Function<U, Text>> placeholders) {
+    public static <U> TextPlaceholderFactory<U> of(Map<String, Function<U, Component>> placeholders) {
         return new TextPlaceholderFactory<U>(placeholders);
     }
 
@@ -489,7 +489,7 @@ public class TextPlaceholderFactory<T> {
      * @param value A function that generates Text based on the context object
      * @return A new factory instance with the single placeholder
      */
-    public static <U> TextPlaceholderFactory<U> of(String key, Function<U, Text> value) {
+    public static <U> TextPlaceholderFactory<U> of(String key, Function<U, Component> value) {
         return new TextPlaceholderFactory<U>().add(key, value);
     }
 
@@ -501,7 +501,7 @@ public class TextPlaceholderFactory<T> {
      * @param value The static Text value for this placeholder
      * @return A new factory instance with the single placeholder
      */
-    public static <U> TextPlaceholderFactory<U> of(String key, Text value) {
+    public static <U> TextPlaceholderFactory<U> of(String key, Component value) {
         return new TextPlaceholderFactory<U>().add(key, value);
     }
 
@@ -548,115 +548,115 @@ public class TextPlaceholderFactory<T> {
      *
      * @return A pre-configured factory for ServerPlayerEntity context
      */
-    public static TextPlaceholderFactory<ServerPlayerEntity> ofDefault() {
-        return new TextPlaceholderFactory<ServerPlayerEntity>()
-            .style("&0", (param, text) -> text.formatted(Formatting.BLACK))
-            .style("&1", (param, text) -> text.formatted(Formatting.DARK_BLUE))
-            .style("&2", (param, text) -> text.formatted(Formatting.DARK_GREEN))
-            .style("&3", (param, text) -> text.formatted(Formatting.DARK_AQUA))
-            .style("&4", (param, text) -> text.formatted(Formatting.DARK_RED))
-            .style("&5", (param, text) -> text.formatted(Formatting.DARK_PURPLE))
-            .style("&6", (param, text) -> text.formatted(Formatting.GOLD))
-            .style("&7", (param, text) -> text.formatted(Formatting.GRAY))  
-            .style("&8", (param, text) -> text.formatted(Formatting.DARK_GRAY))
-            .style("&9", (param, text) -> text.formatted(Formatting.BLUE))  
-            .style("&[aA]", (param, text) -> text.formatted(Formatting.GREEN))
-            .style("&[bB]", (param, text) -> text.formatted(Formatting.AQUA))
-            .style("&[cC]", (param, text) -> text.formatted(Formatting.RED))
-            .style("&[dD]", (param, text) -> text.formatted(Formatting.LIGHT_PURPLE))
-            .style("&[eE]", (param, text) -> text.formatted(Formatting.YELLOW))
-            .style("&[fF]", (param, text) -> text.formatted(Formatting.WHITE))
-            .style("&[kK]", (param, text) -> text.formatted(Formatting.OBFUSCATED))
-            .style("&[lL]", (param, text) -> text.formatted(Formatting.BOLD))
-            .style("&[oO]", (param, text) -> text.formatted(Formatting.ITALIC))
-            .style("&[nN]", (param, text) -> text.formatted(Formatting.UNDERLINE))
-            .style("&[mM]", (param, text) -> text.formatted(Formatting.STRIKETHROUGH))
+    public static TextPlaceholderFactory<ServerPlayer> ofDefault() {
+        return new TextPlaceholderFactory<ServerPlayer>()
+            .style("&0", (param, text) -> text.withStyle(ChatFormatting.BLACK))
+            .style("&1", (param, text) -> text.withStyle(ChatFormatting.DARK_BLUE))
+            .style("&2", (param, text) -> text.withStyle(ChatFormatting.DARK_GREEN))
+            .style("&3", (param, text) -> text.withStyle(ChatFormatting.DARK_AQUA))
+            .style("&4", (param, text) -> text.withStyle(ChatFormatting.DARK_RED))
+            .style("&5", (param, text) -> text.withStyle(ChatFormatting.DARK_PURPLE))
+            .style("&6", (param, text) -> text.withStyle(ChatFormatting.GOLD))
+            .style("&7", (param, text) -> text.withStyle(ChatFormatting.GRAY))  
+            .style("&8", (param, text) -> text.withStyle(ChatFormatting.DARK_GRAY))
+            .style("&9", (param, text) -> text.withStyle(ChatFormatting.BLUE))  
+            .style("&[aA]", (param, text) -> text.withStyle(ChatFormatting.GREEN))
+            .style("&[bB]", (param, text) -> text.withStyle(ChatFormatting.AQUA))
+            .style("&[cC]", (param, text) -> text.withStyle(ChatFormatting.RED))
+            .style("&[dD]", (param, text) -> text.withStyle(ChatFormatting.LIGHT_PURPLE))
+            .style("&[eE]", (param, text) -> text.withStyle(ChatFormatting.YELLOW))
+            .style("&[fF]", (param, text) -> text.withStyle(ChatFormatting.WHITE))
+            .style("&[kK]", (param, text) -> text.withStyle(ChatFormatting.OBFUSCATED))
+            .style("&[lL]", (param, text) -> text.withStyle(ChatFormatting.BOLD))
+            .style("&[oO]", (param, text) -> text.withStyle(ChatFormatting.ITALIC))
+            .style("&[nN]", (param, text) -> text.withStyle(ChatFormatting.UNDERLINE))
+            .style("&[mM]", (param, text) -> text.withStyle(ChatFormatting.STRIKETHROUGH))
             .style("&[rR]", (param, text) -> text.setStyle(Style.EMPTY))
-            .style("\\$\\{markdown\\}", (param, text) -> Text.empty().append(MarkdownToTextConverter.parseMarkdownToText(text.getString())))
+            .style("\\$\\{markdown\\}", (param, text) -> Component.empty().append(MarkdownToTextConverter.parseMarkdownToText(text.getString())))
             .style("\\$\\{color:([0-9A-Fa-f]{1,8})\\}", (param, text) -> {
                 try {
                     int colorInt = Integer.parseInt(param.strip(), 16);
-                    return text.styled(style -> style.withColor(colorInt));
+                    return text.withStyle(style -> style.withColor(colorInt));
                 } catch (NumberFormatException e) {
                     Util.LOGGER.debug("FMinecraftMod: Invalid color code: " + param.strip(), e);
                     return text;
                 }
             })
             .style("\\$\\{link:([^}]*)\\}", (param, text) -> 
-                text.styled(style -> style.withClickEvent(
+                text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.OPEN_URL, param.strip())
                 ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.openurl", Text.literal(param.strip()).formatted(Formatting.YELLOW)).formatted(Formatting.GREEN))
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.openurl", Component.literal(param.strip()).withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN))
                 ))
             )
             .style("\\$\\{copy:([^}]*)\\}", (param, text) -> 
-                text.styled(style -> style.withClickEvent(
+                text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, param.strip())
                 ).withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.copyto", param.strip()).formatted(Formatting.GREEN))
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.copyto", param.strip()).withStyle(ChatFormatting.GREEN))
                 ))
             )
             .style("\\$\\{hint:([^}]*)\\}", (param, text) -> 
-                text.styled(style -> style.withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal(param.strip()))
+                text.withStyle(style -> style.withHoverEvent(
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(param.strip()))
                 ))
             )
             .style("\\$\\{suggest:([^}]*)\\}", (param, text) -> 
-                text.styled(style -> style.withClickEvent(
+                text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, param.strip())
                 ))
             )
-            .add("${Ciallo}", t -> Text.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
-                .styled(style -> style.withHoverEvent(
-                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Text.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606").styled(
+            .add("${Ciallo}", t -> Component.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
+                .withStyle(style -> style.withHoverEvent(
+                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal("Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606").withStyle(
                         styled -> styled.withColor(Integer.parseInt("c0721c", 16))
                     ))
                 ).withClickEvent(
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "Ciallo\uff5e(\u2220\u30fb\u03c9< )\u2312\u2606")
                 ).withColor(Integer.parseInt("c0721c", 16)))
             )
-            .add("${player}", t -> t == null ? Text.literal("${player}") : t.getDisplayName())
-            .add("${health}", t -> t == null ? Text.literal("${health}") : Text.literal(String.format("%.2f", t.getHealth())))
-            .add("${hp}", t -> t == null ? Text.literal("${hp}") : Text.literal(String.format("%.2f", t.getHealth())))
-            .add("${maxhealth}", t -> t == null ? Text.literal("${maxhealth}") : Text.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${maxhp}", t -> t == null ? Text.literal("${maxhp}") : Text.literal(String.format("%.2f", t.getMaxHealth())))
-            .add("${level}", t -> t == null ? Text.literal("${level}") : Text.literal(String.valueOf(t.experienceLevel)))
-            .add("${hunger}", t -> t == null ? Text.literal("${hunger}") : Text.literal(String.valueOf(t.getHungerManager().getFoodLevel())))
-            .add("${saturation}", t -> t == null ? Text.literal("${saturation}") : Text.literal(String.format("%.2f", t.getHungerManager().getSaturationLevel())))
-            .add("${x}", t -> t == null ? Text.literal("${x}") : Text.literal(String.format("%.2f", t.getX())))
-            .add("${y}", t -> t == null ? Text.literal("${y}") : Text.literal(String.format("%.2f", t.getY())))
-            .add("${z}", t -> t == null ? Text.literal("${z}") : Text.literal(String.format("%.2f", t.getZ())))
-            .add("${pitch}", t -> t == null ? Text.literal("${pitch}") : Text.literal(String.format("%.2f", t.getPitch())))
-            .add("${yaw}", t -> t == null ? Text.literal("${yaw}") : Text.literal(String.format("%.2f", t.getYaw())))
-            .add("${biome}", t -> t == null ? Text.literal("${biome}") : Util.getBiomeText(t))
-            .add("${coord}", t -> t == null ? Text.literal("${coord}") : Util.parseCoordText(t))
+            .add("${player}", t -> t == null ? Component.literal("${player}") : t.getDisplayName())
+            .add("${health}", t -> t == null ? Component.literal("${health}") : Component.literal(String.format("%.2f", t.getHealth())))
+            .add("${hp}", t -> t == null ? Component.literal("${hp}") : Component.literal(String.format("%.2f", t.getHealth())))
+            .add("${maxhealth}", t -> t == null ? Component.literal("${maxhealth}") : Component.literal(String.format("%.2f", t.getMaxHealth())))
+            .add("${maxhp}", t -> t == null ? Component.literal("${maxhp}") : Component.literal(String.format("%.2f", t.getMaxHealth())))
+            .add("${level}", t -> t == null ? Component.literal("${level}") : Component.literal(String.valueOf(t.experienceLevel)))
+            .add("${hunger}", t -> t == null ? Component.literal("${hunger}") : Component.literal(String.valueOf(t.getFoodData().getFoodLevel())))
+            .add("${saturation}", t -> t == null ? Component.literal("${saturation}") : Component.literal(String.format("%.2f", t.getFoodData().getSaturationLevel())))
+            .add("${x}", t -> t == null ? Component.literal("${x}") : Component.literal(String.format("%.2f", t.getX())))
+            .add("${y}", t -> t == null ? Component.literal("${y}") : Component.literal(String.format("%.2f", t.getY())))
+            .add("${z}", t -> t == null ? Component.literal("${z}") : Component.literal(String.format("%.2f", t.getZ())))
+            .add("${pitch}", t -> t == null ? Component.literal("${pitch}") : Component.literal(String.format("%.2f", t.getXRot())))
+            .add("${yaw}", t -> t == null ? Component.literal("${yaw}") : Component.literal(String.format("%.2f", t.getYRot())))
+            .add("${biome}", t -> t == null ? Component.literal("${biome}") : Util.getBiomeText(t))
+            .add("${coord}", t -> t == null ? Component.literal("${coord}") : Util.parseCoordText(t))
             .add("${mainhand}", t -> {
                 if (t == null) {
-                    return Text.literal("${mainhand}");
+                    return Component.literal("${mainhand}");
                 }
-                ItemStack item = t.getMainHandStack();
+                ItemStack item = t.getMainHandItem();
                 if (item == null || item.isEmpty()) {
                     return Util.parseTranslatableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
-                        return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
+                        return Component.empty().append(item.getDisplayName()).append("x").append(Component.literal(String.valueOf(item.getCount())));
                     } else {
-                        return item.toHoverableText();
+                        return item.getDisplayName();
                     }
                 }
             })
             .add("${offhand}", t -> {
                 if (t == null) {
-                    return Text.literal("${offhand}");
+                    return Component.literal("${offhand}");
                 }
-                ItemStack item = t.getOffHandStack();
+                ItemStack item = t.getOffhandItem();
                 if (item == null || item.isEmpty()) {
                     return Util.parseTranslatableText("fmod.command.get.emptyslot");
                 } else {
                     if (item.getCount() > 1) {
-                        return Text.empty().append(item.toHoverableText()).append("x").append(Text.literal(String.valueOf(item.getCount())));
+                        return Component.empty().append(item.getDisplayName()).append("x").append(Component.literal(String.valueOf(item.getCount())));
                     } else {
-                        return item.toHoverableText();
+                        return item.getDisplayName();
                     }
                 }
             });

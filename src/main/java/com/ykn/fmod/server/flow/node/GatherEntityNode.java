@@ -15,15 +15,14 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
+import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import com.ykn.fmod.server.flow.logic.NodeMetadata;
-
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Get entities matching certain criteria, such as nearby entities, entities in a certain area, etc.
@@ -59,9 +58,9 @@ public class GatherEntityNode extends FlowNode {
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         String uuidStr = TypeAdaptor.parse(resolvedInputs.get(0)).asString().strip();
-        Identifier typeFilter = parseIdentifier(resolvedInputs.get(1));
-        ServerWorld worldFilter = parseWorld(resolvedInputs.get(2));
-        Vec3d positionFilter = TypeAdaptor.parse(resolvedInputs.get(3)).asVec3d();
+        ResourceLocation typeFilter = parseIdentifier(resolvedInputs.get(1));
+        ServerLevel worldFilter = parseWorld(resolvedInputs.get(2));
+        Vec3 positionFilter = TypeAdaptor.parse(resolvedInputs.get(3)).asVec3d();
         Double radiusFilter = TypeAdaptor.parse(resolvedInputs.get(4)).asDouble();
 
         if (positionFilter == null && radiusFilter != null) {
@@ -82,7 +81,7 @@ public class GatherEntityNode extends FlowNode {
             // UUID search takes precedence
             try {
                 UUID uuid = UUID.fromString(uuidStr);
-                for (ServerWorld world : context.getServer().getWorlds()) {
+                for (ServerLevel world : context.getServer().getAllLevels()) {
                     Entity entity = world.getEntity(uuid);
                     if (entity != null) {
                         resultEntities.add(entity);
@@ -93,22 +92,22 @@ public class GatherEntityNode extends FlowNode {
             }
         } else {
             // World filter
-            Iterable<ServerWorld> worldsToSearch;
+            Iterable<ServerLevel> worldsToSearch;
             if (worldFilter != null) {
-                List<ServerWorld> singleWorld = new ArrayList<>();
+                List<ServerLevel> singleWorld = new ArrayList<>();
                 singleWorld.add(worldFilter);
                 worldsToSearch = singleWorld;
             } else {
-                worldsToSearch = context.getServer().getWorlds();
+                worldsToSearch = context.getServer().getAllLevels();
             }
 
-            for (ServerWorld world : worldsToSearch) {
+            for (ServerLevel world : worldsToSearch) {
                 List<Entity> entities = Util.getAllEntities(world);
                 
                 for (Entity entity : entities) {
                     // Type filter
                     if (typeFilter != null) {
-                        Identifier entityType = EntityType.getId(entity.getType());
+                        ResourceLocation entityType = EntityType.getKey(entity.getType());
                         if (entityType == null || !entityType.equals(typeFilter)) {
                             continue;
                         }
@@ -116,7 +115,7 @@ public class GatherEntityNode extends FlowNode {
 
                     // Position and radius filter
                     if (positionFilter != null && radiusFilter != null) {
-                        double distance = GameMath.getEuclideanDistance(entity.getPos(), positionFilter);
+                        double distance = GameMath.getEuclideanDistance(entity.position(), positionFilter);
                         if (distance > radiusFilter) {
                             continue;   
                         }
@@ -130,29 +129,29 @@ public class GatherEntityNode extends FlowNode {
         status.setOutput(0, TypeAdaptor.parse(resultEntities).collapseList());
     }
     
-    private Identifier parseIdentifier(Object obj) throws LogicException {
+    private ResourceLocation parseIdentifier(Object obj) throws LogicException {
         if (obj == null) {
             return null;
-        } else if (obj instanceof Identifier) {
-            return (Identifier) obj;
+        } else if (obj instanceof ResourceLocation) {
+            return (ResourceLocation) obj;
         } else {
             String str = TypeAdaptor.parse(obj).asString().strip();
             if (str.isEmpty()) {
                 return null;
             }
-            try {
-                return new Identifier(str);
-            } catch (Exception e) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
+            ResourceLocation rl = ResourceLocation.tryParse(str);
+            if (rl == null) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.id", this.name, str), null);
             }
+            return rl;
         }
     }
 
-    private ServerWorld parseWorld(Object obj) throws LogicException {
+    private ServerLevel parseWorld(Object obj) throws LogicException {
         if (obj == null) {
             return null;
-        } else if (obj instanceof ServerWorld) {
-            return (ServerWorld) obj;
+        } else if (obj instanceof ServerLevel) {
+            return (ServerLevel) obj;
         } else {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
         }

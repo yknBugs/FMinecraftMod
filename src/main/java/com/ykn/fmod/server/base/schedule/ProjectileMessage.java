@@ -7,9 +7,9 @@ package com.ykn.fmod.server.base.schedule;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 
 public class ProjectileMessage extends ScheduledTask {
 
@@ -26,21 +26,21 @@ public class ProjectileMessage extends ScheduledTask {
 
     @Override
     public void onTrigger() {
-        Text victimName = victim.getDisplayName();
+        Component victimName = victim.getDisplayName();
         double victimHealth = Util.getHealth(victim);
-        Text shooterName = shooter.getDisplayName();
+        Component shooterName = shooter.getDisplayName();
         double shooterHealth = Util.getHealth(shooter);
-        Text mainText = Util.parseTranslatableText("fmod.message.projectile.onhit.main", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
-        Text otherText = Util.parseTranslatableText("fmod.message.projectile.onhit.other", shooterName, victimName);
-        if (victim.isPlayer() && victim instanceof ServerPlayerEntity) {
-            ServerPlayerEntity playerVictim = (ServerPlayerEntity) victim;
-            if (!playerVictim.isRemoved() && !playerVictim.isDisconnected() && playerVictim.getHealth() > 0) {
+        Component mainText = Util.parseTranslatableText("fmod.message.projectile.onhit.main", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
+        Component otherText = Util.parseTranslatableText("fmod.message.projectile.onhit.other", shooterName, victimName);
+        if (victim.isAlwaysTicking() && victim instanceof ServerPlayer) {
+            ServerPlayer playerVictim = (ServerPlayer) victim;
+            if (!playerVictim.isRemoved() && !playerVictim.hasDisconnected() && playerVictim.getHealth() > 0) {
                 Util.getServerConfig().getProjectileBeingHit().postMessage(playerVictim, mainText, otherText);
             }
         }
-        if (shooter.isPlayer() && shooter instanceof ServerPlayerEntity) {
-            ServerPlayerEntity playerShooter = (ServerPlayerEntity) shooter;
-            if (!playerShooter.isRemoved() && !playerShooter.isDisconnected() && playerShooter.getHealth() > 0) {
+        if (shooter.isAlwaysTicking() && shooter instanceof ServerPlayer) {
+            ServerPlayer playerShooter = (ServerPlayer) shooter;
+            if (!playerShooter.isRemoved() && !playerShooter.hasDisconnected() && playerShooter.getHealth() > 0) {
                 Util.getServerConfig().getProjectileHitOthers().postMessage(playerShooter, mainText, otherText);
             }
         }

@@ -11,13 +11,13 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.block.Block;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Vec3i;
+import net.minecraft.core.Vec3i;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * A flexible type conversion utility that safely adapts arbitrary Java objects to common types.
@@ -95,15 +95,15 @@ public class TypeAdaptor {
             return "";
         } else if (o instanceof String) {
             return (String) o;
-        } else if (o instanceof Text) {
-            Text textObj = (Text) o;
-            return textObj.getString();
+        } else if (o instanceof Component) {
+            Component component = (Component) o;
+            return component.getString();
         } else if (o instanceof Entity) {
             Entity entity = (Entity) o;
             return entity.getDisplayName().getString();
         } else if (o instanceof ItemStack) {
             ItemStack itemStack = (ItemStack) o;
-            return itemStack.getName().getString();
+            return itemStack.getHoverName().getString();
         } else if (o instanceof Block) {
             Block block = (Block) o;
             return block.getName().getString();
@@ -203,18 +203,18 @@ public class TypeAdaptor {
      * @return the Vec3d vector, or null if the object cannot be converted to a Vec3d
      */
     @Nullable
-    public Vec3d asVec3d() {
+    public Vec3 asVec3d() {
         if (o == null) {
             return null;
-        } else if (o instanceof Vec3d) {
-            return (Vec3d) o;
+        } else if (o instanceof Vec3) {
+            return (Vec3) o;
         } else if (o instanceof Vec3i) {
             Vec3i vec3i = (Vec3i) o;
-            Vec3d vec3d = new Vec3d(vec3i.getX(), vec3i.getY(), vec3i.getZ());
+            Vec3 vec3d = new Vec3(vec3i.getX(), vec3i.getY(), vec3i.getZ());
             return vec3d;
         } else if (o instanceof Entity) {
             Entity entity = (Entity) o;
-            return entity.getPos();
+            return entity.position();
         } else {
             // String will usually be in format (x, y, z) in Minecraft
             String str = this.asString().strip();
@@ -226,7 +226,7 @@ public class TypeAdaptor {
                         double x = Double.parseDouble(parts[0].strip());
                         double y = Double.parseDouble(parts[1].strip());
                         double z = Double.parseDouble(parts[2].strip());
-                        return new Vec3d(x, y, z);
+                        return new Vec3(x, y, z);
                     } catch (NumberFormatException e) {
                         return null;
                     }
@@ -252,11 +252,11 @@ public class TypeAdaptor {
      * @return the Vec2f vector, or null if the object cannot be converted to a Vec2f
      */
     @Nullable
-    public Vec2f asVec2f() {
+    public Vec2 asVec2f() {
         if (o == null) {
             return null;
-        } else if (o instanceof Vec2f) {
-            return (Vec2f) o;
+        } else if (o instanceof Vec2) {
+            return (Vec2) o;
         } else {
             String str = this.asString().strip();
             if (str.startsWith("(") && str.endsWith(")")) {
@@ -266,7 +266,7 @@ public class TypeAdaptor {
                     try {
                         float x = Float.parseFloat(parts[0].strip());
                         float y = Float.parseFloat(parts[1].strip());
-                        return new Vec2f(x, y);
+                        return new Vec2(x, y);
                     } catch (NumberFormatException e) {
                         return null;
                     }
@@ -362,11 +362,11 @@ public class TypeAdaptor {
         if (s == null || "null".equals(s)) {
             return null;
         }
-        Vec3d vec3d = this.asVec3d();
+        Vec3 vec3d = this.asVec3d();
         if (vec3d != null) {
             return vec3d;
         }
-        Vec2f vec2f = this.asVec2f();
+        Vec2 vec2f = this.asVec2f();
         if (vec2f != null) {
             return vec2f;
         }

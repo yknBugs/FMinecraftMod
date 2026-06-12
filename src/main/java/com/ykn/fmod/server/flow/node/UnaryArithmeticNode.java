@@ -15,9 +15,9 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * A flow node that performs unary arithmetic operations on one numeric input.
@@ -58,7 +58,7 @@ public class UnaryArithmeticNode extends FlowNode {
         Double tryDouble = TypeAdaptor.parse(numObj).asDouble();
 
         // Try Vec3d operations
-        Vec3d tryVec3d = TypeAdaptor.parse(numObj).asVec3d();
+        Vec3 tryVec3d = TypeAdaptor.parse(numObj).asVec3d();
         if (tryVec3d != null) {
             switch (operation) {
                 case "length":
@@ -70,7 +70,7 @@ public class UnaryArithmeticNode extends FlowNode {
                     status.setOutput(0, tryVec3d.normalize());
                     return;
                 case "-":
-                    status.setOutput(0, tryVec3d.multiply(-1));
+                    status.setOutput(0, tryVec3d.scale(-1));
                     return;
                 case "x":
                     status.setOutput(0, tryVec3d.x);
@@ -87,7 +87,7 @@ public class UnaryArithmeticNode extends FlowNode {
         }
 
         // Try Vec2f operations
-        Vec2f tryVec2f = TypeAdaptor.parse(numObj).asVec2f();
+        Vec2 tryVec2f = TypeAdaptor.parse(numObj).asVec2f();
         if (tryVec2f != null) {
             switch (operation) {
                 case "length":
@@ -96,10 +96,10 @@ public class UnaryArithmeticNode extends FlowNode {
                     return;
                 case "normalize":
                 case "norm":
-                    status.setOutput(0, tryVec2f.normalize());
+                    status.setOutput(0, tryVec2f.normalized());
                     return;
                 case "-":
-                    status.setOutput(0, new Vec2f(-tryVec2f.x, -tryVec2f.y));
+                    status.setOutput(0, new Vec2(-tryVec2f.x, -tryVec2f.y));
                     return;
                 case "x":
                     status.setOutput(0, tryVec2f.x);
@@ -208,8 +208,8 @@ public class UnaryArithmeticNode extends FlowNode {
         }
 
         // Special Use case for String and Text
-        if (numObj instanceof Text) {
-            Text text = (Text) numObj;
+        if (numObj instanceof Component) {
+            Component text = (Component) numObj;
             switch (operation) {
                 case "length":
                 case "len":

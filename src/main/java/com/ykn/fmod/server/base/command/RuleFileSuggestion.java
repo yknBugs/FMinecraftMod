@@ -20,10 +20,10 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
+import net.minecraft.commands.CommandSourceStack;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.command.ServerCommandSource;
 
-public class RuleFileSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class RuleFileSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     private static volatile ArrayList<String> cachedRuleList = new ArrayList<>();
 
@@ -46,7 +46,7 @@ public class RuleFileSuggestion implements SuggestionProvider<ServerCommandSourc
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String rule : cachedRuleList) {
             if (rule.startsWith(builder.getRemaining())) {
                 builder.suggest(rule);

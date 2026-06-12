@@ -22,7 +22,7 @@ import com.ykn.fmod.server.rule.core.RuleEvent;
 import com.ykn.fmod.server.rule.core.UnaryConditionExpression;
 import com.ykn.fmod.server.rule.event.*;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 import com.ykn.fmod.server.rule.core.BinaryConditionExpression;
 import com.ykn.fmod.server.rule.core.ConditionReference;
@@ -96,7 +96,7 @@ public class RuleRegistry {
      */
     @FunctionalInterface
     public interface ConditionCommandFactory {
-        LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleCondition> conditionConsumer);
+        LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer);
     }
 
     /** 
@@ -116,7 +116,7 @@ public class RuleRegistry {
      */
     @FunctionalInterface
     public interface RuleActionCommandFactory {
-        LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleAction> actionConsumer);
+        LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer);
     }
 
     /**

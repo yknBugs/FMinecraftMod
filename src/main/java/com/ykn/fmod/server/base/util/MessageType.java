@@ -11,13 +11,13 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.network.packet.s2c.play.OverlayMessageS2CPacket;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.protocol.game.ClientboundSetActionBarTextPacket;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Base class representing a message display configuration.
@@ -93,11 +93,11 @@ public class MessageType {
     /**
      * Sends a message to the specified player based on the provided message location type.
      *
-     * @param player The {@link ServerPlayerEntity} to whom the message will be sent. Null means console.
+     * @param player The {@link ServerPlayer} to whom the message will be sent. Null means console.
      * @param location   The {@link MessageType.Location} indicating where the message should be displayed (e.g., CHAT, ACTIONBAR, NONE). Must not be null.
-     * @param message The {@link Text} message to be sent. Must not be null.
+     * @param message The {@link Component} message to be sent. Must not be null.
      */
-    public static void sendMessage(@Nullable ServerPlayerEntity player, @NotNull MessageType.Location location, @NotNull Text message) {
+    public static void sendMessage(@Nullable ServerPlayer player, @NotNull MessageType.Location location, @NotNull Component message) {
         switch (location) {
             case NONE:
                 break;
@@ -128,7 +128,7 @@ public class MessageType {
      * @param type   The location type where the message should be broadcasted. Must not be null.
      * @param message The message to broadcast. Must not be null.
      */
-    public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageType.Location location, @NotNull Text message) {
+    public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageType.Location location, @NotNull Component message) {
         switch (location) {
             case NONE:
                 break;
@@ -147,11 +147,11 @@ public class MessageType {
     /**
      * Sends an action bar message to the specified player.
      *
-     * @param player  The {@link ServerPlayerEntity} to whom the message will be sent. Must not be null.
-     * @param message The {@link Text} message to display in the action bar. Must not be null.
+     * @param player  The {@link ServerPlayer} to whom the message will be sent. Must not be null.
+     * @param message The {@link Component} message to display in the action bar. Must not be null.
      */
-    public static void sendActionBarMessage(@NotNull ServerPlayerEntity player, @NotNull Text message) {
-        player.networkHandler.sendPacket(new OverlayMessageS2CPacket(message));
+    public static void sendActionBarMessage(@NotNull ServerPlayer player, @NotNull Component message) {
+        player.connection.send(new ClientboundSetActionBarTextPacket(message));
     }
 
     /**
@@ -160,12 +160,12 @@ public class MessageType {
      * @param server  The Minecraft server instance. If null, the method will return without performing any action.
      * @param message The message to be displayed in the action bar. Must not be null.
      */
-    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @NotNull Text message) {
+    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @NotNull Component message) {
         if (server == null) {
             return;
         }
-        List<ServerPlayerEntity> players = Util.getOnlinePlayers(server);
-        for (ServerPlayerEntity player : players) {
+        List<ServerPlayer> players = Util.getOnlinePlayers(server);
+        for (ServerPlayer player : players) {
             sendActionBarMessage(player, message);
         }
         Util.LOGGER.debug(message.getString());
@@ -177,8 +177,8 @@ public class MessageType {
      * @param player  The player to whom the message will be sent. Must not be null.
      * @param message The text message to send to the player. Must not be null.
      */
-    public static void sendTextMessage(@NotNull PlayerEntity player, @NotNull Text message) {
-        player.sendMessage(message, false);
+    public static void sendTextMessage(@NotNull Player player, @NotNull Component message) {
+        player.displayClientMessage(message, false);
     }
 
     /**
@@ -188,12 +188,12 @@ public class MessageType {
      * @param server The Minecraft server instance. If null, the method will return without doing anything.
      * @param message The text message to broadcast. Must not be null.
      */
-    public static void broadcastTextMessage(@Nullable MinecraftServer server, @NotNull Text message) {
+    public static void broadcastTextMessage(@Nullable MinecraftServer server, @NotNull Component message) {
         if (server == null) {
             return;
         }
-        List<ServerPlayerEntity> players = Util.getOnlinePlayers(server);
-        for (ServerPlayerEntity player : players) {
+        List<ServerPlayer> players = Util.getOnlinePlayers(server);
+        for (ServerPlayer player : players) {
             sendTextMessage(player, message);
         }
         Util.LOGGER.info(message.getString());
@@ -253,18 +253,18 @@ public class MessageType {
     /**
      * Returns a localized and formatted text representation of the given message location type.
      * @param type the message location type to localize; must not be null
-     * @return a {@link MutableText} containing the localized name of the message location type, formatted with colors for better readability
+     * @return a {@link MutableComponent} containing the localized name of the message location type, formatted with colors for better readability
      */
-    public static MutableText getMessageLocationI18n(MessageType.Location type) {
+    public static MutableComponent getMessageLocationI18n(MessageType.Location type) {
         switch (type) {
             case NONE:
-                return Util.parseTranslatableText("fmod.message.type.none").formatted(Formatting.RED);
+                return Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
             case CHAT:
-                return Util.parseTranslatableText("fmod.message.type.chat").formatted(Formatting.GREEN);
+                return Util.parseTranslatableText("fmod.message.type.chat").withStyle(ChatFormatting.GREEN);
             case ACTIONBAR:
-                return Util.parseTranslatableText("fmod.message.type.actionbar").formatted(Formatting.YELLOW);
+                return Util.parseTranslatableText("fmod.message.type.actionbar").withStyle(ChatFormatting.YELLOW);
             default:
-                return Text.literal(type.toString());
+                return Component.literal(type.toString());
         }
     }
 

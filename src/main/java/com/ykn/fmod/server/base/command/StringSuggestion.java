@@ -14,14 +14,14 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 /**
  * Provides command auto-completion suggestions from a custom collection of strings.
  * This is a generic suggestion provider that can suggest any collection of strings
  * with optional quote wrapping for command auto-completion.
  */
-public class StringSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class StringSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     /**
      * The collection of strings to suggest.
@@ -57,7 +57,7 @@ public class StringSuggestion implements SuggestionProvider<ServerCommandSource>
      * @throws CommandSyntaxException if there's a syntax error in the command
      */
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String item : stringList) {
             String suggestion = item;
             if (needQuote) {

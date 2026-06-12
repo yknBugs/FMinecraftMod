@@ -5,7 +5,7 @@
 
 package com.ykn.fmod.server.rule.core;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Base marker interface for all rule components.
@@ -44,13 +44,13 @@ public interface RuleComponent {
     }
 
     /**
-     * Returns a human-readable {@link Text} describing this component.
+     * Returns a human-readable {@link Component} describing this component.
      *
-     * <p>The text is shown when an admin inspects a rule with the {@code /f rule} command,
+     * <p>The component is shown when an admin inspects a rule with the {@code /f rule} command,
      * typically as hover text attached to the component name.
      *
-     * @return a non-null {@link Text} suitable for display in Minecraft chat
+     * @return a non-null {@link Component} suitable for display in Minecraft chat
      */
-    public Text render();
+    public Component render();
 
 }

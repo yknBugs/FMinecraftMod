@@ -13,9 +13,9 @@ import com.ykn.fmod.server.base.song.NoteBlockSong;
 import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Represents a scheduled task for playing a NoteBlock song to a player.
@@ -37,12 +37,12 @@ public class PlaySong extends ScheduledTask {
     /**
      * The player who is receiving the song playback.
      */
-    private ServerPlayerEntity target;
+    private ServerPlayer target;
     
     /**
      * The command context from which this song playback was initiated.
      */
-    private CommandContext<ServerCommandSource> context;
+    private CommandContext<CommandSourceStack> context;
     
     /**
      * The current tick position in the song.
@@ -77,7 +77,7 @@ public class PlaySong extends ScheduledTask {
      * @param target The player who will receive the song playback.
      * @param context The command context from which this playback was initiated.
      */
-    public PlaySong(NoteBlockSong song, String songName, ServerPlayerEntity target, CommandContext<ServerCommandSource> context) {
+    public PlaySong(NoteBlockSong song, String songName, ServerPlayer target, CommandContext<CommandSourceStack> context) {
         super(1, song.getMaxRealTick() == 2147483647 ? 2147483647 : song.getMaxRealTick() + 1);
         this.song = song;
         this.songName = songName;
@@ -99,7 +99,7 @@ public class PlaySong extends ScheduledTask {
         List<NoteBlockNote> notes = song.getNotes(this.tick);
         for (NoteBlockNote note : notes) {
             // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0));
-            target.networkHandler.sendPacket(new PlaySoundS2CPacket(note.instrument.getSound(), target.getSoundCategory(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
+            target.connection.send(new ClientboundSoundPacket(note.instrument.getSoundEvent(), target.getSoundSource(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
         }
         int currentSeconds = (int) (this.song.getVirtualTick(this.tick) / 20.0);
         if (this.showInfo) {
@@ -121,29 +121,29 @@ public class PlaySong extends ScheduledTask {
     @Override
     public void onCancel() {
         this.tick = song.getMaxRealTick();
-        if (context.getSource().isExecutedByPlayer()) {
-            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
+        if (context.getSource().isPlayer()) {
+            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().hasDisconnected()) {
                 Util.LOGGER.info(Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName).getString());
                 return;
             }
         }
-        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
+        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.cancel", target.getDisplayName(), this.songName), true);
     }
 
     @Override
     public void onFinish() {
-        if (context.getSource().isExecutedByPlayer()) {
-            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
+        if (context.getSource().isPlayer()) {
+            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().hasDisconnected()) {
                 Util.LOGGER.info(Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName).getString());
                 return;
             }
         }
-        context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
+        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.finish", target.getDisplayName(), this.songName), true);
     }
 
     @Override
     public boolean shouldCancel() {
-        return target == null || target.isDisconnected() || target.isRemoved() || target.getHealth() <= 0;
+        return target == null || target.hasDisconnected() || target.isRemoved() || target.getHealth() <= 0;
     }
 
     /**
@@ -169,7 +169,7 @@ public class PlaySong extends ScheduledTask {
      *
      * @return The target player.
      */
-    public ServerPlayerEntity getTarget() {
+    public ServerPlayer getTarget() {
         return target;
     }
 
@@ -243,7 +243,7 @@ public class PlaySong extends ScheduledTask {
      *
      * @return The command context.
      */
-    public CommandContext<ServerCommandSource> getContext() {
+    public CommandContext<CommandSourceStack> getContext() {
         return context;
     }
 
@@ -252,7 +252,7 @@ public class PlaySong extends ScheduledTask {
      * 
      * @param context The command context to be associated with this song playback.
      */
-    public void setContext(CommandContext<ServerCommandSource> context) {
+    public void setContext(CommandContext<CommandSourceStack> context) {
         this.context = context;
     }
 

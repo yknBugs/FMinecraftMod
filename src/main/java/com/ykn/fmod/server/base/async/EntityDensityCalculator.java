@@ -15,11 +15,11 @@ import org.jetbrains.annotations.Nullable;
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 
 /**
  * Asynchronously calculates the region with highest entity density in a Minecraft world.
@@ -69,7 +69,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      * Used to send feedback messages to the command source upon completion.
      * May be null if no feedback is required.
      */
-    private final CommandContext<ServerCommandSource> context;
+    private final CommandContext<CommandSourceStack> context;
 
     // Snapshot of entities for thread-safe processing
     
@@ -155,9 +155,9 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
         final double x;
         final double y;
         final double z;
-        final Identifier dimension;
-        final Identifier biome;
-        final Identifier entityType;
+        final ResourceLocation dimension;
+        final ResourceLocation biome;
+        final ResourceLocation entityType;
         final Entity entity;
         
         /**
@@ -173,9 +173,9 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
             this.x = entity.getX();
             this.y = entity.getY();
             this.z = entity.getZ();
-            this.dimension = entity.getWorld().getRegistryKey().getValue();
-            this.biome = entity.getWorld().getBiome(entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
-            this.entityType = EntityType.getId(entity.getType());
+            this.dimension = entity.level().dimension().location();
+            this.biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+            this.entityType = EntityType.getKey(entity.getType());
             this.entity = entity;
         }
 
@@ -220,7 +220,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      * @param minNumber The minimum number of entities required in the density region.
      *                  Absolute value is used.
      */
-    public EntityDensityCalculator(CommandContext<ServerCommandSource> context, Iterable<Entity> entities, double minRadius, int minNumber) {
+    public EntityDensityCalculator(CommandContext<CommandSourceStack> context, Iterable<Entity> entities, double minRadius, int minNumber) {
         this.context = context;
         this.minRadius = Math.abs(minRadius);
         this.minNumber = Math.abs(minNumber);
@@ -248,8 +248,8 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      * @return A map where keys are dimension identifiers and values are lists of
      *         entity snapshots in that dimension.
      */
-    private Map<Identifier, List<EntitySnapshot>> groupByDimension() {
-        Map<Identifier, List<EntitySnapshot>> map = new HashMap<>();
+    private Map<ResourceLocation, List<EntitySnapshot>> groupByDimension() {
+        Map<ResourceLocation, List<EntitySnapshot>> map = new HashMap<>();
         for (EntitySnapshot snapshot : snapshots) {
             map.computeIfAbsent(snapshot.dimension, k -> new ArrayList<>()).add(snapshot);
         }
@@ -268,7 +268,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      *         tie for most common, returns one of the tied groups.
      */
     private List<EntitySnapshot> getDominantEntities(List<EntitySnapshot> entities) {
-        Map<Identifier, List<EntitySnapshot>> typeMap = new HashMap<>();
+        Map<ResourceLocation, List<EntitySnapshot>> typeMap = new HashMap<>();
         int maxCount = 0;
         List<EntitySnapshot> dominantList = new ArrayList<>();
         for (EntitySnapshot snapshot : entities) {
@@ -364,10 +364,10 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
         }
         
         // Case 3: minRadius is infinity - find dimension with max entities
-        Map<Identifier, List<EntitySnapshot>> dimensionMap = groupByDimension();
-        Identifier maxDimension = null;
+        Map<ResourceLocation, List<EntitySnapshot>> dimensionMap = groupByDimension();
+        ResourceLocation maxDimension = null;
         int maxCount = 0;
-        for (Map.Entry<Identifier, List<EntitySnapshot>> entry : dimensionMap.entrySet()) {
+        for (Map.Entry<ResourceLocation, List<EntitySnapshot>> entry : dimensionMap.entrySet()) {
             if (entry.getValue().size() > maxCount) {
                 maxCount = entry.getValue().size();
                 maxDimension = entry.getKey();
@@ -505,8 +505,8 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
             return;
         }
 
-        if (context.getSource().isExecutedByPlayer()) {
-            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().isDisconnected()) {
+        if (context.getSource().isPlayer()) {
+            if (context.getSource().getPlayer() == null || context.getSource().getPlayer().hasDisconnected()) {
                 Util.LOGGER.info("FMinecraftMod: Get entity density command executed but the player has disconnected.");
                 return;
             }
@@ -514,16 +514,16 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
 
         if (resultEntity == null || resultCause == null) {
             // No result
-            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.message.entitywarning.main", snapshots.size()), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.message.entitywarning.main", snapshots.size()), false);
         } else {
             // Has result
             final String totalCount = Integer.toString(snapshots.size());
-            final Text coordText = Util.parseCoordText(resultEntity.dimension, resultEntity.biome, resultEntity.x, resultEntity.y, resultEntity.z);
+            final Component coordText = Util.parseCoordText(resultEntity.dimension, resultEntity.biome, resultEntity.x, resultEntity.y, resultEntity.z);
             final String entityRadius = String.format("%.2f", finalRadius);
             final String entityCount = Integer.toString(finalCount);
             final String causeCount = Integer.toString(finalNumber);
-            final Text entityCauseText = resultCause.entity.getDisplayName();
-            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.message.entitydensity.main", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText), false);
+            final Component entityCauseText = resultCause.entity.getDisplayName();
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.message.entitydensity.main", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText), false);
         }
     }
 
@@ -618,7 +618,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      * @throws IllegalStateException If called before the calculation has completed,
      *                               or if no entity was found.
      */
-    public Identifier getDimension() throws IllegalStateException {
+    public ResourceLocation getDimension() throws IllegalStateException {
         if (!isAfterCompletionExecuted() || resultEntity == null) {
             throw new IllegalStateException("EntityDensityCalculator: Task not finished yet or no entity found.");
         }
@@ -633,7 +633,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      * @throws IllegalStateException If called before the calculation has completed,
      *                               or if no entity was found.
      */
-    public Identifier getBiome() throws IllegalStateException {
+    public ResourceLocation getBiome() throws IllegalStateException {
         if (!isAfterCompletionExecuted() || resultEntity == null) {
             throw new IllegalStateException("EntityDensityCalculator: Task not finished yet or no entity found.");
         }

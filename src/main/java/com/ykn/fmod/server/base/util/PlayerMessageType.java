@@ -11,10 +11,10 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * A {@link MessageType} specialization for player-triggered events where the message
@@ -116,27 +116,27 @@ public class PlayerMessageType extends MessageType {
      * @param mainMessage     the message shown to the primary audience; must not be null
      * @param otherMessage    the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@NotNull ServerPlayerEntity sourcePlayer, @Nullable ServerPlayerEntity currentReceiver, @NotNull Text mainMessage, @NotNull Text otherMessage) {
+    public void postMessage(@NotNull ServerPlayer sourcePlayer, @Nullable ServerPlayer currentReceiver, @NotNull Component mainMessage, @NotNull Component otherMessage) {
         switch (this.receiver) {
             case ALL:
                 sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
                 break;
             case OP:
-                if (currentReceiver == null || currentReceiver.hasPermissionLevel(2)) {
+                if (currentReceiver == null || currentReceiver.hasPermissions(2)) {
                     sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
                 } else {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
                 }
                 break;
             case SELFOP:
-                if (currentReceiver == null || currentReceiver.hasPermissionLevel(2) || currentReceiver.equals(sourcePlayer)) {
+                if (currentReceiver == null || currentReceiver.hasPermissions(2) || currentReceiver.equals(sourcePlayer)) {
                     sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
                 } else {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
                 }
                 break;
             case TEAMOP:
-                if (currentReceiver == null || currentReceiver.hasPermissionLevel(2) || currentReceiver.equals(sourcePlayer) || currentReceiver.isTeammate(sourcePlayer)) {
+                if (currentReceiver == null || currentReceiver.hasPermissions(2) || currentReceiver.equals(sourcePlayer) || currentReceiver.isAlliedTo(sourcePlayer)) {
                     sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
                 } else {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
@@ -145,7 +145,7 @@ public class PlayerMessageType extends MessageType {
             case TEAM:
                 if (currentReceiver == null) {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
-                } else if (currentReceiver.equals(sourcePlayer) || currentReceiver.isTeammate(sourcePlayer)) {
+                } else if (currentReceiver.equals(sourcePlayer) || currentReceiver.isAlliedTo(sourcePlayer)) {
                     sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
                 } else {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
@@ -179,9 +179,9 @@ public class PlayerMessageType extends MessageType {
      * @param mainMessage  the message shown to the primary audience; must not be null
      * @param otherMessage the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@NotNull ServerPlayerEntity sourcePlayer, @NotNull Text mainMessage, @NotNull Text otherMessage) {
-        List<ServerPlayerEntity> players = Util.getOnlinePlayers(sourcePlayer.getServer());
-        for (ServerPlayerEntity player : players) {
+    public void postMessage(@NotNull ServerPlayer sourcePlayer, @NotNull Component mainMessage, @NotNull Component otherMessage) {
+        List<ServerPlayer> players = Util.getOnlinePlayers(sourcePlayer.getServer());
+        for (ServerPlayer player : players) {
             this.postMessage(sourcePlayer, player, mainMessage, otherMessage);
         }
         this.postMessage(sourcePlayer, null, mainMessage, otherMessage);
@@ -195,13 +195,13 @@ public class PlayerMessageType extends MessageType {
      * @param sourcePlayer the player who triggered the event; must not be null
      * @param mainMessage  the message shown to the primary audience; must not be null
      */
-    public void postMessage(@NotNull ServerPlayerEntity sourcePlayer, @NotNull Text mainMessage) {
+    public void postMessage(@NotNull ServerPlayer sourcePlayer, @NotNull Component mainMessage) {
         PlayerMessageType type = this.updateOther(MessageType.Location.NONE);
-        List<ServerPlayerEntity> players = Util.getOnlinePlayers(sourcePlayer.getServer());
-        for (ServerPlayerEntity player : players) {
-            type.postMessage(sourcePlayer, player, mainMessage, Text.empty());
+        List<ServerPlayer> players = Util.getOnlinePlayers(sourcePlayer.getServer());
+        for (ServerPlayer player : players) {
+            type.postMessage(sourcePlayer, player, mainMessage, Component.empty());
         }
-        type.postMessage(sourcePlayer, null, mainMessage, Text.empty());
+        type.postMessage(sourcePlayer, null, mainMessage, Component.empty());
     }
 
     /**
@@ -325,24 +325,24 @@ public class PlayerMessageType extends MessageType {
      * @param method the message receiver type
      * @return a localized and formatted text representation of the message receiver type
      */
-    public static MutableText getMessageReceiverI18n(PlayerMessageType.Receiver method) {
+    public static MutableComponent getMessageReceiverI18n(PlayerMessageType.Receiver method) {
         switch (method) {
             case ALL:
-                return Util.parseTranslatableText("fmod.message.type.toall").formatted(Formatting.YELLOW);
+                return Util.parseTranslatableText("fmod.message.type.toall").withStyle(ChatFormatting.YELLOW);
             case OP:
-                return Util.parseTranslatableText("fmod.message.type.toop").formatted(Formatting.GOLD);
+                return Util.parseTranslatableText("fmod.message.type.toop").withStyle(ChatFormatting.GOLD);
             case SELFOP:
-                return Util.parseTranslatableText("fmod.message.type.toselfop").formatted(Formatting.YELLOW);
+                return Util.parseTranslatableText("fmod.message.type.toselfop").withStyle(ChatFormatting.YELLOW);
             case TEAMOP:
-                return Util.parseTranslatableText("fmod.message.type.toteamop").formatted(Formatting.YELLOW);
+                return Util.parseTranslatableText("fmod.message.type.toteamop").withStyle(ChatFormatting.YELLOW);
             case TEAM:
-                return Util.parseTranslatableText("fmod.message.type.toteam").formatted(Formatting.GREEN);
+                return Util.parseTranslatableText("fmod.message.type.toteam").withStyle(ChatFormatting.GREEN);
             case SELF:
-                return Util.parseTranslatableText("fmod.message.type.toself").formatted(Formatting.GREEN);
+                return Util.parseTranslatableText("fmod.message.type.toself").withStyle(ChatFormatting.GREEN);
             case NONE:
-                return Util.parseTranslatableText("fmod.message.type.none").formatted(Formatting.RED);
+                return Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
             default:
-                return Text.literal(method.toString());
+                return Component.literal(method.toString());
         }
     }
 
@@ -352,10 +352,10 @@ public class PlayerMessageType extends MessageType {
      * @param type the PlayerMessageType to represent
      * @return a localized and formatted text representation of the PlayerMessageType
      */
-    public static MutableText getMessageTypeI18n(PlayerMessageType type) {
-        Text mainText = PlayerMessageType.getMessageLocationI18n(type.mainPlayerLocation);
-        Text otherText = PlayerMessageType.getMessageLocationI18n(type.otherPlayerLocation);
-        Text receiverText = PlayerMessageType.getMessageReceiverI18n(type.receiver);
+    public static MutableComponent getMessageTypeI18n(PlayerMessageType type) {
+        Component mainText = PlayerMessageType.getMessageLocationI18n(type.mainPlayerLocation);
+        Component otherText = PlayerMessageType.getMessageLocationI18n(type.otherPlayerLocation);
+        Component receiverText = PlayerMessageType.getMessageReceiverI18n(type.receiver);
         return Util.parseTranslatableText("fmod.message.type.option", mainText, otherText, receiverText);
     }
 

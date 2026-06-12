@@ -10,11 +10,11 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * A {@link MessageType} specialization for server-wide events where the message
@@ -87,13 +87,13 @@ public class ServerMessageType extends MessageType {
      * @param mainMessage     the message shown to the primary audience; must not be null
      * @param otherMessage    the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@Nullable ServerPlayerEntity currentReceiver, @NotNull Text mainMessage, @NotNull Text otherMessage) {
+    public void postMessage(@Nullable ServerPlayer currentReceiver, @NotNull Component mainMessage, @NotNull Component otherMessage) {
         switch (this.receiver) {
             case ALL:
                 sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
                 break;
             case OP:
-                if (currentReceiver == null || currentReceiver.hasPermissionLevel(2)) {
+                if (currentReceiver == null || currentReceiver.hasPermissions(2)) {
                     sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
                 } else {
                     sendMessage(currentReceiver, this.otherPlayerLocation, otherMessage);
@@ -113,17 +113,17 @@ public class ServerMessageType extends MessageType {
      * receiver filter.
      * <p>
      * Iterates over every online player and delegates to
-     * {@link #postMessage(ServerPlayerEntity, Text, Text)} for each one.
+     * {@link #postMessage(ServerPlayer, Component, Component)} for each one.
      *
      * @param server       the Minecraft server instance; must not be null
      * @param mainMessage  the message shown to the primary audience; must not be null
      * @param otherMessage the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@NotNull MinecraftServer server, @NotNull Text mainMessage, @NotNull Text otherMessage) {
-        for (ServerPlayerEntity player : Util.getOnlinePlayers(server)) {
+    public void postMessage(@NotNull MinecraftServer server, @NotNull Component mainMessage, @NotNull Component otherMessage) {
+        for (ServerPlayer player : Util.getOnlinePlayers(server)) {
             this.postMessage(player, mainMessage, otherMessage);
         }
-        ServerPlayerEntity player = null;
+        ServerPlayer player = null;
         this.postMessage(player, mainMessage, otherMessage);
     }
 
@@ -134,13 +134,13 @@ public class ServerMessageType extends MessageType {
     * @param server      the Minecraft server instance; must not be null
     * @param mainMessage the message shown to all receivers; must not be null
     */
-    public void postMessage(@NotNull MinecraftServer server, @NotNull Text mainMessage) {
+    public void postMessage(@NotNull MinecraftServer server, @NotNull Component mainMessage) {
         ServerMessageType type = this.updateOther(MessageType.Location.NONE);
-        for (ServerPlayerEntity player : Util.getOnlinePlayers(server)) {
-            type.postMessage(player, mainMessage, Text.empty());
+        for (ServerPlayer player : Util.getOnlinePlayers(server)) {
+            type.postMessage(player, mainMessage, Component.empty());
         }
-        ServerPlayerEntity player = null;
-        type.postMessage(player, mainMessage, Text.empty());
+        ServerPlayer player = null;
+        type.postMessage(player, mainMessage, Component.empty());
     }
 
     /**
@@ -267,16 +267,16 @@ public class ServerMessageType extends MessageType {
      * @param method the message receiver type
      * @return a localized and formatted text representation of the message receiver type
      */
-    public static MutableText getMessageReceiverI18n(ServerMessageType.Receiver method) {
+    public static MutableComponent getMessageReceiverI18n(ServerMessageType.Receiver method) {
         switch (method) {
             case ALL:
-                return Util.parseTranslatableText("fmod.message.type.toall").formatted(Formatting.YELLOW);
+                return Util.parseTranslatableText("fmod.message.type.toall").withStyle(ChatFormatting.YELLOW);
             case OP:
-                return Util.parseTranslatableText("fmod.message.type.toop").formatted(Formatting.GOLD);
+                return Util.parseTranslatableText("fmod.message.type.toop").withStyle(ChatFormatting.GOLD);
             case NONE:
-                return Util.parseTranslatableText("fmod.message.type.none").formatted(Formatting.RED);
+                return Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
             default:
-                return Text.literal(method.toString());
+                return Component.literal(method.toString());
         }
     }
 
@@ -286,10 +286,10 @@ public class ServerMessageType extends MessageType {
      * @param type the {@code ServerMessageType} to represent
      * @return a localized and formatted text representation of the message type
      */
-    public static MutableText getMessageTypeI18n(ServerMessageType type) {
-        Text mainText = ServerMessageType.getMessageLocationI18n(type.mainPlayerLocation);
-        Text otherText = ServerMessageType.getMessageLocationI18n(type.otherPlayerLocation);
-        Text receiverText = ServerMessageType.getMessageReceiverI18n(type.receiver);
+    public static MutableComponent getMessageTypeI18n(ServerMessageType type) {
+        MutableComponent mainText = ServerMessageType.getMessageLocationI18n(type.mainPlayerLocation);
+        MutableComponent otherText = ServerMessageType.getMessageLocationI18n(type.otherPlayerLocation);
+        MutableComponent receiverText = ServerMessageType.getMessageReceiverI18n(type.receiver);
         return Util.parseTranslatableText("fmod.message.type.option", mainText, otherText, receiverText);
     }
 

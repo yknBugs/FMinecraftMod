@@ -28,10 +28,10 @@ import com.ykn.fmod.server.base.util.PlayerMessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+
 
 /**
  * Central registry that discovers, stores, and exposes all {@link ConfigEntry}-annotated
@@ -123,8 +123,8 @@ public class ServerConfigRegistry {
      * @see #buildCommand(String)
      */
     @NotNull
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand() throws Exception {
-        LiteralArgumentBuilder<ServerCommandSource> commandNode = CommandManager.literal("options").requires(source -> source.hasPermissionLevel(4));
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand() throws Exception {
+        LiteralArgumentBuilder<CommandSourceStack> commandNode = Commands.literal("options").requires(source -> source.hasPermission(4));
         for (String codeEntry : configAnnotations.keySet()) {
             commandNode = commandNode.then(buildCommand(codeEntry));
         }
@@ -152,19 +152,19 @@ public class ServerConfigRegistry {
      * @throws UnsupportedOperationException if the entry's {@link ConfigEntry.ConfigType} is not handled by this method
      */
     @NotNull
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(String codeEntry) {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(String codeEntry) {
         ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
         if (configAnnotation == null) {
             throw new IllegalStateException("No config entry found for name: " + codeEntry);
         }
         String commandValueHint = configAnnotation.commandValueHint().isEmpty() ? "value" : configAnnotation.commandValueHint();
-        LiteralArgumentBuilder<ServerCommandSource> commandNode = CommandManager.literal(configAnnotation.commandEntry().isEmpty() ? codeEntry : configAnnotation.commandEntry());
+        LiteralArgumentBuilder<CommandSourceStack> commandNode = Commands.literal(configAnnotation.commandEntry().isEmpty() ? codeEntry : configAnnotation.commandEntry());
         switch (configAnnotation.type()) {
             case DOUBLE:
                 {
                     double min = configAnnotation.minCommandDouble();
                     double max = configAnnotation.maxCommandDouble();
-                    commandNode = commandNode.then(CommandManager.argument(commandValueHint, DoubleArgumentType.doubleArg(min, max))
+                    commandNode = commandNode.then(Commands.argument(commandValueHint, DoubleArgumentType.doubleArg(min, max))
                         .executes(context -> {return runOptionsCommand(codeEntry, DoubleArgumentType.getDouble(context, commandValueHint), context);})
                     ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
                 }
@@ -173,60 +173,60 @@ public class ServerConfigRegistry {
                 {
                     int min = configAnnotation.minCommandInt();
                     int max = configAnnotation.maxCommandInt();
-                    commandNode = commandNode.then(CommandManager.argument(commandValueHint, IntegerArgumentType.integer(min, max))
+                    commandNode = commandNode.then(Commands.argument(commandValueHint, IntegerArgumentType.integer(min, max))
                         .executes(context -> {return runOptionsCommand(codeEntry, IntegerArgumentType.getInteger(context, commandValueHint), context);})
                     ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
                 }
                 break;
             case STRING:
                 {
-                    commandNode = commandNode.then(CommandManager.argument(commandValueHint, StringArgumentType.greedyString())
+                    commandNode = commandNode.then(Commands.argument(commandValueHint, StringArgumentType.greedyString())
                         .executes(context -> {return runOptionsCommand(codeEntry, StringArgumentType.getString(context, commandValueHint), context);})
                     ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
                 }
                 break;
             case BOOLEAN:
                 {
-                    commandNode = commandNode.then(CommandManager.argument(commandValueHint, BoolArgumentType.bool())
+                    commandNode = commandNode.then(Commands.argument(commandValueHint, BoolArgumentType.bool())
                         .executes(context -> {return runOptionsCommand(codeEntry, BoolArgumentType.getBool(context, commandValueHint), context);})
                     ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
                 }
                 break;
             case SERVERMESSAGE:
                 {
-                    commandNode = commandNode.then(CommandManager.literal("main")
-                        .then(CommandManager.literal("off").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.NONE, context);}))
-                        .then(CommandManager.literal("chat").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.CHAT, context);}))
-                        .then(CommandManager.literal("actionbar").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.ACTIONBAR, context);}))
-                    ).then(CommandManager.literal("other")
-                        .then(CommandManager.literal("off").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.NONE, context);}))
-                        .then(CommandManager.literal("chat").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.CHAT, context);}))
-                        .then(CommandManager.literal("actionbar").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.ACTIONBAR, context);}))
-                    ).then(CommandManager.literal("receiver")
-                        .then(CommandManager.literal("all").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.ALL, context);}))
-                        .then(CommandManager.literal("op").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.OP, context);}))
-                        .then(CommandManager.literal("none").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.NONE, context);}))
+                    commandNode = commandNode.then(Commands.literal("main")
+                        .then(Commands.literal("off").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.ACTIONBAR, context);}))
+                    ).then(Commands.literal("other")
+                        .then(Commands.literal("off").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.ACTIONBAR, context);}))
+                    ).then(Commands.literal("receiver")
+                        .then(Commands.literal("all").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.ALL, context);}))
+                        .then(Commands.literal("op").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.OP, context);}))
+                        .then(Commands.literal("none").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.NONE, context);}))
                     ).executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, null, null, context);});
                 }
                 break;
             case PLAYERMESSAGE:
                 {
-                    commandNode = commandNode.then(CommandManager.literal("main")
-                        .then(CommandManager.literal("off").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.NONE, context);}))
-                        .then(CommandManager.literal("chat").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.CHAT, context);}))
-                        .then(CommandManager.literal("actionbar").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.ACTIONBAR, context);}))
-                    ).then(CommandManager.literal("other")
-                        .then(CommandManager.literal("off").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.NONE, context);}))
-                        .then(CommandManager.literal("chat").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.CHAT, context);}))
-                        .then(CommandManager.literal("actionbar").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.ACTIONBAR, context);}))
-                    ).then(CommandManager.literal("receiver")
-                        .then(CommandManager.literal("all").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.ALL, context);}))
-                        .then(CommandManager.literal("op").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.OP, context);}))
-                        .then(CommandManager.literal("selfop").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELFOP, context);}))
-                        .then(CommandManager.literal("teamop").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAMOP, context);}))
-                        .then(CommandManager.literal("team").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAM, context);}))
-                        .then(CommandManager.literal("self").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELF, context);}))
-                        .then(CommandManager.literal("none").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.NONE, context);}))
+                    commandNode = commandNode.then(Commands.literal("main")
+                        .then(Commands.literal("off").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.ACTIONBAR, context);}))
+                    ).then(Commands.literal("other")
+                        .then(Commands.literal("off").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.NONE, context);}))
+                        .then(Commands.literal("chat").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.CHAT, context);}))
+                        .then(Commands.literal("actionbar").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.ACTIONBAR, context);}))
+                    ).then(Commands.literal("receiver")
+                        .then(Commands.literal("all").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.ALL, context);}))
+                        .then(Commands.literal("op").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.OP, context);}))
+                        .then(Commands.literal("selfop").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELFOP, context);}))
+                        .then(Commands.literal("teamop").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAMOP, context);}))
+                        .then(Commands.literal("team").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAM, context);}))
+                        .then(Commands.literal("self").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELF, context);}))
+                        .then(Commands.literal("none").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.NONE, context);}))
                     ).executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, null, null, context);});
                 }
                 break;
@@ -237,27 +237,28 @@ public class ServerConfigRegistry {
     }
 
     public static int runMessageTypeOptionsCommand(
-        String codeEntry, String field, Object value, CommandContext<ServerCommandSource> context,
-        Function<MessageType, Text> displayValueFunction,
-        Function<Object, Text> receiverValueFunction,
+        String codeEntry, String field, Object value, CommandContext<CommandSourceStack> context,
+        Function<MessageType, Component> displayValueFunction,
+        Function<Object, Component> receiverValueFunction,
         BiFunction<MessageType, Object, MessageType> updateReceiverFunction
     ) {
         final ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
         final Object currentValue = getValue(codeEntry);
         if (currentValue == null || configAnnotation == null) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+            return 0;
         }
         String i18nEntry = configAnnotation.i18nEntry().isEmpty() ? codeEntry : configAnnotation.i18nEntry();
         final MessageType currentMessageType = (MessageType) currentValue;
         String i18nKey = "fmod.options." + i18nEntry;
         if (field == null || value == null) {
-            Text displayValue = displayValueFunction.apply(currentMessageType);
-            Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.get", Util.parseTranslatableText(i18nKey), displayValue);
-            context.getSource().sendFeedback(() -> feedbackMessage, false);
+            Component displayValue = displayValueFunction.apply(currentMessageType);
+            Component feedbackMessage = Util.parseTranslatableText("fmod.command.options.get", Util.parseTranslatableText(i18nKey), displayValue);
+            context.getSource().sendSuccess(() -> feedbackMessage, false);
             return Command.SINGLE_SUCCESS;
         }
 
-        Text displayValue = Text.empty();
+        Component displayValue = Component.empty();
         boolean isSuccess = false;
         switch (field) {
             case "main":
@@ -273,13 +274,15 @@ public class ServerConfigRegistry {
                 displayValue = receiverValueFunction.apply(value);
                 break;
             default:
-                throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                return 0;
         }
         if (!isSuccess) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
-        Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
-        context.getSource().sendFeedback(() -> feedbackMessage, true);
+        Component feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
+        context.getSource().sendSuccess(() -> feedbackMessage, true);
         Util.saveServerConfig();
         return Command.SINGLE_SUCCESS;
     }
@@ -302,23 +305,21 @@ public class ServerConfigRegistry {
      * @param value     the new value for the specified sub-field, or {@code null} to query only
      * @param context   the Brigadier command context providing the command source
      * @return {@link com.mojang.brigadier.Command#SINGLE_SUCCESS} on success
-     * @throws net.minecraft.command.CommandException if the entry is unknown, the cast fails,
-     *         or the registry update fails
      */
-    public static int runServerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<ServerCommandSource> context) {
+    public static int runServerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<CommandSourceStack> context) {
         try {
             return runMessageTypeOptionsCommand(codeEntry, field, value, context,
                 inputValue -> ServerMessageType.getMessageTypeI18n((ServerMessageType) inputValue),
                 inputValue -> ServerMessageType.getMessageReceiverI18n((ServerMessageType.Receiver) inputValue),
                 (messageType, inputValue) -> ((ServerMessageType) messageType).updateReceiver((ServerMessageType.Receiver) inputValue)
             );
-        } catch (CommandException e) {
-            throw e;
         } catch (ClassCastException e) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
     }
 
@@ -340,23 +341,21 @@ public class ServerConfigRegistry {
      * @param value     the new value for the specified sub-field, or {@code null} to query only
      * @param context   the Brigadier command context providing the command source
      * @return {@link com.mojang.brigadier.Command#SINGLE_SUCCESS} on success
-     * @throws net.minecraft.command.CommandException if the entry is unknown, the cast fails,
-     *         or the registry update fails
      */
-    public static int runPlayerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<ServerCommandSource> context) {
+    public static int runPlayerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<CommandSourceStack> context) {
         try {
             return runMessageTypeOptionsCommand(codeEntry, field, value, context,
                 inputValue -> PlayerMessageType.getMessageTypeI18n((PlayerMessageType) inputValue),
                 inputValue -> PlayerMessageType.getMessageReceiverI18n((PlayerMessageType.Receiver) inputValue),
                 (messageType, inputValue) -> ((PlayerMessageType) messageType).updateReceiver((PlayerMessageType.Receiver) inputValue)
             );
-        } catch (CommandException e) {
-            throw e;
         } catch (ClassCastException e) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
     }
 
@@ -374,41 +373,41 @@ public class ServerConfigRegistry {
      * @param value     the new value to set, or {@code null} to only query the current value
      * @param context   the Brigadier command context providing the command source
      * @return {@link com.mojang.brigadier.Command#SINGLE_SUCCESS} on success
-     * @throws net.minecraft.command.CommandException if the entry is unknown, the type cast
-     *         fails, or the registry update fails
      */
-    public static int runOptionsCommand(String codeEntry, Object value, CommandContext<ServerCommandSource> context) {
+    public static int runOptionsCommand(String codeEntry, Object value, CommandContext<CommandSourceStack> context) {
         try {
             ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
             if (configAnnotation == null) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                return 0;
             }
             String i18nEntry = configAnnotation.i18nEntry().isEmpty() ? codeEntry : configAnnotation.i18nEntry();
             String i18nKey = "fmod.options." + i18nEntry;
             if (value == null) {
                 Object configValue = getValue(codeEntry);
-                Text displayValue = getDisplayValue(codeEntry, configValue);
-                Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.get", Util.parseTranslatableText(i18nKey), displayValue);
-                context.getSource().sendFeedback(() -> feedbackMessage, false);
+                Component displayValue = getDisplayValue(codeEntry, configValue);
+                Component feedbackMessage = Util.parseTranslatableText("fmod.command.options.get", Util.parseTranslatableText(i18nKey), displayValue);
+                context.getSource().sendSuccess(() -> feedbackMessage, false);
             } else {
                 Object valueToSet = toTrueValue(codeEntry, value);
                 boolean isSuccess = setValue(codeEntry, valueToSet);
                 if (!isSuccess) {
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 Object newValue = getValue(codeEntry);
-                Text displayValue = getDisplayValue(codeEntry, newValue);
-                Text feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
-                context.getSource().sendFeedback(() -> feedbackMessage, true);
+                Component displayValue = getDisplayValue(codeEntry, newValue);
+                Component feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
+                context.getSource().sendSuccess(() -> feedbackMessage, true);
                 Util.saveServerConfig();
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (ClassCastException e) {
-            throw new CommandException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -488,36 +487,36 @@ public class ServerConfigRegistry {
      * is empty, {@code Text.literal(String.valueOf(value))} is returned as a default.</p>
      *
      * @param name  the code-entry name of the config entry
-     * @param value the config value to convert to a display {@link Text}
-     * @return a non-null {@link Text} representing the display form of {@code value}
+     * @param value the config value to convert to a display {@link Component}
+     * @return a non-null {@link Component} representing the display form of {@code value}
      */
-    public static Text getDisplayValue(String name, Object value) {
+    public static Component getDisplayValue(String name, Object value) {
         try {
             if (value == null) {
                 Util.LOGGER.warn("FMinecraftMod: Config entry " + name + " got an unexpected null value, falling back to return null.");
-                return Text.literal("null");
+                return Component.literal("null");
             }
             ConfigEntry configAnnotation = configAnnotations.get(name);
             ConfigReader configInstance = configInstances.get(name);
             if (configAnnotation == null || configInstance == null) {
                 Util.LOGGER.error("FMinecraftMod: No config entry found for name: " + name);
-                return Text.literal(String.valueOf(value));
+                return Component.literal(String.valueOf(value));
             }
             String displayValueGetter = configAnnotation.displayValueGetter();
             if (displayValueGetter.isEmpty()) {
-                return Text.literal(String.valueOf(value));
+                return Component.literal(String.valueOf(value));
             }
             Method displayValueMethod = configInstance.getClass().getDeclaredMethod(displayValueGetter, value.getClass());
             displayValueMethod.setAccessible(true);
             Object displayValue = displayValueMethod.invoke(configInstance, value);
-            if (displayValue instanceof Text) {
-                return (Text) displayValue;
+            if (displayValue instanceof Component) {
+                return (Component) displayValue;
             } else {
-                return Text.literal(String.valueOf(displayValue));
+                return Component.literal(String.valueOf(displayValue));
             }
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Failed to get display value for config entry: " + name, e);
-            return Text.literal(String.valueOf(value));
+            return Component.literal(String.valueOf(value));
         }
     }
 

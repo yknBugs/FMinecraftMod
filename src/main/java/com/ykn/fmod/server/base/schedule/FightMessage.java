@@ -7,16 +7,16 @@ package com.ykn.fmod.server.base.schedule;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 public class FightMessage extends ScheduledTask {
 
-    private final ServerPlayerEntity player;
+    private final ServerPlayer player;
     private final LivingEntity entity;
 
-    public FightMessage(ServerPlayerEntity player, LivingEntity entity) {
+    public FightMessage(ServerPlayer player, LivingEntity entity) {
         super(1, 0);
         this.player = player;
         this.entity = entity;
@@ -24,11 +24,11 @@ public class FightMessage extends ScheduledTask {
 
     @Override
     public void onTrigger() {
-        Text playerName = player.getDisplayName();
-        Text entityName = entity.getDisplayName();
+        Component playerName = player.getDisplayName();
+        Component entityName = entity.getDisplayName();
         double entityHealth = entity.getHealth();
-        Text mainText = Util.parseTranslatableText("fmod.message.bossfight.main", playerName, entityName, String.format("%.1f", entityHealth));
-        Text otherText = Util.parseTranslatableText("fmod.message.bossfight.other", playerName, entityName);
+        Component mainText = Util.parseTranslatableText("fmod.message.bossfight.main", playerName, entityName, String.format("%.1f", entityHealth));
+        Component otherText = Util.parseTranslatableText("fmod.message.bossfight.other", playerName, entityName);
         Util.getServerConfig().getBossFightMessage().postMessage(player, mainText, otherText);
     }
 
@@ -39,7 +39,7 @@ public class FightMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (entity == null || player == null || entity.isRemoved() || player.isDisconnected() || player.getHealth() <= 0) {
+        if (entity == null || player == null || entity.isRemoved() || player.hasDisconnected() || player.getHealth() <= 0) {
             return true;
         }
         return false;

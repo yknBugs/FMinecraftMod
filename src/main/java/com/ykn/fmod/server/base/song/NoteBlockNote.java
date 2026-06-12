@@ -7,14 +7,14 @@ package com.ykn.fmod.server.base.song;
 
 import java.util.Objects;
 
-import net.minecraft.block.enums.Instrument;
+import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 
 public class NoteBlockNote {
 
-    public final Instrument instrument;
+    public final NoteBlockInstrument instrument;
     public final int noteLevel;
 
-    public NoteBlockNote(Instrument instrument, int noteLevel) {
+    public NoteBlockNote(NoteBlockInstrument instrument, int noteLevel) {
         this.instrument = instrument;
         this.noteLevel = noteLevel;
     }

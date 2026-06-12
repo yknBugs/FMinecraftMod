@@ -13,20 +13,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.ykn.fmod.server.base.event.ProjectileHitEntity;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.EntityHitResult;
 
-@Mixin(ProjectileEntity.class)
+@Mixin(Projectile.class)
 public class ProjectileHitEntityMixin {
 
-    @Inject(method = "onEntityHit(Lnet/minecraft/util/hit/EntityHitResult;)V", at = @At("HEAD"))
+    @Inject(method = "onHitEntity(Lnet/minecraft/world/phys/EntityHitResult;)V", at = @At("HEAD"))
     private void onEntityHit(final EntityHitResult entityHitResult, CallbackInfo info) {
         try {
-            ProjectileEntity projectile = (ProjectileEntity) (Object) this;
+            Projectile projectile = (Projectile) (Object) this;
             ProjectileHitEntity projectileHitEntity = new ProjectileHitEntity(projectile, entityHitResult);
             projectileHitEntity.onProjectileHitEntity();
         } catch (Exception e) {
-            Util.LOGGER.error("FMinecraftMod: Caught exception from ProjectileHitEntityEvent.", e);
+            Util.LOGGER.error("FMinecraftMod: An error occurred when handling projectile hit entity event.", e);
         }
     }
 }

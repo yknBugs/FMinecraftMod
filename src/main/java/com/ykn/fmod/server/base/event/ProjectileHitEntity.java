@@ -18,21 +18,21 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.rule.event.ProjectileHitEntityEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.projectile.ProjectileEntity;
-import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.projectile.Projectile;
+import net.minecraft.world.phys.EntityHitResult;
 
 public class ProjectileHitEntity {
 
-    private final ProjectileEntity projectile;
+    private final Projectile projectile;
     private final EntityHitResult entityHitResult;
 
-    public ProjectileHitEntity(ProjectileEntity projectile, EntityHitResult entityHitResult) {
+    public ProjectileHitEntity(Projectile projectile, EntityHitResult entityHitResult) {
         this.projectile = projectile;
         this.entityHitResult = entityHitResult;
     }
 
-    public ProjectileEntity getProjectile() {
+    public Projectile getProjectile() {
         return projectile;
     }
 
@@ -52,7 +52,7 @@ public class ProjectileHitEntity {
         if (victim == null) {
             return;
         }
-        Entity shooter = projectile.getEffectCause();
+        Entity shooter = projectile.getEffectSource();
         if (shooter == null) {
             return;
         }
@@ -70,27 +70,27 @@ public class ProjectileHitEntity {
         List<RuleManager> hitEventRules = data.gatherRuleByEventType(ProjectileHitEntityEvent.class, true);
         for (RuleManager rule : hitEventRules) {
             Map<String, Object> eventVariables = new HashMap<>();
-            eventVariables.put("entity", victim.getUuid());
-            eventVariables.put("shooter", shooter.getUuid());
-            eventVariables.put("projectile", projectile.getUuid());
+            eventVariables.put("entity", victim.getUUID());
+            eventVariables.put("shooter", shooter.getUUID());
+            eventVariables.put("projectile", projectile.getUUID());
             eventVariables.put("x", victim.getX());
             eventVariables.put("y", victim.getY());
             eventVariables.put("z", victim.getZ());
-            eventVariables.put("position", victim.getPos());
-            eventVariables.put("dimension", victim.getWorld().getRegistryKey().getValue());
-            eventVariables.put("biome", victim.getWorld().getBiome(victim.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
-            eventVariables.put("pitch", Double.valueOf(victim.getPitch()));
-            eventVariables.put("yaw", Double.valueOf(victim.getYaw()));
-            eventVariables.put("rotation", victim.getRotationClient());
+            eventVariables.put("position", victim.position());
+            eventVariables.put("dimension", victim.level().dimension().location());
+            eventVariables.put("biome", victim.level().getBiome(victim.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
+            eventVariables.put("pitch", Double.valueOf(victim.getXRot()));
+            eventVariables.put("yaw", Double.valueOf(victim.getYRot()));
+            eventVariables.put("rotation", victim.getRotationVector());
             eventVariables.put("sx", shooter.getX());
             eventVariables.put("sy", shooter.getY());
             eventVariables.put("sz", shooter.getZ());
-            eventVariables.put("sposition", shooter.getPos());
-            eventVariables.put("sdimension", shooter.getWorld().getRegistryKey().getValue());
-            eventVariables.put("sbiome", shooter.getWorld().getBiome(shooter.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
-            eventVariables.put("spitch", Double.valueOf(shooter.getPitch()));
-            eventVariables.put("syaw", Double.valueOf(shooter.getYaw()));
-            eventVariables.put("srotation", shooter.getRotationClient());
+            eventVariables.put("sposition", shooter.position());
+            eventVariables.put("sdimension", shooter.level().dimension().location());
+            eventVariables.put("sbiome", shooter.level().getBiome(shooter.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
+            eventVariables.put("spitch", Double.valueOf(shooter.getXRot()));
+            eventVariables.put("syaw", Double.valueOf(shooter.getYRot()));
+            eventVariables.put("srotation", shooter.getRotationVector());
             eventVariables.put("distance", distance);
             eventVariables.put("health", Util.getHealth(victim));
             eventVariables.put("name", victim.getDisplayName().getString());
@@ -98,8 +98,8 @@ public class ProjectileHitEntity {
             eventVariables.put("__entity__", victim);
             eventVariables.put("__shooter__", shooter);
             eventVariables.put("__projectile__", projectile);
-            eventVariables.put("__world__", victim.getWorld());
-            eventVariables.put("__sworld__", shooter.getWorld());
+            eventVariables.put("__world__", victim.level());
+            eventVariables.put("__sworld__", shooter.level());
             eventVariables.put("__name__", victim.getDisplayName());
             eventVariables.put("__sname__", shooter.getDisplayName());
             rule.trigger(data, eventVariables);
@@ -113,7 +113,7 @@ public class ProjectileHitEntity {
             eventOutput.add(this.projectile);
             eventOutput.add(shooter);
             eventOutput.add(victim);
-            eventOutput.add(entityHitResult.getPos());
+            eventOutput.add(entityHitResult.getLocation());
             eventOutput.add(distance);
             flow.execute(data, eventOutput, null);
         }

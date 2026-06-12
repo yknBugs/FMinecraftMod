@@ -7,17 +7,17 @@ package com.ykn.fmod.server.base.schedule;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
 
 public class BiomeMessage extends ScheduledTask {
 
-    private final ServerPlayerEntity player;
-    private final Identifier biomeId;
+    private final ServerPlayer player;
+    private final ResourceLocation biomeId;
     
-    public BiomeMessage(ServerPlayerEntity player, Identifier biomeId) {
+    public BiomeMessage(ServerPlayer player, ResourceLocation biomeId) {
         super(Util.getServerConfig().getChangeBiomeDelay(), 0);
         this.player = player;
         this.biomeId = biomeId;
@@ -25,23 +25,23 @@ public class BiomeMessage extends ScheduledTask {
 
     @Override
     public void onTrigger() {
-        MutableText biomeText = null;
+        MutableComponent biomeText = null;
         if (biomeId == null) {
             biomeText = Util.parseTranslatableText("fmod.misc.unknown");
         } else {
-            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
+            biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
         }
-        Text mainText = Util.parseTranslatableText("fmod.message.biome.change.main", player.getDisplayName(), Util.parseCoordText(player));
-        Text otherText = Util.parseTranslatableText("fmod.message.biome.change.other", player.getDisplayName(), biomeText);
+        Component mainText = Util.parseTranslatableText("fmod.message.biome.change.main", player.getDisplayName(), Util.parseCoordText(player));
+        Component otherText = Util.parseTranslatableText("fmod.message.biome.change.other", player.getDisplayName(), biomeText);
         Util.getServerConfig().getChangeBiomeMessage().postMessage(player, mainText, otherText);
     }
 
     @Override
     public boolean shouldCancel() {
-        if (player == null || player.isDisconnected() || player.isRemoved() || player.getHealth() <= 0) {
+        if (player == null || player.hasDisconnected() || player.isRemoved() || player.getHealth() <= 0) {
             return true;
         }
-        Identifier currentBiomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+        ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         if (currentBiomeId == null && biomeId == null) {
             return false;
         } else if (currentBiomeId == null || biomeId == null) {

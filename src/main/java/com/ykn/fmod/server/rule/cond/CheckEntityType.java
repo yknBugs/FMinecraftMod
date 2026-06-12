@@ -23,18 +23,17 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.command.argument.IdentifierArgumentType;
-import net.minecraft.command.suggestion.SuggestionProviders;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
-import net.minecraft.util.Identifier;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.synchronization.SuggestionProviders;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
 
 /**
  * A {@link SourceCondition} that tests whether a specific entity (identified by UUID)
@@ -59,9 +58,9 @@ public class CheckEntityType implements SourceCondition {
 
     private final RuleParameter<UUID> entity;
 
-    private final RuleParameter<Identifier> entityType;
+    private final RuleParameter<ResourceLocation> entityType;
 
-    public CheckEntityType(String name, RuleParameter<UUID> entity, RuleParameter<Identifier> entityType) {
+    public CheckEntityType(String name, RuleParameter<UUID> entity, RuleParameter<ResourceLocation> entityType) {
         this.name = name;
         this.entity = entity;
         this.entityType = entityType;
@@ -70,7 +69,7 @@ public class CheckEntityType implements SourceCondition {
     @Override
     public boolean onEvaluate(RuleContext context) {
         UUID entityId = this.entity.resolve(context, UUID.class);
-        Identifier entityType = this.entityType.resolve(context, Identifier.class);
+        ResourceLocation entityType = this.entityType.resolve(context, ResourceLocation.class);
 
         if (entityId == null && entityType == null) {
             return true;
@@ -80,10 +79,10 @@ public class CheckEntityType implements SourceCondition {
             return false;
         }
 
-        for (ServerWorld world : context.getServer().getWorlds()) {
+        for (ServerLevel world : context.getServer().getAllLevels()) {
             Entity found = world.getEntity(entityId);
             if (found != null) {
-                return entityType.equals(EntityType.getId(found.getType()));
+                return entityType.equals(EntityType.getKey(found.getType()));
             }
         }
 
@@ -106,7 +105,7 @@ public class CheckEntityType implements SourceCondition {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.checkentitytype", this.getName(), this.getType(),
             this.entity.render(), this.entityType.render());
     }
@@ -125,36 +124,44 @@ public class CheckEntityType implements SourceCondition {
 
     public static CheckEntityType fromJson(JsonObject json) {
         RuleParameter<UUID> entity = RuleParameter.fromJson(json, "entity", e -> UUID.fromString(e.getAsString()));
-        RuleParameter<Identifier> entityType = RuleParameter.fromJson(json, "type", e -> new Identifier(e.getAsString()));
+        RuleParameter<ResourceLocation> entityType = RuleParameter.fromJson(json, "type", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in CheckEntityType entityType: " + s + ". Defaulting to minecraft:player");
+                rl = ResourceLocation.withDefaultNamespace("player");
+            }
+            return rl;
+        });
         return new CheckEntityType(json.get("name").getAsString(), entity, entityType);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<UUID> entityParameter = RuleParameter.fromCommandContext("entity", "var.entity", () -> {
-                        Entity entity = EntityArgumentType.getEntity(ctx, "entity");
-                        return entity.getUuid();
+                        Entity entity = EntityArgument.getEntity(ctx, "entity");
+                        return entity.getUUID();
                     }, arguments, ctx);
-                    RuleParameter<Identifier> entityTypeParameter = RuleParameter.fromCommandContext("type", "var.type", () -> {
-                        return IdentifierArgumentType.getIdentifier(ctx, "type");
+                    RuleParameter<ResourceLocation> entityTypeParameter = RuleParameter.fromCommandContext("type", "var.type", () -> {
+                        return ResourceLocationArgument.getId(ctx, "type");
                     }, arguments, ctx);
                     CheckEntityType condition = new CheckEntityType(name, entityParameter, entityTypeParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("entity", "var.entity", () -> CommandManager.argument("entity", EntityArgumentType.entity()))
-            .add("type", "var.type", () -> CommandManager.argument("type", IdentifierArgumentType.identifier()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("entity", "var.entity", () -> Commands.argument("entity", EntityArgument.entity()))
+            .add("type", "var.type", () -> Commands.argument("type", ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 

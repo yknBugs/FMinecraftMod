@@ -17,7 +17,7 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 /**
  * Provides command auto-completion suggestions for logic flow names.
@@ -25,7 +25,7 @@ import net.minecraft.server.command.ServerCommandSource;
  * and suggests their names for command auto-completion. Supports optional quote wrapping
  * and wildcard "*" suggestion.
  */
-public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class LogicFlowSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     /**
      * Whether to wrap suggestions in double quotes.
@@ -77,7 +77,7 @@ public class LogicFlowSuggestion implements SuggestionProvider<ServerCommandSour
      * @throws CommandSyntaxException if there's a syntax error in the command
      */
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         if (context.getSource() == null || context.getSource().getServer() == null) {
             return builder.buildFuture();
         }

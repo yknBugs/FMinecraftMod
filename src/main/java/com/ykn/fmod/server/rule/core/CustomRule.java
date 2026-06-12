@@ -12,9 +12,9 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
  * The central definition of an admin-configured server rule.
@@ -516,48 +516,48 @@ public class CustomRule implements Cloneable {
         return false;
     }
 
-    public Text render() {
+    public Component render() {
         // RuleName: EventType -> ConditionName -> [Action1, Action2, ...]/[violationAction1, violationAction2, ...], (extraCondition1, extraCondition2, ...)
-        MutableText title = Text.literal(name);
-        Text eventDetail = event.render();
-        MutableText eventText = Text.literal(event.getType()).styled(s -> s
+        MutableComponent title = Component.literal(name);
+        Component eventDetail = event.render();
+        MutableComponent eventText = Component.literal(event.getType()).withStyle(s -> s
             .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, eventDetail))
         );
-        Text conditionDetail = condition.render();
-        Text conditionName = condition.getName().isEmpty() ? condition.render() : Text.literal(condition.getName());
-        MutableText conditionText = Text.empty().append(conditionName).styled(s -> s
+        Component conditionDetail = condition.render();
+        Component conditionName = condition.getName().isEmpty() ? condition.render() : Component.literal(condition.getName());
+        MutableComponent conditionText = Component.empty().append(conditionName).withStyle(s -> s
             .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, conditionDetail))
         );
-        List<MutableText> extraConditionTexts = new ArrayList<>();
+        List<MutableComponent> extraConditionTexts = new ArrayList<>();
         for (RuleCondition extraCondition : extra) {
-            Text extraConditionDetail = extraCondition.render();
+            Component extraConditionDetail = extraCondition.render();
             String extraConditionName = extraCondition.getName().isEmpty() ? extraCondition.getType() : extraCondition.getName();
-            MutableText extraConditionText = Text.literal(extraConditionName).styled(s -> s
+            MutableComponent extraConditionText = Component.literal(extraConditionName).withStyle(s -> s
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, extraConditionDetail))
             );
             extraConditionTexts.add(extraConditionText);
         }
-        List<MutableText> actionIfSatisfiedTexts = new ArrayList<>();
+        List<MutableComponent> actionIfSatisfiedTexts = new ArrayList<>();
         for (RuleAction action : actionIfSatisfied) {
-            Text actionDetail = action.render();
+            Component actionDetail = action.render();
             String actionName = action.getName().isEmpty() ? action.getType() : action.getName();
-            MutableText actionText = Text.literal(actionName).styled(s -> s
+            MutableComponent actionText = Component.literal(actionName).withStyle(s -> s
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, actionDetail))
             );
             actionIfSatisfiedTexts.add(actionText);
         }
-        List<MutableText> actionIfViolatedTexts = new ArrayList<>();
+        List<MutableComponent> actionIfViolatedTexts = new ArrayList<>();
         for (RuleAction action : actionIfViolated) {
-            Text actionDetail = action.render();
+            Component actionDetail = action.render();
             String actionName = action.getName().isEmpty() ? action.getType() : action.getName();
-            MutableText actionText = Text.literal(actionName).styled(s -> s
+            MutableComponent actionText = Component.literal(actionName).withStyle(s -> s
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, actionDetail))
             );
             actionIfViolatedTexts.add(actionText);
         }
         title = title.append(": ").append(eventText).append(" -> ").append(conditionText).append(" -> [");
         int i = 0;
-        for (MutableText actionText : actionIfSatisfiedTexts) {
+        for (MutableComponent actionText : actionIfSatisfiedTexts) {
             if (i > 0) {
                 title = title.append(", ");
             }
@@ -566,7 +566,7 @@ public class CustomRule implements Cloneable {
         }
         title = title.append("]/[");
         i = 0;
-        for (MutableText actionText : actionIfViolatedTexts) {
+        for (MutableComponent actionText : actionIfViolatedTexts) {
             if (i > 0) {
                 title = title.append(", ");
             }
@@ -577,7 +577,7 @@ public class CustomRule implements Cloneable {
         if (!extraConditionTexts.isEmpty()) {
             title = title.append(", (");
             i = 0;
-            for (MutableText extraConditionText : extraConditionTexts) {
+            for (MutableComponent extraConditionText : extraConditionTexts) {
                 if (i > 0) {
                     title = title.append(", ");
                 }

@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * Exception thrown when an error occurs during logic flow execution.
@@ -55,7 +55,7 @@ public class LogicException extends Exception {
      * This should be a translatable text object that can be displayed to players
      * in their preferred language. May be null if only a plain string message is needed.
      */
-    private final Text messageText;
+    private final Component messageText;
 
     /**
      * Constructs a LogicException with the specified details.
@@ -70,7 +70,7 @@ public class LogicException extends Exception {
      * @param messageText the user-facing message as a Text object, may be null
      * @param message the string message for standard exception handling, may be null
      */
-    public LogicException(@Nullable Exception reason, @Nullable Text messageText, @Nullable String message) {
+    public LogicException(@Nullable Exception reason, @Nullable Component messageText, @Nullable String message) {
         super(parseExceptionMessage(reason, messageText, message));
         this.reason = reason;
         this.messageText = messageText;
@@ -90,7 +90,7 @@ public class LogicException extends Exception {
      * @param message the string message, may be null
      * @return the parsed exception message, or null if no message is available
      */
-    private static String parseExceptionMessage(@Nullable Exception reason, @Nullable Text messageText, @Nullable String message) {
+    private static String parseExceptionMessage(@Nullable Exception reason, @Nullable Component messageText, @Nullable String message) {
         if (message != null) {
             return message;
         } else if (messageText != null) {
@@ -124,13 +124,13 @@ public class LogicException extends Exception {
      * @return The user-facing message as Text.
      */
     @NotNull
-    public Text getMessageText() {
+    public Component getMessageText() {
         if (messageText != null) {
             return messageText;
         } else if (getMessage() != null) {
-            return Text.literal(getMessage());
+            return Component.literal(getMessage());
         } else if (reason != null && reason.getMessage() != null) {
-            return Text.literal(reason.getMessage());
+            return Component.literal(reason.getMessage());
         } else {
             return Util.parseTranslatableText("fmod.flow.error.unknown");
         }

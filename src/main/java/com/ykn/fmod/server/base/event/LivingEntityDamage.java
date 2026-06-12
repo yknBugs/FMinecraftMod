@@ -19,14 +19,14 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.rule.event.EntityDamageEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.Monster;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Box;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.phys.AABB;
 
 public class LivingEntityDamage {
 
@@ -53,12 +53,12 @@ public class LivingEntityDamage {
         }
 
         MinecraftServer server = entity.getServer();
-        Entity attacker = damageSource.getSource();
+        Entity attacker = damageSource.getDirectEntity();
         ServerData serverData = Util.getServerData(server);
 
         // Send boss fight message
-        if (attacker != null && attacker.isPlayer() && attacker instanceof ServerPlayerEntity) {
-            ServerPlayerEntity player = (ServerPlayerEntity) attacker;
+        if (attacker != null && attacker.isAlwaysTicking() && attacker instanceof ServerPlayer) {
+            ServerPlayer player = (ServerPlayer) attacker;
             PlayerData data = serverData.getPlayerData(player);
             if (entity.getMaxHealth() > Util.getServerConfig().getBossMaxHealthThreshold() && data.getBossFightTickPassed() > Util.getServerConfig().getBossFightInterval() && amount > 0) {
                 data.setLastBossFightTick();
@@ -67,26 +67,26 @@ public class LivingEntityDamage {
         }
 
         // Send monster surround message
-        if (entity.isPlayer() && entity instanceof ServerPlayerEntity) {
-            ServerPlayerEntity player = (ServerPlayerEntity) entity;
+        if (entity.isAlwaysTicking() && entity instanceof ServerPlayer) {
+            ServerPlayer player = (ServerPlayer) entity;
             PlayerData data = serverData.getPlayerData(player);
             if (attacker != null && attacker instanceof Monster && data.getMonsterSurroundTickPassed() > Util.getServerConfig().getMonsterSurroundInterval() && amount > 0) {
                 double distance = Util.getServerConfig().getMonsterDistanceThreshold();
-                Box box = new Box(player.getX() - distance, player.getY() - distance, player.getZ() - distance, player.getX() + distance, player.getY() + distance, player.getZ() + distance);
-                List<Entity> nearestEntities = player.getWorld().getEntitiesByClass(Entity.class, box, monster -> (monster != null && (monster instanceof Monster)));
+                AABB box = new AABB(player.getX() - distance, player.getY() - distance, player.getZ() - distance, player.getX() + distance, player.getY() + distance, player.getZ() + distance);
+                List<Entity> nearestEntities = player.level().getEntitiesOfClass(Entity.class, box, monster -> (monster != null && (monster instanceof Monster)));
                 if (nearestEntities.size() >= Util.getServerConfig().getMonsterNumberThreshold() && player.getHealth() > 0) {
-                    Text playerName = player.getDisplayName();
-                    Text entityName = attacker.getDisplayName();
+                    Component playerName = player.getDisplayName();
+                    Component entityName = attacker.getDisplayName();
                     String entityNumber = Integer.toString(nearestEntities.size());
                     Map.Entry<Entity, Integer> dominantMonster = Util.getDominantEntities(nearestEntities);
                     if (dominantMonster == null) {
                         // Unlikely to happen
                         Util.LOGGER.warn("FMinecraftMod: Got unexpected null value when searching for dominant monster.");
                     } else {
-                        Text dominantMonsterName = dominantMonster.getKey().getDisplayName();
+                        Component dominantMonsterName = dominantMonster.getKey().getDisplayName();
                         String dominantMonsterNumber = Integer.toString(dominantMonster.getValue());
-                        Text mainText = Util.parseTranslatableText("fmod.message.monsterattack.main", playerName, entityName, entityNumber, dominantMonsterNumber, dominantMonsterName);
-                        Text otherText = Util.parseTranslatableText("fmod.message.monsterattack.other", playerName, entityNumber);
+                        Component mainText = Util.parseTranslatableText("fmod.message.monsterattack.main", playerName, entityName, entityNumber, dominantMonsterNumber, dominantMonsterName);
+                        Component otherText = Util.parseTranslatableText("fmod.message.monsterattack.other", playerName, entityNumber);
                         Util.getServerConfig().getMonsterSurroundMessage().postMessage(player, mainText, otherText);
                     }
                     data.setLastMonsterSurroundTick();
@@ -103,27 +103,27 @@ public class LivingEntityDamage {
         List<RuleManager> damageEventRules = serverData.gatherRuleByEventType(EntityDamageEvent.class, true);
         for (RuleManager rule : damageEventRules) {
             Map<String, Object> eventVariables = new HashMap<>();
-            eventVariables.put("entity", this.entity.getUuid());
+            eventVariables.put("entity", this.entity.getUUID());
             eventVariables.put("damage", Double.valueOf(amount));
-            eventVariables.put("cause", this.damageSource.getAttacker() == null ? null : this.damageSource.getAttacker().getUuid());
-            eventVariables.put("source", this.damageSource.getSource() == null ? null : this.damageSource.getSource().getUuid());
+            eventVariables.put("cause", this.damageSource.getEntity() == null ? null : this.damageSource.getEntity().getUUID());
+            eventVariables.put("source", this.damageSource.getDirectEntity() == null ? null : this.damageSource.getDirectEntity().getUUID());
             eventVariables.put("x", this.entity.getX());
             eventVariables.put("y", this.entity.getY());
             eventVariables.put("z", this.entity.getZ());
-            eventVariables.put("position", this.entity.getPos());
-            eventVariables.put("dimension", this.entity.getWorld().getRegistryKey().getValue());
-            eventVariables.put("biome", this.entity.getWorld().getBiome(this.entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
-            eventVariables.put("pitch", Double.valueOf(this.entity.getPitch()));
-            eventVariables.put("yaw", Double.valueOf(this.entity.getYaw()));
-            eventVariables.put("rotation", this.entity.getRotationClient());
-            eventVariables.put("message", this.damageSource.getType().msgId());
-            eventVariables.put("exhaustion", Double.valueOf(this.damageSource.getType().exhaustion()));
+            eventVariables.put("position", this.entity.position());
+            eventVariables.put("dimension", this.entity.level().dimension().location());
+            eventVariables.put("biome", this.entity.level().getBiome(this.entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
+            eventVariables.put("pitch", Double.valueOf(this.entity.getXRot()));
+            eventVariables.put("yaw", Double.valueOf(this.entity.getYRot()));
+            eventVariables.put("rotation", this.entity.getRotationVector());
+            eventVariables.put("message", this.damageSource.getMsgId());
+            eventVariables.put("exhaustion", Double.valueOf(this.damageSource.getFoodExhaustion()));
             eventVariables.put("health", Double.valueOf(this.entity.getHealth()));
             eventVariables.put("name", this.entity.getDisplayName().getString());
             eventVariables.put("__entity__", this.entity);
-            eventVariables.put("__cause__", this.damageSource.getAttacker());
-            eventVariables.put("__source__", this.damageSource.getSource());
-            eventVariables.put("__world__", this.entity.getWorld());
+            eventVariables.put("__cause__", this.damageSource.getEntity());
+            eventVariables.put("__source__", this.damageSource.getDirectEntity());
+            eventVariables.put("__world__", this.entity.level());
             eventVariables.put("__name__", this.entity.getDisplayName());
             rule.trigger(serverData, eventVariables);
         }
@@ -135,10 +135,10 @@ public class LivingEntityDamage {
             List<Object> eventOutput = new ArrayList<>();
             eventOutput.add(this.entity);
             eventOutput.add(this.amount);
-            eventOutput.add(this.damageSource.getType());
-            eventOutput.add(this.damageSource.getAttacker());
-            eventOutput.add(this.damageSource.getSource());
-            eventOutput.add(this.damageSource.getPosition());
+            eventOutput.add(this.damageSource.type());
+            eventOutput.add(this.damageSource.getEntity());
+            eventOutput.add(this.damageSource.getDirectEntity());
+            eventOutput.add(this.damageSource.getSourcePosition());
             flow.execute(serverData, eventOutput, null);
         }
     }

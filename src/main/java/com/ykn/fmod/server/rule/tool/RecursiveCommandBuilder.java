@@ -18,8 +18,8 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.command.RuleComponentSuggestion;
 
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
 
 /**
  * Recursively constructs nested Brigadier command trees for rule component parameters.
@@ -38,7 +38,7 @@ import net.minecraft.server.command.ServerCommandSource;
  *
  * <h3>Usage</h3>
  * <pre>{@code
- * RequiredArgumentBuilder<ServerCommandSource, ?> node =
+ * RequiredArgumentBuilder<CommandSourceStack, ?> node =
  *     RecursiveCommandBuilder
  *         .builder((arguments, ctx) -> {
  *             RuleParameter<UUID> entityId = RuleParameter.fromCommandContext(
@@ -47,9 +47,9 @@ import net.minecraft.server.command.ServerCommandSource;
  *             // ... build the component and call the consumer
  *             return Command.SINGLE_SUCCESS;
  *         })
- *         .add("entity",   "var.entity",   () -> CommandManager.argument("entity",   EntityArgumentType.entity()))
- *         .add("dimension", "var.dimension", () -> CommandManager.argument("dimension", DimensionArgumentType.dimension()))
- *         .build(CommandManager.argument("name", StringArgumentType.string()));
+ *         .add("entity",   "var.entity",   () -> Commands.argument("entity",   EntityArgumentType.entity()))
+ *         .add("dimension", "var.dimension", () -> Commands.argument("dimension", DimensionArgumentType.dimension()))
+ *         .build(Commands.argument("name", StringArgumentType.string()));
  * }</pre>
  *
  * <p>The command tree depth still grows exponentially with the number of parameters, 
@@ -86,41 +86,41 @@ public class RecursiveCommandBuilder {
     
     private final List<RuleComponentArgument> arguments;
 
-    private final BiFunction<Set<String>, CommandContext<ServerCommandSource>, Integer> commandExecutor;
+    private final BiFunction<Set<String>, CommandContext<CommandSourceStack>, Integer> commandExecutor;
 
-    private RecursiveCommandBuilder(BiFunction<Set<String>, CommandContext<ServerCommandSource>, Integer> commandExecutor) {
+    private RecursiveCommandBuilder(BiFunction<Set<String>, CommandContext<CommandSourceStack>, Integer> commandExecutor) {
         this.arguments = new ArrayList<>();
         this.commandExecutor = commandExecutor;
     }
 
-    private RequiredArgumentBuilder<ServerCommandSource, ?> addTailAfterArgument(RequiredArgumentBuilder<ServerCommandSource, ?> parentArgument, int index, Set<String> branchHasArgument) {
+    private RequiredArgumentBuilder<CommandSourceStack, ?> addTailAfterArgument(RequiredArgumentBuilder<CommandSourceStack, ?> parentArgument, int index, Set<String> branchHasArgument) {
         if (index >= arguments.size()) {
             return parentArgument.executes(ctx -> {return commandExecutor.apply(branchHasArgument, ctx);});
         }
-        return parentArgument.then(addTailAfterConstLiteral(CommandManager.literal("const"), index, branchHasArgument))
-            .then(addTailAfterVariableLiteral(CommandManager.literal("var"), index, branchHasArgument))
-            .then(addTailAfterMixLiteral(CommandManager.literal("mix"), index, branchHasArgument));
+        return parentArgument.then(addTailAfterConstLiteral(Commands.literal("const"), index, branchHasArgument))
+            .then(addTailAfterVariableLiteral(Commands.literal("var"), index, branchHasArgument))
+            .then(addTailAfterMixLiteral(Commands.literal("mix"), index, branchHasArgument));
     }
 
-    private LiteralArgumentBuilder<ServerCommandSource> addTailAfterConstLiteral(LiteralArgumentBuilder<ServerCommandSource> constLiteral, int index, Set<String> branchHasArgument) {
+    private LiteralArgumentBuilder<CommandSourceStack> addTailAfterConstLiteral(LiteralArgumentBuilder<CommandSourceStack> constLiteral, int index, Set<String> branchHasArgument) {
         Set<String> newBranchHasArgument = new HashSet<>(branchHasArgument);
         newBranchHasArgument.add(arguments.get(index).getConstArgumentName());
         return constLiteral.then(addTailAfterArgument(arguments.get(index).getConstArgumentNode(), index + 1, newBranchHasArgument));
     }
 
-    private LiteralArgumentBuilder<ServerCommandSource> addTailAfterVariableLiteral(LiteralArgumentBuilder<ServerCommandSource> variableLiteral, int index, Set<String> branchHasArgument) {
+    private LiteralArgumentBuilder<CommandSourceStack> addTailAfterVariableLiteral(LiteralArgumentBuilder<CommandSourceStack> variableLiteral, int index, Set<String> branchHasArgument) {
         RuleComponentSuggestion variableSuggestion = RuleComponentSuggestion.suggestVariable(false, 3);
         Set<String> newBranchHasArgument = new HashSet<>(branchHasArgument);
         newBranchHasArgument.add(arguments.get(index).getVariableArgumentName());
-        return variableLiteral.then(addTailAfterArgument(CommandManager.argument(arguments.get(index).getVariableArgumentName(), StringArgumentType.string()).suggests(variableSuggestion), index + 1, newBranchHasArgument));
+        return variableLiteral.then(addTailAfterArgument(Commands.argument(arguments.get(index).getVariableArgumentName(), StringArgumentType.string()).suggests(variableSuggestion), index + 1, newBranchHasArgument));
     }
 
-    private LiteralArgumentBuilder<ServerCommandSource> addTailAfterMixLiteral(LiteralArgumentBuilder<ServerCommandSource> mixLiteral, int index, Set<String> branchHasArgument) {
+    private LiteralArgumentBuilder<CommandSourceStack> addTailAfterMixLiteral(LiteralArgumentBuilder<CommandSourceStack> mixLiteral, int index, Set<String> branchHasArgument) {
         RuleComponentSuggestion variableSuggestion = RuleComponentSuggestion.suggestVariable(false, 3);
         Set<String> newBranchHasArgument = new HashSet<>(branchHasArgument);
         newBranchHasArgument.add(arguments.get(index).getVariableArgumentName());
         newBranchHasArgument.add(arguments.get(index).getConstArgumentName());
-        return mixLiteral.then(CommandManager.argument(arguments.get(index).getVariableArgumentName(), StringArgumentType.string())
+        return mixLiteral.then(Commands.argument(arguments.get(index).getVariableArgumentName(), StringArgumentType.string())
                 .suggests(variableSuggestion)
                 .then(addTailAfterArgument(arguments.get(index).getConstArgumentNode(), index + 1, newBranchHasArgument))
             );
@@ -134,7 +134,7 @@ public class RecursiveCommandBuilder {
      *                        and the command context
      * @return a new {@code RecursiveCommandBuilder}
      */
-    public static RecursiveCommandBuilder builder(BiFunction<Set<String>, CommandContext<ServerCommandSource>, Integer> commandExecutor) {
+    public static RecursiveCommandBuilder builder(BiFunction<Set<String>, CommandContext<CommandSourceStack>, Integer> commandExecutor) {
         return new RecursiveCommandBuilder(commandExecutor);
     }
 
@@ -148,7 +148,7 @@ public class RecursiveCommandBuilder {
      *                                   called once per unique command path that includes the constant
      * @return {@code this}, for method chaining
      */
-    public RecursiveCommandBuilder add(String constArgumentName, String variableArgumentName, Supplier<RequiredArgumentBuilder<ServerCommandSource, ?>> constArgumentNodeSupplier) {
+    public RecursiveCommandBuilder add(String constArgumentName, String variableArgumentName, Supplier<RequiredArgumentBuilder<CommandSourceStack, ?>> constArgumentNodeSupplier) {
         this.arguments.add(new RuleComponentArgument(constArgumentName, variableArgumentName, constArgumentNodeSupplier));
         return this;
     }
@@ -164,13 +164,13 @@ public class RecursiveCommandBuilder {
      * @param commandNode the parent literal node to attach the tree to
      * @return the modified {@code commandNode}
      */
-    public LiteralArgumentBuilder<ServerCommandSource> build(LiteralArgumentBuilder<ServerCommandSource> commandNode) {
+    public LiteralArgumentBuilder<CommandSourceStack> build(LiteralArgumentBuilder<CommandSourceStack> commandNode) {
         if (arguments.isEmpty()) {
             return commandNode.executes(ctx -> {return commandExecutor.apply(new HashSet<>(), ctx);});
         }
-        return commandNode.then(addTailAfterConstLiteral(CommandManager.literal("const"), 0, new HashSet<>()))
-            .then(addTailAfterVariableLiteral(CommandManager.literal("var"), 0, new HashSet<>()))
-            .then(addTailAfterMixLiteral(CommandManager.literal("mix"), 0, new HashSet<>()));
+        return commandNode.then(addTailAfterConstLiteral(Commands.literal("const"), 0, new HashSet<>()))
+            .then(addTailAfterVariableLiteral(Commands.literal("var"), 0, new HashSet<>()))
+            .then(addTailAfterMixLiteral(Commands.literal("mix"), 0, new HashSet<>()));
     }
 
     /**
@@ -179,7 +179,7 @@ public class RecursiveCommandBuilder {
      * @param commandNode the parent required-argument node
      * @return the modified {@code commandNode}
      */
-    public RequiredArgumentBuilder<ServerCommandSource, ?> build(RequiredArgumentBuilder<ServerCommandSource, ?> commandNode) {
+    public RequiredArgumentBuilder<CommandSourceStack, ?> build(RequiredArgumentBuilder<CommandSourceStack, ?> commandNode) {
         return addTailAfterArgument(commandNode, 0, new HashSet<>());
     }
 
@@ -193,9 +193,9 @@ public class RecursiveCommandBuilder {
 
         private final String variableArgumentName;
 
-        private final Supplier<RequiredArgumentBuilder<ServerCommandSource, ?>> constArgumentNodeSupplier;
+        private final Supplier<RequiredArgumentBuilder<CommandSourceStack, ?>> constArgumentNodeSupplier;
 
-        public RuleComponentArgument(String constArgumentName, String variableArgumentName, Supplier<RequiredArgumentBuilder<ServerCommandSource, ?>> constArgumentNodeSupplier) {
+        public RuleComponentArgument(String constArgumentName, String variableArgumentName, Supplier<RequiredArgumentBuilder<CommandSourceStack, ?>> constArgumentNodeSupplier) {
             this.constArgumentName = constArgumentName;
             this.variableArgumentName = variableArgumentName;
             this.constArgumentNodeSupplier = constArgumentNodeSupplier;
@@ -209,7 +209,7 @@ public class RecursiveCommandBuilder {
             return variableArgumentName;
         }
 
-        public RequiredArgumentBuilder<ServerCommandSource, ?> getConstArgumentNode() {
+        public RequiredArgumentBuilder<CommandSourceStack, ?> getConstArgumentNode() {
             return constArgumentNodeSupplier.get();
         }
     }

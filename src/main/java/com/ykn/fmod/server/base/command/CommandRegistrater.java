@@ -11,6 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
@@ -25,18 +26,16 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.node.TriggerNode;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.minecraft.command.CommandException;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.server.level.ServerPlayer;
 
 public class CommandRegistrater {
 
-    private static Object devFunction(CommandContext<ServerCommandSource> context) {
+    private static Object devFunction(CommandContext<CommandSourceStack> context) {
         // This function is used for development purposes. Execute command /f dev to run this function.
         // This function should be removed in the final release.
         // Add any code you want to test here, and you can return any kinds of value.
@@ -44,141 +43,150 @@ public class CommandRegistrater {
         return null;
     }
 
-    private static int runFModCommand(CommandContext<ServerCommandSource> context) {
+    private static int runFModCommand(CommandContext<CommandSourceStack> context) {
         try {
-            MutableText commandFeedback = Util.parseTranslatableText("fmod.misc.version", Util.getMinecraftVersion(), Util.MOD_VERSION.toString(), Util.getModAuthors());
-            context.getSource().sendFeedback(() -> commandFeedback, false);
+            MutableComponent commandFeedback = Util.parseTranslatableText("fmod.misc.version", Util.getMinecraftVersion(), Util.MOD_VERSION.toString(), Util.getModAuthors());
+            context.getSource().sendSuccess(() -> commandFeedback, false);
             return Command.SINGLE_SUCCESS;
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.version.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.version.error"));
+            return 0;
         }
     }
 
-    private static int runDevCommand(CommandContext<ServerCommandSource> context) {
+    private static int runDevCommand(CommandContext<CommandSourceStack> context) {
         try {
-            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.dev.start"), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.dev.start"), false);
             Object result = devFunction(context);
-            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.dev.end", result == null ? "null" : result.toString()), false);
         } catch (Exception e) {
             try {
                 try (StringWriter sw = new StringWriter(); PrintWriter pw = new PrintWriter(sw)) {
                     e.printStackTrace(pw);
                     // context.getSource().sendFeedback(() -> Text.literal(e.getMessage()), false);
-                    context.getSource().sendFeedback(() -> Text.literal(sw.toString()), false);
+                    context.getSource().sendSuccess(() -> Component.literal(sw.toString()), false);
                 }
             } catch (Exception exception) {
                 Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f dev", exception);
-                throw new CommandException(Util.parseTranslatableText("fmod.command.dev.error"));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.dev.error"));
+                return 0;
             }
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runSayCommand(String message, CommandContext<ServerCommandSource> context) {
+    private static int runSayCommand(String message, CommandContext<CommandSourceStack> context) {
         try {
             MinecraftServer server = Util.requireNotNullServer(context);
-            ServerPlayerEntity player = context.getSource().getPlayer();
-            MutableText text = null;
+            if (server == null) {
+                return 0;
+            }
+            ServerPlayer player = context.getSource().getPlayer();
+            MutableComponent text = null;
             if (player == null) {
-                text = Text.literal("[").append(context.getSource().getName()).append(Text.literal("] ")).append(
+                text = Component.literal("[").append(context.getSource().getDisplayName()).append(Component.literal("] ")).append(
                     TextPlaceholderFactory.ofDefault().parse(message, player)
                 );
             } else {
-                text = Text.literal("<").append(player.getDisplayName()).append(Text.literal("> ")).append(
+                text = Component.literal("<").append(player.getDisplayName()).append(Component.literal("> ")).append(
                     TextPlaceholderFactory.ofDefault().parse(message, player)
                 );
             }
             ServerMessageType.broadcastTextMessage(server, text);
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f say", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runTriggerFlowCommand(String name, String param, CommandContext<ServerCommandSource> context) {
+    private static int runTriggerFlowCommand(String name, String param, CommandContext<CommandSourceStack> context) {
         try {
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             FlowManager targetFlow = data.getLogicFlows().get(name);
             // Player without permission should not know the status of the trigger, always show not exists
             if (targetFlow == null) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                return 0;
             }
             if (!targetFlow.isEnabled()) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                return 0;
             }
             if (targetFlow.getFlow().getFirstNode() == null) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                return 0;
             }
             if (!(targetFlow.getFlow().getFirstNode() instanceof TriggerNode)) {
-                throw new CommandException(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.trigger.notexists", name));
+                return 0;
             }
             List<Object> startNodeOutputs = new ArrayList<>();
             startNodeOutputs.add(context.getSource().getPlayer());
             startNodeOutputs.add(TypeAdaptor.parse(param).autoCast());
             LogicException exception = targetFlow.execute(data, startNodeOutputs, null);
             if (exception != null) {
-                throw new CommandException(exception.getMessageText());
+                context.getSource().sendFailure(exception.getMessageText());
+                return 0;
             }
-        } catch (CommandException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f trigger", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    private static int runReloadCommand(CommandContext<ServerCommandSource> context) {
+    private static int runReloadCommand(CommandContext<CommandSourceStack> context) {
         try {
             SongFileSuggestion.suggest();
             FlowFileSuggestion.suggest();
             Util.loadServerConfig();
-            context.getSource().sendFeedback(() -> Util.parseTranslatableText("fmod.command.reload.success"), true);
-        } catch (CommandException e) {
-            throw e;
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.reload.success"), true);
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f reload", e);
-            throw new CommandException(Util.parseTranslatableText("fmod.command.reload.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.reload.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
-    public static boolean registerCommand() {
+    public static boolean registerCommand(CommandDispatcher<CommandSourceStack> dispatcher) {
         try {
-            final LiteralArgumentBuilder<ServerCommandSource> fModCommandNode = CommandManager.literal("fminecraftmod")
-                .requires(source -> source.hasPermissionLevel(0))
+            final LiteralArgumentBuilder<CommandSourceStack> fModCommandNode = Commands.literal("fminecraftmod")
+                .requires(source -> source.hasPermission(0))
                 .executes(context -> {return runFModCommand(context);})
-                .then(CommandManager.literal("dev")
-                    .requires(source -> source.hasPermissionLevel(4))
+                .then(Commands.literal("dev")
+                    .requires(source -> source.hasPermission(4))
                     .executes(context -> {return runDevCommand(context);})
                 )
                 .then(GptCommand.buildCommand())
                 .then(SongCommand.buildCommand())
                 .then(GetAndShareCommand.buildGetCommand())
                 .then(GetAndShareCommand.buildShareCommand())
-                .then(CommandManager.literal("say")
-                    .requires(source -> source.hasPermissionLevel(0))
-                    .then(CommandManager.argument("message", StringArgumentType.greedyString())
+                .then(Commands.literal("say")
+                    .requires(source -> source.hasPermission(0))
+                    .then(Commands.argument("message", StringArgumentType.greedyString())
                         .suggests(SayCommandSuggestion.suggestDefault())
                         .executes(context -> {return runSayCommand(StringArgumentType.getString(context, "message"), context);})
                     )
                 )
-                .then(CommandManager.literal("reload")
-                    .requires(source -> source.hasPermissionLevel(4))
+                .then(Commands.literal("reload")
+                    .requires(source -> source.hasPermission(4))
                     .executes(context -> {return runReloadCommand(context);})
                 )
-                .then(CommandManager.literal("trigger")
-                    .requires(source -> source.hasPermissionLevel(0))
-                    .then(CommandManager.argument("function", StringArgumentType.string())
+                .then(Commands.literal("trigger")
+                    .requires(source -> source.hasPermission(0))
+                    .then(Commands.argument("function", StringArgumentType.string())
                         .suggests(LogicFlowSuggestion.suggestTrigger())
                         .executes(context -> {return runTriggerFlowCommand(StringArgumentType.getString(context, "function"), null, context);})
-                        .then(CommandManager.argument("param", StringArgumentType.greedyString())
+                        .then(Commands.argument("param", StringArgumentType.greedyString())
                             .executes(context -> {return runTriggerFlowCommand(StringArgumentType.getString(context, "function"), StringArgumentType.getString(context, "param"), context);})
                         )
                     )
@@ -187,14 +195,12 @@ public class CommandRegistrater {
                 .then(RuleCommand.buildCommand())
                 .then(ServerConfigRegistry.buildCommand());
 
-            CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-                final LiteralCommandNode<ServerCommandSource> commandNode = dispatcher.register(fModCommandNode);
-                dispatcher.register(CommandManager.literal("f")
-                    .requires(source -> source.hasPermissionLevel(0))
-                    .executes(context -> {return runFModCommand(context);})
-                    .redirect(commandNode)
-                );
-            });
+            final LiteralCommandNode<CommandSourceStack> commandNode = dispatcher.register(fModCommandNode);
+            dispatcher.register(Commands.literal("f")
+                .requires(source -> source.hasPermission(0))
+                .executes(context -> {return runFModCommand(context);})
+                .redirect(commandNode)
+            );
             return true;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Unable to register command.", e);

@@ -24,11 +24,10 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * A {@link RuleAction} that broadcasts a message to all online players via the action bar
@@ -68,10 +67,10 @@ public class BroadcastActionbar implements RuleAction {
     public boolean execute(RuleContext context) {
         String message = this.message.resolve(context, String.class);
         if (message != null) {
-            TextPlaceholderFactory<ServerPlayerEntity> factory = TextPlaceholderFactory.ofDefault();
+            TextPlaceholderFactory<ServerPlayer> factory = TextPlaceholderFactory.ofDefault();
             for (String variable : context.getVariables().keySet()) {
                 Object value = context.getVariable(variable);
-                Text toShow = value == null ? Text.literal("${var:" + variable + "}") : Text.literal(TypeAdaptor.parse(value).asString());
+                Component toShow = value == null ? Component.literal("${var:" + variable + "}") : Component.literal(TypeAdaptor.parse(value).asString());
                 factory = factory.add("${var:" + variable + "}", player -> toShow);
             }
             MessageType.broadcastActionBarMessage(context.getServer(), factory.parse(message, null));
@@ -95,7 +94,7 @@ public class BroadcastActionbar implements RuleAction {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.action.bcactionbar", this.getName(), this.getType(), this.message.render());
     }
 
@@ -116,9 +115,9 @@ public class BroadcastActionbar implements RuleAction {
         return new BroadcastActionbar(name, message);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleAction> actionConsumer) {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         SayCommandSuggestion suggestion = SayCommandSuggestion.suggest().add("${", "var:");
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<String> messageParameter = RuleParameter.fromCommandContext("message", "var.message", () -> {
@@ -126,16 +125,15 @@ public class BroadcastActionbar implements RuleAction {
                     }, arguments, ctx);
                     BroadcastActionbar action = new BroadcastActionbar(name, messageParameter);
                     actionConsumer.accept(ctx, action);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("message", "var.message", () -> CommandManager.argument("message", StringArgumentType.greedyString()).suggests(suggestion))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("message", "var.message", () -> Commands.argument("message", StringArgumentType.greedyString()).suggests(suggestion))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 }

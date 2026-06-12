@@ -10,21 +10,21 @@ import java.util.ArrayList;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.server.command.CommandOutput;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
- * A {@link CommandOutput} implementation that redirects and stores command messages
+ * A {@link CommandSource} implementation that redirects and stores command messages
  * instead of sending them to the standard output. This class captures all messages
- * sent through the {@link #sendMessage(Text)} method for later retrieval.
+ * sent through the {@link #sendMessage(Component)} method for later retrieval.
  */
-public class RedirectedCommandOutput implements CommandOutput {
+public class RedirectedCommandOutput implements CommandSource {
 
     /**
      * List of all messages that have been captured by this redirected output.
      */
-    private final ArrayList<Text> messages;
+    private final ArrayList<Component> messages;
 
     /**
      * Constructs a new {@code RedirectedCommandOutput} with an empty message list.
@@ -36,10 +36,10 @@ public class RedirectedCommandOutput implements CommandOutput {
     /**
      * Adds a message to the list of captured messages.
      *
-     * @param var1 the {@link Text} message to capture
+     * @param var1 the {@link Component} message to capture
      */
     @Override
-    public void sendMessage(Text var1) {
+    public void sendSystemMessage(Component var1) {
         this.messages.add(var1);
     }
 
@@ -49,7 +49,7 @@ public class RedirectedCommandOutput implements CommandOutput {
      * @return {@code true} to enable receiving feedback
      */
     @Override
-    public boolean shouldReceiveFeedback() {
+    public boolean acceptsSuccess() {
         return true;
     }
 
@@ -59,7 +59,7 @@ public class RedirectedCommandOutput implements CommandOutput {
      * @return {@code true} to enable output tracking
      */
     @Override
-    public boolean shouldTrackOutput() {
+    public boolean acceptsFailure() {
         return true;
     }
 
@@ -69,7 +69,7 @@ public class RedirectedCommandOutput implements CommandOutput {
      * @return {@code false} to disable broadcasting to ops
      */
     @Override
-    public boolean shouldBroadcastConsoleToOps() {
+    public boolean shouldInformAdmins() {
         return false;
     }
     
@@ -77,10 +77,10 @@ public class RedirectedCommandOutput implements CommandOutput {
      * Retrieves the last message that was captured, or {@code null} if no messages
      * have been captured.
      *
-     * @return the last {@link Text} message, or {@code null} if the message list is empty
+     * @return the last {@link Component} message, or {@code null} if the message list is empty
      */
     @Nullable
-    public Text getLastMessage() {
+    public Component getLastMessage() {
         if (messages.isEmpty()) {
             return null;
         }
@@ -88,15 +88,15 @@ public class RedirectedCommandOutput implements CommandOutput {
     }
 
     /**
-     * Retrieves all captured messages as a single {@link Text} object with messages
+     * Retrieves all captured messages as a single {@link Component} object with messages
      * separated by newlines.
      *
-     * @return a {@link Text} object containing all captured messages
+     * @return a {@link Component} object containing all captured messages
      */
     @NotNull
-    public Text getAllMessage() {
-        MutableText result = Text.empty();
-        for (Text message : messages) {
+    public Component getAllMessage() {
+        MutableComponent result = Component.empty();
+        for (Component message : messages) {
             result.append(message).append("\n");
         }
         return result;
@@ -125,7 +125,7 @@ public class RedirectedCommandOutput implements CommandOutput {
     @NotNull
     public String getRawOutput() {
         StringBuilder builder = new StringBuilder();
-        for (Text message : messages) {
+        for (Component message : messages) {
             builder.append(message.getString()).append("\n");
         }
         return builder.toString();

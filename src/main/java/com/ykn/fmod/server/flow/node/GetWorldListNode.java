@@ -16,8 +16,8 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 
 /**
  * Get all the worlds in the server
@@ -44,13 +44,13 @@ public class GetWorldListNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        Identifier dimensionFilter = parseIdentifier(resolvedInputs.get(0));
+        ResourceLocation dimensionFilter = parseIdentifier(resolvedInputs.get(0));
         
-        Iterable<ServerWorld> worlds = context.getServer().getWorlds();
-        List<ServerWorld> worldList = new ArrayList<>();
+        Iterable<ServerLevel> worlds = context.getServer().getAllLevels();
+        List<ServerLevel> worldList = new ArrayList<>();
         
-        for (ServerWorld world : worlds) {
-            if (dimensionFilter == null || world.getRegistryKey().getValue().equals(dimensionFilter)) {
+        for (ServerLevel world : worlds) {
+            if (dimensionFilter == null || world.dimension().location().equals(dimensionFilter)) {
                 worldList.add(world);
             }
         }
@@ -58,21 +58,21 @@ public class GetWorldListNode extends FlowNode {
         status.setOutput(0, TypeAdaptor.parse(worldList).collapseList());
     }
     
-    private Identifier parseIdentifier(Object obj) throws LogicException {
+    private ResourceLocation parseIdentifier(Object obj) throws LogicException {
         if (obj == null) {
             return null;
-        } else if (obj instanceof Identifier) {
-            return (Identifier) obj;
+        } else if (obj instanceof ResourceLocation) {
+            return (ResourceLocation) obj;
         } else {
             String str = TypeAdaptor.parse(obj).asString().strip();
             if (str.isEmpty()) {
                 return null;
             }
-            try {
-                return new Identifier(str);
-            } catch (Exception e) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+            ResourceLocation rl = ResourceLocation.tryParse(str);
+            if (rl == null) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.id", this.name, str), null);
             }
+            return rl;
         }
     }
 }

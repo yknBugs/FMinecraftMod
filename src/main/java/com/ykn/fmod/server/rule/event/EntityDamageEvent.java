@@ -15,10 +15,10 @@ import java.util.UUID;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 public class EntityDamageEvent implements RuleEvent {
 
@@ -37,12 +37,12 @@ public class EntityDamageEvent implements RuleEvent {
         map.put("x", Double.class);
         map.put("y", Double.class);
         map.put("z", Double.class);
-        map.put("position", Vec3d.class);
-        map.put("dimension", Identifier.class);
-        map.put("biome", Identifier.class);
+        map.put("position", Vec3.class);
+        map.put("dimension", ResourceLocation.class);
+        map.put("biome", ResourceLocation.class);
         map.put("pitch", Double.class);
         map.put("yaw", Double.class);
-        map.put("rotation", Vec2f.class);
+        map.put("rotation", Vec2.class);
         map.put("message", String.class);
         map.put("exhaustion", Double.class);
         map.put("health", Double.class);
@@ -95,7 +95,7 @@ public class EntityDamageEvent implements RuleEvent {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.event.entitydamage");
     }
 }

@@ -663,6 +663,7 @@
     "fmod.node.trigger.output.param.type": "字符串",
     "fmod.node.error.inputnull": "节点 %s 的输入 %s 不能为空。",
     "fmod.node.error.classcast": "无法将节点 %s 的输入 %s 的类型转化为 %s 类型",
+    "fmod.node.error.id": "节点 %s 中的 %s 不是一个有效的标识符",
     "fmod.rule.status.true": "已通过",
     "fmod.rule.status.false": "未通过",
     "fmod.rule.status.pass": "已执行",

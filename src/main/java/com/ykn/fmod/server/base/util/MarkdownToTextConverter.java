@@ -5,9 +5,6 @@
 
 package com.ykn.fmod.server.base.util;
 
-import net.minecraft.text.*;
-import net.minecraft.util.Formatting;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -16,6 +13,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
  * This class provides methods to analyze, parse, and convert
@@ -321,22 +324,22 @@ public class MarkdownToTextConverter {
         }
     }
 
-    private static MutableText parseMarkdownTokenToText(List<String> tokenText, List<List<MarkdownUnit>> tokenType, List<List<String>> tokenHint) {
-        MutableText result = Text.empty();
+    private static MutableComponent parseMarkdownTokenToText(List<String> tokenText, List<List<MarkdownUnit>> tokenType, List<List<String>> tokenHint) {
+        MutableComponent result = Component.empty();
         int tokenCount = tokenText.size();
 
         for (int i = 0; i < tokenCount; i++) {
             String token = tokenText.get(i);
             List<MarkdownUnit> type = tokenType.get(i);
             List<String> hint = tokenHint.get(i);
-            MutableText text = Text.literal(token);
+            MutableComponent text = Component.literal(token);
 
             boolean alreadyApplyColor = false;
             boolean alreadyApplyBold = false;
             boolean alreadyApplyItalic = false;
             boolean alreadyApplyStrike = false;
             if (type.size() == 0) {
-                result.append(text.formatted(Formatting.RESET));
+                result.append(text.withStyle(ChatFormatting.RESET));
                 continue;
             }
             if (type.contains(MarkdownUnit.CODE)) {
@@ -344,82 +347,82 @@ public class MarkdownToTextConverter {
                 continue;   // Code block should not apply other markdown syntax
             }
             if (type.contains(MarkdownUnit.MATH)) {
-                text = text.formatted(Formatting.DARK_RED).styled(s -> s
+                text = text.withStyle(ChatFormatting.DARK_RED).withStyle(s -> s
                     .withClickEvent(new ClickEvent(
                         ClickEvent.Action.COPY_TO_CLIPBOARD, 
                         token
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslatableText("fmod.misc.copyto").formatted(Formatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
                     ))
                 );
                 alreadyApplyColor = true;
             }
             if (type.contains(MarkdownUnit.BOLD)) {
                 if (alreadyApplyBold == false) {
-                    text = text.formatted(Formatting.BOLD);
+                    text = text.withStyle(ChatFormatting.BOLD);
                     alreadyApplyBold = true;
                 }
             }
             if (type.contains(MarkdownUnit.ITALIC)) {
                 if (alreadyApplyItalic == false) {
-                    text = text.formatted(Formatting.ITALIC);
+                    text = text.withStyle(ChatFormatting.ITALIC);
                     alreadyApplyItalic = true;
                 }
             }
             if (type.contains(MarkdownUnit.STRIKE)) {
                 if (alreadyApplyStrike == false) {
-                    text = text.formatted(Formatting.STRIKETHROUGH);
+                    text = text.withStyle(ChatFormatting.STRIKETHROUGH);
                     alreadyApplyStrike = true;
                 }
             }
             if (type.contains(MarkdownUnit.INLINE)) {
                 if (alreadyApplyColor == false) {
-                    text = text.formatted(Formatting.GOLD);
+                    text = text.withStyle(ChatFormatting.GOLD);
                     alreadyApplyColor = true;
                 }
-                text = text.styled(s -> s
+                text = text.withStyle(s -> s
                     .withClickEvent(new ClickEvent(
                         ClickEvent.Action.COPY_TO_CLIPBOARD, 
                         token
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslatableText("fmod.misc.copyto").formatted(Formatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
                     ))
                 );
             }
             if (type.contains(MarkdownUnit.HEADER)) {
                 if (alreadyApplyColor == false) {
-                    text = text.formatted(Formatting.DARK_AQUA);
+                    text = text.withStyle(ChatFormatting.DARK_AQUA);
                     alreadyApplyColor = true;
                 } 
                 if (alreadyApplyBold == false) {
-                    text = text.formatted(Formatting.BOLD);
+                    text = text.withStyle(ChatFormatting.BOLD);
                     alreadyApplyBold = true;
                 }
             }
             if (type.contains(MarkdownUnit.ENUM)) {
                 if (alreadyApplyColor == false) {
-                    text = text.formatted(Formatting.YELLOW);
+                    text = text.withStyle(ChatFormatting.YELLOW);
                     alreadyApplyColor = true;
                 }
             }
             if (type.contains(MarkdownUnit.HYPERLINK)) {
                 if (alreadyApplyColor == false) {
-                    text = text.formatted(Formatting.AQUA);
+                    text = text.withStyle(ChatFormatting.AQUA);
                     alreadyApplyColor = true;
                 }
-                text = text.formatted(Formatting.UNDERLINE);
-                text = text.styled(s -> s
+                text = text.withStyle(ChatFormatting.UNDERLINE);
+                text = text.withStyle(s -> s
                     .withClickEvent(new ClickEvent(
                         ClickEvent.Action.OPEN_URL, 
                         hint.get(type.indexOf(MarkdownUnit.HYPERLINK))
                     ))
                     .withHoverEvent(new HoverEvent(
                         HoverEvent.Action.SHOW_TEXT,
-                        Util.parseTranslatableText("fmod.misc.openurl", Text.literal(hint.get(type.indexOf(MarkdownUnit.HYPERLINK))).formatted(Formatting.YELLOW)).formatted(Formatting.GREEN)
+                        Util.parseTranslatableText("fmod.misc.openurl", Component.literal(hint.get(type.indexOf(MarkdownUnit.HYPERLINK))).withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN)
                     ))
                 );
             }
@@ -483,8 +486,8 @@ public class MarkdownToTextConverter {
      * @param markdown The input markdown string to be converted.
      * @return A Text object representing the parsed content of the markdown string.
      */
-    public static Text parseMarkdownToText(String markdown) {
-        MutableText result = Text.empty();
+    public static Component parseMarkdownToText(String markdown) {
+        MutableComponent result = Component.empty();
 
         List<Integer> unitStartIndex = new ArrayList<>();
         List<Integer> unitEndIndex = new ArrayList<>();
@@ -505,8 +508,8 @@ public class MarkdownToTextConverter {
         return result;
     }
 
-    private static Text processCodeBlock(String lang, String code) {
-        MutableText codeText = Text.empty();
+    private static Component processCodeBlock(String lang, String code) {
+        MutableComponent codeText = Component.empty();
 
         if (code == null) {
             return codeText;
@@ -524,17 +527,17 @@ public class MarkdownToTextConverter {
                 codeText = syntaxHighlightPython(code);
                 break;
             default:
-                codeText = Text.literal(code).formatted(Formatting.GRAY);
+                codeText = Component.literal(code).withStyle(ChatFormatting.GRAY);
         }
 
-        return codeText.styled(s -> s
+        return codeText.withStyle(s -> s
                 .withClickEvent(new ClickEvent(
                     ClickEvent.Action.COPY_TO_CLIPBOARD, 
                     code
                 ))
                 .withHoverEvent(new HoverEvent(
                     HoverEvent.Action.SHOW_TEXT,
-                    Util.parseTranslatableText("fmod.misc.copyto").formatted(Formatting.GREEN)
+                    Util.parseTranslatableText("fmod.misc.copyto").withStyle(ChatFormatting.GREEN)
                 ))
             );
     }
@@ -547,7 +550,7 @@ public class MarkdownToTextConverter {
     private static final Pattern JAVA_CLASS = Pattern.compile("<\\s*[A-Za-z_$][\\w\\s:<>,?]*\\s*>|(?<=\\b(class|extends|implements|interface|instanceof|enum|throws|record|permits)\\s+)[A-Za-z_$]\\w*\\b|\\b[A-Za-z_$]\\w*(?=(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*::)|(?<![A-Za-z0-9_$](<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|(?<=\\breturn\\s*)\\(\\s*[A-Za-z_$]\\w*(\\s*<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\)(?!\\s*(;|->|\\)|\\{|\\[|\\?))|\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?(\\s*\\[\\s*[0-9]*\\s*\\])?\\s+[A-Za-z_$]\\w*\\b)|(?<=\\b(package|import|exports|module|requires|provides|with)\\s+)(\\w+\\s*\\.\\s*)*\\w+|(?<=(?<![A-Za-z0-9_$]\\s*)@\\s*)[A-Za-z_$]\\w*\\b");
     private static final Pattern JAVA_FUNCTION = Pattern.compile("\\b[A-Za-z_$]\\w*(?=\\s*(<\\s*[A-Za-z_$]?[\\w\\s:<>,?]*\\s*>)?\\s*\\()");
     // May not be able to handle ? symbol in generics, such as List<? extends Number>, and class name with full package path
-    private static MutableText syntaxHighlightJava(String code) {
+    private static MutableComponent syntaxHighlightJava(String code) {
         List<Pattern> patterns = new ArrayList<>();
         patterns.add(JAVA_COMMENT);
         patterns.add(JAVA_STRING);
@@ -570,27 +573,27 @@ public class MarkdownToTextConverter {
         List<List<CodeUnit>> tokenTypes = new ArrayList<>();
         codeTokenize(code, patterns, codeType, tokens, tokenTypes);
 
-        MutableText result = Text.empty();
+        MutableComponent result = Component.empty();
         for (int i = 0; i < tokens.size(); i++) {
             String token = tokens.get(i);
             List<CodeUnit> type = tokenTypes.get(i);
 
             if (type.size() == 0) {
-                result.append(Text.literal(token).formatted(Formatting.GRAY));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
-                result.append(Text.literal(token).formatted(Formatting.GOLD));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GOLD));
             } else if (type.contains(CodeUnit.COMMENT)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GREEN));
+                result.append(Component.literal(token).withStyle(ChatFormatting.DARK_GREEN));
             }  else if (type.contains(CodeUnit.KEYWORD)) {
-                result.append(Text.literal(token).formatted(Formatting.AQUA, Formatting.BOLD));
+                result.append(Component.literal(token).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
             } else if (type.contains(CodeUnit.NUMBER)) {
-                result.append(Text.literal(token).formatted(Formatting.LIGHT_PURPLE));
+                result.append(Component.literal(token).withStyle(ChatFormatting.LIGHT_PURPLE));
             } else if (type.contains(CodeUnit.PUNCTUATION)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_AQUA));
+                result.append(Component.literal(token).withStyle(ChatFormatting.DARK_AQUA));
             } else if (type.contains(CodeUnit.CLASS)) {
-                result.append(Text.literal(token).formatted(Formatting.GREEN));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GREEN));
             } else if (type.contains(CodeUnit.FUNCTION)) {
-                result.append(Text.literal(token).formatted(Formatting.YELLOW));
+                result.append(Component.literal(token).withStyle(ChatFormatting.YELLOW));
             }
         }
 
@@ -613,7 +616,7 @@ public class MarkdownToTextConverter {
     // Class Pattern: Template | Definition | Namespace | Type Cast | Type Cast | Create Object | Inherit
     // Cannot match newly initialized objects during return, such as "return ArrayList<>()"
     // Cannot match variadic parameters, such as "template<typename... Args>" or "void func(int a, Args... args)"
-    private static MutableText syntaxHighlightCpp(String code) {
+    private static MutableComponent syntaxHighlightCpp(String code) {
         List<Pattern> patterns = new ArrayList<>();
         patterns.add(CPP_COMMENT);
         patterns.add(CPP_STRING);
@@ -640,7 +643,7 @@ public class MarkdownToTextConverter {
         List<List<CodeUnit>> tokenTypes = new ArrayList<>();
         codeTokenize(code, patterns, codeType, tokens, tokenTypes);
         
-        MutableText result = Text.empty();
+        MutableComponent result = Component.empty();
         int tokenCount = tokens.size();
         for (int i = 0; i < tokenCount; i++) {
             String token = tokens.get(i);
@@ -648,25 +651,25 @@ public class MarkdownToTextConverter {
             // In code block, each part of the text can only have one style, high priority style first
             // For example, string has a higher priority than keyword, because inside a string may contain keywords
             if (type.size() == 0) {
-                result.append(Text.literal(token).formatted(Formatting.GRAY));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
-                result.append(Text.literal(token).formatted(Formatting.GOLD));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GOLD));
             } else if (type.contains(CodeUnit.COMMENT)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GREEN));
+                result.append(Component.literal(token).withStyle(ChatFormatting.DARK_GREEN));
             } else if (type.contains(CodeUnit.PREPROCESSOR)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GRAY));
+                result.append(Component.literal(token).withStyle(ChatFormatting.DARK_GRAY));
             } else if (type.contains(CodeUnit.KEYWORD)) {
-                result.append(Text.literal(token).formatted(Formatting.AQUA, Formatting.BOLD));
+                result.append(Component.literal(token).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
             } else if (type.contains(CodeUnit.HEADER)) {
-                result.append(Text.literal(token).formatted(Formatting.RED));
+                result.append(Component.literal(token).withStyle(ChatFormatting.RED));
             } else if (type.contains(CodeUnit.NUMBER)) {
-                result.append(Text.literal(token).formatted(Formatting.LIGHT_PURPLE));
+                result.append(Component.literal(token).withStyle(ChatFormatting.LIGHT_PURPLE));
             } else if (type.contains(CodeUnit.PUNCTUATION)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_AQUA));
+                result.append(Component.literal(token).withStyle(ChatFormatting.DARK_AQUA));
             }  else if (type.contains(CodeUnit.CLASS)) {
-                result.append(Text.literal(token).formatted(Formatting.GREEN));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GREEN));
             } else if (type.contains(CodeUnit.FUNCTION)) {
-                result.append(Text.literal(token).formatted(Formatting.YELLOW));
+                result.append(Component.literal(token).withStyle(ChatFormatting.YELLOW));
             }
         }
 
@@ -685,7 +688,7 @@ public class MarkdownToTextConverter {
     // A possible regex for the above syntax:
     // (?<=\bdef\s+[A-Za-z_$]\w*\s*\([\w\s={}:\[\],]*:\s*)[A-Za-z_$]\w*\b|(?<=\bdef\s+[A-Za-z_$]\w*\s*\([\w\s={}:\[\],]*\)\s*-\s*>\s*)[A-Za-z_$]\w*(?=\s*:)
     // This regex will fail if the parameters have a very complex default value
-    private static MutableText syntaxHighlightPython(String code) {
+    private static MutableComponent syntaxHighlightPython(String code) {
         List<Pattern> patterns = new ArrayList<>();
         patterns.add(PYTHON_COMMENT);
         patterns.add(PYTHON_STRING);
@@ -708,27 +711,27 @@ public class MarkdownToTextConverter {
         List<List<CodeUnit>> tokenTypes = new ArrayList<>();
         codeTokenize(code, patterns, codeType, tokens, tokenTypes);
 
-        MutableText result = Text.empty();
+        MutableComponent result = Component.empty();
         int tokenCount = tokens.size();
         for (int i = 0; i < tokenCount; i++) {
             String token = tokens.get(i);
             List<CodeUnit> type = tokenTypes.get(i);
             if (type.size() == 0) {
-                result.append(Text.literal(token).formatted(Formatting.GRAY));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
-                result.append(Text.literal(token).formatted(Formatting.GOLD));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GOLD));
             } else if (type.contains(CodeUnit.COMMENT)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_GREEN));
+                result.append(Component.literal(token).withStyle(ChatFormatting.DARK_GREEN));
             } else if (type.contains(CodeUnit.KEYWORD)) {
-                result.append(Text.literal(token).formatted(Formatting.AQUA, Formatting.BOLD));
+                result.append(Component.literal(token).withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD));
             } else if (type.contains(CodeUnit.NUMBER)) {
-                result.append(Text.literal(token).formatted(Formatting.LIGHT_PURPLE));
+                result.append(Component.literal(token).withStyle(ChatFormatting.LIGHT_PURPLE));
             } else if (type.contains(CodeUnit.PUNCTUATION)) {
-                result.append(Text.literal(token).formatted(Formatting.DARK_AQUA));
+                result.append(Component.literal(token).withStyle(ChatFormatting.DARK_AQUA));
             } else if (type.contains(CodeUnit.CLASS)) {
-                result.append(Text.literal(token).formatted(Formatting.GREEN));
+                result.append(Component.literal(token).withStyle(ChatFormatting.GREEN));
             } else if (type.contains(CodeUnit.FUNCTION)) {
-                result.append(Text.literal(token).formatted(Formatting.YELLOW));
+                result.append(Component.literal(token).withStyle(ChatFormatting.YELLOW));
             }
         }
 

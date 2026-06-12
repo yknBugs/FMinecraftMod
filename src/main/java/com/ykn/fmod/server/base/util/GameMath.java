@@ -8,10 +8,10 @@ package com.ykn.fmod.server.base.util;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Provides various mathematical utility functions for game development.
@@ -29,11 +29,11 @@ public class GameMath {
         double xa = a.getX();
         double ya = a.getY();
         double za = a.getZ();
-        World worlda = a.getWorld();
+        Level worlda = a.level();
         double xb = b.getX();
         double yb = b.getY();
         double zb = b.getZ();
-        World worldb = b.getWorld();
+        Level worldb = b.level();
         if (worlda != worldb) {
             return Double.NaN;
         }
@@ -68,10 +68,10 @@ public class GameMath {
      * @param b the second vector
      * @return the Euclidean distance between the two vectors
      */
-    public static double getEuclideanDistance(Vec3d a, Vec3d b) {
-        double dx = a.getX() - b.getX();
-        double dy = a.getY() - b.getY();
-        double dz = a.getZ() - b.getZ();
+    public static double getEuclideanDistance(Vec3 a, Vec3 b) {
+        double dx = a.x() - b.x();
+        double dy = a.y() - b.y();
+        double dz = a.z() - b.z();
         return Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
 
@@ -86,10 +86,10 @@ public class GameMath {
     public static double getHorizontalEuclideanDistance(Entity a, Entity b) {
         double xa = a.getX();
         double za = a.getZ();
-        World worlda = a.getWorld();
+        Level worlda = a.level();
         double xb = b.getX();
         double zb = b.getZ();
-        World worldb = b.getWorld();
+        Level worldb = b.level();
         if (worlda != worldb) {
             return Double.NaN;
         }
@@ -122,9 +122,9 @@ public class GameMath {
      * @param b the second vector
      * @return the horizontal Euclidean distance between the two vectors
      */
-    public static double getHorizontalEuclideanDistance(Vec3d a, Vec3d b) {
-        double dx = a.getX() - b.getX();
-        double dz = a.getZ() - b.getZ();
+    public static double getHorizontalEuclideanDistance(Vec3 a, Vec3 b) {
+        double dx = a.x() - b.x();
+        double dz = a.z() - b.z();
         return Math.sqrt(dx * dx + dz * dz);
     }
 
@@ -140,11 +140,11 @@ public class GameMath {
         double xa = a.getX();
         double ya = a.getY();
         double za = a.getZ();
-        World worlda = a.getWorld();
+        Level worlda = a.level();
         double xb = b.getX();
         double yb = b.getY();
         double zb = b.getZ();
-        World worldb = b.getWorld();
+        Level worldb = b.level();
         if (worlda != worldb) {
             return Double.NaN;
         }
@@ -181,10 +181,10 @@ public class GameMath {
      * @param b the second vector
      * @return the Manhattan distance between the two vectors
      */
-    public static double getManhattanDistance(Vec3d a, Vec3d b) {
-        double dx = a.getX() - b.getX();
-        double dy = a.getY() - b.getY();
-        double dz = a.getZ() - b.getZ();
+    public static double getManhattanDistance(Vec3 a, Vec3 b) {
+        double dx = a.x() - b.x();
+        double dy = a.y() - b.y();
+        double dz = a.z() - b.z();
         return Math.abs(dx) + Math.abs(dy) + Math.abs(dz);
     }
 
@@ -199,10 +199,10 @@ public class GameMath {
     public static double getHorizontalManhattanDistance(Entity a, Entity b) {
         double xa = a.getX();
         double za = a.getZ();
-        World worlda = a.getWorld();
+        Level worlda = a.level();
         double xb = b.getX();
         double zb = b.getZ();
-        World worldb = b.getWorld();
+        Level worldb = b.level();
         if (worlda != worldb) {
             return Double.NaN;
         }
@@ -235,9 +235,9 @@ public class GameMath {
      * @param b the second vector
      * @return the horizontal Manhattan distance between the two vectors
      */
-    public static double getHorizontalManhattanDistance(Vec3d a, Vec3d b) {
-        double dx = a.getX() - b.getX();
-        double dz = a.getZ() - b.getZ();
+    public static double getHorizontalManhattanDistance(Vec3 a, Vec3 b) {
+        double dx = a.x() - b.x();
+        double dz = a.z() - b.z();
         return Math.abs(dx) + Math.abs(dz);
     }
 
@@ -253,11 +253,11 @@ public class GameMath {
         double xa = a.getX();
         double ya = a.getY();
         double za = a.getZ();
-        World worlda = a.getWorld();
+        Level worlda = a.level();
         double xb = b.getX();
         double yb = b.getY();
         double zb = b.getZ();
-        World worldb = b.getWorld();
+        Level worldb = b.level();
         if (worlda != worldb) {
             return Double.NaN;
         }
@@ -294,10 +294,10 @@ public class GameMath {
      * @param b the second vector
      * @return the Chebyshev distance between the two vectors
      */
-    public static double getChebyshevDistance(Vec3d a, Vec3d b) {
-        double dx = a.getX() - b.getX();
-        double dy = a.getY() - b.getY();
-        double dz = a.getZ() - b.getZ();
+    public static double getChebyshevDistance(Vec3 a, Vec3 b) {
+        double dx = a.x() - b.x();
+        double dy = a.y() - b.y();
+        double dz = a.z() - b.z();
         return Math.max(Math.max(Math.abs(dx), Math.abs(dy)), Math.abs(dz));
     }
 
@@ -312,10 +312,10 @@ public class GameMath {
     public static double getHorizontalChebyshevDistance(Entity a, Entity b) {
         double xa = a.getX();
         double za = a.getZ();
-        World worlda = a.getWorld();
+        Level worlda = a.level();
         double xb = b.getX();
         double zb = b.getZ();
-        World worldb = b.getWorld();
+        Level worldb = b.level();
         if (worlda != worldb) {
             return Double.NaN;
         }
@@ -348,9 +348,9 @@ public class GameMath {
      * @param b the second vector
      * @return the horizontal Chebyshev distance between the two vectors
      */
-    public static double getHorizontalChebyshevDistance(Vec3d a, Vec3d b) {
-        double dx = a.getX() - b.getX();
-        double dz = a.getZ() - b.getZ();
+    public static double getHorizontalChebyshevDistance(Vec3 a, Vec3 b) {
+        double dx = a.x() - b.x();
+        double dz = a.z() - b.z();
         return Math.max(Math.abs(dx), Math.abs(dz));
     }
 
@@ -364,9 +364,9 @@ public class GameMath {
      */
     public static double getVerticalDistance(Entity a, Entity b) {
         double ya = a.getY();
-        World worlda = a.getWorld();
+        Level worlda = a.level();
         double yb = b.getY();
-        World worldb = b.getWorld();
+        Level worldb = b.level();
         if (worlda != worldb) {
             return Double.NaN;
         }
@@ -393,8 +393,8 @@ public class GameMath {
      * @param b the second vector
      * @return the vertical distance between the two vectors
      */
-    public static double getVerticalDistance(Vec3d a, Vec3d b) {
-        return Math.abs(a.getY() - b.getY());
+    public static double getVerticalDistance(Vec3 a, Vec3 b) {
+        return Math.abs(a.y() - b.y());
     }
 
     /**
@@ -434,7 +434,7 @@ public class GameMath {
      * @param p The point from which the distance is calculated.
      * @return The minimum distance from the point to the bounding box.
      */
-    public static double getMinimumDistanceToBox(Box box, Vec3d p) {
+    public static double getMinimumDistanceToBox(AABB box, Vec3 p) {
         return getMinimumDistanceToBox(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, p.x, p.y, p.z);
     }
 
@@ -445,7 +445,7 @@ public class GameMath {
      * @param yaw the yaw angle in degrees
      * @return a Vec3d representing the unit direction vector
      */
-    public static Vec3d getUnitDirectionVector(double pitch, double yaw) {
+    public static Vec3 getUnitDirectionVector(double pitch, double yaw) {
         double pitchRadians = Math.toRadians(pitch);
         double yawRadians = Math.toRadians(yaw);
         double cosPitch = Math.cos(pitchRadians);
@@ -455,7 +455,7 @@ public class GameMath {
         double x = -sinYaw * cosPitch;
         double y = sinPitch;
         double z = -cosYaw * cosPitch;
-        return new Vec3d(x, y, z);
+        return new Vec3(x, y, z);
     }
 
     /**
@@ -464,10 +464,10 @@ public class GameMath {
      * @param vec the vector for which to calculate the pitch angle
      * @return the pitch angle in degrees
      */
-    public static double getPitch(Vec3d vec) {
-        double x = vec.getX();
-        double y = vec.getY();
-        double z = vec.getZ();
+    public static double getPitch(Vec3 vec) {
+        double x = vec.x();
+        double y = vec.y();
+        double z = vec.z();
         double length = Math.sqrt(x * x + y * y + z * z);
         if (length == 0) {
             return Double.NaN;
@@ -483,10 +483,10 @@ public class GameMath {
      * @param b the second vector
      * @return the pitch angle in degrees
      */
-    public static double getPitch(Vec3d a, Vec3d b) {
-        double x = b.getX() - a.getX();
-        double y = b.getY() - a.getY();
-        double z = b.getZ() - a.getZ();
+    public static double getPitch(Vec3 a, Vec3 b) {
+        double x = b.x() - a.x();
+        double y = b.y() - a.y();
+        double z = b.z() - a.z();
         double length = Math.sqrt(x * x + y * y + z * z);
         if (length == 0) {
             return Double.NaN;
@@ -542,9 +542,9 @@ public class GameMath {
      * @param vec the vector for which to calculate the yaw angle
      * @return the yaw angle in degrees, in the range [-180°, 180°]
      */
-    public static double getYaw(Vec3d vec) {
-        double x = vec.getX();
-        double z = vec.getZ();
+    public static double getYaw(Vec3 vec) {
+        double x = vec.x();
+        double z = vec.z();
         if (x == 0.0 && z == 0.0) {
             return Double.NaN;
         }
@@ -561,9 +561,9 @@ public class GameMath {
      * @param b the second vector
      * @return the yaw angle in degrees, in the range [-180°, 180°]
      */
-    public static double getYaw(Vec3d a, Vec3d b) {
-        double x = b.getX() - a.getX();
-        double z = b.getZ() - a.getZ();
+    public static double getYaw(Vec3 a, Vec3 b) {
+        double x = b.x() - a.x();
+        double z = b.z() - a.z();
         if (x == 0.0 && z == 0.0) {
             return Double.NaN;
         }
@@ -623,13 +623,13 @@ public class GameMath {
      * @return the density value, calculated as the number of points within the sphere
      *         divided by the sphere's volume (4/3 * π * r³)
      */
-    public static double getDensity(Iterable<Vec3d> points, Vec3d center, double radius) {
+    public static double getDensity(Iterable<Vec3> points, Vec3 center, double radius) {
         double radiusSquared = radius * radius;
         int count = 0;
-        for (Vec3d point : points) {
-            double dx = point.getX() - center.getX();
-            double dy = point.getY() - center.getY();
-            double dz = point.getZ() - center.getZ();
+        for (Vec3 point : points) {
+            double dx = point.x() - center.x();
+            double dy = point.y() - center.y();
+            double dz = point.z() - center.z();
             double distanceSquared = dx * dx + dy * dy + dz * dz;
             if (distanceSquared <= radiusSquared) {
                 count++;
@@ -649,13 +649,13 @@ public class GameMath {
      * @return The calculated density value based on the positions of entities within the specified radius
      */
     public static double getDensity(Iterable<Entity> points, Entity center, double radius) {
-        List<Vec3d> vecPoints = new ArrayList<>();
+        List<Vec3> vecPoints = new ArrayList<>();
         for (Entity entity : points) {
-            if (entity.getWorld() == center.getWorld()) {
-                vecPoints.add(entity.getPos());
+            if (entity.level() == center.level()) {
+                vecPoints.add(entity.position());
             }
         }
-        return getDensity(vecPoints, center.getPos(), radius);
+        return getDensity(vecPoints, center.position(), radius);
     }
 
     /**
@@ -691,10 +691,10 @@ public class GameMath {
      * @return {@code true} if the distance between the vectors is less than or equal to the range,
      *         {@code false} otherwise
      */
-    public static boolean isInRange(Vec3d a, Vec3d b, double range) {
-        double dx = a.getX() - b.getX();
-        double dy = a.getY() - b.getY();
-        double dz = a.getZ() - b.getZ();
+    public static boolean isInRange(Vec3 a, Vec3 b, double range) {
+        double dx = a.x() - b.x();
+        double dy = a.y() - b.y();
+        double dz = a.z() - b.z();
         double distanceSquared = dx * dx + dy * dy + dz * dz;
         double rangeSquared = range * range;
         return distanceSquared <= rangeSquared;
@@ -715,7 +715,7 @@ public class GameMath {
      *         them is less than or equal to the specified range; {@code false} otherwise
      */
     public static boolean isInRange(Entity a, Entity b, double range) {
-        if (a.getWorld() != b.getWorld()) {
+        if (a.level() != b.level()) {
             return false;
         }
         double dx = a.getX() - b.getX();
@@ -740,19 +740,19 @@ public class GameMath {
      * @param z The z-coordinate of the ray's origin.
      * @param pitch The pitch angle of the ray's direction.
      * @param yaw The yaw angle of the ray's direction.
-     * @return A Vec3d representing the intersection point, or a Vec3d with NaN values if there is no intersection.
+     * @return A Vec3 representing the intersection point, or a Vec3 with NaN values if there is no intersection.
      */
-    public static Vec3d getRaytraceFirstIntersection(double xa, double ya, double za, double xb, double yb, double zb, double x, double y, double z, double pitch, double yaw) {
+    public static Vec3 getRaytraceFirstIntersection(double xa, double ya, double za, double xb, double yb, double zb, double x, double y, double z, double pitch, double yaw) {
         double xmin = Math.min(xa, xb);
         double xmax = Math.max(xa, xb);
         double ymin = Math.min(ya, yb);
         double ymax = Math.max(ya, yb);
         double zmin = Math.min(za, zb);
         double zmax = Math.max(za, zb);
-        Vec3d dir = getUnitDirectionVector(pitch, yaw);
-        double dx = dir.getX();
-        double dy = dir.getY();
-        double dz = dir.getZ();
+        Vec3 dir = getUnitDirectionVector(pitch, yaw);
+        double dx = dir.x();
+        double dy = dir.y();
+        double dz = dir.z();
         double txa = 0.0;
         double txb = 0.0;
         double tya = 0.0;
@@ -761,7 +761,7 @@ public class GameMath {
         double tzb = 0.0;
         if (dx == 0) {
             if (x < xmin || x > xmax) {
-                return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+                return new Vec3(Double.NaN, Double.NaN, Double.NaN);
             } else {
                 txa = Double.NEGATIVE_INFINITY;
                 txb = Double.POSITIVE_INFINITY;
@@ -777,7 +777,7 @@ public class GameMath {
         }
         if (dy == 0) {
             if (y < ymin || y > ymax) {
-                return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+                return new Vec3(Double.NaN, Double.NaN, Double.NaN);
             } else {
                 tya = Double.NEGATIVE_INFINITY;
                 tyb = Double.POSITIVE_INFINITY;
@@ -793,7 +793,7 @@ public class GameMath {
         }
         if (dz == 0) {
             if (z < zmin || z > zmax) {
-                return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+                return new Vec3(Double.NaN, Double.NaN, Double.NaN);
             } else {
                 tza = Double.NEGATIVE_INFINITY;
                 tzb = Double.POSITIVE_INFINITY;
@@ -810,9 +810,9 @@ public class GameMath {
         double tenter = Math.max(Math.max(txa, tya), tza);
         double texit = Math.min(Math.min(txb, tyb), tzb);
         if (tenter <= texit && tenter >= 0.0) {
-            return new Vec3d(x + tenter * dx, y + tenter * dy, z + tenter * dz);
+            return new Vec3(x + tenter * dx, y + tenter * dy, z + tenter * dz);
         } else {
-            return new Vec3d(Double.NaN, Double.NaN, Double.NaN);
+            return new Vec3(Double.NaN, Double.NaN, Double.NaN);
         }
     }
 
@@ -823,9 +823,9 @@ public class GameMath {
      * @param origin The origin of the ray.
      * @param pitch The pitch angle of the ray's direction.
      * @param yaw The yaw angle of the ray's direction.
-     * @return A Vec3d representing the intersection point, or a Vec3d with NaN values if there is no intersection.
+     * @return A Vec3 representing the intersection point, or a Vec3 with NaN values if there is no intersection.
      */
-    public static Vec3d getRaytraceFirstIntersection(Box box, Vec3d origin, double pitch, double yaw) {
+    public static Vec3 getRaytraceFirstIntersection(AABB box, Vec3 origin, double pitch, double yaw) {
         return getRaytraceFirstIntersection(box.minX, box.minY, box.minZ, box.maxX, box.maxY, box.maxZ, origin.x, origin.y, origin.z, pitch, yaw);
     }
 }
