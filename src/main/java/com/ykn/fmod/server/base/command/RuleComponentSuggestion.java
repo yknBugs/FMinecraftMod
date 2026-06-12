@@ -17,6 +17,7 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleCondition;
+import com.ykn.fmod.server.rule.tool.FormulaSuggestionGenerator;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.commands.CommandSourceStack;
@@ -28,7 +29,8 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
         DOIFSATISFIED,
         DOIFVIOLATED,
         VARIABLE,
-        PLACEHOLDER
+        PLACEHOLDER,
+        FORMULA
     }
 
     private final boolean needQuote;
@@ -146,6 +148,20 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
                             }
                         }
                         break;
+                    case FORMULA:
+                         {
+                            List<RuleCondition> conditions = ruleManager.getRule().getExtra();
+                            List<String> conditionNames = conditions.stream().map(RuleCondition::getName).toList();
+                            List<String> availableSuggestions = FormulaSuggestionGenerator.getAutocompleteSuggestions(conditionNames, builder.getRemaining());
+                            for (String suggestion : availableSuggestions) {
+                                String fullSuggestion = suggestion;
+                                if (needQuote) {
+                                    fullSuggestion = "\"" + suggestion + "\"";
+                                }
+                                builder.suggest(fullSuggestion);
+                            }
+                        }
+                        break;
                     default:
                         break;
                 }
@@ -172,5 +188,9 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
 
     public static RuleComponentSuggestion suggestPlaceholder(int ruleNameIndex) {
         return new RuleComponentSuggestion(false, SuggestionType.PLACEHOLDER, ruleNameIndex);
+    }
+
+    public static RuleComponentSuggestion suggestFormula(int ruleNameIndex) {
+        return new RuleComponentSuggestion(false, SuggestionType.FORMULA, ruleNameIndex);
     }
 }
