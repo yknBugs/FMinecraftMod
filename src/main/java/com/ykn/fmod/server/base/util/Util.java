@@ -50,6 +50,7 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.entity.EntityTypeTest;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 public class Util {
 
@@ -250,6 +251,15 @@ public class Util {
         } finally {
             utilLock.readLock().unlock();
         }
+    }
+
+    /**
+     * Returns the config directory path for this mod.
+     *
+     * @return The normalized config directory path for this mod.
+     */
+    public static Path getConfigDir() {
+        return FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
     }
 
     /**

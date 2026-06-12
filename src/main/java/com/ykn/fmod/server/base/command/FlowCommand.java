@@ -37,7 +37,6 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraftforge.fml.loading.FMLPaths;
 
 public class FlowCommand {
 
@@ -112,7 +111,7 @@ public class FlowCommand {
             if (FlowFileSuggestion.getAvailableFlows() == 0) {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.hint"), false);
             }
-            Path flowFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
+            Path flowFolder = Util.getConfigDir();
             MinecraftServer server = Util.requireNotNullServer(context);
             if (server == null) {
                 return 0;
@@ -173,7 +172,7 @@ public class FlowCommand {
 
     private static int runSaveFlowCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
-            Path flowFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
+            Path flowFolder = Util.getConfigDir();
             MinecraftServer server = Util.requireNotNullServer(context);
             if (server == null) {
                 return 0;

@@ -12,6 +12,14 @@ import java.util.TreeSet;
 
 import com.ykn.fmod.server.rule.core.RuleCondition;
 
+/**
+ * Generates context‑aware autocomplete suggestions for boolean expression formulas.
+ *
+ * <p>This utility class analyzes partially‑typed boolean expressions composed of
+ * condition variable names, logical operators ({@code ||}, {@code &amp;&amp;}, {@code ^}),
+ * negation ({@code !}), and parentheses, and produces a sorted, deduplicated list of
+ * valid completions for the current cursor position.
+ */
 public class FormulaSuggestionGenerator {
     
     /**
@@ -296,6 +304,14 @@ public class FormulaSuggestionGenerator {
         return true;
     }
 
+    /**
+     * Validates that the tokenized structure of the expression is syntactically plausible.
+     * Ensures operands (variables, parentheses, negation) and operators alternate correctly,
+     * and that operators are not placed in operand positions (or vice versa).
+     *
+     * @param expr the trimmed expression to validate
+     * @return {@code true} if the token sequence is structurally valid
+     */
     private static boolean isValidStructure(String expr) {
         if (expr.isEmpty()) return true;
         String trimmed = expr.trim();
