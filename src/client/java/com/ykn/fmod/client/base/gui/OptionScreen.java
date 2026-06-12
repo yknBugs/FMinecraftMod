@@ -22,11 +22,13 @@ import com.ykn.fmod.server.base.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.EditBox;
-import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.events.GuiEventListener;
+import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -109,7 +111,7 @@ public class OptionScreen extends Screen {
      * with a tooltip containing the i18n hint text, and a right-aligned interactive
      * control widget whose type depends on {@link ConfigEntry#type()}.</p>
      */
-    private class ConfigWidget extends ObjectSelectionList<ConfigWidget.Entry> {
+    private class ConfigWidget extends ContainerObjectSelectionList<ConfigWidget.Entry> {
 
         public ConfigWidget(Minecraft client, int width, int height, int top, int bottom) {
             // 630 234 40 274
@@ -536,10 +538,10 @@ public class OptionScreen extends Screen {
          * Base class for all scrollable list entries in {@link ConfigWidget}.
          * Subclasses provide the concrete rendering and child-widget implementations.
          */
-        abstract static class Entry extends ObjectSelectionList.Entry<Entry> {
+        abstract static class Entry extends ContainerObjectSelectionList.Entry<Entry> {
             @Override
-            public Component getNarration() {
-                return Component.empty();
+            public List<? extends NarratableEntry> narratables() {
+                return List.of(); 
             }
         }
     
@@ -557,7 +559,7 @@ public class OptionScreen extends Screen {
              * @param tips the tooltip text shown on hover
              */
             public TextHintEntry(Component text, Component tips) {
-                this.textWidget = new StringWidget(0, 0, 200, 20, text, minecraft.font);
+                this.textWidget = new StringWidget(0, 0, 400, 20, text, minecraft.font);
                 this.textWidget.alignLeft();
                 this.textWidget.setTooltip(Tooltip.create(tips));
             }
@@ -567,6 +569,11 @@ public class OptionScreen extends Screen {
                 textWidget.setX(x);
                 textWidget.setY(y);
                 textWidget.render(context, mouseX, mouseY, tickDelta);
+            }
+
+            @Override
+            public List<? extends GuiEventListener> children() {
+                return List.of(textWidget);
             }
         }
 
@@ -602,6 +609,11 @@ public class OptionScreen extends Screen {
                 button.setX(x + entryWidth - button.getWidth());
                 button.setY(y);
                 button.render(context, mouseX, mouseY, tickDelta);
+            }
+
+            @Override
+            public List<? extends GuiEventListener> children() {
+                return List.of(button, textWidget);
             }
         }
 
@@ -652,6 +664,11 @@ public class OptionScreen extends Screen {
                 receiverButton.setY(y);
                 receiverButton.render(context, mouseX, mouseY, tickDelta);
             }
+
+            @Override
+            public List<? extends GuiEventListener> children() {
+                return List.of(mainLocationButton, otherLocationButton, receiverButton, textWidget);
+            }
         }
 
         /**
@@ -689,6 +706,11 @@ public class OptionScreen extends Screen {
                 textField.setY(y);
                 textField.render(context, mouseX, mouseY, tickDelta);
             }
+
+            @Override
+            public List<? extends GuiEventListener> children() {
+                return List.of(textField, textWidget);
+            }
         }
 
         /**
@@ -725,6 +747,11 @@ public class OptionScreen extends Screen {
                 sliderWidget.setX(x + entryWidth - sliderWidget.getWidth());
                 sliderWidget.setY(y);
                 sliderWidget.render(context, mouseX, mouseY, tickDelta);
+            }
+
+            @Override
+            public List<? extends GuiEventListener> children() {
+                return List.of(sliderWidget);
             }
         }
     }
