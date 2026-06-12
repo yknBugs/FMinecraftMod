@@ -33,7 +33,6 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
-import net.fabricmc.loader.api.FabricLoader;
 
 public class SongCommand {
 
@@ -44,7 +43,7 @@ public class SongCommand {
             if (SongFileSuggestion.getAvailableSongs() == 0) {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.hint"), false);
             }
-            Path songFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            Path songFolder = Util.getConfigDir();
             Path songPath = songFolder.resolve(songName).normalize();
             if (!songPath.startsWith(songFolder)) {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));

@@ -36,7 +36,6 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.fabricmc.loader.api.FabricLoader;
 
 public class RuleCommand {
 
@@ -122,7 +121,7 @@ public class RuleCommand {
             if (RuleFileSuggestion.getAvailableRules() == 0) {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.hint"), false);
             }
-            Path ruleFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            Path ruleFolder = Util.getConfigDir();
             MinecraftServer server = Util.requireNotNullServer(context);
             if (server == null) {
                 return 0;
@@ -183,7 +182,7 @@ public class RuleCommand {
 
     private static int runSaveRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
-            Path ruleFolder = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID).normalize();
+            Path ruleFolder = Util.getConfigDir();
             MinecraftServer server = Util.requireNotNullServer(context);
             if (server == null) {
                 return 0;
@@ -808,6 +807,7 @@ public class RuleCommand {
         sourceNode = sourceNode.then(Commands.literal("ConditionExpression")
             .then(Commands.argument("name", StringArgumentType.string())
                 .then(Commands.argument("formula", StringArgumentType.greedyString())
+                    .suggests(RuleComponentSuggestion.suggestFormula(3))
                     .executes(context -> {return runEditRuleAddFormulaConditionCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "formula"), context);})
                 )
             )
@@ -934,6 +934,7 @@ public class RuleCommand {
                         .then(buildAddConditionCommand())
                         .then(Commands.literal("set")
                             .then(Commands.argument("formula", StringArgumentType.greedyString())
+                                .suggests(RuleComponentSuggestion.suggestFormula(3))
                                 .executes(context -> {return runEditRuleConditionCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "formula"), context);})
                             )
                         )
