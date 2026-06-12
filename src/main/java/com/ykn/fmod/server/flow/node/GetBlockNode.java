@@ -15,15 +15,15 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.registry.Registries;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.SectionPos;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * Get a block at a specified position
@@ -55,11 +55,11 @@ public class GetBlockNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        World world = parseWorld(resolvedInputs.get(0));
-        Vec3d position = parsePosition(resolvedInputs.get(1));
+        Level world = parseWorld(resolvedInputs.get(0));
+        Vec3 position = parsePosition(resolvedInputs.get(1));
 
-        BlockPos blockPos = BlockPos.ofFloored(position);
-        if (!world.isInBuildLimit(blockPos) || !world.isChunkLoaded(ChunkSectionPos.getSectionCoord(blockPos.getX()), ChunkSectionPos.getSectionCoord(blockPos.getZ())) ) {
+        BlockPos blockPos = BlockPos.containing(position);
+        if (world.isInWorldBounds(blockPos) == false || world.hasChunk(SectionPos.blockToSectionCoord(blockPos.getX()), SectionPos.blockToSectionCoord(blockPos.getZ())) == false) {
             status.setOutput(0, null);
             status.setOutput(1, null);
             status.setOutput(2, null);
@@ -68,7 +68,7 @@ public class GetBlockNode extends FlowNode {
 
         BlockState blockState = world.getBlockState(blockPos);
         Block block = blockState.getBlock();
-        Identifier identifier = Registries.BLOCK.getId(block);
+        ResourceLocation identifier = BuiltInRegistries.BLOCK.getKey(block);
         BlockEntity blockEntity = null;
         if (blockState.hasBlockEntity()) {
             blockEntity = world.getBlockEntity(blockPos);
@@ -78,21 +78,21 @@ public class GetBlockNode extends FlowNode {
         status.setOutput(2, blockEntity);
     }
 
-    private World parseWorld(Object obj) throws LogicException {
+    private Level parseWorld(Object obj) throws LogicException {
         if (obj == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
-        } else if (obj instanceof World) {
-            return (World) obj;
+        } else if (obj instanceof Level) {
+            return (Level) obj;
         } else {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
         }
     }
 
-    private Vec3d parsePosition(Object obj) throws LogicException {
+    private Vec3 parsePosition(Object obj) throws LogicException {
         if (obj == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
         } else {
-            Vec3d position = TypeAdaptor.parse(obj).asVec3d();
+            Vec3 position = TypeAdaptor.parse(obj).asVec3d();
             if (position == null) {
                 throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
             }

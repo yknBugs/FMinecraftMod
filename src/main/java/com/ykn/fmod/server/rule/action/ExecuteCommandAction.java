@@ -27,21 +27,20 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 
 /**
  * A {@link RuleAction} that executes a command as a specified entity with a given permission level.
  *
  * <p>The {@code entity} parameter identifies a single entity (by UUID) that acts as the
  * command source. The {@code permissionLevel} field is hidden from interactive command
- * creation - it is always captured from the {@link ServerCommandSource#getPermissionLevel()}
+ * creation - it is always captured from the {@link CommandSourceStack#getPermissionLevel()}
  * of the operator who created the action. The {@code command} parameter is the raw command
  * string to execute.
  *
@@ -72,7 +71,7 @@ public class ExecuteCommandAction implements RuleAction {
      *
      * <p>This field is intentionally <em>not</em> exposed as a command argument to prevent
      * privilege escalation. When an action is created via the {@code /f rule edit} command,
-     * this value is always set to the permission level of the issuing {@link ServerCommandSource}.
+     * this value is always set to the permission level of the issuing {@link CommandSourceStack}.
      *
      * <p>Valid range: {@code 0} – {@code 4} (inclusive). Any other value causes
      * {@link #execute(RuleContext)} to return {@code false} and set an error message.
@@ -111,7 +110,7 @@ public class ExecuteCommandAction implements RuleAction {
         }
 
         Entity sourceEntity = null;
-        for (ServerWorld world : context.getServer().getWorlds()) {
+        for (ServerLevel world : context.getServer().getAllLevels()) {
             sourceEntity = world.getEntity(entityId);
             if (sourceEntity != null) {
                 break;
@@ -124,7 +123,7 @@ public class ExecuteCommandAction implements RuleAction {
         TextPlaceholderFactory<Entity> factory = TextPlaceholderFactory.empty();
         for (String variable : context.getVariables().keySet()) {
             Object value = context.getVariable(variable);
-            Text toShow = value == null ? Text.literal("${var:" + variable + "}") : Text.literal(TypeAdaptor.parse(value).asString());
+            Component toShow = value == null ? Component.literal("${var:" + variable + "}") : Component.literal(TypeAdaptor.parse(value).asString());
             factory = factory.add("${var:" + variable + "}", entity -> toShow);
         }
         command = factory.parsePlaceholders(command, sourceEntity).getString();
@@ -150,7 +149,7 @@ public class ExecuteCommandAction implements RuleAction {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.action.runcmd", this.getName(), this.getType(),
             this.entity.render(), this.command.render());
     }
@@ -184,34 +183,34 @@ public class ExecuteCommandAction implements RuleAction {
         return new ExecuteCommandAction(name, entity, permissionLevel, command);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleAction> actionConsumer) {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         RuleComponentSuggestion suggestion = RuleComponentSuggestion.suggestPlaceholder(3);
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<UUID> entityParameter = RuleParameter.fromCommandContext("entity", "var.entity", () -> {
-                        Entity entity = EntityArgumentType.getEntity(ctx, "entity");
-                        return entity.getUuid();
+                        Entity entity = EntityArgument.getEntity(ctx, "entity");
+                        return entity.getUUID();
                     }, arguments, ctx);
-                    int permissionLevel = ctx.getSource().hasPermissionLevel(3) ? 3 : 0;
+                    int permissionLevel = ctx.getSource().hasPermission(3) ? 3 : 0;
                     RuleParameter<String> commandParameter = RuleParameter.fromCommandContext("command", "var.command", () -> {
                         return StringArgumentType.getString(ctx, "command");
                     }, arguments, ctx);
                     ExecuteCommandAction action = new ExecuteCommandAction(name, entityParameter, permissionLevel, commandParameter);
                     actionConsumer.accept(ctx, action);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("entity", "var.entity", () -> CommandManager.argument("entity", EntityArgumentType.entity()))
-            .add("command", "var.command", () -> CommandManager.argument("command", StringArgumentType.greedyString()).suggests(suggestion))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("entity", "var.entity", () -> Commands.argument("entity", EntityArgument.entity()))
+            .add("command", "var.command", () -> Commands.argument("command", StringArgumentType.greedyString()).suggests(suggestion))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 }

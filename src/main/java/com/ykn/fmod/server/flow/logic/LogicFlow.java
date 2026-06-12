@@ -20,9 +20,9 @@ import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
  * Represents a complete logic flow consisting of interconnected nodes.
@@ -444,13 +444,13 @@ public class LogicFlow implements Cloneable {
      * 
      * @return A Text object suitable for display in Minecraft with hover events
      */
-    public Text render() {
-        MutableText title = Text.literal(this.name).append(" ");
+    public Component render() {
+        MutableComponent title = Component.literal(this.name).append(" ");
         List<FlowNode> nodes = this.getSortedNodes();
         for (FlowNode node : nodes) { 
-            Text nodeText = node.render(this);
-            MutableText nodeEntry = Text.literal("[").append(node.name).append("] ");
-            nodeEntry = nodeEntry.styled(s -> s
+            Component nodeText = node.render(this);
+            MutableComponent nodeEntry = Component.literal("[").append(node.name).append("] ");
+            nodeEntry = nodeEntry.withStyle(s -> s
                 .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, nodeText))
             );
             title = title.append(nodeEntry);

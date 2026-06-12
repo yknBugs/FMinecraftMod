@@ -25,23 +25,22 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.DimensionArgumentType;
-import net.minecraft.command.argument.IdentifierArgumentType;
-import net.minecraft.command.argument.Vec3ArgumentType;
-import net.minecraft.command.suggestion.SuggestionProviders;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.DimensionArgument;
+import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.coordinates.Vec3Argument;
+import net.minecraft.commands.synchronization.SuggestionProviders;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * A {@link SourceCondition} that tests whether at least one entity of a specific type
@@ -67,15 +66,15 @@ public class HasEntityType implements SourceCondition {
 
     private final String name;
 
-    private final RuleParameter<Identifier> dimension;
+    private final RuleParameter<ResourceLocation> dimension;
 
-    private final RuleParameter<Vec3d> position;
+    private final RuleParameter<Vec3> position;
 
     private final RuleParameter<Double> radius;
 
-    private final RuleParameter<Identifier> entityType;
+    private final RuleParameter<ResourceLocation> entityType;
 
-    public HasEntityType(String name, RuleParameter<Identifier> dimension, RuleParameter<Vec3d> position, RuleParameter<Double> radius, RuleParameter<Identifier> entityType) {
+    public HasEntityType(String name, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<Double> radius, RuleParameter<ResourceLocation> entityType) {
         this.name = name;
         this.dimension = dimension;
         this.position = position;
@@ -85,26 +84,26 @@ public class HasEntityType implements SourceCondition {
 
     @Override
     public boolean onEvaluate(RuleContext context) {
-        Identifier dimension = this.dimension.resolve(context, Identifier.class);
-        Vec3d position = this.position.resolve(context, Vec3d.class);
+        ResourceLocation dimension = this.dimension.resolve(context, ResourceLocation.class);
+        Vec3 position = this.position.resolve(context, Vec3.class);
         Double radius = this.radius.resolve(context, Double.class);
-        Identifier entityType = this.entityType.resolve(context, Identifier.class);
+        ResourceLocation entityType = this.entityType.resolve(context, ResourceLocation.class);
 
         if (dimension == null || position == null || radius == null || entityType == null) {
             return false;
         }
 
-        ServerWorld world = context.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, dimension));
+        ServerLevel world = context.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
         if (world == null) {
             return false;
         }
 
-        Box box = new Box(
+        AABB box = new AABB(
             position.x - radius, position.y - radius, position.z - radius,
             position.x + radius, position.y + radius, position.z + radius
         );
-        List<Entity> nearbyEntities = world.getEntitiesByClass(Entity.class, box,
-            entity -> EntityType.getId(entity.getType()).equals(entityType));
+        List<Entity> nearbyEntities = world.getEntitiesOfClass(Entity.class, box,
+            entity -> EntityType.getKey(entity.getType()).equals(entityType));
         return !nearbyEntities.isEmpty();
     }
 
@@ -124,7 +123,7 @@ public class HasEntityType implements SourceCondition {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.hasentitytype", this.getName(), this.getType(),
             this.dimension.render(), this.position.render(), this.radius.render(), this.entityType.render());
     }
@@ -150,53 +149,69 @@ public class HasEntityType implements SourceCondition {
     }
 
     public static HasEntityType fromJson(JsonObject json) {
-        RuleParameter<Identifier> dimension = RuleParameter.fromJson(json, "dimension", e -> new Identifier(e.getAsString()));
-        RuleParameter<Vec3d> position = RuleParameter.fromJson(json, "position", e -> {
+        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in HasEntityType dimension: " + s + ". Defaulting to minecraft:overworld");
+                rl = ResourceLocation.withDefaultNamespace("overworld");
+            }
+            return rl;
+        });
+        RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
             JsonObject obj = e.getAsJsonObject();
             double x = obj.get("x").getAsDouble();
             double y = obj.get("y").getAsDouble();
             double z = obj.get("z").getAsDouble();
-            return new Vec3d(x, y, z);
+            return new Vec3(x, y, z);
         });
         RuleParameter<Double> radius = RuleParameter.fromJson(json, "radius", JsonElement::getAsDouble);
-        RuleParameter<Identifier> entityType = RuleParameter.fromJson(json, "type", e -> new Identifier(e.getAsString()));
+        RuleParameter<ResourceLocation> entityType = RuleParameter.fromJson(json, "type", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in HasEntityType entityType: " + s + ". Defaulting to minecraft:player");
+                rl = ResourceLocation.withDefaultNamespace("player");
+            }
+            return rl;
+        });
         return new HasEntityType(json.get("name").getAsString(), dimension, position, radius, entityType);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<Identifier> dimensionParameter = RuleParameter.fromCommandContext("dimension", "var.dimension", () -> {
-                        ServerWorld serverWorld = DimensionArgumentType.getDimensionArgument(ctx, "dimension");
-                        return serverWorld.getRegistryKey().getValue();
+                    RuleParameter<ResourceLocation> dimensionParameter = RuleParameter.fromCommandContext("dimension", "var.dimension", () -> {
+                        ServerLevel serverWorld = DimensionArgument.getDimension(ctx, "dimension");
+                        return serverWorld.dimension().location();
                     }, arguments, ctx);
-                    RuleParameter<Vec3d> positionParameter = RuleParameter.fromCommandContext("position", "var.position", () -> {
-                        return Vec3ArgumentType.getVec3(ctx, "position");
+                    RuleParameter<Vec3> positionParameter = RuleParameter.fromCommandContext("position", "var.position", () -> {
+                        return Vec3Argument.getVec3(ctx, "position");
                     }, arguments, ctx);
                     RuleParameter<Double> radiusParameter = RuleParameter.fromCommandContext("radius", "var.radius", () -> {
                         return DoubleArgumentType.getDouble(ctx, "radius");
                     }, arguments, ctx);
-                    RuleParameter<Identifier> entityTypeParameter = RuleParameter.fromCommandContext("type", "var.type", () -> {
-                        return IdentifierArgumentType.getIdentifier(ctx, "type");
+                    RuleParameter<ResourceLocation> entityTypeParameter = RuleParameter.fromCommandContext("type", "var.type", () -> {
+                        return ResourceLocationArgument.getId(ctx, "type");
                     }, arguments, ctx);
                     HasEntityType condition = new HasEntityType(name, dimensionParameter, positionParameter, radiusParameter, entityTypeParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("dimension", "var.dimension", () -> CommandManager.argument("dimension", DimensionArgumentType.dimension()))
-            .add("position", "var.position", () -> CommandManager.argument("position", Vec3ArgumentType.vec3()))
-            .add("radius", "var.radius", () -> CommandManager.argument("radius", DoubleArgumentType.doubleArg(0)))
-            .add("type", "var.type", () -> CommandManager.argument("type", IdentifierArgumentType.identifier()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("dimension", "var.dimension", () -> Commands.argument("dimension", DimensionArgument.dimension()))
+            .add("position", "var.position", () -> Commands.argument("position", Vec3Argument.vec3()))
+            .add("radius", "var.radius", () -> Commands.argument("radius", DoubleArgumentType.doubleArg(0)))
+            .add("type", "var.type", () -> Commands.argument("type", ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 

@@ -18,30 +18,29 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.command.BlockDataObject;
-import net.minecraft.command.EntityDataObject;
-import net.minecraft.command.argument.NbtPathArgumentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtByte;
-import net.minecraft.nbt.NbtByteArray;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtDouble;
-import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtFloat;
-import net.minecraft.nbt.NbtInt;
-import net.minecraft.nbt.NbtIntArray;
-import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtLong;
-import net.minecraft.nbt.NbtLongArray;
-import net.minecraft.nbt.NbtShort;
-import net.minecraft.nbt.NbtString;
+import net.minecraft.commands.arguments.NbtPathArgument;
+import net.minecraft.nbt.ByteArrayTag;
+import net.minecraft.nbt.ByteTag;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.DoubleTag;
+import net.minecraft.nbt.FloatTag;
+import net.minecraft.nbt.IntArrayTag;
+import net.minecraft.nbt.IntTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongArrayTag;
+import net.minecraft.nbt.LongTag;
+import net.minecraft.nbt.ShortTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.server.commands.data.BlockDataAccessor;
+import net.minecraft.server.commands.data.EntityDataAccessor;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 /**
  * Node that retrieves a value from an NBT compound
  * Inputs:
- * 1. Block/Entity/ItemStack/NbtCompound - The source to retrieve from.
+ * 1. Block/Entity/NbtCompound - The source to retrieve from.
  * 2. String - The NBT path to the desired value.
  * 3. Double - The scale factor to apply to numeric values (null means 1.0).
  * Outputs:
@@ -67,8 +66,8 @@ public class GetNbtValueNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        NbtElement sourceNbt = parseSource(resolvedInputs.get(0));
-        NbtPathArgumentType.NbtPath nbtPath = parsePath(resolvedInputs.get(1));
+        Tag sourceNbt = parseSource(resolvedInputs.get(0));
+        NbtPathArgument.NbtPath nbtPath = parsePath(resolvedInputs.get(1));
         Double scale = TypeAdaptor.parse(resolvedInputs.get(2)).asDouble();
 
         if (sourceNbt == null) {
@@ -78,11 +77,11 @@ public class GetNbtValueNode extends FlowNode {
         double scaleValue = scale == null ? 1.0 : scale;
 
         try {
-            if (NbtPathArgumentType.NbtPath.isTooDeep(sourceNbt, 0)) {
-                throw NbtPathArgumentType.TOO_DEEP_EXCEPTION.create();
+            if (NbtPathArgument.NbtPath.isTooDeep(sourceNbt, 0)) {
+                throw NbtPathArgument.ERROR_DATA_TOO_DEEP.create();
             }
 
-            List<NbtElement> collection = nbtPath.get(sourceNbt);
+            List<Tag> collection = nbtPath.get(sourceNbt);
             Object result = convertCollection(collection, scaleValue);
             status.setOutput(0, result);
         } catch (CommandSyntaxException e) {
@@ -92,33 +91,29 @@ public class GetNbtValueNode extends FlowNode {
         }
     }
 
-    private NbtElement parseSource(Object input) throws LogicException {
+    private Tag parseSource(Object input) throws LogicException {
         if (input == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
         } else if (input instanceof Entity) {
             Entity entity = (Entity) input;
-            EntityDataObject entityData = new EntityDataObject(entity);
-            return entityData.getNbt();
-        } else if (input instanceof ItemStack) {
-            ItemStack itemStack = (ItemStack) input;
-            NbtCompound itemNbt = itemStack.getNbt();
-            return itemNbt;
+            EntityDataAccessor entityData = new EntityDataAccessor(entity);
+            return entityData.getData();
         } else if (input instanceof BlockEntity) {
             BlockEntity blockEntity = (BlockEntity) input;
-            BlockDataObject blockData = new BlockDataObject(blockEntity, blockEntity.getPos());
-            return blockData.getNbt();
-        } else if (input instanceof NbtElement) {
-            NbtElement nbtCompound = (NbtElement) input;
+            BlockDataAccessor blockData = new BlockDataAccessor(blockEntity, blockEntity.getBlockPos());
+            return blockData.getData();
+        } else if (input instanceof Tag) {
+            Tag nbtCompound = (Tag) input;
             return nbtCompound;
         } else {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
         }
     }
 
-    private NbtPathArgumentType.NbtPath parsePath(Object path) throws LogicException {
+    private NbtPathArgument.NbtPath parsePath(Object path) throws LogicException {
         String inputPath = TypeAdaptor.parse(path).asString();
         try {
-            NbtPathArgumentType.NbtPath nbtPath = NbtPathArgumentType.nbtPath().parse(new StringReader(inputPath));
+            NbtPathArgument.NbtPath nbtPath = NbtPathArgument.nbtPath().parse(new StringReader(inputPath));
             return nbtPath;
         } catch (CommandSyntaxException e) {
             throw new LogicException(e, Util.parseTranslatableText("fmod.node.getnbt.error.pathsyntax", inputPath), e.getMessage());
@@ -127,7 +122,7 @@ public class GetNbtValueNode extends FlowNode {
         }
     }
 
-    private Object convertCollection(List<NbtElement> collection, double scale) {
+    private Object convertCollection(List<Tag> collection, double scale) {
         if (collection == null || collection.isEmpty()) {
             return null;
         }
@@ -135,50 +130,50 @@ public class GetNbtValueNode extends FlowNode {
             return convertElement(collection.get(0), scale);
         }
         List<Object> results = new ArrayList<>();
-        for (NbtElement element : collection) {
+        for (Tag element : collection) {
             results.add(convertElement(element, scale));
         }
         return results;
     }
 
-    private Object convertElement(NbtElement element, double scale) {
+    private Object convertElement(Tag element, double scale) {
         if (element == null) {
             return null;
         }
 
-        if (element instanceof NbtByte) {
-            NbtByte nbtByte = (NbtByte) element;
-            return (double) nbtByte.byteValue() * scale;
+        if (element instanceof ByteTag) {
+            ByteTag nbtByte = (ByteTag) element;
+            return (double) nbtByte.getAsByte() * scale;
         }
 
-        if (element instanceof NbtShort) {
-            NbtShort nbtShort = (NbtShort) element;
-            return (double) nbtShort.shortValue() * scale;
+        if (element instanceof ShortTag) {
+            ShortTag nbtShort = (ShortTag) element;
+            return (double) nbtShort.getAsShort() * scale;
         }
 
-        if (element instanceof NbtInt) {
-            NbtInt nbtInt = (NbtInt) element;
-            return (double) nbtInt.intValue() * scale;
+        if (element instanceof IntTag) {
+            IntTag nbtInt = (IntTag) element;
+            return (double) nbtInt.getAsInt() * scale;
         }
 
-        if (element instanceof NbtLong) {
-            NbtLong nbtLong = (NbtLong) element;
-            return (double) nbtLong.longValue() * scale;
+        if (element instanceof LongTag) {
+            LongTag nbtLong = (LongTag) element;
+            return (double) nbtLong.getAsLong() * scale;
         }
 
-        if (element instanceof NbtFloat) {
-            NbtFloat nbtFloat = (NbtFloat) element;
-            return (double) nbtFloat.floatValue() * scale;
+        if (element instanceof FloatTag) {
+            FloatTag nbtFloat = (FloatTag) element;
+            return (double) nbtFloat.getAsFloat() * scale;
         }
 
-        if (element instanceof NbtDouble) {
-            NbtDouble nbtDouble = (NbtDouble) element;
-            return nbtDouble.doubleValue() * scale;
+        if (element instanceof DoubleTag) {
+            DoubleTag nbtDouble = (DoubleTag) element;
+            return nbtDouble.getAsDouble() * scale;
         }
 
-        if (element instanceof NbtByteArray) {
-            NbtByteArray nbtByteArray = (NbtByteArray) element;
-            byte[] array = nbtByteArray.getByteArray();
+        if (element instanceof ByteArrayTag) {
+            ByteArrayTag nbtByteArray = (ByteArrayTag) element;
+            byte[] array = nbtByteArray.getAsByteArray();
             List<Double> converted = new ArrayList<>();
             for (byte b : array) {
                 converted.add((double) b * scale);
@@ -186,22 +181,22 @@ public class GetNbtValueNode extends FlowNode {
             return converted;
         }
 
-        if (element instanceof NbtString) {
-            NbtString nbtString = (NbtString) element;
-            return nbtString.asString();
+        if (element instanceof StringTag) {
+            StringTag nbtString = (StringTag) element;
+            return nbtString.getAsString();
         }
 
-        if (element instanceof NbtList) {
+        if (element instanceof ListTag) {
             return element;
         }
 
-        if (element instanceof NbtCompound) {
+        if (element instanceof CompoundTag) {
             return element;
         }
 
-        if (element instanceof NbtIntArray) {
-            NbtIntArray nbtIntArray = (NbtIntArray) element;
-            int[] array = nbtIntArray.getIntArray();
+        if (element instanceof IntArrayTag) {
+            IntArrayTag nbtIntArray = (IntArrayTag) element;
+            int[] array = nbtIntArray.getAsIntArray();
             List<Double> converted = new ArrayList<>();
             for (int i : array) {
                 converted.add((double) i * scale);
@@ -209,9 +204,9 @@ public class GetNbtValueNode extends FlowNode {
             return converted;
         }
 
-        if (element instanceof NbtLongArray) {
-            NbtLongArray nbtLongArray = (NbtLongArray) element;
-            long[] array = nbtLongArray.getLongArray();
+        if (element instanceof LongArrayTag) {
+            LongArrayTag nbtLongArray = (LongArrayTag) element;
+            long[] array = nbtLongArray.getAsLongArray();
             List<Double> converted = new ArrayList<>();
             for (long l : array) {
                 converted.add((double) l * scale);

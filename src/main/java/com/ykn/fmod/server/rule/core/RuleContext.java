@@ -19,9 +19,9 @@ import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
 
 /**
  * Execution context that is created for each rule evaluation with immutable input fields and mutable status fields.
@@ -95,7 +95,7 @@ public class RuleContext {
      * Optional error text set when an unexpected exception occurs during evaluation. 
      */
     @Nullable
-    private Text errorMessage;
+    private Component errorMessage;
 
     /**
      * Creates a new {@code RuleContext}.
@@ -227,10 +227,10 @@ public class RuleContext {
     /**
      * Returns the error message set during execution, or {@code null} if none occurred.
      *
-     * @return the error {@link Text}, or {@code null}
+     * @return the error {@link Component}, or {@code null}
      */
     @Nullable
-    public Text getErrorMessage() {
+    public Component getErrorMessage() {
         return errorMessage;
     }
 
@@ -239,7 +239,7 @@ public class RuleContext {
      *
      * @param errorMessage the error text to store
      */
-    public void setErrorMessage(Text errorMessage) {
+    public void setErrorMessage(Component errorMessage) {
         this.errorMessage = errorMessage;
     }
 
@@ -284,7 +284,7 @@ public class RuleContext {
             this.executed = true;
             this.passed = false;
             this.skipActions = true;
-            this.errorMessage = Text.literal(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+            this.errorMessage = Component.literal(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
             return false;
         }
     }
@@ -337,7 +337,7 @@ public class RuleContext {
             this.executed = true;
             this.passed = false;
             this.skipActions = false;
-            this.errorMessage = Text.literal(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
+            this.errorMessage = Component.literal(e.getMessage() == null ? e.getClass().getSimpleName() : e.getMessage());
             return false;
         }
     }
@@ -361,14 +361,14 @@ public class RuleContext {
         return trigger(false);
     }
 
-    public Text render() {
+    public Component render() {
         // RuleName: true/false/notrun/error (variable: value, variable: value, ...)
-        MutableText title = Text.literal(rule.getName()).append(": ");
-        List<Text> variableTexts = new ArrayList<>();
+        MutableComponent title = Component.literal(rule.getName()).append(": ");
+        List<Component> variableTexts = new ArrayList<>();
         for (Map.Entry<String, Object> entry : variables.entrySet()) {
             String varName = entry.getKey();
             String varValue = TypeAdaptor.parse(entry.getValue()).asString();
-            Text varText = Text.literal(varName + ": " + varValue);
+            Component varText = Component.literal(varName + ": " + varValue);
             variableTexts.add(varText);
         }
         if (executed) {
@@ -393,7 +393,7 @@ public class RuleContext {
         if (!variableTexts.isEmpty()) {
             title = title.append(" (");
             int i = 0;
-            for (Text varText : variableTexts) {
+            for (Component varText : variableTexts) {
                 title = title.append(varText);
                 if (i < variableTexts.size() - 1) {
                     title = title.append(", ");

@@ -18,15 +18,15 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
+import net.minecraft.commands.CommandSourceStack;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.command.ServerCommandSource;
 
 /**
  * Provides command auto-completion suggestions for .nbs (Note Block Song) files in the config directory.
  * This suggestion provider scans the mod's config directory and caches the list of available
  * .nbs files for use in command auto-completion.
  */
-public class SongFileSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class SongFileSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     /**
      * Static cache of available .nbs file names in the config directory.
@@ -76,7 +76,7 @@ public class SongFileSuggestion implements SuggestionProvider<ServerCommandSourc
      * @throws CommandSyntaxException if there's a syntax error in the command
      */
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String song : cachedSongList) {
             if (song.startsWith(builder.getRemaining())) {
                 builder.suggest(song);

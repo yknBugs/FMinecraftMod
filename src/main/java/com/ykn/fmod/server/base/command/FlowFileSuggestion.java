@@ -20,15 +20,15 @@ import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
+import net.minecraft.commands.CommandSourceStack;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.server.command.ServerCommandSource;
 
 /**
  * Provides command auto-completion suggestions for .flow files in the config directory.
  * This suggestion provider scans the mod's config directory and caches the list of available
  * .flow files for use in command auto-completion.
  */
-public class FlowFileSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     /**
      * Static cache of available .flow file names in the config directory.
@@ -79,7 +79,7 @@ public class FlowFileSuggestion implements SuggestionProvider<ServerCommandSourc
      * @throws CommandSyntaxException if there's a syntax error in the command
      */
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         for (String flow : cachedFlowList) {
             if (flow.startsWith(builder.getRemaining())) {
                 builder.suggest(flow);

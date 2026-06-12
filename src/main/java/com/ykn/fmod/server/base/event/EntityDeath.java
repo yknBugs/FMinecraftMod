@@ -19,12 +19,12 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.rule.event.EntityDeathEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.entity.mob.HostileEntity;
-import net.minecraft.entity.passive.PassiveEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.AgeableMob;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Monster;
 
 public class EntityDeath {
 
@@ -59,10 +59,10 @@ public class EntityDeath {
         EnumSet<MessageType.Location> isMainBroadcasted = EnumSet.noneOf(MessageType.Location.class);
         EnumSet<MessageType.Location> isOtherBroadcasted = EnumSet.noneOf(MessageType.Location.class);
 
-        Text mainTextCoord = Util.parseCoordText(livingEntity).formatted(Formatting.GRAY);
-        Text mainTextDeath = livingEntity.getDamageTracker().getDeathMessage();
-        Text mainText = Text.empty().append(mainTextCoord).append(" ").append(mainTextDeath);
-        Text otherText = livingEntity.getDamageTracker().getDeathMessage();
+        Component mainTextCoord = Util.parseCoordText(livingEntity).withStyle(ChatFormatting.GRAY);
+        Component mainTextDeath = livingEntity.getCombatTracker().getDeathMessage();
+        Component mainText = Component.empty().append(mainTextCoord).append(" ").append(mainTextDeath);
+        Component otherText = livingEntity.getCombatTracker().getDeathMessage();
 
         if (this.livingEntity.hasCustomName()) {
             ServerMessageType type = Util.getServerConfig().getNamedEntityDeathMessage();
@@ -96,9 +96,9 @@ public class EntityDeath {
 
         // Normal entity death message
         ServerMessageType type = Util.getServerConfig().getEntityDeathMessage();
-        if (livingEntity instanceof PassiveEntity) {
+        if (livingEntity instanceof AgeableMob) {
             type = Util.getServerConfig().getPassiveDeathMessage();
-        } else if (livingEntity instanceof HostileEntity) {
+        } else if (livingEntity instanceof Monster) {
             type = Util.getServerConfig().getHostileDeathMessage();
         }
         // broadcast only if not already broadcasted
@@ -119,22 +119,22 @@ public class EntityDeath {
         List<RuleManager> deathEventRules = data.gatherRuleByEventType(EntityDeathEvent.class, true);
         for (RuleManager rule : deathEventRules) {
             Map<String, Object> eventVariables = new HashMap<>();
-            eventVariables.put("entity", this.livingEntity.getUuid());
-            eventVariables.put("cause", this.damageSource.getAttacker() == null ? null : this.damageSource.getAttacker().getUuid());
-            eventVariables.put("source", this.damageSource.getSource() == null ? null : this.damageSource.getSource().getUuid());
+            eventVariables.put("entity", this.livingEntity.getUUID());
+            eventVariables.put("cause", this.damageSource.getEntity() == null ? null : this.damageSource.getEntity().getUUID());
+            eventVariables.put("source", this.damageSource.getDirectEntity() == null ? null : this.damageSource.getDirectEntity().getUUID());
             eventVariables.put("x", this.livingEntity.getX());
             eventVariables.put("y", this.livingEntity.getY());
             eventVariables.put("z", this.livingEntity.getZ());
-            eventVariables.put("position", this.livingEntity.getPos());
-            eventVariables.put("dimension", this.livingEntity.getWorld().getRegistryKey().getValue());
-            eventVariables.put("biome", this.livingEntity.getWorld().getBiome(this.livingEntity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
-            eventVariables.put("message", this.livingEntity.getDamageTracker().getDeathMessage().getString());
+            eventVariables.put("position", this.livingEntity.position());
+            eventVariables.put("dimension", this.livingEntity.level().dimension().location());
+            eventVariables.put("biome", this.livingEntity.level().getBiome(this.livingEntity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
+            eventVariables.put("message", this.livingEntity.getCombatTracker().getDeathMessage().getString());
             eventVariables.put("name", this.livingEntity.getDisplayName().getString());
             eventVariables.put("__entity__", this.livingEntity);
-            eventVariables.put("__cause__", this.damageSource.getAttacker());
-            eventVariables.put("__source__", this.damageSource.getSource());
-            eventVariables.put("__world__", this.livingEntity.getWorld());
-            eventVariables.put("__message__", this.livingEntity.getDamageTracker().getDeathMessage());
+            eventVariables.put("__cause__", this.damageSource.getEntity());
+            eventVariables.put("__source__", this.damageSource.getDirectEntity());
+            eventVariables.put("__world__", this.livingEntity.level());
+            eventVariables.put("__message__", this.livingEntity.getCombatTracker().getDeathMessage());
             eventVariables.put("__name__", this.livingEntity.getDisplayName());
             rule.trigger(data, eventVariables);
         }
@@ -145,11 +145,11 @@ public class EntityDeath {
         for (FlowManager flow : deathEventFlow) {
             List<Object> eventOutput = new ArrayList<>();
             eventOutput.add(this.livingEntity);
-            eventOutput.add(this.damageSource.getType());
-            eventOutput.add(this.damageSource.getAttacker());
-            eventOutput.add(this.damageSource.getSource());
-            eventOutput.add(this.damageSource.getPosition());
-            eventOutput.add(this.livingEntity.getDamageTracker().getDeathMessage());
+            eventOutput.add(this.damageSource.type());
+            eventOutput.add(this.damageSource.getEntity());
+            eventOutput.add(this.damageSource.getDirectEntity());
+            eventOutput.add(this.damageSource.getSourcePosition());
+            eventOutput.add(this.livingEntity.getCombatTracker().getDeathMessage());
             flow.execute(data, eventOutput, null);
         }
     }

@@ -19,9 +19,9 @@ import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
-public class RuleComponentSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class RuleComponentSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     private static enum SuggestionType {
         CONDITION,
@@ -63,7 +63,7 @@ public class RuleComponentSuggestion implements SuggestionProvider<ServerCommand
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         if (context.getSource() == null || context.getSource().getServer() == null) {
             return builder.buildFuture();
         }

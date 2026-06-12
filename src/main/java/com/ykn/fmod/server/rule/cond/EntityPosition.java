@@ -25,20 +25,19 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.DimensionArgumentType;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.command.argument.Vec3ArgumentType;
-import net.minecraft.entity.Entity;
-import net.minecraft.registry.RegistryKey;
-import net.minecraft.registry.RegistryKeys;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.DimensionArgument;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.coordinates.Vec3Argument;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * A {@link SourceCondition} that tests whether an entity is within a given radius
@@ -69,9 +68,9 @@ public class EntityPosition implements SourceCondition {
 
     private final RuleParameter<UUID> entityId;
 
-    private final RuleParameter<Identifier> dimension;
+    private final RuleParameter<ResourceLocation> dimension;
 
-    private final RuleParameter<Vec3d> position;
+    private final RuleParameter<Vec3> position;
 
     private final RuleParameter<Double> radius;
 
@@ -84,7 +83,7 @@ public class EntityPosition implements SourceCondition {
      * @param position  the centre of the search sphere
      * @param radius    the maximum allowed Euclidean distance from {@code position}
      */
-    public EntityPosition(String name, RuleParameter<UUID> entityId, RuleParameter<Identifier> dimension, RuleParameter<Vec3d> position, RuleParameter<Double> radius) {
+    public EntityPosition(String name, RuleParameter<UUID> entityId, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<Double> radius) {
         this.name = name;
         this.entityId = entityId;
         this.dimension = dimension;
@@ -95,8 +94,8 @@ public class EntityPosition implements SourceCondition {
     @Override
     public boolean onEvaluate(RuleContext context) {
         UUID entityId = this.entityId.resolve(context, UUID.class);
-        Identifier dimension = this.dimension.resolve(context, Identifier.class);
-        Vec3d position = this.position.resolve(context, Vec3d.class);
+        ResourceLocation dimension = this.dimension.resolve(context, ResourceLocation.class);
+        Vec3 position = this.position.resolve(context, Vec3.class);
         Double radius = this.radius.resolve(context, Double.class);
 
         if (entityId == null || dimension == null || position == null || radius == null) {
@@ -104,7 +103,7 @@ public class EntityPosition implements SourceCondition {
         }
 
         Entity entity = null;
-        ServerWorld world = context.getServer().getWorld(RegistryKey.of(RegistryKeys.WORLD, dimension));
+        ServerLevel world = context.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
         if (world != null) {
             entity = world.getEntity(entityId);
         }
@@ -112,7 +111,7 @@ public class EntityPosition implements SourceCondition {
             return false;
         }
 
-        Vec3d entityPos = entity.getPos();
+        Vec3 entityPos = entity.position();
         double distance = position.distanceTo(entityPos);
         return distance <= radius;
     }
@@ -133,7 +132,7 @@ public class EntityPosition implements SourceCondition {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.entityposition", this.getName(), this.getType(), 
             this.entityId.render(), this.dimension.render(), this.position.render(), this.radius.render());
     }
@@ -160,33 +159,41 @@ public class EntityPosition implements SourceCondition {
 
     public static EntityPosition fromJson(JsonObject json) {
         RuleParameter<UUID> entityId = RuleParameter.fromJson(json, "entityId", e -> UUID.fromString(e.getAsString()));
-        RuleParameter<Identifier> dimension = RuleParameter.fromJson(json, "dimension", e -> new Identifier(e.getAsString()));
-        RuleParameter<Vec3d> position = RuleParameter.fromJson(json, "position", e -> {
+        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in EntityPosition dimension: " + s + ". Defaulting to minecraft:overworld");
+                rl = ResourceLocation.withDefaultNamespace("overworld");
+            }
+            return rl;
+        });
+        RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
             JsonObject obj = e.getAsJsonObject();
             double x = obj.get("x").getAsDouble();
             double y = obj.get("y").getAsDouble();
             double z = obj.get("z").getAsDouble();
-            return new Vec3d(x, y, z);
+            return new Vec3(x, y, z);
         });
         RuleParameter<Double> radius = RuleParameter.fromJson(json, "radius", JsonElement::getAsDouble);
         return new EntityPosition(json.get("name").getAsString(), entityId, dimension, position, radius);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<UUID> entityIdParameter = RuleParameter.fromCommandContext("entity", "var.entity", () -> {
-                        Entity entity = EntityArgumentType.getEntity(ctx, "entity");
-                        return entity.getUuid();
+                        Entity entity = EntityArgument.getEntity(ctx, "entity");
+                        return entity.getUUID();
                     }, arguments, ctx);
-                    RuleParameter<Identifier> dimensionParameter = RuleParameter.fromCommandContext("dimension", "var.dimension", () -> {
-                        ServerWorld serverWorld = DimensionArgumentType.getDimensionArgument(ctx, "dimension");
-                        Identifier dimensionId = serverWorld.getRegistryKey().getValue();
+                    RuleParameter<ResourceLocation> dimensionParameter = RuleParameter.fromCommandContext("dimension", "var.dimension", () -> {
+                        ServerLevel serverWorld = DimensionArgument.getDimension(ctx, "dimension");
+                        ResourceLocation dimensionId = serverWorld.dimension().location();
                         return dimensionId;
                     }, arguments, ctx);
-                    RuleParameter<Vec3d> positionParameter = RuleParameter.fromCommandContext("position", "var.position", () -> {
-                        return Vec3ArgumentType.getVec3(ctx, "position");
+                    RuleParameter<Vec3> positionParameter = RuleParameter.fromCommandContext("position", "var.position", () -> {
+                        return Vec3Argument.getVec3(ctx, "position");
                     }, arguments, ctx);
                     RuleParameter<Double> radiusParameter = RuleParameter.fromCommandContext("radius", "var.radius", () -> {
                         double radius = DoubleArgumentType.getDouble(ctx, "radius");
@@ -194,21 +201,21 @@ public class EntityPosition implements SourceCondition {
                     }, arguments, ctx);
                     EntityPosition condition = new EntityPosition(name, entityIdParameter, dimensionParameter, positionParameter, radiusParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("entity", "var.entity", () -> CommandManager.argument("entity", EntityArgumentType.entity()))
-            .add("dimension", "var.dimension", () -> CommandManager.argument("dimension", DimensionArgumentType.dimension()))
-            .add("position", "var.position", () -> CommandManager.argument("position", Vec3ArgumentType.vec3()))
-            .add("radius", "var.radius", () -> CommandManager.argument("radius", DoubleArgumentType.doubleArg(0)))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("entity", "var.entity", () -> Commands.argument("entity", EntityArgument.entity()))
+            .add("dimension", "var.dimension", () -> Commands.argument("dimension", DimensionArgument.dimension()))
+            .add("position", "var.position", () -> Commands.argument("position", Vec3Argument.vec3()))
+            .add("radius", "var.radius", () -> Commands.argument("radius", DoubleArgumentType.doubleArg(0)))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 

@@ -15,10 +15,10 @@ import java.util.UUID;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 public class ProjectileHitEntityEvent implements RuleEvent {
 
@@ -36,21 +36,21 @@ public class ProjectileHitEntityEvent implements RuleEvent {
         map.put("x", Double.class);
         map.put("y", Double.class);
         map.put("z", Double.class);
-        map.put("position", Vec3d.class);
-        map.put("dimension", Identifier.class);
-        map.put("biome", Identifier.class);
+        map.put("position", Vec3.class);
+        map.put("dimension", ResourceLocation.class);
+        map.put("biome", ResourceLocation.class);
         map.put("pitch", Double.class);
         map.put("yaw", Double.class);
-        map.put("rotation", Vec2f.class);
+        map.put("rotation", Vec2.class);
         map.put("sx", Double.class);
         map.put("sy", Double.class);
         map.put("sz", Double.class);
-        map.put("sposition", Vec3d.class);
-        map.put("sdimension", Identifier.class);
-        map.put("sbiome", Identifier.class);
+        map.put("sposition", Vec3.class);
+        map.put("sdimension", ResourceLocation.class);
+        map.put("sbiome", ResourceLocation.class);
         map.put("spitch", Double.class);
         map.put("syaw", Double.class);
-        map.put("srotation", Vec2f.class);
+        map.put("srotation", Vec2.class);
         map.put("distance", Double.class);
         map.put("health", Double.class);
         map.put("name", String.class);
@@ -112,7 +112,7 @@ public class ProjectileHitEntityEvent implements RuleEvent {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.event.projectilehitentity");
     }
 }

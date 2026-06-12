@@ -25,13 +25,12 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.command.argument.EntityArgumentType;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * A {@link SourceCondition} that tests whether a player's permission level falls within
@@ -90,12 +89,12 @@ public class CheckPermission implements SourceCondition {
             return false;
         }
 
-        ServerPlayerEntity player = context.getServer().getPlayerManager().getPlayer(playerId);
+        ServerPlayer player = context.getServer().getPlayerList().getPlayer(playerId);
         if (player == null) {
             return false;
         }
 
-        int level = context.getServer().getPermissionLevel(player.getGameProfile());
+        int level = context.getServer().getProfilePermissions(player.getGameProfile());
         return level >= min && level <= max;
     }
 
@@ -115,7 +114,7 @@ public class CheckPermission implements SourceCondition {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.checkpermission", this.getName(), this.getType(),
             this.player.render(), this.min.render(), this.max.render());
     }
@@ -140,13 +139,13 @@ public class CheckPermission implements SourceCondition {
         return new CheckPermission(json.get("name").getAsString(), player, min, max);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<UUID> playerParameter = RuleParameter.fromCommandContext("player", "var.player", () -> {
-                        ServerPlayerEntity player = EntityArgumentType.getPlayer(ctx, "player");
-                        return player.getUuid();
+                        ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
+                        return player.getUUID();
                     }, arguments, ctx);
                     RuleParameter<Integer> minParameter = RuleParameter.fromCommandContext("min", "var.min", () -> {
                         return IntegerArgumentType.getInteger(ctx, "min");
@@ -156,20 +155,20 @@ public class CheckPermission implements SourceCondition {
                     }, arguments, ctx);
                     CheckPermission condition = new CheckPermission(name, playerParameter, minParameter, maxParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("player", "var.player", () -> CommandManager.argument("player", EntityArgumentType.player()))
-            .add("min", "var.min", () -> CommandManager.argument("min", IntegerArgumentType.integer()))
-            .add("max", "var.max", () -> CommandManager.argument("max", IntegerArgumentType.integer()))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("player", "var.player", () -> Commands.argument("player", EntityArgument.player()))
+            .add("min", "var.min", () -> Commands.argument("min", IntegerArgumentType.integer()))
+            .add("max", "var.max", () -> Commands.argument("max", IntegerArgumentType.integer()))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 

@@ -9,7 +9,7 @@ import java.util.List;
 
 import com.google.gson.JsonObject;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A {@link RuleCondition} that is composed of child conditions and can be expressed
@@ -59,11 +59,11 @@ public interface IterableCondition extends RuleCondition {
     public List<RuleCondition> visit();
 
     @Override
-    default Text render() {
+    default Component render() {
         if (getName().isEmpty()) {
-            return Text.literal(toFormula());
+            return Component.literal(toFormula());
         } else {
-            return Text.literal(getName() + ": " + toFormula());
+            return Component.literal(getName() + ": " + toFormula());
         }
     }
 

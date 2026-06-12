@@ -20,10 +20,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,25 +33,23 @@ import com.ykn.fmod.server.base.config.ServerConfig;
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
 
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.metadata.Person;
+import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
-import net.minecraft.command.CommandException;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
+import net.minecraft.commands.CommandSource;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.ClickEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandOutput;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.ClickEvent;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.TypeFilter;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.level.entity.EntityTypeTest;
+import net.fabricmc.loader.api.FabricLoader;
 
 public class Util {
 
@@ -62,11 +60,11 @@ public class Util {
     public static final ModVersion MOD_VERSION = ModVersion.fromString(getModVersion());
 
     /**
-     * A static instance of the {@link TypeFilter} class that is used to get all the entities that are loaded and not removed in the world.
+     * A static instance of the {@link EntityTypeTest} class that is used to get all the entities that are loaded and not removed in the world.
      */
-    private static final TypeFilter<Entity, Entity> PASSTHROUGH_FILTER = new TypeFilter<Entity, Entity>(){
+    private static final EntityTypeTest<Entity, Entity> PASSTHROUGH_FILTER = new EntityTypeTest<Entity, Entity>() {
         @Override
-        public Entity downcast(Entity entity) {
+        public Entity tryCast(@NotNull Entity entity) {
             return entity;
         }
         @Override
@@ -104,11 +102,17 @@ public class Util {
      * @throws IllegalStateException If the mod container cannot be found.
      */
     public static String getModAuthors() {
-        return FabricLoader.getInstance()
-            .getModContainer(MODID).orElseThrow(IllegalStateException::new)
-            .getMetadata().getAuthors().stream()
-            .map(Person::getName)
-            .collect(Collectors.joining(", "));
+        // Collection<String> authors = FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getModInfo().getAuthors();
+        // StringBuilder authorsString = new StringBuilder();
+        // int index = 0;
+        // for (String author : authors) {
+        //     if (index > 0) {
+        //         authorsString.append(", ");
+        //     }
+        //     authorsString.append(author);
+        //     index++;
+        // }
+        return "ykn, Xenapte";
     }
 
     /**
@@ -117,7 +121,7 @@ public class Util {
      * @return A string representing the Minecraft version.
      */
     public static String getMinecraftVersion() {
-        return SharedConstants.getGameVersion().getName();
+        return SharedConstants.getCurrentVersion().getName();
     }
 
     /**
@@ -125,45 +129,45 @@ public class Util {
      * If the server is null, an empty list is returned.
      *
      * @param server The Minecraft server instance, or null if unavailable.
-     * @return A list of {@link ServerPlayerEntity} representing the online players.
+     * @return A list of {@link ServerPlayer} representing the online players.
      *         Returns an empty list if the server is null.
      */
     @NotNull
-    public static List<ServerPlayerEntity> getOnlinePlayers(@Nullable MinecraftServer server) {
+    public static List<ServerPlayer> getOnlinePlayers(@Nullable MinecraftServer server) {
         if (server == null) {
             return new ArrayList<>();
         }
-        List<ServerPlayerEntity> original = server.getPlayerManager().getPlayerList();
-        List<ServerPlayerEntity> copy = new ArrayList<>(original);
+        List<ServerPlayer> original = server.getPlayerList().getPlayers();
+        List<ServerPlayer> copy = new ArrayList<>(original);
         return copy;
     }
 
     /**
-     * Parses a translatable text key into a {@link MutableText} object, optionally translating it
+     * Parses a translatable text key into a {@link MutableComponent} object, optionally translating it
      * based on the server configuration.
      *
      * @param key  The translation key to be parsed. Must not be null.
      * @param args Optional arguments to format the translatable text.
-     * @return A {@link MutableText} object representing the parsed text. If server translation
+     * @return A {@link MutableComponent} object representing the parsed text. If server translation
      *         is enabled, the text is translated and returned as a literal text. Otherwise,
      *         it is returned as a translatable text.
      */
     @NotNull
-    public static MutableText parseTranslatableText(@NotNull String key, Object... args) {
+    public static MutableComponent parseTranslatableText(@NotNull String key, Object... args) {
         if (serverConfig.getServerTranslation()) {
             // A trick, by intentionally not passing args to translatable(), we still keep the "%" patterns here.
-            String translatedText = Text.translatable(key).getString();
+            String translatedText = Component.translatable(key).getString();
             // A trick, by intentionally using the original translation key,
             // So if the client does have the translation, it can still ignore our translated text,
             // but if the client does not have the translation, it can still show our translated text.
-            return Text.translatableWithFallback(key, translatedText, args);
+            return Component.translatableWithFallback(key, translatedText, args);
         } else {
-            return Text.translatable(key, args);
+            return Component.translatable(key, args);
         }
     }
 
     /**
-     * Parses coordinate information into a formatted {@link MutableText} object.
+     * Parses coordinate information into a formatted {@link MutableComponent} object.
      * The text includes the dimension, biome, and coordinates (x, y, z) with click and hover events.
      *
      * @param dimension The dimension identifier where the coordinates are located. Must not be null.
@@ -171,34 +175,34 @@ public class Util {
      * @param x         The x-coordinate.
      * @param y         The y-coordinate.
      * @param z         The z-coordinate.
-     * @return A {@link MutableText} object representing the formatted coordinate information
+     * @return A {@link MutableComponent} object representing the formatted coordinate information
      *         with click and hover events for teleportation.
      */
     @NotNull
-    public static MutableText parseCoordText(@NotNull Identifier dimension, @Nullable Identifier biome, double x, double y, double z) {
+    public static MutableComponent parseCoordText(@NotNull ResourceLocation dimension, @Nullable ResourceLocation biome, double x, double y, double z) {
         String strX = String.format("%.2f", x);
         String strY = String.format("%.2f", y);
         String strZ = String.format("%.2f", z);
-        MutableText biomeText = getBiomeText(biome);
-        return parseTranslatableText("fmod.misc.coord", biomeText, strX, strY, strZ).styled(style -> style.withClickEvent(
+        MutableComponent biomeText = getBiomeText(biome);
+        return parseTranslatableText("fmod.misc.coord", biomeText, strX, strY, strZ).withStyle(style -> style.withClickEvent(
             new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, "/execute in " + dimension.toString() + " run tp @s " + strX + " " + strY + " " + strZ)
         ).withHoverEvent(
-            new HoverEvent(HoverEvent.Action.SHOW_TEXT, parseTranslatableText("fmod.misc.clicktp").formatted(Formatting.GREEN))   
+            new HoverEvent(HoverEvent.Action.SHOW_TEXT, parseTranslatableText("fmod.misc.clicktp").withStyle(ChatFormatting.GREEN))   
         ));
     }
 
     /**
-     * Parses the coordinate information of the given entity into a formatted {@link MutableText} object.
+     * Parses the coordinate information of the given entity into a formatted {@link MutableComponent} object.
      * The text includes the dimension, biome, and coordinates (x, y, z) with click and hover events.
      *
      * @param entity The entity whose coordinate information is to be parsed. Must not be null.
-     * @return A {@link MutableText} object representing the formatted coordinate information
+     * @return A {@link MutableComponent} object representing the formatted coordinate information
      *         with click and hover events for teleportation.
      */
     @NotNull
-    public static MutableText parseCoordText(@NotNull Entity entity) {
-        Identifier dimension = entity.getWorld().getRegistryKey().getValue();
-        Identifier biome = entity.getWorld().getBiome(entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+    public static MutableComponent parseCoordText(@NotNull Entity entity) {
+        ResourceLocation dimension = entity.level().dimension().location();
+        ResourceLocation biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         double x = entity.getX();
         double y = entity.getY();
         double z = entity.getZ();
@@ -270,7 +274,7 @@ public class Util {
      * @return The PlayerData object associated with the specified player.
      */
     @NotNull
-    public static PlayerData getPlayerData(@NotNull ServerPlayerEntity player) {
+    public static PlayerData getPlayerData(@NotNull ServerPlayer player) {
         if (player.getServer() == null) {
             throw new IllegalStateException("PlayerData cannot be retrieved on the client side.");
         }
@@ -282,12 +286,12 @@ public class Util {
      * 
      * @param context The CommandContext from which to retrieve the MinecraftServer. Can be null.
      * @return The MinecraftServer instance if it can be retrieved successfully.
-     * @throws CommandException If the MinecraftServer instance cannot be retrieved from the context.
      */
-    @NotNull
-    public static MinecraftServer requireNotNullServer(@Nullable CommandContext<ServerCommandSource> context) throws CommandException {
+    @Nullable
+    public static MinecraftServer requireNotNullServer(@Nullable CommandContext<CommandSourceStack> context) {
         if (context == null || context.getSource() == null || context.getSource().getServer() == null) {
-            throw new CommandException(parseTranslatableText("fmod.command.error.client"));
+            context.getSource().sendFailure(parseTranslatableText("fmod.command.error.client"));
+            return null;
         }
         return context.getSource().getServer();
     }
@@ -345,9 +349,9 @@ public class Util {
      * @return a list of all entities in the specified world that meet the criteria.
      */
     @NotNull
-    public static List<Entity> getAllEntities(@NotNull ServerWorld world) {
+    public static List<Entity> getAllEntities(@NotNull ServerLevel world) {
         List<Entity> entities = new ArrayList<>();
-        world.collectEntitiesByType(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
+        world.getEntities(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
         return entities;
     }
 
@@ -364,13 +368,13 @@ public class Util {
      *         <li> Returns null if the input list is empty
      */
     public static Map.Entry<Entity, Integer> getDominantEntities(List<Entity> entities) {
-        Map<Identifier, List<Entity>> entityMap = new HashMap<>();
+        Map<ResourceLocation, List<Entity>> entityMap = new HashMap<>();
         for (Entity entity : entities) {
-            Identifier entityId = EntityType.getId(entity.getType());
+            ResourceLocation entityId = EntityType.getKey(entity.getType());
             entityMap.computeIfAbsent(entityId, k -> new ArrayList<>()).add(entity);
         }
         Map.Entry<Entity, Integer> dominantEntry = null;
-        for (Map.Entry<Identifier, List<Entity>> entry : entityMap.entrySet()) {
+        for (Map.Entry<ResourceLocation, List<Entity>> entry : entityMap.entrySet()) {
             List<Entity> entityList = entry.getValue();
             if (dominantEntry == null || entityList.size() > dominantEntry.getValue()) {
                 dominantEntry = Map.entry(entityList.get(0), entityList.size());
@@ -387,13 +391,13 @@ public class Util {
      *         a default "unknown" text is returned.
      */
     @NotNull
-    public static MutableText getBiomeText(@Nullable Identifier biomeId) {
-        MutableText biomeText = null;
+    public static MutableComponent getBiomeText(@Nullable ResourceLocation biomeId) {
+        MutableComponent biomeText = null;
         if (biomeId == null) {
             biomeText = Util.parseTranslatableText("fmod.misc.unknown");
         } else {
             // Vanilla should contain this translation key.
-            biomeText = Text.translatable("biome." + biomeId.toString().replace(":", "."));
+            biomeText = Component.translatable("biome." + biomeId.toString().replace(":", "."));
         }
         return biomeText;
     }
@@ -402,12 +406,12 @@ public class Util {
      * Retrieves the biome name as a localized text for the given entity's current position.
      *
      * @param entity The entity whose current biome is to be determined. Must not be null.
-     * @return A {@link MutableText} representing the localized name of the biome. If the biome
+     * @return A {@link MutableComponent} representing the localized name of the biome. If the biome
      *         cannot be determined, a default "unknown" text is returned.
      */
     @NotNull
-    public static MutableText getBiomeText(@NotNull Entity entity) {
-        Identifier biomeId = entity.getWorld().getBiome(entity.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+    public static MutableComponent getBiomeText(@NotNull Entity entity) {
+        ResourceLocation biomeId = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         return getBiomeText(biomeId);
     }
 
@@ -418,11 +422,11 @@ public class Util {
      * @return a {@link MutableText} object containing the formatted text representation of the boolean value
      */
     @NotNull
-    public static MutableText getBooleanText(boolean value) {
+    public static MutableComponent getBooleanText(boolean value) {
         if (value) {
-            return parseTranslatableText("options.on").formatted(Formatting.GREEN);
+            return parseTranslatableText("options.on").withStyle(ChatFormatting.GREEN);
         } else {
-            return parseTranslatableText("options.off").formatted(Formatting.RED);
+            return parseTranslatableText("options.off").withStyle(ChatFormatting.RED);
         }
     }
 
@@ -432,16 +436,16 @@ public class Util {
      *
      * @param entities A collection of entities whose display names will be included in the text.
      *                 The collection must not be null and may contain any subclass of {@link Entity}.
-     * @return A {@link MutableText} object containing the concatenated display names of the entities.
+     * @return A {@link MutableComponent} object containing the concatenated display names of the entities.
      *         If the collection is empty, an empty text is returned.
      */
     @NotNull
-    public static MutableText getEntityListText(@NotNull Collection<? extends Entity> entities) {
-        MutableText entityListText = Text.literal("");
+    public static MutableComponent getEntityListText(@NotNull Collection<? extends Entity> entities) {
+        MutableComponent entityListText = Component.literal("");
         int index = 0;
         for (Entity entity : entities) {
             if (index > 0) {
-                entityListText.append(Text.literal(", "));
+                entityListText.append(Component.literal(", "));
             }
             entityListText.append(entity.getDisplayName());
             index++;
@@ -452,15 +456,14 @@ public class Util {
     /**
      * Executes a command with the specified permission level and output handler.
      *
-     * @param output the {@link CommandOutput} to receive command execution results
+     * @param output the {@link CommandSource} to receive command execution results
      * @param source the {@link Entity} executing the command
      * @param command the command string to execute
      * @param permissionLevel the permission level to execute the command with
-     * @return the result code of the command execution
      */
-    public static int runCommand(@NotNull CommandOutput output, @NotNull Entity source, @NotNull String command, int permissionLevel) {
-        ServerCommandSource commandSource = source.getCommandSource().withLevel(permissionLevel).withOutput(output);
-        return source.getServer().getCommandManager().executeWithPrefix(commandSource, command);
+    public static void runCommand(@NotNull CommandSource output, @NotNull Entity source, @NotNull String command, int permissionLevel) {
+        CommandSourceStack commandSource = source.createCommandSourceStack().withPermission(permissionLevel).withSource(output);
+        source.getServer().getCommands().performPrefixedCommand(commandSource, command);
     }
 
     /**

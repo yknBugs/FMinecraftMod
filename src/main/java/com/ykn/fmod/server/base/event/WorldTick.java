@@ -20,17 +20,16 @@ import com.ykn.fmod.server.rule.event.ServerTickEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 import com.ykn.fmod.server.base.util.GameMath;
 
-import net.minecraft.block.BedBlock;
-import net.minecraft.entity.Entity;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
 
 public class WorldTick {
 
@@ -40,8 +39,8 @@ public class WorldTick {
     public static void onWorldTick(MinecraftServer server) {
         ServerData serverData = Util.getServerData(server);
         checkEntityNumber(server, serverData);
-        List<ServerPlayerEntity> players = server.getPlayerManager().getPlayerList();
-        for (ServerPlayerEntity player : players) {
+        List<ServerPlayer> players = server.getPlayerList().getPlayers();
+        for (ServerPlayer player : players) {
             PlayerData playerData = serverData.getPlayerData(player);
             handleAfkPlayers(player, playerData);
             handleChangeBiomePlayer(player, serverData, playerData);
@@ -61,20 +60,20 @@ public class WorldTick {
             // If finished, retrieve result and clear the task
             if (activeCalculator.getEntity() == null || activeCalculator.getCause() == null) {
                 // No result
-                Text mainText = Util.parseTranslatableText("fmod.message.entitywarning.main", activeCalculator.getInputNumber()).formatted(Formatting.RED);
-                Text otherText = Util.parseTranslatableText("fmod.message.entitywarning.other").formatted(Formatting.RED);
+                Component mainText = Util.parseTranslatableText("fmod.message.entitywarning.main", activeCalculator.getInputNumber()).withStyle(ChatFormatting.RED);
+                Component otherText = Util.parseTranslatableText("fmod.message.entitywarning.other").withStyle(ChatFormatting.RED);
                 Util.getServerConfig().getEntityNumberWarning().postMessage(server, mainText, otherText);
             } else {
                 // Has result
                 final String totalCount = Integer.toString(activeCalculator.getInputNumber());
-                final Text coordText = Util.parseCoordText(activeCalculator.getDimension(), activeCalculator.getBiome(), activeCalculator.getX(), activeCalculator.getY(), activeCalculator.getZ());
-                final Text biomeText = Util.getBiomeText(activeCalculator.getBiome());
+                final Component coordText = Util.parseCoordText(activeCalculator.getDimension(), activeCalculator.getBiome(), activeCalculator.getX(), activeCalculator.getY(), activeCalculator.getZ());
+                final Component biomeText = Util.getBiomeText(activeCalculator.getBiome());
                 final String entityRadius = String.format("%.2f", activeCalculator.getRadius());
                 final String entityCount = Integer.toString(activeCalculator.getCount());
                 final String causeCount = Integer.toString(activeCalculator.getNumber());
-                final Text entityCauseText = activeCalculator.getCause().getDisplayName();
-                Text mainText = Util.parseTranslatableText("fmod.message.entitydensity.main", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText).formatted(Formatting.RED);
-                Text otherText = Util.parseTranslatableText("fmod.message.entitydensity.other", biomeText, entityRadius, entityCount).formatted(Formatting.RED);
+                final Component entityCauseText = activeCalculator.getCause().getDisplayName();
+                Component mainText = Util.parseTranslatableText("fmod.message.entitydensity.main", totalCount, coordText, entityRadius, entityCount, causeCount, entityCauseText).withStyle(ChatFormatting.RED);
+                Component otherText = Util.parseTranslatableText("fmod.message.entitydensity.other", biomeText, entityRadius, entityCount).withStyle(ChatFormatting.RED);
                 Util.getServerConfig().getEntityDensityWarning().postMessage(server, mainText, otherText);
             }
             serverData.setLastCheckEntityTick();
@@ -99,7 +98,7 @@ public class WorldTick {
 
         // Now we should check entity number and density
         List<Entity> allEntities = new ArrayList<>();
-        for (ServerWorld world : server.getWorlds()) {
+        for (ServerLevel world : server.getAllLevels()) {
             List<Entity> entities = Util.getAllEntities(world);
             allEntities.addAll(entities);
         }
@@ -135,13 +134,13 @@ public class WorldTick {
 
         if (satisfyNumberCondition) {
             serverData.setLastCheckEntityTick();
-            Text mainText = Util.parseTranslatableText("fmod.message.entitywarning.main", allEntities.size()).formatted(Formatting.RED);
-            Text otherText = Util.parseTranslatableText("fmod.message.entitywarning.other").formatted(Formatting.RED);
+            Component mainText = Util.parseTranslatableText("fmod.message.entitywarning.main", allEntities.size()).withStyle(ChatFormatting.RED);
+            Component otherText = Util.parseTranslatableText("fmod.message.entitywarning.other").withStyle(ChatFormatting.RED);
             Util.getServerConfig().getEntityNumberWarning().postMessage(server, mainText, otherText);
         }
     }
 
-    private static void handleAfkPlayers(ServerPlayerEntity player, PlayerData playerData) {
+    private static void handleAfkPlayers(ServerPlayer player, PlayerData playerData) {
         if (playerData.isFacingDirectionChanged(player)) {
             postMessageToBackPlayer(player, playerData);
             playerData.resetAfkTicks();
@@ -151,39 +150,39 @@ public class WorldTick {
         }
     }
 
-    private static void postMessageToAfkingPlayer(ServerPlayerEntity player, PlayerData playerData) {
+    private static void postMessageToAfkingPlayer(ServerPlayer player, PlayerData playerData) {
         if (playerData.getAfkTicks() > Util.getServerConfig().getInformAfkThreshold() && playerData.getAfkTicks() % 20 == 0) {
-            Text mainText = Util.parseTranslatableText("fmod.message.afk.inform.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
-            Text otherText = Util.parseTranslatableText("fmod.message.afk.inform.other", player.getDisplayName());
+            Component mainText = Util.parseTranslatableText("fmod.message.afk.inform.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
+            Component otherText = Util.parseTranslatableText("fmod.message.afk.inform.other", player.getDisplayName());
             Util.getServerConfig().getInformAfk().postMessage(player, mainText, otherText);
         }
         if (playerData.getAfkTicks() == Util.getServerConfig().getBroadcastAfkThreshold()) {
-            Text playerName = player.getDisplayName();
-            Text coord = Util.parseCoordText(player);
-            MutableText mainText = Util.parseTranslatableText("fmod.message.afk.broadcast.main", playerName, coord);
-            MutableText otherText = Util.parseTranslatableText("fmod.message.afk.broadcast.other", playerName);
+            Component playerName = player.getDisplayName();
+            Component coord = Util.parseCoordText(player);
+            Component mainText = Util.parseTranslatableText("fmod.message.afk.broadcast.main", playerName, coord);
+            Component otherText = Util.parseTranslatableText("fmod.message.afk.broadcast.other", playerName);
             Util.getServerConfig().getBroadcastAfk().postMessage(player, mainText, otherText);
         }
     }
 
-    private static void postMessageToBackPlayer(ServerPlayerEntity player, PlayerData playerData) {
+    private static void postMessageToBackPlayer(ServerPlayer player, PlayerData playerData) {
         if (playerData.getAfkTicks() >= Util.getServerConfig().getBroadcastAfkThreshold()) {
-            Text mainText = Util.parseTranslatableText("fmod.message.afk.stop.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
-            Text otherText = Util.parseTranslatableText("fmod.message.afk.stop.other", player.getDisplayName());
+            Component mainText = Util.parseTranslatableText("fmod.message.afk.stop.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
+            Component otherText = Util.parseTranslatableText("fmod.message.afk.stop.other", player.getDisplayName());
             Util.getServerConfig().getStopAfk().postMessage(player, mainText, otherText);
         }
     }
 
-    private static void handleChangeBiomePlayer(ServerPlayerEntity player, ServerData serverData, PlayerData playerData) {
-        Identifier biomeId = player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null);
+    private static void handleChangeBiomePlayer(ServerPlayer player, ServerData serverData, PlayerData playerData) {
+        ResourceLocation biomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         if (playerData.isBiomeChanged(player)) {
             serverData.submitScheduledTask(new BiomeMessage(player, biomeId));
         }
     }
 
-    private static void handlePlayerCanSleepStatus(ServerPlayerEntity player, PlayerData playerData) {
-        boolean canSleep = player.getWorld().getDimension().natural() && !player.getWorld().isDay() && BedBlock.isBedWorking(player.getWorld());
-        boolean cannotSleep = player.getWorld().getDimension().natural() && player.getWorld().isDay() && BedBlock.isBedWorking(player.getWorld());
+    private static void handlePlayerCanSleepStatus(ServerPlayer player, PlayerData playerData) {
+        boolean canSleep = player.level().dimensionType().natural() && !player.level().isDay() && player.level().dimensionType().bedWorks();
+        boolean cannotSleep = player.level().dimensionType().natural() && player.level().isDay() && player.level().dimensionType().bedWorks();
         Boolean currentCanSleepStatus = null;
         if (canSleep != cannotSleep) {
             // We know the information
@@ -192,26 +191,26 @@ public class WorldTick {
         // Show message if status changed
         if (currentCanSleepStatus != null && !currentCanSleepStatus.equals(playerData.getLastCanSleep())) {
             if (currentCanSleepStatus) {
-                Text mainText = Util.parseTranslatableText("fmod.message.sleep.can.main", player.getDisplayName(), Util.parseCoordText(player));
-                Text otherText = Util.parseTranslatableText("fmod.message.sleep.can.other", player.getDisplayName());
+                Component mainText = Util.parseTranslatableText("fmod.message.sleep.can.main", player.getDisplayName(), Util.parseCoordText(player));
+                Component otherText = Util.parseTranslatableText("fmod.message.sleep.can.other", player.getDisplayName());
                 Util.getServerConfig().getPlayerCanSleepMessage().postMessage(player, mainText, otherText);
             } else {
-                Text mainText = Util.parseTranslatableText("fmod.message.sleep.cannot.main", player.getDisplayName(), Util.parseCoordText(player));
-                Text otherText = Util.parseTranslatableText("fmod.message.sleep.cannot.other", player.getDisplayName());
+                Component mainText = Util.parseTranslatableText("fmod.message.sleep.cannot.main", player.getDisplayName(), Util.parseCoordText(player));
+                Component otherText = Util.parseTranslatableText("fmod.message.sleep.cannot.other", player.getDisplayName());
                 Util.getServerConfig().getPlayerCanSleepMessage().postMessage(player, mainText, otherText);
             }
         }
         playerData.setLastCanSleep(currentCanSleepStatus);
     }
 
-    private static void handlePlayerTravelStatus(ServerPlayerEntity player, PlayerData playerData) {
+    private static void handlePlayerTravelStatus(ServerPlayer player, PlayerData playerData) {
         int window = Util.getServerConfig().getTravelWindow();
 
         // Update positions history
         int maxSamples = window + 1;
         playerData.updatePositionHistory(player, maxSamples);
 
-        Vec3d[] snapshot = playerData.getRecentPositions();
+        Vec3[] snapshot = playerData.getRecentPositions();
         int lastIdx = snapshot.length - 1;
 
         // Check if the player has teleported
@@ -258,18 +257,18 @@ public class WorldTick {
         }
 
         String speedStr = String.format("%.2f", totalDistance / window * 20.0);
-        Text mainText = Util.parseTranslatableText("fmod.message.travel.fast.main", player.getDisplayName(), Util.parseCoordText(player), speedStr);
-        Text otherText = Util.parseTranslatableText("fmod.message.travel.fast.other", player.getDisplayName(), speedStr);
+        Component mainText = Util.parseTranslatableText("fmod.message.travel.fast.main", player.getDisplayName(), Util.parseCoordText(player), speedStr);
+        Component otherText = Util.parseTranslatableText("fmod.message.travel.fast.other", player.getDisplayName(), speedStr);
         Util.getServerConfig().getTravelMessage().postMessage(player, mainText, otherText);
         playerData.setLastTravelMessageTick();
     }
 
-    private static void handleTeleportedPlayer(ServerPlayerEntity player, PlayerData playerData, Vec3d fromPos, Vec3d toPos) {
-        Text playerName = player.getDisplayName();
-        Text fromCoord = Util.parseCoordText(playerData.getLastDimensionId(), playerData.getLastBiomeId(), fromPos.x, fromPos.y, fromPos.z);
-        Text toCoord = Util.parseCoordText(player);
-        Text mainText = Util.parseTranslatableText("fmod.message.teleport.main", playerName, fromCoord, toCoord);
-        Text otherText = Util.parseTranslatableText("fmod.message.teleport.other", playerName);
+    private static void handleTeleportedPlayer(ServerPlayer player, PlayerData playerData, Vec3 fromPos, Vec3 toPos) {
+        Component playerName = player.getDisplayName();
+        Component fromCoord = Util.parseCoordText(playerData.getLastDimensionId(), playerData.getLastBiomeId(), fromPos.x, fromPos.y, fromPos.z);
+        Component toCoord = Util.parseCoordText(player);
+        Component mainText = Util.parseTranslatableText("fmod.message.teleport.main", playerName, fromCoord, toCoord);
+        Component otherText = Util.parseTranslatableText("fmod.message.teleport.other", playerName);
         Util.getServerConfig().getTeleportMessage().postMessage(player, mainText, otherText);
     }
 
@@ -281,33 +280,33 @@ public class WorldTick {
             rule.trigger(serverData, eventVariables);
         }
         tickEventRules = serverData.gatherRuleByEventType(PlayerTickEvent.class, true);
-        List<ServerPlayerEntity> onlinePlayers = Util.getOnlinePlayers(serverData.getServer());
+        List<ServerPlayer> onlinePlayers = Util.getOnlinePlayers(serverData.getServer());
         for (RuleManager rule : tickEventRules) {
-            for (ServerPlayerEntity player : onlinePlayers) {
+            for (ServerPlayer player : onlinePlayers) {
                 PlayerData playerData = serverData.getPlayerData(player);
                 Map<String, Object> eventVariables = new HashMap<>();
                 eventVariables.put("tick", serverData.getServerTick());
-                eventVariables.put("player", player.getUuid());
+                eventVariables.put("player", player.getUUID());
                 eventVariables.put("x", player.getX());
                 eventVariables.put("y", player.getY());
                 eventVariables.put("z", player.getZ());
-                eventVariables.put("position", player.getPos());
-                eventVariables.put("dimension", player.getWorld().getRegistryKey().getValue());
-                eventVariables.put("biome", player.getWorld().getBiome(player.getBlockPos()).getKey().map(key -> key.getValue()).orElse(null));
-                eventVariables.put("pitch", Double.valueOf(player.getPitch()));
-                eventVariables.put("yaw", Double.valueOf(player.getYaw()));
-                eventVariables.put("rotation", player.getRotationClient());
+                eventVariables.put("position", player.position());
+                eventVariables.put("dimension", player.level().dimension().location());
+                eventVariables.put("biome", player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
+                eventVariables.put("pitch", Double.valueOf(player.getXRot()));
+                eventVariables.put("yaw", Double.valueOf(player.getYRot()));
+                eventVariables.put("rotation", player.getRotationVector());
                 eventVariables.put("health", Double.valueOf(player.getHealth()));
                 eventVariables.put("name", player.getDisplayName().getString());
                 eventVariables.put("afk", playerData.getAfkTicks());
                 eventVariables.put("lastpitch", Double.valueOf(playerData.getLastPitch()));
                 eventVariables.put("lastyaw", Double.valueOf(playerData.getLastYaw()));
-                eventVariables.put("lastrotation", new Vec2f(playerData.getLastPitch(), playerData.getLastYaw()));
+                eventVariables.put("lastrotation", new Vec2(playerData.getLastPitch(), playerData.getLastYaw()));
                 eventVariables.put("lastbiome", playerData.getLastBiomeId());
                 eventVariables.put("lastdimension", playerData.getLastDimensionId());
                 eventVariables.put("cansleep", playerData.getLastCanSleep());
                 eventVariables.put("__player__", player);
-                eventVariables.put("__world__", player.getWorld());
+                eventVariables.put("__world__", player.level());
                 eventVariables.put("__name__", player.getDisplayName());
                 rule.trigger(serverData, eventVariables);
             }

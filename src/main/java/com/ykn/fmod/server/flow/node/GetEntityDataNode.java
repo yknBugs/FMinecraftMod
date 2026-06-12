@@ -16,12 +16,14 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.item.ItemStack;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec2f;
-import net.minecraft.world.World;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec2;
 
 /**
  * Node that retrieves data from an entity
@@ -71,29 +73,33 @@ public class GetEntityDataNode extends FlowNode {
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         Entity entity = parseEntity(resolvedInputs.get(0));
-        Text customName = entity.getCustomName();
-        World world = entity.getWorld();
+        Component customName = entity.getCustomName();
+        Level world = entity.level();
         status.setOutput(0, customName);
         status.setOutput(1, customName == null ? null : customName.getString());
-        status.setOutput(2, EntityType.getId(entity.getType()));
-        status.setOutput(3, entity.getUuidAsString());
+        status.setOutput(2, EntityType.getKey(entity.getType()));
+        status.setOutput(3, entity.getStringUUID());
         status.setOutput(4, world);
-        status.setOutput(5, entity.getPos());
-        status.setOutput(6, entity.getVelocity());
-        status.setOutput(7, new Vec2f(entity.getPitch(), entity.getYaw()));
-        status.setOutput(8, world == null ? null : world.getRegistryKey().getValue());
+        status.setOutput(5, entity.position());
+        status.setOutput(6, entity.getDeltaMovement());
+        status.setOutput(7, new Vec2(entity.getXRot(), entity.getYRot()));
+        status.setOutput(8, world == null ? null : world.dimension().location());
         status.setOutput(9, entity.getVehicle());
 
         List<ItemStack> handItems = new ArrayList<>();
-        for (ItemStack itemStack : entity.getHandItems()) {
-            handItems.add(itemStack);
+        if (entity instanceof LivingEntity livingEntity) {
+            handItems.add(livingEntity.getItemBySlot(EquipmentSlot.MAINHAND));
+            handItems.add(livingEntity.getItemBySlot(EquipmentSlot.OFFHAND));
         }
 
         status.setOutput(10, TypeAdaptor.parse(handItems).collapseList());
 
         List<ItemStack> armorItems = new ArrayList<>();
-        for (ItemStack itemStack : entity.getArmorItems()) {
-            armorItems.add(itemStack);
+        if (entity instanceof LivingEntity livingEntity) {
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.HEAD));
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.CHEST));
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.LEGS));
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.FEET));
         }
         
         status.setOutput(11, TypeAdaptor.parse(armorItems).collapseList());

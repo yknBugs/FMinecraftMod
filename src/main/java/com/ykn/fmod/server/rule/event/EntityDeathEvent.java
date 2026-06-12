@@ -15,9 +15,9 @@ import java.util.UUID;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 
-import net.minecraft.text.Text;
-import net.minecraft.util.Identifier;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec3;
 
 public class EntityDeathEvent implements RuleEvent {
 
@@ -35,9 +35,9 @@ public class EntityDeathEvent implements RuleEvent {
         map.put("x", Double.class);
         map.put("y", Double.class);
         map.put("z", Double.class);
-        map.put("position", Vec3d.class);
-        map.put("dimension", Identifier.class);
-        map.put("biome", Identifier.class);
+        map.put("position", Vec3.class);
+        map.put("dimension", ResourceLocation.class);
+        map.put("biome", ResourceLocation.class);
         map.put("message", String.class);
         map.put("name", String.class);
         return Collections.unmodifiableMap(map);
@@ -82,7 +82,7 @@ public class EntityDeathEvent implements RuleEvent {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.event.entitydeath");
     }
 }

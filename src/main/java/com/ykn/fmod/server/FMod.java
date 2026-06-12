@@ -7,6 +7,7 @@
 package com.ykn.fmod.server;
 
 import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 
@@ -36,7 +37,9 @@ public class FMod implements ModInitializer {
 		RuleRegistry.registerDefault();
 
 		// Register commands
-		CommandRegistrater.registerCommand();
+		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
+			CommandRegistrater.registerCommand(dispatcher);
+		});
 
 		// Register events
 		ServerWorldEvents.LOAD.register((server, world) -> {

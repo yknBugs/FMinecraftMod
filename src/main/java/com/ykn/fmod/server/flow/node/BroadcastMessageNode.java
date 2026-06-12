@@ -18,8 +18,8 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 
 /**
  * A flow node that sends a message to players based on receiver settings.
@@ -50,10 +50,10 @@ public class BroadcastMessageNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        ServerPlayerEntity player = parsePlayer(resolvedInputs.get(0));
+        ServerPlayer player = parsePlayer(resolvedInputs.get(0));
         PlayerMessageType.Receiver receiver = parseReceiver(resolvedInputs.get(1));
         MessageType.Location messageType = parseMessageType(resolvedInputs.get(2));
-        Text message = parseMessage(resolvedInputs.get(3));
+        Component message = parseMessage(resolvedInputs.get(3));
         PlayerMessageType type = PlayerMessageType.of(messageType, receiver);
         
         if (player == null) {
@@ -70,11 +70,11 @@ public class BroadcastMessageNode extends FlowNode {
         }
     }
 
-    private ServerPlayerEntity parsePlayer(Object playerObj) throws LogicException {
+    private ServerPlayer parsePlayer(Object playerObj) throws LogicException {
         if (playerObj == null) {
             return null;
-        } else if (playerObj instanceof ServerPlayerEntity) {
-            return (ServerPlayerEntity) playerObj;
+        } else if (playerObj instanceof ServerPlayer) {
+            return (ServerPlayer) playerObj;
         } else {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
         }
@@ -125,14 +125,14 @@ public class BroadcastMessageNode extends FlowNode {
         }
     }
 
-    private Text parseMessage(Object messageObj) throws LogicException {
+    private Component parseMessage(Object messageObj) throws LogicException {
         if (messageObj == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(3)), null);
-        } else if (messageObj instanceof Text) {
-            return (Text) messageObj;
+        } else if (messageObj instanceof Component) {
+            return (Component) messageObj;
         } else {
             String messageStr = TypeAdaptor.parse(messageObj).asString();
-            return Text.literal(messageStr);
+            return Component.literal(messageStr);
         }
     }
 }

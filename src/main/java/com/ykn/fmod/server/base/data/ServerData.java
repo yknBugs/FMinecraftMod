@@ -34,9 +34,9 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.LivingEntity;
 
 /**
  * Manages runtime data for the entire server.
@@ -239,12 +239,12 @@ public class ServerData {
      * @return the PlayerData associated with the given player, never null
      */
     @NotNull
-    public PlayerData getPlayerData(@NotNull ServerPlayerEntity player) {
-        PlayerData data = playerData.get(player.getUuid());
+    public PlayerData getPlayerData(@NotNull ServerPlayer player) {
+        PlayerData data = playerData.get(player.getUUID());
         if (data == null) {
             Util.LOGGER.info("FMinecraftMod: Creating new PlayerData for player " + player.getName().getString());
             data = new PlayerData(player, this);
-            playerData.put(player.getUuid(), data);
+            playerData.put(player.getUUID(), data);
         }
         return data;
     }
@@ -318,7 +318,7 @@ public class ServerData {
         if (entity == null) {
             return;
         }
-        killerEntities.add(entity.getUuid());
+        killerEntities.add(entity.getUUID());
     }
 
     /**
@@ -332,7 +332,7 @@ public class ServerData {
         if (entity == null) {
             return false;
         }
-        return killerEntities.contains(entity.getUuid());
+        return killerEntities.contains(entity.getUUID());
     }
 
     /**
@@ -346,7 +346,7 @@ public class ServerData {
         if (entity == null) {
             return false;
         }
-        return killerEntities.remove(entity.getUuid());
+        return killerEntities.remove(entity.getUUID());
     }
 
     /**

@@ -9,9 +9,9 @@ import com.ykn.fmod.server.base.util.PlayerMessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 public class ServerConfig extends ConfigReader {
 
@@ -1505,22 +1505,22 @@ public class ServerConfig extends ConfigReader {
         return (int) Math.round(Math.exp(sliderValue * Math.log(Integer.MAX_VALUE)));
     }
 
-    public MutableText getDoubleConfigDisplayText(Double value) {
-        return Text.literal(String.format("%.2f", value));
+    public MutableComponent getDoubleConfigDisplayText(Double value) {
+        return Component.literal(String.format("%.2f", value));
     }
 
-    public MutableText getTickConfigDisplayText(Integer value) {
+    public MutableComponent getTickConfigDisplayText(Integer value) {
         double seconds = (double) value / 20.0;
-        return Text.literal(String.format("%.1f", seconds));
+        return Component.literal(String.format("%.1f", seconds));
     }
 
     public int commandInputSecondToTick(Integer seconds) {
         return (int) Math.round(20.0 * seconds);
     }
 
-    public MutableText getMiniSecondsDisplayText(Integer value) {
+    public MutableComponent getMiniSecondsDisplayText(Integer value) {
         double seconds = (double) value / 1000.0;
-        return Text.literal(String.format("%.1f", seconds));
+        return Component.literal(String.format("%.1f", seconds));
     }
 
     public int commandInputSecondToMiniSecond(Integer seconds) {
@@ -1539,7 +1539,7 @@ public class ServerConfig extends ConfigReader {
      *         If the token length is between 1 and 20, the entire token is replaced by asterisks. 
      *         If the token is empty, "null" is returned.
      */
-    public MutableText getSecureGptAccessTokens(String value) {
+    public MutableComponent getSecureGptAccessTokens(String value) {
         String token = value == null ? "" : value;
         String secureToken = "";
         if (token.length() > 20) {
@@ -1549,16 +1549,16 @@ public class ServerConfig extends ConfigReader {
         } else {
             secureToken = "";
         }
-        return Text.literal(secureToken);
+        return Component.literal(secureToken);
     }
 
-    public MutableText getBooleanValueI18n(Boolean value) {
+    public MutableComponent getBooleanValueI18n(Boolean value) {
         // Reflection uses value.getClass() to find the method, where value is defined as Object
         // We cannot use primitive here or it will throw NoSuchMethodException
         if (value) {
-            return Util.parseTranslatableText("options.on").formatted(Formatting.GREEN);
+            return Util.parseTranslatableText("options.on").withStyle(ChatFormatting.GREEN);
         } else {
-            return Util.parseTranslatableText("options.off").formatted(Formatting.RED);
+            return Util.parseTranslatableText("options.off").withStyle(ChatFormatting.RED);
         }
     }
 }

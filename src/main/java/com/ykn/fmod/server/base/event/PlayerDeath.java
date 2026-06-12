@@ -7,24 +7,24 @@ package com.ykn.fmod.server.base.event;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.damage.DamageSource;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.LivingEntity;
 
 public class PlayerDeath {
 
-    private final ServerPlayerEntity player;
+    private final ServerPlayer player;
     private final DamageSource damageSource;
 
-    public PlayerDeath(ServerPlayerEntity player, DamageSource damageSource) {
+    public PlayerDeath(ServerPlayer player, DamageSource damageSource) {
         this.player = player;
         this.damageSource = damageSource;
     }
 
-    public ServerPlayerEntity getPlayer() {
+    public ServerPlayer getPlayer() {
         return player;
     }
 
@@ -41,17 +41,17 @@ public class PlayerDeath {
             return;
         }
 
-        LivingEntity killer = player.getPrimeAdversary();
-        if (killer != null && !killer.isPlayer() && killer.getServer() != null) {
+        LivingEntity killer = player.getKillCredit();
+        if (killer != null && !killer.isAlwaysTicking() && killer.getServer() != null) {
             Util.getServerData(killer.getServer()).addKillerEntity(killer);
         }
 
-        Text playerName = player.getDisplayName();
-        Text deathCoord = Util.parseCoordText(player);
-        Text deathBiome = Util.getBiomeText(player);
+        Component playerName = player.getDisplayName();
+        Component deathCoord = Util.parseCoordText(player);
+        Component deathBiome = Util.getBiomeText(player);
 
-        MutableText mainText = Util.parseTranslatableText("fmod.message.playerdeath.main", playerName, deathCoord).formatted(Formatting.RED);
-        MutableText otherText = Util.parseTranslatableText("fmod.message.playerdeath.other", playerName, deathBiome).formatted(Formatting.RED);
+        MutableComponent mainText = Util.parseTranslatableText("fmod.message.playerdeath.main", playerName, deathCoord).withStyle(ChatFormatting.RED);
+        MutableComponent otherText = Util.parseTranslatableText("fmod.message.playerdeath.other", playerName, deathBiome).withStyle(ChatFormatting.RED);
 
         Util.getServerConfig().getPlayerDeathCoord().postMessage(player, mainText, otherText);
     }

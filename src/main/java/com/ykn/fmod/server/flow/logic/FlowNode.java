@@ -12,8 +12,8 @@ import java.util.List;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
  * Represents a node in a logic flow that can process inputs, produce outputs, and connect to other nodes.
@@ -135,26 +135,26 @@ public class FlowNode implements Cloneable {
      */
     protected NodeMetadata createMetadata(int inputNumber, int outputNumber, int branchNumber) {
         // Should be overridden by subclasses to provide specific metadata
-        Text displayName = Util.parseTranslatableText("fmod.node.abstract.title.name");
-        Text description = Util.parseTranslatableText("fmod.node.abstract.title.feat");
-        List<Text> inputNames = new ArrayList<>();
-        List<Text> inputDescriptions = new ArrayList<>();
-        List<Text> inputDataTypes = new ArrayList<>();
+        Component displayName = Util.parseTranslatableText("fmod.node.abstract.title.name");
+        Component description = Util.parseTranslatableText("fmod.node.abstract.title.feat");
+        List<Component> inputNames = new ArrayList<>();
+        List<Component> inputDescriptions = new ArrayList<>();
+        List<Component> inputDataTypes = new ArrayList<>();
         for (int i = 0; i < inputNumber; i++) {
             inputNames.add(Util.parseTranslatableText("fmod.node.abstract.input.name", String.valueOf(i)));
             inputDescriptions.add(Util.parseTranslatableText("fmod.node.abstract.input.feat", String.valueOf(i)));
             inputDataTypes.add(Util.parseTranslatableText("fmod.node.abstract.input.type"));
         }
-        List<Text> outputNames = new ArrayList<>();
-        List<Text> outputDescriptions = new ArrayList<>();
-        List<Text> outputDataTypes = new ArrayList<>();
+        List<Component> outputNames = new ArrayList<>();
+        List<Component> outputDescriptions = new ArrayList<>();
+        List<Component> outputDataTypes = new ArrayList<>();
         for (int i = 0; i < outputNumber; i++) {
             outputNames.add(Util.parseTranslatableText("fmod.node.abstract.output.name", String.valueOf(i)));
             outputDescriptions.add(Util.parseTranslatableText("fmod.node.abstract.output.feat", String.valueOf(i)));
             outputDataTypes.add(Util.parseTranslatableText("fmod.node.abstract.output.type"));
         }
-        List<Text> branchNames = new ArrayList<>();
-        List<Text> branchDescriptions = new ArrayList<>();
+        List<Component> branchNames = new ArrayList<>();
+        List<Component> branchDescriptions = new ArrayList<>();
         for (int i = 0; i < branchNumber; i++) {
             branchNames.add(Util.parseTranslatableText("fmod.node.abstract.branch.name", String.valueOf(i)));
             branchDescriptions.add(Util.parseTranslatableText("fmod.node.abstract.branch.feat", String.valueOf(i)));
@@ -504,14 +504,14 @@ public class FlowNode implements Cloneable {
      * @param flow The logic flow containing this node (used to resolve node references)
      * @return A Text object suitable for display in Minecraft
      */
-    public Text render(LogicFlow flow) {
+    public Component render(LogicFlow flow) {
         // Render title
-        MutableText text = Util.parseTranslatableText("fmod.flow.node.title", this.name, this.metadata.displayName, this.metadata.description);
+        MutableComponent text = Util.parseTranslatableText("fmod.flow.node.title", this.name, this.metadata.displayName, this.metadata.description);
         text = text.append("\n");
         // Render inputs
         for (int i = 0; i < this.metadata.inputNumber; i++) {
             DataReference inputRef = this.inputs.get(i);
-            MutableText inputLine = Util.parseTranslatableText("fmod.flow.node.input", this.metadata.inputNames.get(i), this.metadata.inputDescriptions.get(i));
+            MutableComponent inputLine = Util.parseTranslatableText("fmod.flow.node.input", this.metadata.inputNames.get(i), this.metadata.inputDescriptions.get(i));
             // Render optional info about the input source
             if (inputRef != null) {
                 if (inputRef.getType() == DataReference.ReferenceType.CONSTANT && inputRef.getValue() != null) {
@@ -531,7 +531,7 @@ public class FlowNode implements Cloneable {
         }
         // Render outputs
         for (int i = 0; i < this.metadata.outputNumber; i++) {
-            MutableText outputLine = Util.parseTranslatableText("fmod.flow.node.output", this.metadata.outputNames.get(i), this.metadata.outputDescriptions.get(i));
+            MutableComponent outputLine = Util.parseTranslatableText("fmod.flow.node.output", this.metadata.outputNames.get(i), this.metadata.outputDescriptions.get(i));
             text = text.append(outputLine).append("\n");
         }
         // Render branches
@@ -548,11 +548,11 @@ public class FlowNode implements Cloneable {
             // List all branches and show their next nodes
             for (int i = 0; i < this.metadata.branchNumber; i++) {
                 long nextNodeId = this.nextNodeIds.get(i);
-                MutableText branchLine = Util.parseTranslatableText("fmod.flow.node.branch", this.metadata.branchNames.get(i), this.metadata.branchDescriptions.get(i));
+                MutableComponent branchLine = Util.parseTranslatableText("fmod.flow.node.branch", this.metadata.branchNames.get(i), this.metadata.branchDescriptions.get(i));
                 // Show optional info about the next node
                 FlowNode nextNode = flow.getNode(nextNodeId);
                 if (nextNode != null) {
-                    MutableText connectText = Util.parseTranslatableText("fmod.flow.node.connect", nextNode.name);
+                    MutableComponent connectText = Util.parseTranslatableText("fmod.flow.node.connect", nextNode.name);
                     branchLine = branchLine.append(" (").append(connectText).append(")");
                 }
                 text = text.append(branchLine).append("\n");

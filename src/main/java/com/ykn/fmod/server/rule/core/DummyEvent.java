@@ -11,7 +11,7 @@ import java.util.Set;
 
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A no-op placeholder {@link RuleEvent} used when no specific triggering event is configured.
@@ -56,7 +56,7 @@ public class DummyEvent implements RuleEvent {
     }
     
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.event.dummy").append("\n").append(Util.parseTranslatableText("fmod.rule.status.novar"));
     }
 }

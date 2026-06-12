@@ -29,11 +29,10 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
 
 /**
  * A {@link RuleAction} that schedules the execution of a named logic flow.
@@ -119,7 +118,7 @@ public class RunFlowAction implements RuleAction {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.action.runflow", this.getName(), this.getType(),
             this.flowName.render(), this.delay.render());
     }
@@ -143,9 +142,9 @@ public class RunFlowAction implements RuleAction {
         return new RunFlowAction(name, flowName, delay);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleAction> actionConsumer) {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         LogicFlowSuggestion flowSuggestion = LogicFlowSuggestion.suggest(true);
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<String> flowNameParameter = RuleParameter.fromCommandContext("flow", "var.flow", () -> {
@@ -156,19 +155,19 @@ public class RunFlowAction implements RuleAction {
                     }, arguments, ctx);
                     RunFlowAction action = new RunFlowAction(name, flowNameParameter, delayParameter);
                     actionConsumer.accept(ctx, action);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("flow", "var.flow", () -> CommandManager.argument("flow", StringArgumentType.string()).suggests(flowSuggestion))
-            .add("delay", "var.delay", () -> CommandManager.argument("delay", IntegerArgumentType.integer(1)))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("flow", "var.flow", () -> Commands.argument("flow", StringArgumentType.string()).suggests(flowSuggestion))
+            .add("delay", "var.delay", () -> Commands.argument("delay", IntegerArgumentType.integer(1)))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 }

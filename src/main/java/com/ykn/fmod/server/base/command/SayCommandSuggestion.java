@@ -20,7 +20,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.suggestion.Suggestions;
 import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
 /**
  * Provides command auto-completion suggestions for say commands with special formatting.
@@ -28,7 +28,7 @@ import net.minecraft.server.command.ServerCommandSource;
  * context-aware auto-completion for formatting codes (e.g., "&" for color codes,
  * "${" for variable placeholders).
  */
-public class SayCommandSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class SayCommandSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     /**
      * Map storing keys and their associated suggestion lists.
@@ -52,7 +52,7 @@ public class SayCommandSuggestion implements SuggestionProvider<ServerCommandSou
      * @return a completable future containing the suggestions
      */
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) {
         String input = builder.getRemaining();
         List<String> suggestions = generateSuggestionList(input);
         suggestions.forEach(suggestion -> builder.suggest(input + suggestion));

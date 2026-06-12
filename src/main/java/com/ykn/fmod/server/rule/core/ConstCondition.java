@@ -8,7 +8,7 @@ package com.ykn.fmod.server.rule.core;
 import com.google.gson.JsonObject;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A {@link RuleCondition} that always evaluates to a fixed boolean constant.
@@ -89,11 +89,11 @@ public class ConstCondition implements RuleCondition {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         if (name.isEmpty()) {
-            return Text.literal(String.valueOf(value));
+            return Component.literal(String.valueOf(value));
         } else {
-            return Text.literal(name + ": " + String.valueOf(value));
+            return Component.literal(name + ": " + String.valueOf(value));
         }
     }
 

@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
 import com.google.gson.JsonObject;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 /**
  * A lazy reference to a named condition declared in a rule's {@code extra} list.
@@ -158,11 +158,11 @@ public class ConditionReference implements RuleCondition {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         if (name.isEmpty()) {
-            return Text.literal(referenceName);
+            return Component.literal(referenceName);
         } else {
-            return Text.literal(name + ": " + referenceName);
+            return Component.literal(name + ": " + referenceName);
         }
     }
 

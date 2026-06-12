@@ -17,9 +17,9 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.commands.CommandSourceStack;
 
-public class CustomRuleSuggestion implements SuggestionProvider<ServerCommandSource> {
+public class CustomRuleSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     private final boolean needQuote;
 
@@ -37,7 +37,7 @@ public class CustomRuleSuggestion implements SuggestionProvider<ServerCommandSou
     }
 
     @Override
-    public CompletableFuture<Suggestions> getSuggestions(CommandContext<ServerCommandSource> context, SuggestionsBuilder builder) throws CommandSyntaxException {
+    public CompletableFuture<Suggestions> getSuggestions(CommandContext<CommandSourceStack> context, SuggestionsBuilder builder) throws CommandSyntaxException {
         if (context.getSource() == null || context.getSource().getServer() == null) {
             return builder.buildFuture();
         }

@@ -24,11 +24,10 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.command.CommandException;
-import net.minecraft.server.command.CommandManager;
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.Text;
-import net.minecraft.text.Texts;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.Commands;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.ComponentUtils;
 
 /**
  * A {@link SourceCondition} that tests whether {@code left} is strictly less than {@code right}.
@@ -85,7 +84,7 @@ public class SmallerThan implements SourceCondition {
     }
 
     @Override
-    public Text render() {
+    public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.smallerthan", this.getName(), this.getType(),
             this.left.render(), this.right.render());
     }
@@ -108,8 +107,8 @@ public class SmallerThan implements SourceCondition {
         return new SmallerThan(json.get("name").getAsString(), left, right);
     }
 
-    public static LiteralArgumentBuilder<ServerCommandSource> buildCommand(LiteralArgumentBuilder<ServerCommandSource> commandNode, BiConsumer<CommandContext<ServerCommandSource>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<ServerCommandSource, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
+    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
                 try {
                     String name = StringArgumentType.getString(ctx, "name");
                     RuleParameter<Double> leftParameter = RuleParameter.fromCommandContext("left", "var.left", () -> {
@@ -120,19 +119,19 @@ public class SmallerThan implements SourceCondition {
                     }, arguments, ctx);
                     SmallerThan condition = new SmallerThan(name, leftParameter, rightParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandException(Texts.toText(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })
-            .add("left", "var.left", () -> CommandManager.argument("left", DoubleArgumentType.doubleArg()))
-            .add("right", "var.right", () -> CommandManager.argument("right", DoubleArgumentType.doubleArg()))
-            .build(CommandManager.argument("name", StringArgumentType.string()));
+            .add("left", "var.left", () -> Commands.argument("left", DoubleArgumentType.doubleArg()))
+            .add("right", "var.right", () -> Commands.argument("right", DoubleArgumentType.doubleArg()))
+            .build(Commands.argument("name", StringArgumentType.string()));
         return commandNode.then(commandTree);
     }
 

@@ -19,9 +19,9 @@ import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.tool.ThrowingSupplier;
 
-import net.minecraft.server.command.ServerCommandSource;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 
 /**
  * A typed parameter that can be resolved either from a named event variable
@@ -138,7 +138,7 @@ public class RuleParameter<T> {
     public static <T> RuleParameter<T> fromCommandContext(
         String constArgumentName, String variableArgumentName, 
         ThrowingSupplier<T, CommandSyntaxException> constValueSupplier, 
-        Set<String> arguments, CommandContext<ServerCommandSource> context
+        Set<String> arguments, CommandContext<CommandSourceStack> context
     ) throws CommandSyntaxException {
         T constValue = null;
         String variableValue = null;
@@ -182,9 +182,9 @@ public class RuleParameter<T> {
         return constantValue;
     }
 
-    public Text render() {
+    public Component render() {
         // (variable: variableName, constant: constantValue)
-        MutableText text = Text.literal("(");
+        MutableComponent text = Component.literal("(");
         boolean hasValidValue = false;
         if (variableName != null) {
             text = text.append(Util.parseTranslatableText("fmod.misc.var")).append(": " + variableName);
