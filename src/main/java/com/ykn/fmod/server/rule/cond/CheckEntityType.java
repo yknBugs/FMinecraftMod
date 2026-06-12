@@ -129,7 +129,7 @@ public class CheckEntityType implements SourceCondition {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl == null) {
                 Util.LOGGER.warn("Invalid ResourceLocation in CheckEntityType entityType: " + s + ". Defaulting to minecraft:player");
-                rl = ResourceLocation.withDefaultNamespace("player");
+                rl = new ResourceLocation("minecraft", "player");
             }
             return rl;
         });

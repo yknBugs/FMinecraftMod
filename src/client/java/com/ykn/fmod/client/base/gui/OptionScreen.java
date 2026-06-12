@@ -115,7 +115,7 @@ public class OptionScreen extends Screen {
 
         public ConfigWidget(Minecraft client, int width, int height, int top, int bottom) {
             // 630 234 40 274
-            super(client, width, height, top, 24);
+            super(client, width, height, top, bottom, 24);
             // Copyright Info
             this.addEntry(new TextHintEntry(
                 Component.translatable("fmod.misc.version", Util.getMinecraftVersion(), Util.MOD_VERSION.toString(), Util.getModAuthors()),

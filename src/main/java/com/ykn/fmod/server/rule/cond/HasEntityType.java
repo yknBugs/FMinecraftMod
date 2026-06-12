@@ -154,7 +154,7 @@ public class HasEntityType implements SourceCondition {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl == null) {
                 Util.LOGGER.warn("Invalid ResourceLocation in HasEntityType dimension: " + s + ". Defaulting to minecraft:overworld");
-                rl = ResourceLocation.withDefaultNamespace("overworld");
+                rl = new ResourceLocation("minecraft", "overworld");
             }
             return rl;
         });
@@ -171,7 +171,7 @@ public class HasEntityType implements SourceCondition {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl == null) {
                 Util.LOGGER.warn("Invalid ResourceLocation in HasEntityType entityType: " + s + ". Defaulting to minecraft:player");
-                rl = ResourceLocation.withDefaultNamespace("player");
+                rl = new ResourceLocation("minecraft", "player");
             }
             return rl;
         });

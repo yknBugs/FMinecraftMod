@@ -151,7 +151,7 @@ public class CheckBlockType implements SourceCondition {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl == null) {
                 Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType dimension: {}", s);
-                rl = ResourceLocation.withDefaultNamespace("overworld");
+                rl = new ResourceLocation("minecraft", "overworld");
             }
             return rl;
         });
@@ -167,7 +167,7 @@ public class CheckBlockType implements SourceCondition {
             ResourceLocation rl = ResourceLocation.tryParse(s);
             if (rl == null) {
                 Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType block: " + s + ". Defaulting to minecraft:bedrock.");
-                rl = ResourceLocation.withDefaultNamespace("bedrock");
+                rl = new ResourceLocation("minecraft", "bedrock");
             }
             return rl;
         });
