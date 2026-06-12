@@ -25,7 +25,6 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.DimensionArgument;
@@ -160,7 +159,15 @@ public class EntityPosition implements SourceCondition {
 
     public static EntityPosition fromJson(JsonObject json) {
         RuleParameter<UUID> entityId = RuleParameter.fromJson(json, "entityId", e -> UUID.fromString(e.getAsString()));
-        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> new ResourceLocation(e.getAsString()));
+        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in EntityPosition dimension: " + s + ". Defaulting to minecraft:overworld");
+                rl = new ResourceLocation("minecraft", "overworld");
+            }
+            return rl;
+        });
         RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
             JsonObject obj = e.getAsJsonObject();
             double x = obj.get("x").getAsDouble();
@@ -194,13 +201,13 @@ public class EntityPosition implements SourceCondition {
                     }, arguments, ctx);
                     EntityPosition condition = new EntityPosition(name, entityIdParameter, dimensionParameter, positionParameter, radiusParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandRuntimeException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandRuntimeException(ComponentUtils.fromMessage(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })

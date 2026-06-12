@@ -24,7 +24,6 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.DimensionArgument;
@@ -39,7 +38,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * A {@link SourceCondition} that tests whether the block at a given world position
@@ -101,7 +100,7 @@ public class CheckBlockType implements SourceCondition {
             return defaultValue != null && defaultValue;
         }
 
-        ResourceLocation actualBlockId = ForgeRegistries.BLOCKS.getKey(world.getBlockState(blockPos).getBlock());
+        ResourceLocation actualBlockId = BuiltInRegistries.BLOCK.getKey(world.getBlockState(blockPos).getBlock());
         return block.equals(actualBlockId);
     }
 
@@ -147,7 +146,15 @@ public class CheckBlockType implements SourceCondition {
     }
 
     public static CheckBlockType fromJson(JsonObject json) {
-        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> new ResourceLocation(e.getAsString()));
+        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType dimension: {}", s);
+                rl = new ResourceLocation("minecraft", "overworld");
+            }
+            return rl;
+        });
         RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
             JsonObject obj = e.getAsJsonObject();
             double x = obj.get("x").getAsDouble();
@@ -155,7 +162,15 @@ public class CheckBlockType implements SourceCondition {
             double z = obj.get("z").getAsDouble();
             return new Vec3(x, y, z);
         });
-        RuleParameter<ResourceLocation> block = RuleParameter.fromJson(json, "block", e -> new ResourceLocation(e.getAsString()));
+        RuleParameter<ResourceLocation> block = RuleParameter.fromJson(json, "block", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType block: " + s + ". Defaulting to minecraft:bedrock.");
+                rl = new ResourceLocation("minecraft", "bedrock");
+            }
+            return rl;
+        });
         RuleParameter<Boolean> defaultValue = RuleParameter.fromJson(json, "defaultValue", JsonElement::getAsBoolean);
         return new CheckBlockType(json.get("name").getAsString(), dimension, position, block, defaultValue);
     }
@@ -179,13 +194,13 @@ public class CheckBlockType implements SourceCondition {
                     }, arguments, ctx);
                     CheckBlockType condition = new CheckBlockType(name, dimensionParameter, positionParameter, blockParameter, defaultValueParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandRuntimeException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandRuntimeException(ComponentUtils.fromMessage(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })

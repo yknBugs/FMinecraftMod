@@ -7,8 +7,8 @@ package com.ykn.fmod.server.base.util;
 
 import java.util.ArrayList;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.commands.CommandSource;
 import net.minecraft.network.chat.Component;
@@ -93,7 +93,7 @@ public class RedirectedCommandOutput implements CommandSource {
      *
      * @return a {@link Component} object containing all captured messages
      */
-    @Nonnull
+    @NotNull
     public Component getAllMessage() {
         MutableComponent result = Component.empty();
         for (Component message : messages) {
@@ -122,7 +122,7 @@ public class RedirectedCommandOutput implements CommandSource {
      *
      * @return a string containing all message contents
      */
-    @Nonnull
+    @NotNull
     public String getRawOutput() {
         StringBuilder builder = new StringBuilder();
         for (Component message : messages) {

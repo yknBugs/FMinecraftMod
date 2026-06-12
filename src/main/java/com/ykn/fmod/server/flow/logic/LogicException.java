@@ -5,8 +5,8 @@
 
 package com.ykn.fmod.server.flow.logic;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.util.Util;
 
@@ -123,7 +123,7 @@ public class LogicException extends Exception {
      * 
      * @return The user-facing message as Text.
      */
-    @Nonnull
+    @NotNull
     public Component getMessageText() {
         if (messageText != null) {
             return messageText;

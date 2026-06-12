@@ -97,7 +97,7 @@ public class FlowSerializer {
      * The last compatible mod version for logic flows. Flows created with versions
      * newer than this may not be loadable in older versions of the mod.
      */
-    public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.1");
+    public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.4+b3");
 
     /**
      * Builds a Gson instance with pretty printing enabled.

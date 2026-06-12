@@ -23,7 +23,6 @@ import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -34,6 +33,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
@@ -43,25 +44,21 @@ public class GetAndShareCommand {
 
     private static ServerPlayer getShareCommandExecutor(CommandContext<CommandSourceStack> context) {
         if (context == null) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.playeronly"));
+            return null;
         }
         CommandSourceStack source = context.getSource();
         if (source == null) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.playeronly"));
+            return null;
         }
         ServerPlayer player = source.getPlayer();
         if (player == null) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.playeronly"));
+            return null;
         }
         MinecraftServer server = source.getServer();
         if (server == null) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.error.client"));
+            return null;
         }
         return player;
-        // return Optional.ofNullable(context)
-        //     .map(CommandContext::getSource)
-        //     .map(CommandSourceStack::getPlayer)
-        //     .orElseThrow(() -> new CommandRuntimeException(Util.parseTranslateableText("fmod.command.share.playeronly")));
     }
 
     private static int runGetCoordCommand(Collection<? extends Entity> entities, CommandContext<CommandSourceStack> context) {
@@ -72,11 +69,10 @@ public class GetAndShareCommand {
                 MutableComponent text = Util.parseTranslatableText("fmod.command.get.coord", name, coord);
                 context.getSource().sendSuccess(() -> text, false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get coord", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return entities.size();
     }
@@ -88,11 +84,10 @@ public class GetAndShareCommand {
             Component coord = Util.parseCoordText(player);
             MutableComponent text = Util.parseTranslatableText("fmod.command.share.coord", name, coord);
             ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share coord", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -152,11 +147,10 @@ public class GetAndShareCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.distance", name, dirTxt, degStr, distStr), false);
                 result++;
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get distance", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
@@ -193,11 +187,10 @@ public class GetAndShareCommand {
                 final MutableComponent text = Util.parseTranslatableText("fmod.command.share.distance", name, dirTxt, degStr, distStr);
                 ServerMessageType.sendTextMessage(onlinePlayer, text);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share distance", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -212,11 +205,10 @@ public class GetAndShareCommand {
                 final String maxhpStr = String.format("%.2f", maxhp);
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.health", name, hpStr, maxhpStr), false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get health", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return entities.size();
     }
@@ -231,11 +223,10 @@ public class GetAndShareCommand {
             final String maxhpStr = String.format("%.2f", maxhp);
             MutableComponent text = Util.parseTranslatableText("fmod.command.share.health", name, hpStr, maxhpStr);
             ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share health", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -254,11 +245,10 @@ public class GetAndShareCommand {
                 final String levelStr = String.valueOf(level);
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.status", name, hpStr, hungerStr, saturationStr, levelStr), false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get status", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return players.size();
     }
@@ -277,11 +267,10 @@ public class GetAndShareCommand {
             final String levelStr = String.valueOf(level);
             MutableComponent text = Util.parseTranslatableText("fmod.command.share.status", name, hpStr, hungerStr, saturationStr, levelStr);
             ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share status", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -303,8 +292,6 @@ public class GetAndShareCommand {
                     .withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_ITEM, new HoverEvent.ItemStackInfo(item)))
                 );
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when formatting item stack", e);
             itemText = Component.literal("??").withStyle(ChatFormatting.RED);
@@ -409,11 +396,10 @@ public class GetAndShareCommand {
             for (MutableComponent text : inventoryText) {
                 context.getSource().sendSuccess(() -> text, false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get inventory", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -428,11 +414,10 @@ public class GetAndShareCommand {
             for (MutableComponent text : inventoryText) {
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), text);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share inventory", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -441,7 +426,13 @@ public class GetAndShareCommand {
         int result = 0;
         try {
             for (Entity entity : entities) {
-                Iterable<ItemStack> items = entity.getHandSlots();
+                if (!(entity instanceof LivingEntity)) {
+                    final Component name = entity.getDisplayName();
+                    context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
+                    continue;
+                }
+                LivingEntity livingEntity = (LivingEntity) entity;
+                Iterable<ItemStack> items = List.of(livingEntity.getItemBySlot(EquipmentSlot.MAINHAND), livingEntity.getItemBySlot(EquipmentSlot.OFFHAND));
                 if (items == null || !items.iterator().hasNext()) {
                     final Component name = entity.getDisplayName();
                     context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
@@ -472,11 +463,10 @@ public class GetAndShareCommand {
                     context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.item", name, itemTxt), false);
                 }
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get item", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
@@ -484,7 +474,7 @@ public class GetAndShareCommand {
     private static int runShareItemCommand(CommandContext<CommandSourceStack> context) {
         try {
             ServerPlayer player = getShareCommandExecutor(context);
-            Iterable<ItemStack> items = player.getHandSlots();
+            Iterable<ItemStack> items = List.of(player.getItemBySlot(EquipmentSlot.MAINHAND), player.getItemBySlot(EquipmentSlot.OFFHAND));
             if (items == null || !items.iterator().hasNext()) {
                 final Component name = player.getDisplayName();
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.noitem", name));
@@ -513,11 +503,10 @@ public class GetAndShareCommand {
             } else {
                 ServerMessageType.broadcastTextMessage(context.getSource().getServer(), Util.parseTranslatableText("fmod.command.share.item", name, itemTxt));
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f share item", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.share.error"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.share.error"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -525,6 +514,9 @@ public class GetAndShareCommand {
     private static int runGetAfkTimeCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
             MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
             for (ServerPlayer player : players) {
                 PlayerData data = Util.getServerData(server).getPlayerData(player);
                 double afkSeconds = data.getAfkTicks() / 20.0;
@@ -532,11 +524,10 @@ public class GetAndShareCommand {
                 final Component name = player.getDisplayName();
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.afk", name, afkSecondsStr), false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get afk", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return players.size();
     }
@@ -544,6 +535,9 @@ public class GetAndShareCommand {
     private static int runGetTravelRecordCommand(Collection<ServerPlayer> players, CommandContext<CommandSourceStack> context) {
         try {
             MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
             for (ServerPlayer player : players) {
                 PlayerData data = Util.getServerData(server).getPlayerData(player);
                 Vec3[] snapshot = data.getRecentPositions();
@@ -566,11 +560,10 @@ public class GetAndShareCommand {
                 final String avgTravelSpeedStr = String.format("%.1f", (totalTravelled / seconds));
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.travel", name, secondsStr, totalDistanceStr, avgSpeedStr, totalTravelledStr, avgTravelSpeedStr), false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get travel", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return players.size();
     }
@@ -578,6 +571,9 @@ public class GetAndShareCommand {
     private static int runGetCrowdedPlaceCommand(int number, double radius, CommandContext<CommandSourceStack> context) {
         try {
             MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
             List<Entity> allEntities = new ArrayList<>();
             for (ServerLevel world : server.getAllLevels()) {
                 List<Entity> entities = Util.getAllEntities(world);
@@ -587,11 +583,10 @@ public class GetAndShareCommand {
             ServerData serverData = Util.getServerData(server);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.crowd"), false);
             serverData.submitAsyncTask(calculator);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f get crowd", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }

@@ -29,9 +29,9 @@ import com.ykn.fmod.server.rule.tool.RuleRegistry;
 import com.ykn.fmod.server.rule.tool.RuleSerializer;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -40,12 +40,17 @@ import net.minecraftforge.fml.loading.FMLPaths;
 
 public class RuleCommand {
 
-    private static RuleManager getRequiredRule(CommandContext<CommandSourceStack> context, String name) throws CommandRuntimeException {
+    private static RuleManager getRequiredRule(CommandContext<CommandSourceStack> context, String name) {
         RuleFileSuggestion.suggest();
-        ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+        MinecraftServer server = Util.requireNotNullServer(context);
+        if (server == null) {
+            return null;
+        }
+        ServerData data = Util.getServerData(server);
         RuleManager ruleManager = data.getCustomRules().get(name);
         if (ruleManager == null) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+            return null;
         }
         return ruleManager;
     }
@@ -53,24 +58,30 @@ public class RuleCommand {
     private static int runCreateRuleCommand(String name, String event, CommandContext<CommandSourceStack> context) {
         try {
             if (name == null || name.isEmpty()) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.empty"));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.empty"));
+                return 0;
             }
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             if (data.getCustomRules().get(name) != null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.exists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.exists", name));
+                return 0;
             }
             Collection<String> validEvents = RuleRegistry.getRegisteredEventNames();
             if (!validEvents.contains(event)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.event.unknown", event));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.event.unknown", event));
+                return 0;
             }
             RuleManager ruleManager = new RuleManager(name, event);
             data.getCustomRules().put(name, ruleManager);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.create.success", event, name), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule create", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -78,24 +89,29 @@ public class RuleCommand {
     private static int runCopyRuleCommand(String sourceName, String targetName, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager sourceRule = data.getCustomRules().get(sourceName);
             if (sourceRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", sourceName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", sourceName));
+                return 0;
             }
             RuleManager targetRule = data.getCustomRules().get(targetName);
             if (targetRule != null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.exists", targetName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.exists", targetName));
+                return 0;
             }
             RuleManager copiedRule = new RuleManager(sourceRule.getRule().copy());
             copiedRule.getRule().setName(targetName);
             data.getCustomRules().put(targetName, copiedRule);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.copy.success", sourceName, targetName), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule copy", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -107,7 +123,11 @@ public class RuleCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.hint"), false);
             }
             Path ruleFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             if ("*".equals(name)) {
                 // Load all rules
                 int loadedCount = 0;
@@ -137,24 +157,26 @@ public class RuleCommand {
             }
             Path rulePath = ruleFolder.resolve(name).normalize();
             if (!rulePath.startsWith(ruleFolder)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.load.filenotfound", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.load.filenotfound", name));
+                return 0;
             }
             CustomRule rule = RuleSerializer.loadFile(rulePath);
             if (rule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.load.ioexception", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.load.ioexception", name));
+                return 0;
             }
             if (data.getCustomRules().get(rule.getName()) != null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.exists", rule.getName()));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.exists", rule.getName()));
+                return 0;
             }
             RuleManager ruleManager = new RuleManager(rule);
             data.getCustomRules().put(rule.getName(), ruleManager);
             ruleManager.setEnabled(true);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.load.success", rule.getName()), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule load", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -162,7 +184,11 @@ public class RuleCommand {
     private static int runSaveRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             Path ruleFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             if ("*".equals(name)) {
                 // Save all rules
                 int savedCount = 0;
@@ -186,23 +212,25 @@ public class RuleCommand {
             }
             RuleManager targetRule = data.getCustomRules().get(name);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                return 0;
             }
             Path rulePath = ruleFolder.resolve(targetRule.getRule().getName() + ".rule").normalize();
             if (!rulePath.startsWith(ruleFolder)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.save.notavailable", targetRule.getRule().getName()));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.save.notavailable", targetRule.getRule().getName()));
+                return 0;
             }
             boolean success = RuleSerializer.saveFile(targetRule.getRule(), rulePath, true);
             if (!success) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.save.ioexception", targetRule.getRule().getName()));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.save.ioexception", targetRule.getRule().getName()));
+                return 0;
             }
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.save.success", targetRule.getRule().getName()), true);
             RuleFileSuggestion.suggest();
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule save", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -210,7 +238,11 @@ public class RuleCommand {
     private static int runListRulesCommand(CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             if (data.getCustomRules().isEmpty()) {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.list.empty"), false);
                 return Command.SINGLE_SUCCESS;
@@ -245,11 +277,10 @@ public class RuleCommand {
             for (MutableComponent line : ruleLines) {
                 context.getSource().sendSuccess(() -> line, false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule list", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -257,26 +288,32 @@ public class RuleCommand {
     private static int runRenameRuleCommand(String oldName, String newName, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager targetRule = data.getCustomRules().get(oldName);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", oldName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", oldName));
+                return 0;
             }
             if (newName == null || newName.isEmpty()) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.empty"));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.empty"));
+                return 0;
             }
             if (data.getCustomRules().get(newName) != null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.exists", newName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.exists", newName));
+                return 0;
             }
             data.getCustomRules().remove(oldName);
             targetRule.getRule().setName(newName);
             data.getCustomRules().put(newName, targetRule);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.rename.success", oldName, newName), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule rename", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -284,21 +321,25 @@ public class RuleCommand {
     private static int runGetEnableRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager targetRule = data.getCustomRules().get(name);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                return 0;
             }
             if (targetRule.isEnabled()) {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.enable.get.true", name), false);
             } else {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.enable.get.false", name), false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule enable", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -306,10 +347,15 @@ public class RuleCommand {
     private static int runSetEnableRuleCommand(String name, boolean enable, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager targetRule = data.getCustomRules().get(name);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                return 0;
             }
             targetRule.setEnabled(enable);
             if (enable) {
@@ -317,11 +363,10 @@ public class RuleCommand {
             } else {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.enable.set.false", name), true);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule enable", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -329,18 +374,22 @@ public class RuleCommand {
     private static int runDeleteRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager targetRule = data.getCustomRules().get(name);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                return 0;
             }
             data.getCustomRules().remove(name);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.delete.success", name), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule delete", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -348,7 +397,11 @@ public class RuleCommand {
     private static int runRuleHistoryCommand(int pageIndex, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             List<RuleContext> history = data.getRuleExecutionHistory();
             // 5 entries per page
             int maxPage = (history.size() + 4) / 5;
@@ -361,7 +414,8 @@ public class RuleCommand {
                 index = maxPage;
             }
             if (index > maxPage) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.history.indexerror", pageIndex, maxPage));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.history.indexerror", pageIndex, maxPage));
+                return 0;
             }
             int start = (index - 1) * 5;
             int end = Math.min(start + 5, history.size());
@@ -393,11 +447,10 @@ public class RuleCommand {
             if (maxPage > 1) {
                 context.getSource().sendSuccess(() -> navigateText, false);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule history", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -405,18 +458,22 @@ public class RuleCommand {
     private static int runViewRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager targetRule = data.getCustomRules().get(name);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                return 0;
             }
             Component text = targetRule.getRule().render();
             context.getSource().sendSuccess(() -> text, false);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule view", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -424,19 +481,23 @@ public class RuleCommand {
     private static int runLogRuleCommand(int index, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             List<RuleContext> history = data.getRuleExecutionHistory();
             if (index <= 0 || index > history.size()) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.log.indexerror", String.valueOf(index)));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.log.indexerror", String.valueOf(index)));
+                return 0;
             }
             RuleContext entry = history.get(index - 1);
             Component text = entry.render();
             context.getSource().sendSuccess(() -> text, false);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule log", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -444,21 +505,26 @@ public class RuleCommand {
     private static int runTriggerRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager targetRule = data.getCustomRules().get(name);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                return 0;
             }
             RuleContext ctx = targetRule.trigger(data);
             if (ctx.getErrorMessage() != null) {
-                throw new CommandRuntimeException(ctx.getErrorMessage());
+                context.getSource().sendFailure(ctx.getErrorMessage());
+                return 0;
             }
             context.getSource().sendSuccess(() -> ctx.render(), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule trigger", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -466,21 +532,26 @@ public class RuleCommand {
     private static int runTestRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
             RuleFileSuggestion.suggest();
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             RuleManager targetRule = data.getCustomRules().get(name);
             if (targetRule == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.notexists", name));
+                return 0;
             }
             RuleContext ctx = targetRule.test(data);
             if (ctx.getErrorMessage() != null) {
-                throw new CommandRuntimeException(ctx.getErrorMessage());
+                context.getSource().sendFailure(ctx.getErrorMessage());
+                return 0;
             }
             context.getSource().sendSuccess(() -> ctx.render(), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule test", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -488,17 +559,20 @@ public class RuleCommand {
     private static int runEditRuleEventCommand(String name, String event, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, name);
+            if (targetRule == null) {
+                return 0;
+            }
             Collection<String> validEvents = RuleRegistry.getRegisteredEventNames();
             if (!validEvents.contains(event)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.event.unknown", event));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.event.unknown", event));
+                return 0;
             }
             targetRule.setEvent(event);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.event.success", name, event), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit event", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -506,15 +580,18 @@ public class RuleCommand {
     private static int runEditRuleConditionCommand(String name, String formula, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, name);
+            if (targetRule == null) {
+                return 0;
+            }
             targetRule.setCondition(formula);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.success", name, formula), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (IllegalArgumentException e) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalid", formula));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalid", formula));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit condition", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -522,16 +599,19 @@ public class RuleCommand {
     private static int runEditRuleConditionRemoveCommand(String name, String condition, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, name);
+            if (targetRule == null) {
+                return 0;
+            }
             if (!targetRule.getRule().hasExtraCondition(condition)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.notexists", name, condition));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.notexists", name, condition));
+                return 0;
             }
             targetRule.removeCondition(condition);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.remove.success", name, condition), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit condition remove", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -539,22 +619,27 @@ public class RuleCommand {
     private static int runEditRuleConditionRenameCommand(String rule, String oldName, String newName, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, rule);
+            if (targetRule == null) {
+                return 0;
+            }
             if (!targetRule.getRule().hasExtraCondition(oldName)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.notexists", rule, oldName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.notexists", rule, oldName));
+                return 0;
             }
             if (targetRule.getRule().hasExtraCondition(newName)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", rule, newName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", rule, newName));
+                return 0;
             }
             if (!RuleCondition.NAME_PATTERN.matcher(newName).matches()) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", newName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", newName));
+                return 0;
             }
             targetRule.renameCondition(oldName, newName);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.rename.success", rule, oldName, newName), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit condition rename", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -562,16 +647,19 @@ public class RuleCommand {
     private static int runEditRuleActionRemoveCommand(String name, String action, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, name);
+            if (targetRule == null) {
+                return 0;
+            }
             if (!targetRule.getRule().hasActionIfSatisfied(action)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.action.notexists", name, action));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.action.notexists", name, action));
+                return 0;
             }
             targetRule.removeActionIfSatisfied(action);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.action.remove.success", name, action), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit action remove", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -579,19 +667,23 @@ public class RuleCommand {
     private static int runEditRuleActionRenameCommand(String rule, String oldName, String newName, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, rule);
+            if (targetRule == null) {
+                return 0;
+            }
             if (!targetRule.getRule().hasActionIfSatisfied(oldName)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.action.notexists", rule, oldName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.action.notexists", rule, oldName));
+                return 0;
             }
             if (targetRule.getRule().hasActionIfSatisfied(newName)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.action.exists", rule, newName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.action.exists", rule, newName));
+                return 0;
             }
             targetRule.renameActionIfSatisfied(oldName, newName);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.action.rename.success", rule, oldName, newName), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit action rename", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -599,16 +691,19 @@ public class RuleCommand {
     private static int runEditRulePunishRemoveCommand(String name, String action, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, name);
+            if (targetRule == null) {
+                return 0;
+            }
             if (!targetRule.getRule().hasActionIfViolated(action)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.punish.notexists", name, action));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.punish.notexists", name, action));
+                return 0;
             }
             targetRule.removeActionIfViolated(action);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.punish.remove.success", name, action), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit punish remove", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -616,19 +711,23 @@ public class RuleCommand {
     private static int runEditRulePunishRenameCommand(String rule, String oldName, String newName, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, rule);
+            if (targetRule == null) {
+                return 0;
+            }
             if (!targetRule.getRule().hasActionIfViolated(oldName)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.punish.notexists", rule, oldName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.punish.notexists", rule, oldName));
+                return 0;
             }
             if (targetRule.getRule().hasActionIfViolated(newName)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.punish.exists", rule, newName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.punish.exists", rule, newName));
+                return 0;
             }
             targetRule.renameActionIfViolated(oldName, newName);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.punish.rename.success", rule, oldName, newName), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit punish rename", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
@@ -636,33 +735,43 @@ public class RuleCommand {
     private static int runEditRuleAddFormulaConditionCommand(String name, String condition, String formula, CommandContext<CommandSourceStack> context) {
         try {
             RuleManager targetRule = getRequiredRule(context, name);
+            if (targetRule == null) {
+                return 0;
+            }
             if (targetRule.getRule().hasExtraCondition(condition)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", name, condition));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", name, condition));
+                return 0;
             }
             if (!RuleCondition.NAME_PATTERN.matcher(condition).matches()) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", condition));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", condition));
+                return 0;
             }
             RuleCondition ruleCondition = ConditionFormulaParser.parse(formula).setName(condition);
             targetRule.addCondition(ruleCondition);
             context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.add.success", name, formula), true);
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (IllegalArgumentException e) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalid", formula));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalid", formula));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit condition add formula", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }
 
     private static void runEditRuleAddConditionCommand(String name, RuleCondition condition, CommandContext<CommandSourceStack> context) {
         RuleManager targetRule = getRequiredRule(context, name);
+        if (targetRule == null) {
+            return;
+        }
         if (targetRule.getRule().hasExtraCondition(condition.getName())) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", name, condition.getName()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.exists", name, condition.getName()));
+            return;
         }
         if (!RuleCondition.NAME_PATTERN.matcher(condition.getName()).matches()) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", condition.getName()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.condition.invalidname", condition.getName()));
+            return;
         }
         targetRule.addCondition(condition);
         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.condition.add.success", name, condition.getName()), true);
@@ -670,8 +779,12 @@ public class RuleCommand {
 
     private static void runEditRuleAddActionCommand(String name, RuleAction action, CommandContext<CommandSourceStack> context) {
         RuleManager targetRule = getRequiredRule(context, name);
+        if (targetRule == null) {
+            return;
+        }
         if (targetRule.getRule().hasActionIfSatisfied(action.getName())) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.action.exists", name, action.getName()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.action.exists", name, action.getName()));
+            return;
         }
         targetRule.addActionIfSatisfied(action);
         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.action.add.success", name, action.getName()), true);
@@ -679,8 +792,12 @@ public class RuleCommand {
 
     private static void runEditRuleAddPunishCommand(String name, RuleAction action, CommandContext<CommandSourceStack> context) {
         RuleManager targetRule = getRequiredRule(context, name);
+        if (targetRule == null) {
+            return;
+        }
         if (targetRule.getRule().hasActionIfViolated(action.getName())) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.rule.edit.punish.exists", name, action.getName()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.rule.edit.punish.exists", name, action.getName()));
+            return;
         }
         targetRule.addActionIfViolated(action);
         context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.edit.punish.add.success", name, action.getName()), true);
@@ -691,6 +808,7 @@ public class RuleCommand {
         sourceNode = sourceNode.then(Commands.literal("ConditionExpression")
             .then(Commands.argument("name", StringArgumentType.string())
                 .then(Commands.argument("formula", StringArgumentType.greedyString())
+                    .suggests(RuleComponentSuggestion.suggestFormula(3))
                     .executes(context -> {return runEditRuleAddFormulaConditionCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "formula"), context);})
                 )
             )
@@ -817,6 +935,7 @@ public class RuleCommand {
                         .then(buildAddConditionCommand())
                         .then(Commands.literal("set")
                             .then(Commands.argument("formula", StringArgumentType.greedyString())
+                                .suggests(RuleComponentSuggestion.suggestFormula(3))
                                 .executes(context -> {return runEditRuleConditionCommand(StringArgumentType.getString(context, "rule"), StringArgumentType.getString(context, "formula"), context);})
                             )
                         )

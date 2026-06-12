@@ -23,7 +23,6 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
@@ -125,7 +124,15 @@ public class CheckEntityType implements SourceCondition {
 
     public static CheckEntityType fromJson(JsonObject json) {
         RuleParameter<UUID> entity = RuleParameter.fromJson(json, "entity", e -> UUID.fromString(e.getAsString()));
-        RuleParameter<ResourceLocation> entityType = RuleParameter.fromJson(json, "type", e -> new ResourceLocation(e.getAsString()));
+        RuleParameter<ResourceLocation> entityType = RuleParameter.fromJson(json, "type", e -> {
+            String s = e.getAsString();
+            ResourceLocation rl = ResourceLocation.tryParse(s);
+            if (rl == null) {
+                Util.LOGGER.warn("Invalid ResourceLocation in CheckEntityType entityType: " + s + ". Defaulting to minecraft:player");
+                rl = new ResourceLocation("minecraft", "player");
+            }
+            return rl;
+        });
         return new CheckEntityType(json.get("name").getAsString(), entity, entityType);
     }
 
@@ -142,13 +149,13 @@ public class CheckEntityType implements SourceCondition {
                     }, arguments, ctx);
                     CheckEntityType condition = new CheckEntityType(name, entityParameter, entityTypeParameter);
                     conditionConsumer.accept(ctx, condition);
-                } catch (CommandRuntimeException e) {
-                    throw e;
                 } catch (CommandSyntaxException e) {
-                    throw new CommandRuntimeException(ComponentUtils.fromMessage(e.getRawMessage()));
+                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
+                    return 0;
                 } catch (Exception e) {
                     Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 return Command.SINGLE_SUCCESS;
             })

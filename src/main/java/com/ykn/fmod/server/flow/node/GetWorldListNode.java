@@ -68,11 +68,11 @@ public class GetWorldListNode extends FlowNode {
             if (str.isEmpty()) {
                 return null;
             }
-            try {
-                return new ResourceLocation(str);
-            } catch (Exception e) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+            ResourceLocation rl = ResourceLocation.tryParse(str);
+            if (rl == null) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.id", this.name, str), null);
             }
+            return rl;
         }
     }
 }

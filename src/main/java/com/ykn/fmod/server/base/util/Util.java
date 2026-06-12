@@ -21,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +35,6 @@ import com.ykn.fmod.server.base.data.ServerData;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.SharedConstants;
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSource;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.ClickEvent;
@@ -65,7 +64,7 @@ public class Util {
      */
     private static final EntityTypeTest<Entity, Entity> PASSTHROUGH_FILTER = new EntityTypeTest<Entity, Entity>() {
         @Override
-        public Entity tryCast(@Nonnull Entity entity) {
+        public Entity tryCast(@NotNull Entity entity) {
             return entity;
         }
         @Override
@@ -93,7 +92,7 @@ public class Util {
      * @throws IllegalStateException If the mod container cannot be found.
      */
     private static String getModVersion() {
-        return ModList.get().getModContainerById(MODID).orElseThrow(IllegalStateException::new).getModInfo().getVersion().toString();
+        return ModList.get().getModContainerById(MODID).get().getModInfo().getVersion().toString();
     }
 
     /**
@@ -103,7 +102,7 @@ public class Util {
      * @throws IllegalStateException If the mod container cannot be found.
      */
     public static String getModAuthors() {
-        // Collection<String> authors = ModList.get().getModContainerById(MODID).orElseThrow(IllegalStateException::new).getModInfo().getAuthors();
+        // Collection<String> authors = FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getModInfo().getAuthors();
         // StringBuilder authorsString = new StringBuilder();
         // int index = 0;
         // for (String author : authors) {
@@ -133,7 +132,7 @@ public class Util {
      * @return A list of {@link ServerPlayer} representing the online players.
      *         Returns an empty list if the server is null.
      */
-    @Nonnull
+    @NotNull
     public static List<ServerPlayer> getOnlinePlayers(@Nullable MinecraftServer server) {
         if (server == null) {
             return new ArrayList<>();
@@ -153,8 +152,8 @@ public class Util {
      *         is enabled, the text is translated and returned as a literal text. Otherwise,
      *         it is returned as a translatable text.
      */
-    @Nonnull
-    public static MutableComponent parseTranslatableText(@Nonnull String key, Object... args) {
+    @NotNull
+    public static MutableComponent parseTranslatableText(@NotNull String key, Object... args) {
         if (serverConfig.getServerTranslation()) {
             // A trick, by intentionally not passing args to translatable(), we still keep the "%" patterns here.
             String translatedText = Component.translatable(key).getString();
@@ -179,8 +178,8 @@ public class Util {
      * @return A {@link MutableComponent} object representing the formatted coordinate information
      *         with click and hover events for teleportation.
      */
-    @Nonnull
-    public static MutableComponent parseCoordText(@Nonnull ResourceLocation dimension, @Nullable ResourceLocation biome, double x, double y, double z) {
+    @NotNull
+    public static MutableComponent parseCoordText(@NotNull ResourceLocation dimension, @Nullable ResourceLocation biome, double x, double y, double z) {
         String strX = String.format("%.2f", x);
         String strY = String.format("%.2f", y);
         String strZ = String.format("%.2f", z);
@@ -200,8 +199,8 @@ public class Util {
      * @return A {@link MutableComponent} object representing the formatted coordinate information
      *         with click and hover events for teleportation.
      */
-    @Nonnull
-    public static MutableComponent parseCoordText(@Nonnull Entity entity) {
+    @NotNull
+    public static MutableComponent parseCoordText(@NotNull Entity entity) {
         ResourceLocation dimension = entity.level().dimension().location();
         ResourceLocation biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         double x = entity.getX();
@@ -260,8 +259,8 @@ public class Util {
      * @param server the {@link MinecraftServer} instance for which the {@link ServerData} is requested
      * @return the {@link ServerData} associated with the given server
      */
-    @Nonnull
-    public static ServerData getServerData(@Nonnull MinecraftServer server) {
+    @NotNull
+    public static ServerData getServerData(@NotNull MinecraftServer server) {
         return worldData.computeIfAbsent(server, s -> {
             LOGGER.info("FMinecraftMod: A new instance of ServerData was created.");
             return new ServerData(s);
@@ -274,8 +273,8 @@ public class Util {
      * @param player The ServerPlayerEntity for which the PlayerData is to be retrieved. Must not be null.
      * @return The PlayerData object associated with the specified player.
      */
-    @Nonnull
-    public static PlayerData getPlayerData(@Nonnull ServerPlayer player) {
+    @NotNull
+    public static PlayerData getPlayerData(@NotNull ServerPlayer player) {
         if (player.getServer() == null) {
             throw new IllegalStateException("PlayerData cannot be retrieved on the client side.");
         }
@@ -287,12 +286,12 @@ public class Util {
      * 
      * @param context The CommandContext from which to retrieve the MinecraftServer. Can be null.
      * @return The MinecraftServer instance if it can be retrieved successfully.
-     * @throws CommandException If the MinecraftServer instance cannot be retrieved from the context.
      */
-    @Nonnull
-    public static MinecraftServer requireNotNullServer(@Nullable CommandContext<CommandSourceStack> context) throws CommandRuntimeException {
+    @Nullable
+    public static MinecraftServer requireNotNullServer(@Nullable CommandContext<CommandSourceStack> context) {
         if (context == null || context.getSource() == null || context.getSource().getServer() == null) {
-            throw new CommandRuntimeException(parseTranslatableText("fmod.command.error.client"));
+            context.getSource().sendFailure(parseTranslatableText("fmod.command.error.client"));
+            return null;
         }
         return context.getSource().getServer();
     }
@@ -349,8 +348,8 @@ public class Util {
      * @param world the ServerWorld instance from which to collect entities.
      * @return a list of all entities in the specified world that meet the criteria.
      */
-    @Nonnull
-    public static List<Entity> getAllEntities(@Nonnull ServerLevel world) {
+    @NotNull
+    public static List<Entity> getAllEntities(@NotNull ServerLevel world) {
         List<Entity> entities = new ArrayList<>();
         world.getEntities(PASSTHROUGH_FILTER, entity -> entity != null && !entity.isRemoved(), entities, Integer.MAX_VALUE);
         return entities;
@@ -391,7 +390,7 @@ public class Util {
      * @return A {@link MutableText} representing the localized name of the biome. If the biomeId is null,
      *         a default "unknown" text is returned.
      */
-    @Nonnull
+    @NotNull
     public static MutableComponent getBiomeText(@Nullable ResourceLocation biomeId) {
         MutableComponent biomeText = null;
         if (biomeId == null) {
@@ -410,8 +409,8 @@ public class Util {
      * @return A {@link MutableComponent} representing the localized name of the biome. If the biome
      *         cannot be determined, a default "unknown" text is returned.
      */
-    @Nonnull
-    public static MutableComponent getBiomeText(@Nonnull Entity entity) {
+    @NotNull
+    public static MutableComponent getBiomeText(@NotNull Entity entity) {
         ResourceLocation biomeId = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
         return getBiomeText(biomeId);
     }
@@ -422,7 +421,7 @@ public class Util {
      * @param value the boolean value to be represented as text
      * @return a {@link MutableText} object containing the formatted text representation of the boolean value
      */
-    @Nonnull
+    @NotNull
     public static MutableComponent getBooleanText(boolean value) {
         if (value) {
             return parseTranslatableText("options.on").withStyle(ChatFormatting.GREEN);
@@ -440,8 +439,8 @@ public class Util {
      * @return A {@link MutableComponent} object containing the concatenated display names of the entities.
      *         If the collection is empty, an empty text is returned.
      */
-    @Nonnull
-    public static MutableComponent getEntityListText(@Nonnull Collection<? extends Entity> entities) {
+    @NotNull
+    public static MutableComponent getEntityListText(@NotNull Collection<? extends Entity> entities) {
         MutableComponent entityListText = Component.literal("");
         int index = 0;
         for (Entity entity : entities) {
@@ -461,11 +460,10 @@ public class Util {
      * @param source the {@link Entity} executing the command
      * @param command the command string to execute
      * @param permissionLevel the permission level to execute the command with
-     * @return the result code of the command execution
      */
-    public static int runCommand(@Nonnull CommandSource output, @Nonnull Entity source, @Nonnull String command, int permissionLevel) {
+    public static void runCommand(@NotNull CommandSource output, @NotNull Entity source, @NotNull String command, int permissionLevel) {
         CommandSourceStack commandSource = source.createCommandSourceStack().withPermission(permissionLevel).withSource(output);
-        return source.getServer().getCommands().performPrefixedCommand(commandSource, command);
+        source.getServer().getCommands().performPrefixedCommand(commandSource, command);
     }
 
     /**
@@ -474,7 +472,7 @@ public class Util {
      * @param server the Minecraft server whose data is to be overridden, must not be null.
      * @param data   the new server data to associate with the specified server, must not be null.
      */
-    public static void overrideServerData(@Nonnull MinecraftServer server, @Nonnull ServerData data) {
+    public static void overrideServerData(@NotNull MinecraftServer server, @NotNull ServerData data) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.shutdownAsyncTaskPool();
@@ -488,7 +486,7 @@ public class Util {
      *
      * @param server the Minecraft server whose data is to be reset; must not be null
      */
-    public static void resetServerData(@Nonnull MinecraftServer server) {
+    public static void resetServerData(@NotNull MinecraftServer server) {
         ServerData existingData = worldData.get(server);
         if (existingData != null) {
             existingData.shutdownAsyncTaskPool();

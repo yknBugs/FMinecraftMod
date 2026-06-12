@@ -19,6 +19,8 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
@@ -85,15 +87,19 @@ public class GetEntityDataNode extends FlowNode {
         status.setOutput(9, entity.getVehicle());
 
         List<ItemStack> handItems = new ArrayList<>();
-        for (ItemStack itemStack : entity.getHandSlots()) {
-            handItems.add(itemStack);
+        if (entity instanceof LivingEntity livingEntity) {
+            handItems.add(livingEntity.getItemBySlot(EquipmentSlot.MAINHAND));
+            handItems.add(livingEntity.getItemBySlot(EquipmentSlot.OFFHAND));
         }
 
         status.setOutput(10, TypeAdaptor.parse(handItems).collapseList());
 
         List<ItemStack> armorItems = new ArrayList<>();
-        for (ItemStack itemStack : entity.getArmorSlots()) {
-            armorItems.add(itemStack);
+        if (entity instanceof LivingEntity livingEntity) {
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.HEAD));
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.CHEST));
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.LEGS));
+            armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.FEET));
         }
         
         status.setOutput(11, TypeAdaptor.parse(armorItems).collapseList());

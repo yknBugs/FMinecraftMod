@@ -23,7 +23,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.registries.ForgeRegistries;
+import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
  * Get a block at a specified position
@@ -68,7 +68,7 @@ public class GetBlockNode extends FlowNode {
 
         BlockState blockState = world.getBlockState(blockPos);
         Block block = blockState.getBlock();
-        ResourceLocation identifier = ForgeRegistries.BLOCKS.getKey(block);
+        ResourceLocation identifier = BuiltInRegistries.BLOCK.getKey(block);
         BlockEntity blockEntity = null;
         if (blockState.hasBlockEntity()) {
             blockEntity = world.getBlockEntity(blockPos);

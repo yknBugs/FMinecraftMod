@@ -26,13 +26,12 @@ import net.minecraft.world.entity.Entity;
  * Outputs:
  * 1. Text - The feedback message from command execution, if any.
  * 2. String - The raw output from command execution, if any.
- * 3. Integer - The result code from command execution, if any.
  * Branches: 1 (Next node)
  */
 public class ExecuteCommandNode extends FlowNode {
 
     public ExecuteCommandNode(long id, String name) {
-        super(id, name, 2, 3, 1, "ExecuteCommandNode");
+        super(id, name, 2, 2, 1, "ExecuteCommandNode");
     }
 
     @Override
@@ -42,7 +41,6 @@ public class ExecuteCommandNode extends FlowNode {
             .input("fmod.node.runcommand.input.command.name", "fmod.node.runcommand.input.command.feat", "fmod.node.runcommand.input.command.type")
             .output("fmod.node.runcommand.output.feedback.name", "fmod.node.runcommand.output.feedback.feat", "fmod.node.runcommand.output.feedback.type")
             .output("fmod.node.runcommand.output.raw.name", "fmod.node.runcommand.output.raw.feat", "fmod.node.runcommand.output.raw.type")
-            .output("fmod.node.runcommand.output.result.name", "fmod.node.runcommand.output.result.feat", "fmod.node.runcommand.output.result.type")
             .branch("fmod.node.default.branch.name", "fmod.node.default.branch.feat")
             .build(inputNumber, outputNumber, branchNumber);
     }
@@ -56,10 +54,9 @@ public class ExecuteCommandNode extends FlowNode {
         // Although non-op players can call trigger command to run existing flows,
         // flows with a event node of trigger can still only be created by ops.
         // So we use a permission level of 3 here to mimic vanilla trigger command behavior.
-        int result = Util.runCommand(output, sourceEntity, command, 3);
+        Util.runCommand(output, sourceEntity, command, 3);
         status.setOutput(0, output.getAllMessage());
         status.setOutput(1, output.getRawOutput());
-        status.setOutput(2, result);
     }
 
     private Entity parseEntity(Object entityObject) throws LogicException {

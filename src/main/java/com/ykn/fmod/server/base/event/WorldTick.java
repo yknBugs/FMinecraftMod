@@ -27,7 +27,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.level.block.BedBlock;
+
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
@@ -181,8 +181,8 @@ public class WorldTick {
     }
 
     private static void handlePlayerCanSleepStatus(ServerPlayer player, PlayerData playerData) {
-        boolean canSleep = player.level().dimensionType().natural() && !player.level().isDay() && BedBlock.canSetSpawn(player.level());
-        boolean cannotSleep = player.level().dimensionType().natural() && player.level().isDay() && BedBlock.canSetSpawn(player.level());
+        boolean canSleep = player.level().dimensionType().natural() && !player.level().isDay() && player.level().dimensionType().bedWorks();
+        boolean cannotSleep = player.level().dimensionType().natural() && player.level().isDay() && player.level().dimensionType().bedWorks();
         Boolean currentCanSleepStatus = null;
         if (canSleep != cannotSleep) {
             // We know the information

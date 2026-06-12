@@ -26,10 +26,10 @@ import com.ykn.fmod.server.base.song.NbsSongDecoder;
 import com.ykn.fmod.server.base.song.NoteBlockSong;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,7 +47,8 @@ public class SongCommand {
             Path songFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
             Path songPath = songFolder.resolve(songName).normalize();
             if (!songPath.startsWith(songFolder)) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));
+                return 0;
             }
 
             // Load song
@@ -56,10 +57,15 @@ public class SongCommand {
                 song = NbsSongDecoder.parse(fileInputStream);
             }
             if (song == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
+                return 0;
             }
             // Check if a song is still playing, if so, cancel the task
-            ServerData data = Util.getServerData(Util.requireNotNullServer(context));
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            ServerData data = Util.getServerData(server);
             for (ScheduledTask scheduledTask : data.getScheduledTasks()) {
                 if (scheduledTask instanceof PlaySong) {
                     PlaySong playSong = (PlaySong) scheduledTask;
@@ -81,16 +87,18 @@ public class SongCommand {
                 data.submitScheduledTask(playSong);
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.start", player.getDisplayName(), songName), true);
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (FileNotFoundException fileNotFoundException) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.song.filenotfound", songName));
+            return 0;
         } catch (EOFException eofException) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.song.eofexception", songName));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.song.eofexception", songName));
+            return 0;
         } catch (IOException ioException) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.song.ioexception", songName));
+            return 0;
         } catch (Exception exception) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.song.error", songName));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.song.error", songName));
+            return 0;
         }
         return players.size();
     }
@@ -112,7 +120,11 @@ public class SongCommand {
         int result = 0;
         for (ServerPlayer player : players) {
             boolean isFound = false;
-            for (ScheduledTask scheduledTask : Util.getServerData(Util.requireNotNullServer(context)).getScheduledTasks()) {
+            MinecraftServer server = Util.requireNotNullServer(context);
+            if (server == null) {
+                return 0;
+            }
+            for (ScheduledTask scheduledTask : Util.getServerData(server).getScheduledTasks()) {
                 if (scheduledTask instanceof PlaySong) {
                     PlaySong playSong = (PlaySong) scheduledTask;
                     if (playSong.getTarget().getUUID().equals(player.getUUID())) {
@@ -151,11 +163,10 @@ public class SongCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song cancel", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
@@ -173,11 +184,10 @@ public class SongCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song get", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
@@ -197,11 +207,10 @@ public class SongCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
@@ -217,11 +226,10 @@ public class SongCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song showinfo", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
@@ -246,11 +254,10 @@ public class SongCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song search", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }
@@ -273,11 +280,10 @@ public class SongCommand {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.song.empty", player.getDisplayName()), false);
                 return false;
             });
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f song speed", e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return result;
     }

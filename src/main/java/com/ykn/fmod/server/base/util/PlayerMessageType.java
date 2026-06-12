@@ -8,8 +8,8 @@ package com.ykn.fmod.server.base.util;
 import java.util.List;
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -116,7 +116,7 @@ public class PlayerMessageType extends MessageType {
      * @param mainMessage     the message shown to the primary audience; must not be null
      * @param otherMessage    the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@Nonnull ServerPlayer sourcePlayer, @Nullable ServerPlayer currentReceiver, @Nonnull Component mainMessage, @Nonnull Component otherMessage) {
+    public void postMessage(@NotNull ServerPlayer sourcePlayer, @Nullable ServerPlayer currentReceiver, @NotNull Component mainMessage, @NotNull Component otherMessage) {
         switch (this.receiver) {
             case ALL:
                 sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
@@ -179,7 +179,7 @@ public class PlayerMessageType extends MessageType {
      * @param mainMessage  the message shown to the primary audience; must not be null
      * @param otherMessage the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@Nonnull ServerPlayer sourcePlayer, @Nonnull Component mainMessage, @Nonnull Component otherMessage) {
+    public void postMessage(@NotNull ServerPlayer sourcePlayer, @NotNull Component mainMessage, @NotNull Component otherMessage) {
         List<ServerPlayer> players = Util.getOnlinePlayers(sourcePlayer.getServer());
         for (ServerPlayer player : players) {
             this.postMessage(sourcePlayer, player, mainMessage, otherMessage);
@@ -195,7 +195,7 @@ public class PlayerMessageType extends MessageType {
      * @param sourcePlayer the player who triggered the event; must not be null
      * @param mainMessage  the message shown to the primary audience; must not be null
      */
-    public void postMessage(@Nonnull ServerPlayer sourcePlayer, @Nonnull Component mainMessage) {
+    public void postMessage(@NotNull ServerPlayer sourcePlayer, @NotNull Component mainMessage) {
         PlayerMessageType type = this.updateOther(MessageType.Location.NONE);
         List<ServerPlayer> players = Util.getOnlinePlayers(sourcePlayer.getServer());
         for (ServerPlayer player : players) {

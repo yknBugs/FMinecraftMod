@@ -35,13 +35,12 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.server.commands.data.BlockDataAccessor;
 import net.minecraft.server.commands.data.EntityDataAccessor;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 /**
  * Node that retrieves a value from an NBT compound
  * Inputs:
- * 1. Block/Entity/ItemStack/NbtCompound - The source to retrieve from.
+ * 1. Block/Entity/NbtCompound - The source to retrieve from.
  * 2. String - The NBT path to the desired value.
  * 3. Double - The scale factor to apply to numeric values (null means 1.0).
  * Outputs:
@@ -99,10 +98,6 @@ public class GetNbtValueNode extends FlowNode {
             Entity entity = (Entity) input;
             EntityDataAccessor entityData = new EntityDataAccessor(entity);
             return entityData.getData();
-        } else if (input instanceof ItemStack) {
-            ItemStack itemStack = (ItemStack) input;
-            CompoundTag itemNbt = itemStack.getTag();
-            return itemNbt;
         } else if (input instanceof BlockEntity) {
             BlockEntity blockEntity = (BlockEntity) input;
             BlockDataAccessor blockData = new BlockDataAccessor(blockEntity, blockEntity.getBlockPos());

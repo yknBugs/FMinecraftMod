@@ -7,8 +7,8 @@ package com.ykn.fmod.server.base.util;
 
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -87,7 +87,7 @@ public class ServerMessageType extends MessageType {
      * @param mainMessage     the message shown to the primary audience; must not be null
      * @param otherMessage    the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@Nullable ServerPlayer currentReceiver, @Nonnull Component mainMessage, @Nonnull Component otherMessage) {
+    public void postMessage(@Nullable ServerPlayer currentReceiver, @NotNull Component mainMessage, @NotNull Component otherMessage) {
         switch (this.receiver) {
             case ALL:
                 sendMessage(currentReceiver, this.mainPlayerLocation, mainMessage);
@@ -119,7 +119,7 @@ public class ServerMessageType extends MessageType {
      * @param mainMessage  the message shown to the primary audience; must not be null
      * @param otherMessage the fallback message shown to non-primary receivers; must not be null
      */
-    public void postMessage(@Nonnull MinecraftServer server, @Nonnull Component mainMessage, @Nonnull Component otherMessage) {
+    public void postMessage(@NotNull MinecraftServer server, @NotNull Component mainMessage, @NotNull Component otherMessage) {
         for (ServerPlayer player : Util.getOnlinePlayers(server)) {
             this.postMessage(player, mainMessage, otherMessage);
         }
@@ -134,7 +134,7 @@ public class ServerMessageType extends MessageType {
     * @param server      the Minecraft server instance; must not be null
     * @param mainMessage the message shown to all receivers; must not be null
     */
-    public void postMessage(@Nonnull MinecraftServer server, @Nonnull Component mainMessage) {
+    public void postMessage(@NotNull MinecraftServer server, @NotNull Component mainMessage) {
         ServerMessageType type = this.updateOther(MessageType.Location.NONE);
         for (ServerPlayer player : Util.getOnlinePlayers(server)) {
             type.postMessage(player, mainMessage, Component.empty());

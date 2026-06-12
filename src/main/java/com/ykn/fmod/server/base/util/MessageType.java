@@ -8,8 +8,8 @@ package com.ykn.fmod.server.base.util;
 import java.util.List;
 import java.util.Objects;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -97,7 +97,7 @@ public class MessageType {
      * @param location   The {@link MessageType.Location} indicating where the message should be displayed (e.g., CHAT, ACTIONBAR, NONE). Must not be null.
      * @param message The {@link Component} message to be sent. Must not be null.
      */
-    public static void sendMessage(@Nullable ServerPlayer player, @Nonnull MessageType.Location location, @Nonnull Component message) {
+    public static void sendMessage(@Nullable ServerPlayer player, @NotNull MessageType.Location location, @NotNull Component message) {
         switch (location) {
             case NONE:
                 break;
@@ -128,7 +128,7 @@ public class MessageType {
      * @param type   The location type where the message should be broadcasted. Must not be null.
      * @param message The message to broadcast. Must not be null.
      */
-    public static void broadcastMessage(@Nullable MinecraftServer server, @Nonnull MessageType.Location location, @Nonnull Component message) {
+    public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageType.Location location, @NotNull Component message) {
         switch (location) {
             case NONE:
                 break;
@@ -150,7 +150,7 @@ public class MessageType {
      * @param player  The {@link ServerPlayer} to whom the message will be sent. Must not be null.
      * @param message The {@link Component} message to display in the action bar. Must not be null.
      */
-    public static void sendActionBarMessage(@Nonnull ServerPlayer player, @Nonnull Component message) {
+    public static void sendActionBarMessage(@NotNull ServerPlayer player, @NotNull Component message) {
         player.connection.send(new ClientboundSetActionBarTextPacket(message));
     }
 
@@ -160,7 +160,7 @@ public class MessageType {
      * @param server  The Minecraft server instance. If null, the method will return without performing any action.
      * @param message The message to be displayed in the action bar. Must not be null.
      */
-    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @Nonnull Component message) {
+    public static void broadcastActionBarMessage(@Nullable MinecraftServer server, @NotNull Component message) {
         if (server == null) {
             return;
         }
@@ -177,7 +177,7 @@ public class MessageType {
      * @param player  The player to whom the message will be sent. Must not be null.
      * @param message The text message to send to the player. Must not be null.
      */
-    public static void sendTextMessage(@Nonnull Player player, @Nonnull Component message) {
+    public static void sendTextMessage(@NotNull Player player, @NotNull Component message) {
         player.displayClientMessage(message, false);
     }
 
@@ -188,7 +188,7 @@ public class MessageType {
      * @param server The Minecraft server instance. If null, the method will return without doing anything.
      * @param message The text message to broadcast. Must not be null.
      */
-    public static void broadcastTextMessage(@Nullable MinecraftServer server, @Nonnull Component message) {
+    public static void broadcastTextMessage(@Nullable MinecraftServer server, @NotNull Component message) {
         if (server == null) {
             return;
         }

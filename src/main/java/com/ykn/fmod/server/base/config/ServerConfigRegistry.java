@@ -13,8 +13,8 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.BoolArgumentType;
@@ -28,7 +28,6 @@ import com.ykn.fmod.server.base.util.PlayerMessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -81,7 +80,7 @@ public class ServerConfigRegistry {
      * @param config the {@link ConfigReader} whose fields should be scanned and registered;
      *               must not be {@code null}
      */
-    public static synchronized void register(@Nonnull ConfigReader config) {
+    public static synchronized void register(@NotNull ConfigReader config) {
         try {
             for (Field field : config.getClass().getDeclaredFields()) {
                 if (field.isAnnotationPresent(ConfigEntry.class)) {
@@ -123,7 +122,7 @@ public class ServerConfigRegistry {
      * @throws Exception if any per-entry command node cannot be built
      * @see #buildCommand(String)
      */
-    @Nonnull
+    @NotNull
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand() throws Exception {
         LiteralArgumentBuilder<CommandSourceStack> commandNode = Commands.literal("options").requires(source -> source.hasPermission(4));
         for (String codeEntry : configAnnotations.keySet()) {
@@ -152,7 +151,7 @@ public class ServerConfigRegistry {
      * @throws IllegalStateException if no entry with the given name is registered
      * @throws UnsupportedOperationException if the entry's {@link ConfigEntry.ConfigType} is not handled by this method
      */
-    @Nonnull
+    @NotNull
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(String codeEntry) {
         ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
         if (configAnnotation == null) {
@@ -246,7 +245,8 @@ public class ServerConfigRegistry {
         final ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
         final Object currentValue = getValue(codeEntry);
         if (currentValue == null || configAnnotation == null) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+            return 0;
         }
         String i18nEntry = configAnnotation.i18nEntry().isEmpty() ? codeEntry : configAnnotation.i18nEntry();
         final MessageType currentMessageType = (MessageType) currentValue;
@@ -274,10 +274,12 @@ public class ServerConfigRegistry {
                 displayValue = receiverValueFunction.apply(value);
                 break;
             default:
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                return 0;
         }
         if (!isSuccess) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         Component feedbackMessage = Util.parseTranslatableText("fmod.command.options.set", Util.parseTranslatableText(i18nKey), displayValue);
         context.getSource().sendSuccess(() -> feedbackMessage, true);
@@ -303,8 +305,6 @@ public class ServerConfigRegistry {
      * @param value     the new value for the specified sub-field, or {@code null} to query only
      * @param context   the Brigadier command context providing the command source
      * @return {@link com.mojang.brigadier.Command#SINGLE_SUCCESS} on success
-     * @throws net.minecraft.command.CommandRuntimeException if the entry is unknown, the cast fails,
-     *         or the registry update fails
      */
     public static int runServerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<CommandSourceStack> context) {
         try {
@@ -313,13 +313,13 @@ public class ServerConfigRegistry {
                 inputValue -> ServerMessageType.getMessageReceiverI18n((ServerMessageType.Receiver) inputValue),
                 (messageType, inputValue) -> ((ServerMessageType) messageType).updateReceiver((ServerMessageType.Receiver) inputValue)
             );
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (ClassCastException e) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
     }
 
@@ -341,8 +341,6 @@ public class ServerConfigRegistry {
      * @param value     the new value for the specified sub-field, or {@code null} to query only
      * @param context   the Brigadier command context providing the command source
      * @return {@link com.mojang.brigadier.Command#SINGLE_SUCCESS} on success
-     * @throws net.minecraft.command.CommandRuntimeException if the entry is unknown, the cast fails,
-     *         or the registry update fails
      */
     public static int runPlayerMessageTypeOptionsCommand(String codeEntry, String field, Object value, CommandContext<CommandSourceStack> context) {
         try {
@@ -351,13 +349,13 @@ public class ServerConfigRegistry {
                 inputValue -> PlayerMessageType.getMessageReceiverI18n((PlayerMessageType.Receiver) inputValue),
                 (messageType, inputValue) -> ((PlayerMessageType) messageType).updateReceiver((PlayerMessageType.Receiver) inputValue)
             );
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (ClassCastException e) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
     }
 
@@ -375,14 +373,13 @@ public class ServerConfigRegistry {
      * @param value     the new value to set, or {@code null} to only query the current value
      * @param context   the Brigadier command context providing the command source
      * @return {@link com.mojang.brigadier.Command#SINGLE_SUCCESS} on success
-     * @throws net.minecraft.command.CommandRuntimeException if the entry is unknown, the type cast
-     *         fails, or the registry update fails
      */
     public static int runOptionsCommand(String codeEntry, Object value, CommandContext<CommandSourceStack> context) {
         try {
             ConfigEntry configAnnotation = configAnnotations.get(codeEntry);
             if (configAnnotation == null) {
-                throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.unknownoption", codeEntry));
+                return 0;
             }
             String i18nEntry = configAnnotation.i18nEntry().isEmpty() ? codeEntry : configAnnotation.i18nEntry();
             String i18nKey = "fmod.options." + i18nEntry;
@@ -395,7 +392,8 @@ public class ServerConfigRegistry {
                 Object valueToSet = toTrueValue(codeEntry, value);
                 boolean isSuccess = setValue(codeEntry, valueToSet);
                 if (!isSuccess) {
-                    throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+                    return 0;
                 }
                 Object newValue = getValue(codeEntry);
                 Component displayValue = getDisplayValue(codeEntry, newValue);
@@ -403,13 +401,13 @@ public class ServerConfigRegistry {
                 context.getSource().sendSuccess(() -> feedbackMessage, true);
                 Util.saveServerConfig();
             }
-        } catch (CommandRuntimeException e) {
-            throw e;
         } catch (ClassCastException e) {
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.options.classcast", value, codeEntry, e.getMessage()));
+            return 0;
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f options " + codeEntry, e);
-            throw new CommandRuntimeException(Util.parseTranslatableText("fmod.command.unknownerror"));
+            context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
+            return 0;
         }
         return Command.SINGLE_SUCCESS;
     }

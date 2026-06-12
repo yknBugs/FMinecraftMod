@@ -5,9 +5,9 @@
 
 package com.ykn.fmod.server.mixin;
 
-// import org.spongepowered.asm.mixin.Mixin;
-// import org.spongepowered.asm.mixin.injection.At;
-// import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import com.ykn.fmod.server.base.event.LivingEntityDamage;
@@ -16,11 +16,10 @@ import com.ykn.fmod.server.base.util.Util;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
-// @Mixin(LivingEntity.class)
+@Mixin(LivingEntity.class)
 public class LivingEntityDamageMixin {
 
-    // @Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
-    @Deprecated
+    @Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
     public void onDamage(final DamageSource damageSource, final float amount, CallbackInfoReturnable<Boolean> info) {
         try {
             LivingEntity entity = (LivingEntity) (Object) this;
@@ -29,8 +28,7 @@ public class LivingEntityDamageMixin {
                 livingEntityDamage.onDamage();
             }
         } catch (Exception e) {
-            Util.LOGGER.error("FMinecraftMod: Caught exception from LivingEntityDamageEvent.", e);
+            Util.LOGGER.error("FMinecraftMod: An error occurred when handling entity damage event.", e);
         }
     }
-
 }

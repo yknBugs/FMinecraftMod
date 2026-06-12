@@ -20,8 +20,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.async.AsyncTaskExecutor;
 import com.ykn.fmod.server.base.async.EntityDensityCalculator;
@@ -238,8 +238,8 @@ public class ServerData {
      * @param player the ServerPlayerEntity for which to retrieve the PlayerData
      * @return the PlayerData associated with the given player, never null
      */
-    @Nonnull
-    public PlayerData getPlayerData(@Nonnull ServerPlayer player) {
+    @NotNull
+    public PlayerData getPlayerData(@NotNull ServerPlayer player) {
         PlayerData data = playerData.get(player.getUUID());
         if (data == null) {
             Util.LOGGER.info("FMinecraftMod: Creating new PlayerData for player " + player.getName().getString());
@@ -261,7 +261,7 @@ public class ServerData {
      *
      * @param task the task to submit; must not be null
      */
-    public void submitScheduledTask(@Nonnull ScheduledTask task) {
+    public void submitScheduledTask(@NotNull ScheduledTask task) {
         if (scheduledTasks.contains(task) || pendingScheduledTasks.contains(task) || task.isFinished()) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to submit a duplicate or finished scheduled task: " + task.toString());
             return;
@@ -292,7 +292,7 @@ public class ServerData {
      *
      * @param task the async task to submit; must not be null
      */
-    public void submitAsyncTask(@Nonnull AsyncTaskExecutor task) {
+    public void submitAsyncTask(@NotNull AsyncTaskExecutor task) {
         if (task.isAsyncFinished()) {
             Util.LOGGER.warn("FMinecraftMod: Attempted to submit an already finished async task.");
             return;
@@ -357,8 +357,8 @@ public class ServerData {
      * @param source the name of the source for which to retrieve the GptData
      * @return the GptData associated with the given source, never null
      */
-    @Nonnull
-    public GptData getGptData(@Nonnull String source) {
+    @NotNull
+    public GptData getGptData(@NotNull String source) {
         return gptRequestStatus.computeIfAbsent(source, k -> new GptData());
     }
 
@@ -529,7 +529,7 @@ public class ServerData {
      * @param calculator the calculator to activate; must not be null
      * @return {@code true} if the calculator was successfully set and submitted; {@code false} otherwise
      */
-    public boolean trySetActiveDensityCalculator(@Nonnull EntityDensityCalculator calculator) {
+    public boolean trySetActiveDensityCalculator(@NotNull EntityDensityCalculator calculator) {
         if (activeDensityCalculator == null) {
             activeDensityCalculator = calculator;
             submitAsyncTask(calculator);
