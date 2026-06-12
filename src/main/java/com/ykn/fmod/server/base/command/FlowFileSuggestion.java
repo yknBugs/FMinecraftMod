@@ -21,7 +21,6 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.commands.CommandSourceStack;
-import net.minecraftforge.fml.loading.FMLPaths;
 
 /**
  * Provides command auto-completion suggestions for .flow files in the config directory.
@@ -50,7 +49,7 @@ public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack
         // Build the list locally to avoid exposing a partially-populated ArrayList
         // to the network thread that may call getSuggestions() concurrently.
         ArrayList<String> newList = new ArrayList<>();
-        Path absPath = FMLPaths.CONFIGDIR.get().resolve(Util.MODID);
+        Path absPath = Util.getConfigDir();
         try {
             if (!Files.exists(absPath)) {
                 Files.createDirectories(absPath);

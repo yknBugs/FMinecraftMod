@@ -49,7 +49,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.entity.EntityTypeTest;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
+import net.neoforged.fml.loading.FMLPaths;
 
 public class Util {
 
@@ -102,16 +103,6 @@ public class Util {
      * @throws IllegalStateException If the mod container cannot be found.
      */
     public static String getModAuthors() {
-        // Collection<String> authors = FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getModInfo().getAuthors();
-        // StringBuilder authorsString = new StringBuilder();
-        // int index = 0;
-        // for (String author : authors) {
-        //     if (index > 0) {
-        //         authorsString.append(", ");
-        //     }
-        //     authorsString.append(author);
-        //     index++;
-        // }
         return "ykn, Xenapte";
     }
 
@@ -250,6 +241,15 @@ public class Util {
         } finally {
             utilLock.readLock().unlock();
         }
+    }
+
+    /**
+     * Returns the config directory path for this mod.
+     *
+     * @return The normalized config directory path for this mod.
+     */
+    public static Path getConfigDir() {
+        return FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
     }
 
     /**

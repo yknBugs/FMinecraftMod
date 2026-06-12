@@ -12,15 +12,15 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.phys.EntityHitResult;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.event.TickEvent.ServerTickEvent;
-import net.minecraftforge.event.entity.ProjectileImpactEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
-import net.minecraftforge.event.level.LevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.Mod;
 
 import com.ykn.fmod.server.base.command.CommandRegistrater;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
@@ -52,7 +52,7 @@ public class FMod {
 		RuleRegistry.registerDefault();
 
 		// Register events
-		MinecraftForge.EVENT_BUS.register(this);
+		NeoForge.EVENT_BUS.register(this);
 
 		// Finish initialization
 		Util.LOGGER.info("FMinecraftMod: Server side initialized successfully.");
@@ -74,10 +74,7 @@ public class FMod {
 	}
 
 	@SubscribeEvent
-	public void onWorldTick(ServerTickEvent event) {
-		if (event.phase != ServerTickEvent.Phase.END) {
-			return;
-		}
+	public void onWorldTick(ServerTickEvent.Post event) {
         WorldTick.onWorldTick(event.getServer());
 	}
 
@@ -99,11 +96,11 @@ public class FMod {
 	}
 
 	@SubscribeEvent
-	public void onLivingHurt(LivingHurtEvent event) {
+	public void onLivingHurt(LivingDamageEvent.Pre event) {
 		LivingEntity entity = event.getEntity();
 
 		if (!entity.isRemoved()) {
-			LivingEntityDamage livingEntityDamage = new LivingEntityDamage(entity, event.getSource(), event.getAmount());
+			LivingEntityDamage livingEntityDamage = new LivingEntityDamage(entity, event.getSource(), event.getNewDamage());
 			livingEntityDamage.onDamage();
 		}
 	}

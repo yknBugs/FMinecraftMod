@@ -22,12 +22,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraftforge.fml.loading.FMLPaths;
-
 /**
  * The ConfigReader class provides utility methods for reading and writing configuration files
  * in a structured and safe manner. It uses Gson for JSON serialization and deserialization.
- * The configuration files are stored in a specific directory determined by the FabricLoader.
+ * The configuration files are stored in a specific directory determined by the NeoForge loader.
  * 
  * <p>Key Features:
  * <ul>
@@ -67,7 +65,7 @@ import net.minecraftforge.fml.loading.FMLPaths;
  */
 public class ConfigReader {
 
-    private static final Path CONFIG_DIR = FMLPaths.CONFIGDIR.get().resolve(Util.MODID);
+    private static final Path CONFIG_DIR = Util.getConfigDir();
     private static final Gson GSON = createGson();
     private final String FILE_NAME;
     private final Path FILE_PATH;
@@ -149,10 +147,6 @@ public class ConfigReader {
                 return false;
             }
         });
-
-        // if (FabricLoader.getInstance().getEnvironmentType() == EnvType.CLIENT) {
-		// 	builder.registerTypeAdapter(ServerAddress.class, ServerAddressAdapter.INSTANCE);
-		// }
 
         return builder.create();
     }

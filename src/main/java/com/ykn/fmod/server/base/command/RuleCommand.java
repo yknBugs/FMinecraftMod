@@ -36,7 +36,6 @@ import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraftforge.fml.loading.FMLPaths;
 
 public class RuleCommand {
 
@@ -122,7 +121,7 @@ public class RuleCommand {
             if (RuleFileSuggestion.getAvailableRules() == 0) {
                 context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.hint"), false);
             }
-            Path ruleFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
+            Path ruleFolder = Util.getConfigDir();
             MinecraftServer server = Util.requireNotNullServer(context);
             if (server == null) {
                 return 0;
@@ -183,7 +182,7 @@ public class RuleCommand {
 
     private static int runSaveRuleCommand(String name, CommandContext<CommandSourceStack> context) {
         try {
-            Path ruleFolder = FMLPaths.CONFIGDIR.get().resolve(Util.MODID).normalize();
+            Path ruleFolder = Util.getConfigDir();
             MinecraftServer server = Util.requireNotNullServer(context);
             if (server == null) {
                 return 0;
