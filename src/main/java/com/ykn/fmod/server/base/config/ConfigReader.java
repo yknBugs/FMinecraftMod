@@ -22,8 +22,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.fabricmc.loader.api.FabricLoader;
-
 /**
  * The ConfigReader class provides utility methods for reading and writing configuration files
  * in a structured and safe manner. It uses Gson for JSON serialization and deserialization.
@@ -67,7 +65,7 @@ import net.fabricmc.loader.api.FabricLoader;
  */
 public class ConfigReader {
 
-    private static final Path CONFIG_DIR = FabricLoader.getInstance().getConfigDir().resolve(Util.MODID);
+    private static final Path CONFIG_DIR = Util.getConfigDir();
     private static final Gson GSON = createGson();
     private final String FILE_NAME;
     private final Path FILE_PATH;

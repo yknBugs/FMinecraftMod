@@ -253,6 +253,15 @@ public class Util {
     }
 
     /**
+     * Returns the config directory path for this mod.
+     *
+     * @return The normalized config directory path for this mod.
+     */
+    public static Path getConfigDir() {
+        return FabricLoader.getInstance().getConfigDir().resolve(MODID).normalize();
+    }
+
+    /**
      * Retrieves the {@link ServerData} associated with the given {@link MinecraftServer}.
      * If no existing {@link ServerData} is found, a new instance is created, stored, and returned.
      *
