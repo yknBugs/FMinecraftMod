@@ -1,14 +1,10 @@
 plugins {
-	id 'fabric-loom' version '1.6-SNAPSHOT'
+	id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
 	id 'maven-publish'
 }
 
 version = project.mod_version
 group = project.maven_group
-
-base {
-	archivesName = project.archives_base_name
-}
 
 repositories {
 	// Add repositories to retrieve artifacts from in here.
@@ -16,14 +12,14 @@ repositories {
 	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
 	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
 	// for more information about repositories.
-	maven {
+        maven {
 		name = "Terraformers"
 		url = "https://maven.terraformersmc.com/"
 	}
 }
 
 loom {
-    splitEnvironmentSourceSets()
+	splitEnvironmentSourceSets()
 
 	mods {
 		"fminecraftmod" {
@@ -37,21 +33,22 @@ loom {
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	mappings loom.officialMojangMappings()
 	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 	
-	// Custom API dependencies
+        // Custom API dependencies
 	modImplementation("com.terraformersmc:modmenu:${project.modmenu_version}")
 }
 
 processResources {
-	inputs.property "version", project.version
+	def version = project.version
+	inputs.property "version", version
 
 	filesMatching("fabric.mod.json") {
-		expand "version": project.mod_version, "mc_version": project.minecraft_version
+		expand "version": version
 	}
 }
 
@@ -70,8 +67,11 @@ java {
 }
 
 jar {
+	def projectName = project.name
+	inputs.property "projectName", projectName
+
 	from("LICENSE") {
-		rename { "${it}_${project.base.archivesName.get()}"}
+		rename { "${it}_$projectName"}
 	}
 }
 
@@ -79,7 +79,6 @@ jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication) {
-			artifactId = project.archives_base_name
 			from components.java
 		}
 	}
