@@ -275,6 +275,7 @@ public class RuleRegistry {
         RuleRegistry.register("ServerTickEvent", ServerTickEvent::getInstance);
         RuleRegistry.register("EntityDamageEvent", EntityDamageEvent::getInstance);
         RuleRegistry.register("EntityDeathEvent", EntityDeathEvent::getInstance);
+        RuleRegistry.register("PlayerJoinEvent", PlayerJoinEvent::getInstance);
         RuleRegistry.register("PlayerTickEvent", PlayerTickEvent::getInstance);
         RuleRegistry.register("ProjectileHitEntityEvent", ProjectileHitEntityEvent::getInstance);
 

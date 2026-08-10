@@ -10,10 +10,12 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 import com.ykn.fmod.server.base.command.CommandRegistrater;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
 import com.ykn.fmod.server.base.event.NewLevel;
+import com.ykn.fmod.server.base.event.PlayerJoin;
 import com.ykn.fmod.server.base.event.WorldTick;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
@@ -49,6 +51,11 @@ public class FMod implements ModInitializer {
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			WorldTick.onWorldTick(server);
+		});
+
+		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+			PlayerJoin playerJoin = new PlayerJoin(handler.getPlayer());
+			playerJoin.onPlayerJoin();
 		});
 
 		// Finish initialization

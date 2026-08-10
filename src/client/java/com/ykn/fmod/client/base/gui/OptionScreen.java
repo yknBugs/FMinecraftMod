@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import com.ykn.fmod.client.flow.gui.FlowEditorBridge;
+import com.ykn.fmod.client.flow.gui.FlowEditorScreen;
 import com.ykn.fmod.server.base.config.ConfigEntry;
 import com.ykn.fmod.server.base.config.ConfigReader;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
@@ -60,6 +62,7 @@ public class OptionScreen extends Screen {
 
     private final Screen parent;
     private ConfigWidget configWidget;
+    private Button doneButton;
     
     public OptionScreen(Screen parent) {
         super(Component.translatable("fmod.options.title"));
@@ -70,15 +73,14 @@ public class OptionScreen extends Screen {
     protected void init() {
         super.init();
 
-        this.configWidget = new ConfigWidget(this.minecraft, this.width, this.height - 80, 40, this.height - 40);
+        this.configWidget = new ConfigWidget(this.minecraft, this.width, this.height, 40, this.height - 40);
         this.addWidget(this.configWidget);
 
-        this.addRenderableWidget(
-            Button.builder(CommonComponents.GUI_DONE, button -> {
-                Util.saveServerConfig();
-                this.minecraft.setScreen(this.parent);
-            }).pos(this.width / 2 - 100, this.height - 30).size(200, 20).build()
-        );
+        this.doneButton = Button.builder(CommonComponents.GUI_DONE, button -> {
+            Util.saveServerConfig();
+            this.minecraft.setScreen(this.parent);
+        }).pos(this.width / 2 - 100, this.height - 30).size(200, 20).build();
+        this.addRenderableWidget(this.doneButton);
     }
 
     @Override
@@ -86,6 +88,7 @@ public class OptionScreen extends Screen {
         super.render(context, mouseX, mouseY, delta);
         this.configWidget.render(context, mouseX, mouseY, delta);
         context.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xffffff);
+        this.doneButton.render(context, mouseX, mouseY, delta);
     }
 
     @Override
@@ -116,8 +119,16 @@ public class OptionScreen extends Screen {
         public ConfigWidget(Minecraft client, int width, int height, int top, int bottom) {
             // 630 234 40 274
             super(client, width, height, top, bottom, 24);
-            // Copyright Info
-            this.addEntry(new TextHintEntry(
+            // Copyright info, with the flow editor entry point on the right (singleplayer only)
+            Button flowEditorButton = Button.builder(Component.translatable("fmod.flowgui.entrypoint"), b ->
+                minecraft.setScreen(new FlowEditorScreen(OptionScreen.this))
+            ).size(90, 20).build();
+            if (!FlowEditorBridge.isAvailable()) {
+                flowEditorButton.active = false;
+                flowEditorButton.setTooltip(Tooltip.create(Component.translatable("fmod.flowgui.entrypoint.disabled")));
+            }
+            this.addEntry(new ButtonConfigEntry(
+                flowEditorButton,
                 Component.translatable("fmod.misc.version", Util.getMinecraftVersion(), Util.MOD_VERSION.toString(), Util.getModAuthors()),
                 Component.translatable("fmod.options.tip")
             ));

@@ -20,6 +20,32 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
+/**
+ * A {@link RuleEvent} that fires every server tick, once per online player.
+ *
+ * <p>Variable contract:
+ * <table border="1">
+ *   <tr><th>Name</th><th>Type</th><th>Nullable</th><th>Description</th></tr>
+ *   <tr><td>{@code tick}</td><td>{@code Integer}</td><td>No</td><td>The server tick counter at the time of dispatch.</td></tr>
+ *   <tr><td>{@code player}</td><td>{@code UUID}</td><td>No</td><td>The player.</td></tr>
+ *   <tr><td>{@code x}/{@code y}/{@code z}</td><td>{@code Double}</td><td>No</td><td>The player's coordinates.</td></tr>
+ *   <tr><td>{@code position}</td><td>{@code Vec3}</td><td>No</td><td>The player's position.</td></tr>
+ *   <tr><td>{@code dimension}</td><td>{@code ResourceLocation}</td><td>No</td><td>The dimension the player is in.</td></tr>
+ *   <tr><td>{@code biome}</td><td>{@code ResourceLocation}</td><td>Yes</td><td>The biome the player is in.</td></tr>
+ *   <tr><td>{@code pitch}/{@code yaw}</td><td>{@code Double}</td><td>No</td><td>The player's rotation angles.</td></tr>
+ *   <tr><td>{@code rotation}</td><td>{@code Vec2}</td><td>No</td><td>The player's rotation vector.</td></tr>
+ *   <tr><td>{@code health}</td><td>{@code Double}</td><td>No</td><td>The player's health.</td></tr>
+ *   <tr><td>{@code name}</td><td>{@code String}</td><td>No</td><td>The player's display name.</td></tr>
+ *   <tr><td>{@code afk}</td><td>{@code Integer}</td><td>No</td><td>How long the player has been afk, in ticks.</td></tr>
+ *   <tr><td>{@code lastpitch}/{@code lastyaw}</td><td>{@code Double}</td><td>No</td><td>The player's rotation angles on the previous tick.</td></tr>
+ *   <tr><td>{@code lastrotation}</td><td>{@code Vec2}</td><td>No</td><td>The player's rotation vector on the previous tick.</td></tr>
+ *   <tr><td>{@code lastbiome}</td><td>{@code ResourceLocation}</td><td>Yes</td><td>The biome the player was in on the previous tick.</td></tr>
+ *   <tr><td>{@code lastdimension}</td><td>{@code ResourceLocation}</td><td>No</td><td>The dimension the player was in on the previous tick.</td></tr>
+ *   <tr><td>{@code cansleep}</td><td>{@code Boolean}</td><td>Yes</td><td>Whether the player can sleep right now; nullable until first computed.</td></tr>
+ * </table>
+ *
+ * <p>This class is a singleton; obtain the instance via {@link #getInstance()}.
+ */
 public class PlayerTickEvent implements RuleEvent {
 
     private static final PlayerTickEvent INSTANCE = new PlayerTickEvent();
