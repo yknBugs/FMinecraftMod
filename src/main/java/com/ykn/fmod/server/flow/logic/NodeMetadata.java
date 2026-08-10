@@ -227,7 +227,7 @@ public class NodeMetadata {
         /**
          * Finalises the builder and returns a new {@link NodeMetadata}.
          * The counts supplied here should match the number of {@link #input}, {@link #output},
-         * and {@link #branch} calls made on this builder — the metadata integrity check will
+         * and {@link #branch} calls made on this builder - the metadata integrity check will
          * log a warning if they do not.
          *
          * @param inputNumber  expected number of inputs

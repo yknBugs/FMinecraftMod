@@ -11,29 +11,23 @@ import java.util.function.BiConsumer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.DimensionArgument;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
-import net.minecraft.commands.arguments.coordinates.Vec3Argument;
-import net.minecraft.commands.synchronization.SuggestionProviders;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -74,6 +68,14 @@ public class HasEntityType implements SourceCondition {
 
     private final RuleParameter<ResourceLocation> entityType;
 
+    private static final String TYPE = "HasEntityType";
+
+    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.hasentitytype.summary")
+        .add(ParamKind.DIMENSION, "fmod.rule.condition.hasentitytype.param.dimension.name", "fmod.rule.condition.hasentitytype.param.dimension.desc", "dimension", "var.dimension")
+        .add(ParamKind.POSITION, "fmod.rule.condition.hasentitytype.param.position.name", "fmod.rule.condition.hasentitytype.param.position.desc", "position", "var.position")
+        .add(ParamKind.doubleAtLeast(0), "fmod.rule.condition.hasentitytype.param.radius.name", "fmod.rule.condition.hasentitytype.param.radius.desc", "radius", "var.radius")
+        .add(ParamKind.ENTITY_TYPE_ID, "fmod.rule.condition.hasentitytype.param.type.name", "fmod.rule.condition.hasentitytype.param.type.desc", "type", "var.type");
+
     public HasEntityType(String name, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<Double> radius, RuleParameter<ResourceLocation> entityType) {
         this.name = name;
         this.dimension = dimension;
@@ -109,7 +111,12 @@ public class HasEntityType implements SourceCondition {
 
     @Override
     public String getType() {
-        return "HasEntityType";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -179,40 +186,19 @@ public class HasEntityType implements SourceCondition {
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<ResourceLocation> dimensionParameter = RuleParameter.fromCommandContext("dimension", "var.dimension", () -> {
-                        ServerLevel serverWorld = DimensionArgument.getDimension(ctx, "dimension");
-                        return serverWorld.dimension().location();
-                    }, arguments, ctx);
-                    RuleParameter<Vec3> positionParameter = RuleParameter.fromCommandContext("position", "var.position", () -> {
-                        return Vec3Argument.getVec3(ctx, "position");
-                    }, arguments, ctx);
-                    RuleParameter<Double> radiusParameter = RuleParameter.fromCommandContext("radius", "var.radius", () -> {
-                        return DoubleArgumentType.getDouble(ctx, "radius");
-                    }, arguments, ctx);
-                    RuleParameter<ResourceLocation> entityTypeParameter = RuleParameter.fromCommandContext("type", "var.type", () -> {
-                        return ResourceLocationArgument.getId(ctx, "type");
-                    }, arguments, ctx);
-                    HasEntityType condition = new HasEntityType(name, dimensionParameter, positionParameter, radiusParameter, entityTypeParameter);
-                    conditionConsumer.accept(ctx, condition);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
+        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
+        builder.executes((arguments, ctx) -> {
+                String name = StringArgumentType.getString(ctx, "name");
+                RuleParameter<ResourceLocation> dimensionParameter = builder.resolveParameter(0, arguments, ctx);
+                RuleParameter<Vec3> positionParameter = builder.resolveParameter(1, arguments, ctx);
+                RuleParameter<Double> radiusParameter = builder.resolveParameter(2, arguments, ctx);
+                RuleParameter<ResourceLocation> entityTypeParameter = builder.resolveParameter(3, arguments, ctx);
+                HasEntityType condition = new HasEntityType(name, dimensionParameter, positionParameter, radiusParameter, entityTypeParameter);
+                conditionConsumer.accept(ctx, condition);
             })
-            .add("dimension", "var.dimension", () -> Commands.argument("dimension", DimensionArgument.dimension()))
-            .add("position", "var.position", () -> Commands.argument("position", Vec3Argument.vec3()))
-            .add("radius", "var.radius", () -> Commands.argument("radius", DoubleArgumentType.doubleArg(0)))
-            .add("type", "var.type", () -> Commands.argument("type", ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+            .addAll(PARAM_METADATA);
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
+        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 
 }

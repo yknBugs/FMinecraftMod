@@ -9,7 +9,6 @@ import java.util.function.BiConsumer;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -19,6 +18,8 @@ import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
@@ -52,6 +53,11 @@ public class BroadcastMessage implements RuleAction {
     private final String name;
 
     private final RuleParameter<String> message;
+
+    private static final String TYPE = "BroadcastMessage";
+
+    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.bcmessage.summary")
+        .add(ParamKind.GREEDY_STRING, "fmod.rule.action.bcmessage.param.message.name", "fmod.rule.action.bcmessage.param.message.desc", "message", "var.message", "");
 
     /**
      * Creates a {@code BroadcastMessage} action.
@@ -91,14 +97,19 @@ public class BroadcastMessage implements RuleAction {
 
     @Override
     public String getType() {
-        return "BroadcastMessage";
+        return TYPE;
     }
 
     @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.action.bcmessage", this.getName(), this.getType(), this.message.render());
     }
-    
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
+    }
+
     @Override
     public JsonObject getValueJson() {
         JsonObject json = new JsonObject();
@@ -118,23 +129,15 @@ public class BroadcastMessage implements RuleAction {
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         SayCommandSuggestion suggestion = SayCommandSuggestion.suggest().add("${", "var:");
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<String> messageParameter = RuleParameter.fromCommandContext("message", "var.message", () -> {
-                        return StringArgumentType.getString(ctx, "message");
-                    }, arguments, ctx);
-                    BroadcastMessage action = new BroadcastMessage(name, messageParameter);
-                    actionConsumer.accept(ctx, action);
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
+        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
+        builder.executes((arguments, ctx) -> {
+                String name = StringArgumentType.getString(ctx, "name");
+                RuleParameter<String> messageParameter = builder.resolveParameter(0, arguments, ctx);
+                BroadcastMessage action = new BroadcastMessage(name, messageParameter);
+                actionConsumer.accept(ctx, action);
             })
-            .add("message", "var.message", () -> Commands.argument("message", StringArgumentType.greedyString()).suggests(suggestion))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+            .add(PARAM_METADATA.get(0), suggestion);
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
+        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 }

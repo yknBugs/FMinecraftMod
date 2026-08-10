@@ -66,6 +66,16 @@ public interface RuleAction extends RuleComponent {
     public JsonObject getValueJson();
 
     /**
+     * Returns the metadata describing the parameters required by this action.
+     *
+     * <p>The returned {@link RequiredParamMetadata} is used to validate rule JSON
+     * and to generate command-line help for rule editing commands.
+     *
+     * @return a non-null {@link RequiredParamMetadata} describing this action's parameters
+     */
+    public RequiredParamMetadata getParameters();
+
+    /**
      * Serializes this action to a {@link JsonObject} that can be stored in a rule JSON file.
      *
      * <p>The produced JSON contains at minimum:

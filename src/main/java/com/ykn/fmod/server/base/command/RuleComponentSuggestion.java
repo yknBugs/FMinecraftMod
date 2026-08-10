@@ -6,8 +6,11 @@
 package com.ykn.fmod.server.base.command;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+
+import org.jetbrains.annotations.Nullable;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -61,6 +64,14 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
     private final int ruleNameIndex;
 
     /**
+     * For {@link SuggestionType#VARIABLE}: when non-null, only event variables whose declared
+     * type ({@link com.ykn.fmod.server.rule.core.RuleEvent#variablesType()}) is assignable to
+     * this class are suggested. {@code null} means no type filtering (suggest every variable).
+     */
+    @Nullable
+    private final Class<?> expectedVariableType;
+
+    /**
      * Constructs a new RuleComponentSuggestion.
      *
      * @param needQuote     whether to wrap suggestions in double quotes
@@ -68,9 +79,23 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
      * @param ruleNameIndex the argument index of the rule name in the command input
      */
     private RuleComponentSuggestion(boolean needQuote, SuggestionType type, int ruleNameIndex) {
+        this(needQuote, type, ruleNameIndex, null);
+    }
+
+    /**
+     * Constructs a new RuleComponentSuggestion with an optional expected variable type.
+     *
+     * @param needQuote            whether to wrap suggestions in double quotes
+     * @param type                 the type of rule component to suggest
+     * @param ruleNameIndex        the argument index of the rule name in the command input
+     * @param expectedVariableType for {@link SuggestionType#VARIABLE}, restricts suggestions to
+     *                             variables declared with an assignable type; {@code null} for no filtering
+     */
+    private RuleComponentSuggestion(boolean needQuote, SuggestionType type, int ruleNameIndex, @Nullable Class<?> expectedVariableType) {
         this.needQuote = needQuote;
         this.type = type;
         this.ruleNameIndex = ruleNameIndex;
+        this.expectedVariableType = expectedVariableType;
     }
 
     /**
@@ -163,8 +188,14 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
                         break;
                     case VARIABLE:
                         {
-                            Set<String> availableVariables = ruleManager.getRule().getEvent().variablesType().keySet();
-                            for (String variable : availableVariables) {
+                            Map<String, Class<? extends Object>> variableTypes = ruleManager.getRule().getEvent().variablesType();
+                            for (String variable : variableTypes.keySet()) {
+                                if (expectedVariableType != null) {
+                                    Class<?> declaredType = variableTypes.get(variable);
+                                    if (declaredType == null || !expectedVariableType.isAssignableFrom(declaredType)) {
+                                        continue;
+                                    }
+                                }
                                 String suggestion = variable;
                                 if (needQuote) {
                                     suggestion = "\"" + suggestion + "\"";
@@ -256,7 +287,22 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
      * @return a new RuleComponentSuggestion for variable suggestions
      */
     public static RuleComponentSuggestion suggestVariable(boolean needQuote, int ruleNameIndex) {
-        return new RuleComponentSuggestion(needQuote, SuggestionType.VARIABLE, ruleNameIndex);
+        return new RuleComponentSuggestion(needQuote, SuggestionType.VARIABLE, ruleNameIndex, null);
+    }
+
+    /**
+     * Creates a new RuleComponentSuggestion for event variable names, restricted to variables
+     * whose declared type ({@link com.ykn.fmod.server.rule.core.RuleEvent#variablesType()}) is
+     * assignable to {@code expectedType}.
+     *
+     * @param needQuote     whether to wrap suggestions in double quotes
+     * @param ruleNameIndex the argument index of the rule name in the command input
+     * @param expectedType  the required variable type, or {@code null} to suggest every variable
+     *                      regardless of type
+     * @return a new RuleComponentSuggestion for type-filtered variable suggestions
+     */
+    public static RuleComponentSuggestion suggestVariable(boolean needQuote, int ruleNameIndex, @Nullable Class<?> expectedType) {
+        return new RuleComponentSuggestion(needQuote, SuggestionType.VARIABLE, ruleNameIndex, expectedType);
     }
 
     /**

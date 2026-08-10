@@ -11,12 +11,10 @@ import java.util.function.BiConsumer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ykn.fmod.server.base.command.RuleComponentSuggestion;
 import com.ykn.fmod.server.base.util.RedirectedCommandOutput;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
@@ -25,13 +23,13 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 
@@ -79,6 +77,12 @@ public class ExecuteCommandAction implements RuleAction {
     private final int permissionLevel;
 
     private final RuleParameter<String> command;
+
+    private static final String TYPE = "ExecuteCommand";
+
+    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.runcmd.summary")
+        .add(ParamKind.ENTITY, "fmod.rule.action.runcmd.param.entity.name", "fmod.rule.action.runcmd.param.entity.desc", "entity", "var.entity")
+        .add(ParamKind.GREEDY_STRING, "fmod.rule.action.runcmd.param.command.name", "fmod.rule.action.runcmd.param.command.desc", "command", "var.command");
 
     /**
      * Creates an {@code ExecuteCommandAction}.
@@ -145,7 +149,12 @@ public class ExecuteCommandAction implements RuleAction {
 
     @Override
     public String getType() {
-        return "ExecuteCommand";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -185,32 +194,18 @@ public class ExecuteCommandAction implements RuleAction {
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         RuleComponentSuggestion suggestion = RuleComponentSuggestion.suggestPlaceholder(3);
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<UUID> entityParameter = RuleParameter.fromCommandContext("entity", "var.entity", () -> {
-                        Entity entity = EntityArgument.getEntity(ctx, "entity");
-                        return entity.getUUID();
-                    }, arguments, ctx);
-                    int permissionLevel = ctx.getSource().hasPermission(3) ? 3 : 0;
-                    RuleParameter<String> commandParameter = RuleParameter.fromCommandContext("command", "var.command", () -> {
-                        return StringArgumentType.getString(ctx, "command");
-                    }, arguments, ctx);
-                    ExecuteCommandAction action = new ExecuteCommandAction(name, entityParameter, permissionLevel, commandParameter);
-                    actionConsumer.accept(ctx, action);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
+        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
+        builder.executes((arguments, ctx) -> {
+                String name = StringArgumentType.getString(ctx, "name");
+                RuleParameter<UUID> entityParameter = builder.resolveParameter(0, arguments, ctx);
+                int permissionLevel = ctx.getSource().hasPermission(3) ? 3 : 0;
+                RuleParameter<String> commandParameter = builder.resolveParameter(1, arguments, ctx);
+                ExecuteCommandAction action = new ExecuteCommandAction(name, entityParameter, permissionLevel, commandParameter);
+                actionConsumer.accept(ctx, action);
             })
-            .add("entity", "var.entity", () -> Commands.argument("entity", EntityArgument.entity()))
-            .add("command", "var.command", () -> Commands.argument("command", StringArgumentType.greedyString()).suggests(suggestion))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+            .add(PARAM_METADATA.get(0))
+            .add(PARAM_METADATA.get(1), suggestion);
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
+        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 }

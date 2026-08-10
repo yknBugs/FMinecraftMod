@@ -30,6 +30,16 @@ import com.google.gson.JsonObject;
 public interface SourceCondition extends RuleCondition {
 
     /**
+     * Returns the metadata describing the parameters required by this condition.
+     *
+     * <p>The returned {@link RequiredParamMetadata} is used to validate rule JSON
+     * and to generate command-line help for rule editing commands.
+     *
+     * @return a non-null {@link RequiredParamMetadata} describing this condition's parameters
+     */
+    public RequiredParamMetadata getParameters();
+
+    /**
      * Serializes condition-specific parameters to a {@link JsonObject}.
      *
      * <p>The returned object is placed under the {@code "value"} key in the full condition

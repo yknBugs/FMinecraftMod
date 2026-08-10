@@ -6,7 +6,6 @@
 package com.ykn.fmod.server.rule.action;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
@@ -15,12 +14,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ykn.fmod.server.base.command.SayCommandSuggestion;
 import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
@@ -29,13 +26,13 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -63,6 +60,12 @@ public class SendMessage implements RuleAction {
     private final RuleParameter<List<UUID>> players;
 
     private final RuleParameter<String> message;
+
+    private static final String TYPE = "SendMessage";
+
+    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.sendmessage.summary")
+        .add(ParamKind.PLAYERS, "fmod.rule.action.sendmessage.param.players.name", "fmod.rule.action.sendmessage.param.players.desc", "players", "var.players")
+        .add(ParamKind.GREEDY_STRING, "fmod.rule.action.sendmessage.param.message.name", "fmod.rule.action.sendmessage.param.message.desc", "message", "var.message");
 
     /**
      * Creates a {@code SendMessage} action.
@@ -149,7 +152,12 @@ public class SendMessage implements RuleAction {
 
     @Override
     public String getType() {
-        return "SendMessage";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -192,35 +200,17 @@ public class SendMessage implements RuleAction {
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         SayCommandSuggestion suggestion = SayCommandSuggestion.suggestDefault().add("${", "var:");
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<List<UUID>> playersParameter = RuleParameter.fromCommandContext("players", "var.players", () -> {
-                        Collection<ServerPlayer> entities = EntityArgument.getPlayers(ctx, "players");
-                        List<UUID> uuids = new ArrayList<>();
-                        for (ServerPlayer entity : entities) {
-                            uuids.add(entity.getUUID());
-                        }
-                        return uuids;
-                    }, arguments, ctx);
-                    RuleParameter<String> messageParameter = RuleParameter.fromCommandContext("message", "var.message", () -> {
-                        return StringArgumentType.getString(ctx, "message");
-                    }, arguments, ctx);
-                    SendMessage action = new SendMessage(name, playersParameter, messageParameter);
-                    actionConsumer.accept(ctx, action);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
+        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
+        builder.executes((arguments, ctx) -> {
+                String name = StringArgumentType.getString(ctx, "name");
+                RuleParameter<List<UUID>> playersParameter = builder.resolveParameter(0, arguments, ctx);
+                RuleParameter<String> messageParameter = builder.resolveParameter(1, arguments, ctx);
+                SendMessage action = new SendMessage(name, playersParameter, messageParameter);
+                actionConsumer.accept(ctx, action);
             })
-            .add("players", "var.players", () -> Commands.argument("players", EntityArgument.players()))
-            .add("message", "var.message", () -> Commands.argument("message", StringArgumentType.greedyString()).suggests(suggestion))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+            .add(PARAM_METADATA.get(0))
+            .add(PARAM_METADATA.get(1), suggestion);
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
+        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 }

@@ -11,25 +11,22 @@ import java.util.function.BiConsumer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -63,6 +60,13 @@ public class CheckPermission implements SourceCondition {
     private final RuleParameter<Integer> min;
 
     private final RuleParameter<Integer> max;
+
+    private static final String TYPE = "CheckPermission";
+
+    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.checkpermission.summary")
+        .add(ParamKind.PLAYER, "fmod.rule.condition.checkpermission.param.player.name", "fmod.rule.condition.checkpermission.param.player.desc", "player", "var.player")
+        .add(ParamKind.INT, "fmod.rule.condition.checkpermission.param.min.name", "fmod.rule.condition.checkpermission.param.min.desc", "min", "var.min")
+        .add(ParamKind.INT, "fmod.rule.condition.checkpermission.param.max.name", "fmod.rule.condition.checkpermission.param.max.desc", "max", "var.max");
 
     /**
      * Creates a new {@code CheckPermission} condition.
@@ -100,7 +104,12 @@ public class CheckPermission implements SourceCondition {
 
     @Override
     public String getType() {
-        return "CheckPermission";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -140,36 +149,18 @@ public class CheckPermission implements SourceCondition {
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<UUID> playerParameter = RuleParameter.fromCommandContext("player", "var.player", () -> {
-                        ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
-                        return player.getUUID();
-                    }, arguments, ctx);
-                    RuleParameter<Integer> minParameter = RuleParameter.fromCommandContext("min", "var.min", () -> {
-                        return IntegerArgumentType.getInteger(ctx, "min");
-                    }, arguments, ctx);
-                    RuleParameter<Integer> maxParameter = RuleParameter.fromCommandContext("max", "var.max", () -> {
-                        return IntegerArgumentType.getInteger(ctx, "max");
-                    }, arguments, ctx);
-                    CheckPermission condition = new CheckPermission(name, playerParameter, minParameter, maxParameter);
-                    conditionConsumer.accept(ctx, condition);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
+        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
+        builder.executes((arguments, ctx) -> {
+                String name = StringArgumentType.getString(ctx, "name");
+                RuleParameter<UUID> playerParameter = builder.resolveParameter(0, arguments, ctx);
+                RuleParameter<Integer> minParameter = builder.resolveParameter(1, arguments, ctx);
+                RuleParameter<Integer> maxParameter = builder.resolveParameter(2, arguments, ctx);
+                CheckPermission condition = new CheckPermission(name, playerParameter, minParameter, maxParameter);
+                conditionConsumer.accept(ctx, condition);
             })
-            .add("player", "var.player", () -> Commands.argument("player", EntityArgument.player()))
-            .add("min", "var.min", () -> Commands.argument("min", IntegerArgumentType.integer()))
-            .add("max", "var.max", () -> Commands.argument("max", IntegerArgumentType.integer()))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+            .addAll(PARAM_METADATA);
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
+        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 
 }

@@ -61,7 +61,7 @@ public interface RuleCondition extends RuleComponent {
      * {@link #onEvaluate(RuleContext)}, and removes it afterwards.
      * If the same condition instance is already being evaluated on the current call stack
      * (i.e. a cycle is detected), the method immediately sets an error message on the
-     * context and returns {@code false} — preventing a {@link StackOverflowError}.
+     * context and returns {@code false} - preventing a {@link StackOverflowError}.
      *
      * <p><b>Do not override this method.</b>  Override {@link #onEvaluate(RuleContext)} instead.
      *
@@ -90,7 +90,7 @@ public interface RuleCondition extends RuleComponent {
      *
      * <p>When this method is invoked, it is guaranteed that {@code this} has already been
      * added to the {@code testingConditions} set of {@code context}.  Recursive calls to
-     * evaluate other conditions are safe — any cycle will be caught by
+     * evaluate other conditions are safe - any cycle will be caught by
      * {@link #evaluate(RuleContext)} before reaching infinite recursion.
      *
      * @param context the current rule execution context
@@ -189,7 +189,7 @@ public interface RuleCondition extends RuleComponent {
      * @param rule                 the rule whose {@code extra} condition list is used to resolve
      *                             {@link ConditionReference} nodes
      * @param optimizingConditions the set of conditions currently being optimised on the call
-     *                             stack; used for cycle detection — pass the same set through
+     *                             stack; used for cycle detection - pass the same set through
      *                             all recursive calls
      * @return an optimised substitute for this condition, or {@code this} if no optimisation
      *         applies or if a cycle is detected
@@ -217,7 +217,7 @@ public interface RuleCondition extends RuleComponent {
      *
      * @param rule                 the rule whose {@code extra} condition list is used to resolve
      *                             {@link ConditionReference} nodes
-     * @param optimizingConditions the cycle-detection set — must be forwarded unchanged to
+     * @param optimizingConditions the cycle-detection set - must be forwarded unchanged to
      *                             any recursive calls to {@link #optimize(CustomRule, HashSet)}
      * @return an optimised substitute for this condition, or {@code this} if no optimisation
      *         applies

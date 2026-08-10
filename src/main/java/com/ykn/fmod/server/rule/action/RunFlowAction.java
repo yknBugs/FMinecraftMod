@@ -12,13 +12,10 @@ import java.util.function.BiConsumer;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ykn.fmod.server.base.command.LogicFlowSuggestion;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.ScheduledFlow;
@@ -27,12 +24,13 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 
 /**
  * A {@link RuleAction} that schedules the execution of a named logic flow.
@@ -65,6 +63,12 @@ public class RunFlowAction implements RuleAction {
     private final RuleParameter<String> flowName;
 
     private final RuleParameter<Integer> delay;
+
+    private static final String TYPE = "RunFlow";
+
+    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.runflow.summary")
+        .add(ParamKind.STRING, "fmod.rule.action.runflow.param.flow.name", "fmod.rule.action.runflow.param.flow.desc", "flow", "var.flow")
+        .add(ParamKind.intAtLeast(1), "fmod.rule.action.runflow.param.delay.name", "fmod.rule.action.runflow.param.delay.desc", "delay", "var.delay");
 
     /**
      * Creates a {@code RunFlowAction}.
@@ -114,7 +118,12 @@ public class RunFlowAction implements RuleAction {
 
     @Override
     public String getType() {
-        return "RunFlow";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -144,30 +153,17 @@ public class RunFlowAction implements RuleAction {
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
         LogicFlowSuggestion flowSuggestion = LogicFlowSuggestion.suggest(true);
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<String> flowNameParameter = RuleParameter.fromCommandContext("flow", "var.flow", () -> {
-                        return StringArgumentType.getString(ctx, "flow");
-                    }, arguments, ctx);
-                    RuleParameter<Integer> delayParameter = RuleParameter.fromCommandContext("delay", "var.delay", () -> {
-                        return IntegerArgumentType.getInteger(ctx, "delay");
-                    }, arguments, ctx);
-                    RunFlowAction action = new RunFlowAction(name, flowNameParameter, delayParameter);
-                    actionConsumer.accept(ctx, action);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
+        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
+        builder.executes((arguments, ctx) -> {
+                String name = StringArgumentType.getString(ctx, "name");
+                RuleParameter<String> flowNameParameter = builder.resolveParameter(0, arguments, ctx);
+                RuleParameter<Integer> delayParameter = builder.resolveParameter(1, arguments, ctx);
+                RunFlowAction action = new RunFlowAction(name, flowNameParameter, delayParameter);
+                actionConsumer.accept(ctx, action);
             })
-            .add("flow", "var.flow", () -> Commands.argument("flow", StringArgumentType.string()).suggests(flowSuggestion))
-            .add("delay", "var.delay", () -> Commands.argument("delay", IntegerArgumentType.integer(1)))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+            .add(PARAM_METADATA.get(0), flowSuggestion)
+            .add(PARAM_METADATA.get(1));
+        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
+        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 }
