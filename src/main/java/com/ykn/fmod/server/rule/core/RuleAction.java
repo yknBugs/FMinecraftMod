@@ -5,6 +5,8 @@
 
 package com.ykn.fmod.server.rule.core;
 
+import java.util.List;
+
 import com.google.gson.JsonObject;
 
 /**
@@ -74,6 +76,14 @@ public interface RuleAction extends RuleComponent {
      * @return a non-null {@link RequiredParamMetadata} describing this action's parameters
      */
     public RequiredParamMetadata getParameters();
+
+    /**
+     * Returns this action's current parameter values, in the same order as
+     * {@link #getParameters()}'s {@link RequiredParamMetadata#getArgumentList()}.
+     *
+     * @return a non-null list of this action's {@link RuleParameter} values
+     */
+    public List<RuleParameter<?>> getParameterValues();
 
     /**
      * Serializes this action to a {@link JsonObject} that can be stored in a rule JSON file.

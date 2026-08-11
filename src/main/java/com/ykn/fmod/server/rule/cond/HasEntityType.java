@@ -68,9 +68,9 @@ public class HasEntityType implements SourceCondition {
 
     private final RuleParameter<ResourceLocation> entityType;
 
-    private static final String TYPE = "HasEntityType";
+    public static final String TYPE = "HasEntityType";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.hasentitytype.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.hasentitytype.summary")
         .add(ParamKind.DIMENSION, "fmod.rule.condition.hasentitytype.param.dimension.name", "fmod.rule.condition.hasentitytype.param.dimension.desc", "dimension", "var.dimension")
         .add(ParamKind.POSITION, "fmod.rule.condition.hasentitytype.param.position.name", "fmod.rule.condition.hasentitytype.param.position.desc", "position", "var.position")
         .add(ParamKind.doubleAtLeast(0), "fmod.rule.condition.hasentitytype.param.radius.name", "fmod.rule.condition.hasentitytype.param.radius.desc", "radius", "var.radius")
@@ -130,6 +130,11 @@ public class HasEntityType implements SourceCondition {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.dimension, this.position, this.radius, this.entityType);
+    }
+
+    @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.hasentitytype", this.getName(), this.getType(),
             this.dimension.render(), this.position.render(), this.radius.render(), this.entityType.render());
@@ -183,6 +188,12 @@ public class HasEntityType implements SourceCondition {
             return rl;
         });
         return new HasEntityType(json.get("name").getAsString(), dimension, position, radius, entityType);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
+        return new HasEntityType(name, (RuleParameter<ResourceLocation>) values.get(0), (RuleParameter<Vec3>) values.get(1),
+            (RuleParameter<Double>) values.get(2), (RuleParameter<ResourceLocation>) values.get(3));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {

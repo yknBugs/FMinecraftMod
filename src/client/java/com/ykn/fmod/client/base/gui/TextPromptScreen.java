@@ -3,7 +3,7 @@
  * This file is under the MIT License
  */
 
-package com.ykn.fmod.client.flow.gui;
+package com.ykn.fmod.client.base.gui;
 
 import java.util.function.Consumer;
 
@@ -30,6 +30,15 @@ public class TextPromptScreen extends Screen {
     private final Consumer<String> onConfirm;
     private EditBox input;
 
+    /**
+     * Constructs a text-input prompt screen.
+     *
+     * @param parent       the screen to return to on cancel
+     * @param title        the screen title shown at the top
+     * @param prompt       the hint text displayed below the title
+     * @param initialValue the initial text in the input field, or {@code null} for empty
+     * @param onConfirm    called with the final text when Done is pressed
+     */
     public TextPromptScreen(Screen parent, Component title, Component prompt, String initialValue, Consumer<String> onConfirm) {
         super(title);
         this.parent = parent;
@@ -68,6 +77,7 @@ public class TextPromptScreen extends Screen {
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        this.renderDirtBackground(context);
         super.render(context, mouseX, mouseY, delta);
         context.drawCenteredString(this.font, this.title, this.width / 2, this.height / 2 - 40, 0xFFFFFF);
         context.drawCenteredString(this.font, this.prompt, this.width / 2, this.height / 2 - 26, 0xAAAAAA);

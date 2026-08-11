@@ -61,9 +61,9 @@ public class SendActionbar implements RuleAction {
 
     private final RuleParameter<String> message;
 
-    private static final String TYPE = "SendActionbar";
+    public static final String TYPE = "SendActionbar";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.sendactionbar.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.sendactionbar.summary")
         .add(ParamKind.PLAYERS, "fmod.rule.action.sendactionbar.param.players.name", "fmod.rule.action.sendactionbar.param.players.desc", "players", "var.players")
         .add(ParamKind.GREEDY_STRING, "fmod.rule.action.sendactionbar.param.message.name", "fmod.rule.action.sendactionbar.param.message.desc", "message", "var.message");
 
@@ -151,6 +151,11 @@ public class SendActionbar implements RuleAction {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.players, this.message);
+    }
+
+    @Override
     public String getType() {
         return TYPE;
     }
@@ -196,6 +201,18 @@ public class SendActionbar implements RuleAction {
         });
         RuleParameter<String> message = RuleParameter.fromJson(json, "message", JsonElement::getAsString);
         return new SendActionbar(name, players, message);
+    }
+
+    /**
+     * Creates a new instance directly from a name and parameter values for use by the GUI editor.
+     *
+     * @param name   the unique name of this action instance within the rule
+     * @param values the parameter values, in {@link #getParameters()} order
+     * @return a new instance with the given name and values
+     */
+    @SuppressWarnings("unchecked")
+    public static RuleAction withParameters(String name, List<RuleParameter<?>> values) {
+        return new SendActionbar(name, (RuleParameter<List<UUID>>) values.get(0), (RuleParameter<String>) values.get(1));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {

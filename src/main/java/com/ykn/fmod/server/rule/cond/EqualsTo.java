@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import com.google.gson.JsonObject;
@@ -55,9 +56,9 @@ public class EqualsTo implements SourceCondition {
 
     private final RuleParameter<Object> right;
 
-    private static final String TYPE = "EqualsTo";
+    public static final String TYPE = "EqualsTo";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.equalsto.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.equalsto.summary")
         .add(ParamKind.AUTO, "fmod.rule.condition.equalsto.param.left.name", "fmod.rule.condition.equalsto.param.left.desc", "left", "var.left")
         .add(ParamKind.AUTO, "fmod.rule.condition.equalsto.param.right.name", "fmod.rule.condition.equalsto.param.right.desc", "right", "var.right");
 
@@ -104,6 +105,11 @@ public class EqualsTo implements SourceCondition {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.left, this.right);
+    }
+
+    @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.equalsto", this.getName(), this.getType(),
             this.left.render(), this.right.render());
@@ -125,6 +131,11 @@ public class EqualsTo implements SourceCondition {
         RuleParameter<Object> left = RuleParameter.fromJson(json, "left", e -> TypeAdaptor.parse(e).autoCast());
         RuleParameter<Object> right = RuleParameter.fromJson(json, "right", e -> TypeAdaptor.parse(e).autoCast());
         return new EqualsTo(json.get("name").getAsString(), left, right);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
+        return new EqualsTo(name, (RuleParameter<Object>) values.get(0), (RuleParameter<Object>) values.get(1));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {

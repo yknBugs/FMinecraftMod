@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -61,9 +62,9 @@ public class CheckPermission implements SourceCondition {
 
     private final RuleParameter<Integer> max;
 
-    private static final String TYPE = "CheckPermission";
+    public static final String TYPE = "CheckPermission";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.checkpermission.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.checkpermission.summary")
         .add(ParamKind.PLAYER, "fmod.rule.condition.checkpermission.param.player.name", "fmod.rule.condition.checkpermission.param.player.desc", "player", "var.player")
         .add(ParamKind.INT, "fmod.rule.condition.checkpermission.param.min.name", "fmod.rule.condition.checkpermission.param.min.desc", "min", "var.min")
         .add(ParamKind.INT, "fmod.rule.condition.checkpermission.param.max.name", "fmod.rule.condition.checkpermission.param.max.desc", "max", "var.max");
@@ -123,6 +124,11 @@ public class CheckPermission implements SourceCondition {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.player, this.min, this.max);
+    }
+
+    @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.checkpermission", this.getName(), this.getType(),
             this.player.render(), this.min.render(), this.max.render());
@@ -146,6 +152,11 @@ public class CheckPermission implements SourceCondition {
         RuleParameter<Integer> min = RuleParameter.fromJson(json, "min", JsonElement::getAsInt);
         RuleParameter<Integer> max = RuleParameter.fromJson(json, "max", JsonElement::getAsInt);
         return new CheckPermission(json.get("name").getAsString(), player, min, max);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
+        return new CheckPermission(name, (RuleParameter<UUID>) values.get(0), (RuleParameter<Integer>) values.get(1), (RuleParameter<Integer>) values.get(2));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {

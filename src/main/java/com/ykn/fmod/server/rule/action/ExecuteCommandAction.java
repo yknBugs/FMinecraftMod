@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.action;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -78,9 +79,9 @@ public class ExecuteCommandAction implements RuleAction {
 
     private final RuleParameter<String> command;
 
-    private static final String TYPE = "ExecuteCommand";
+    public static final String TYPE = "ExecuteCommand";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.runcmd.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.runcmd.summary")
         .add(ParamKind.ENTITY, "fmod.rule.action.runcmd.param.entity.name", "fmod.rule.action.runcmd.param.entity.desc", "entity", "var.entity")
         .add(ParamKind.GREEDY_STRING, "fmod.rule.action.runcmd.param.command.name", "fmod.rule.action.runcmd.param.command.desc", "command", "var.command");
 
@@ -147,6 +148,16 @@ public class ExecuteCommandAction implements RuleAction {
         return new ExecuteCommandAction(name, this.entity, this.permissionLevel, this.command);
     }
 
+    /**
+     * Returns only the {@code entity} and {@code command} parameters, matching
+     * {@link #getParameters()}'s two-entry {@code PARAM_METADATA}. {@code permissionLevel}
+     * is intentionally excluded, matching its exclusion from interactive command creation.
+     */
+    @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.entity, this.command);
+    }
+
     @Override
     public String getType() {
         return TYPE;
@@ -190,6 +201,11 @@ public class ExecuteCommandAction implements RuleAction {
         }
         RuleParameter<String> command = RuleParameter.fromJson(json, "command", JsonElement::getAsString);
         return new ExecuteCommandAction(name, entity, permissionLevel, command);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static RuleAction withParameters(String name, List<RuleParameter<?>> values) {
+        return new ExecuteCommandAction(name, (RuleParameter<UUID>) values.get(0), 3, (RuleParameter<String>) values.get(1));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {

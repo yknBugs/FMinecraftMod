@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import com.google.gson.JsonElement;
@@ -48,9 +49,9 @@ public class SmallerThan implements SourceCondition {
 
     private final RuleParameter<Double> right;
 
-    private static final String TYPE = "SmallerThan";
+    public static final String TYPE = "SmallerThan";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.smallerthan.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.smallerthan.summary")
         .add(ParamKind.DOUBLE, "fmod.rule.condition.smallerthan.param.left.name", "fmod.rule.condition.smallerthan.param.left.desc", "left", "var.left")
         .add(ParamKind.DOUBLE, "fmod.rule.condition.smallerthan.param.right.name", "fmod.rule.condition.smallerthan.param.right.desc", "right", "var.right");
 
@@ -93,6 +94,11 @@ public class SmallerThan implements SourceCondition {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.left, this.right);
+    }
+
+    @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.smallerthan", this.getName(), this.getType(),
             this.left.render(), this.right.render());
@@ -114,6 +120,11 @@ public class SmallerThan implements SourceCondition {
         RuleParameter<Double> left = RuleParameter.fromJson(json, "left", JsonElement::getAsDouble);
         RuleParameter<Double> right = RuleParameter.fromJson(json, "right", JsonElement::getAsDouble);
         return new SmallerThan(json.get("name").getAsString(), left, right);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
+        return new SmallerThan(name, (RuleParameter<Double>) values.get(0), (RuleParameter<Double>) values.get(1));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {

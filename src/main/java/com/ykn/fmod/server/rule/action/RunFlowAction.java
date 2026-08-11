@@ -6,6 +6,7 @@
 package com.ykn.fmod.server.rule.action;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
@@ -64,9 +65,9 @@ public class RunFlowAction implements RuleAction {
 
     private final RuleParameter<Integer> delay;
 
-    private static final String TYPE = "RunFlow";
+    public static final String TYPE = "RunFlow";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.runflow.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.runflow.summary")
         .add(ParamKind.STRING, "fmod.rule.action.runflow.param.flow.name", "fmod.rule.action.runflow.param.flow.desc", "flow", "var.flow")
         .add(ParamKind.intAtLeast(1), "fmod.rule.action.runflow.param.delay.name", "fmod.rule.action.runflow.param.delay.desc", "delay", "var.delay");
 
@@ -117,6 +118,11 @@ public class RunFlowAction implements RuleAction {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.flowName, this.delay);
+    }
+
+    @Override
     public String getType() {
         return TYPE;
     }
@@ -149,6 +155,11 @@ public class RunFlowAction implements RuleAction {
         RuleParameter<String> flowName = RuleParameter.fromJson(json, "flowName", JsonElement::getAsString);
         RuleParameter<Integer> delay = RuleParameter.fromJson(json, "delay", JsonElement::getAsInt);
         return new RunFlowAction(name, flowName, delay);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static RuleAction withParameters(String name, List<RuleParameter<?>> values) {
+        return new RunFlowAction(name, (RuleParameter<String>) values.get(0), (RuleParameter<Integer>) values.get(1));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {

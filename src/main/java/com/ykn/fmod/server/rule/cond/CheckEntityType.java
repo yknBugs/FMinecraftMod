@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -56,9 +57,9 @@ public class CheckEntityType implements SourceCondition {
 
     private final RuleParameter<ResourceLocation> entityType;
 
-    private static final String TYPE = "CheckEntityType";
+    public static final String TYPE = "CheckEntityType";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.checkentitytype.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.checkentitytype.summary")
         .add(ParamKind.ENTITY, "fmod.rule.condition.checkentitytype.param.entity.name", "fmod.rule.condition.checkentitytype.param.entity.desc", "entity", "var.entity")
         .add(ParamKind.ENTITY_TYPE_ID, "fmod.rule.condition.checkentitytype.param.type.name", "fmod.rule.condition.checkentitytype.param.type.desc", "type", "var.type");
 
@@ -112,6 +113,11 @@ public class CheckEntityType implements SourceCondition {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.entity, this.entityType);
+    }
+
+    @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.checkentitytype", this.getName(), this.getType(),
             this.entity.render(), this.entityType.render());
@@ -141,6 +147,11 @@ public class CheckEntityType implements SourceCondition {
             return rl;
         });
         return new CheckEntityType(json.get("name").getAsString(), entity, entityType);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
+        return new CheckEntityType(name, (RuleParameter<UUID>) values.get(0), (RuleParameter<ResourceLocation>) values.get(1));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {

@@ -5,6 +5,8 @@
 
 package com.ykn.fmod.server.rule.core;
 
+import java.util.List;
+
 import com.google.gson.JsonObject;
 
 /**
@@ -52,6 +54,14 @@ public interface SourceCondition extends RuleCondition {
      * @return a non-null {@link JsonObject} containing the serialised parameters
      */
     public JsonObject getValueJson();
+
+    /**
+     * Returns this condition's current parameter values, in the same order as
+     * {@link #getParameters()}'s {@link RequiredParamMetadata#getArgumentList()}.
+     *
+     * @return a non-null list of this condition's {@link RuleParameter} values
+     */
+    public List<RuleParameter<?>> getParameterValues();
 
     @Override
     default JsonObject toJson() {

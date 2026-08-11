@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.action;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import com.google.gson.JsonObject;
@@ -54,9 +55,9 @@ public class BroadcastMessage implements RuleAction {
 
     private final RuleParameter<String> message;
 
-    private static final String TYPE = "BroadcastMessage";
+    public static final String TYPE = "BroadcastMessage";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.bcmessage.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.bcmessage.summary")
         .add(ParamKind.GREEDY_STRING, "fmod.rule.action.bcmessage.param.message.name", "fmod.rule.action.bcmessage.param.message.desc", "message", "var.message", "");
 
     /**
@@ -96,6 +97,11 @@ public class BroadcastMessage implements RuleAction {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.message);
+    }
+
+    @Override
     public String getType() {
         return TYPE;
     }
@@ -125,6 +131,11 @@ public class BroadcastMessage implements RuleAction {
         String name = json.get("name").getAsString();
         RuleParameter<String> message = RuleParameter.fromJson(json, "message", e -> e.getAsString());
         return new BroadcastMessage(name, message);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static RuleAction withParameters(String name, List<RuleParameter<?>> values) {
+        return new BroadcastMessage(name, (RuleParameter<String>) values.get(0));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {

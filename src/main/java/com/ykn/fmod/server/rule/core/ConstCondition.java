@@ -33,6 +33,8 @@ public class ConstCondition implements RuleCondition {
 
     private final boolean value;
 
+    public static final String TYPE = "ConstCondition";
+
     private ConstCondition(String name, boolean value) {
         this.name = name;
         this.value = value;
@@ -76,7 +78,7 @@ public class ConstCondition implements RuleCondition {
 
     @Override
     public String getType() {
-        return "ConstCondition";
+        return TYPE;
     }
     
     /**

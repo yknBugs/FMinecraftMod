@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import java.util.List;
 import java.util.function.BiConsumer;
 
 import com.google.gson.JsonElement;
@@ -66,9 +67,9 @@ public class CheckBlockType implements SourceCondition {
 
     private final RuleParameter<Boolean> defaultValue;
 
-    private static final String TYPE = "CheckBlockType";
+    public static final String TYPE = "CheckBlockType";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.blocktype.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.blocktype.summary")
         .add(ParamKind.DIMENSION, "fmod.rule.condition.blocktype.param.dimension.name", "fmod.rule.condition.blocktype.param.dimension.desc", "dimension", "var.dimension")
         .add(ParamKind.POSITION, "fmod.rule.condition.blocktype.param.position.name", "fmod.rule.condition.blocktype.param.position.desc", "position", "var.position")
         .add(ParamKind.BLOCK_ID, "fmod.rule.condition.blocktype.param.block.name", "fmod.rule.condition.blocktype.param.block.desc", "block", "var.block")
@@ -128,6 +129,11 @@ public class CheckBlockType implements SourceCondition {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.dimension, this.position, this.block, this.defaultValue);
+    }
+
+    @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.blocktype", this.getName(), this.getType(),
             this.dimension.render(), this.position.render(), this.block.render(), this.defaultValue.render());
@@ -181,6 +187,12 @@ public class CheckBlockType implements SourceCondition {
         });
         RuleParameter<Boolean> defaultValue = RuleParameter.fromJson(json, "defaultValue", JsonElement::getAsBoolean);
         return new CheckBlockType(json.get("name").getAsString(), dimension, position, block, defaultValue);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
+        return new CheckBlockType(name, (RuleParameter<ResourceLocation>) values.get(0), (RuleParameter<Vec3>) values.get(1),
+            (RuleParameter<ResourceLocation>) values.get(2), (RuleParameter<Boolean>) values.get(3));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {

@@ -28,7 +28,10 @@ import com.ykn.fmod.server.rule.core.BinaryConditionExpression;
 import com.ykn.fmod.server.rule.core.ConditionReference;
 import com.ykn.fmod.server.rule.core.ConstCondition;
 import com.ykn.fmod.server.rule.core.DummyEvent;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.core.RuleAction;
+import com.ykn.fmod.server.rule.core.RuleParameter;
+import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.cond.*;
 
 /**
@@ -70,6 +73,12 @@ public class RuleRegistry {
     private static final Map<String, ConditionCommandFactory> conditionCommands = new HashMap<>();
 
     private static final Map<String, RuleActionCommandFactory> actionCommands = new HashMap<>();
+
+    private static final Map<String, ConditionParamsFactory> conditionParams = new HashMap<>();
+
+    private static final Map<String, ActionParamsFactory> actionParams = new HashMap<>();
+
+    private static final Map<String, RequiredParamMetadata> requiredParamMetadata = new HashMap<>();
 
     /** 
      * Factory that creates (or returns the singleton of) a {@link RuleEvent}. 
@@ -117,6 +126,16 @@ public class RuleRegistry {
     @FunctionalInterface
     public interface RuleActionCommandFactory {
         LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer);
+    }
+
+    @FunctionalInterface
+    public interface ConditionParamsFactory {
+        SourceCondition create(String name, List<RuleParameter<?>> values);
+    }
+
+    @FunctionalInterface
+    public interface ActionParamsFactory {
+        RuleAction create(String name, List<RuleParameter<?>> values);
     }
 
     /**
@@ -176,6 +195,43 @@ public class RuleRegistry {
     }
 
     /**
+     * Registers the required parameter metadata for a given type.
+     * 
+     * <p>This gives the ability to get the required parameters without need to
+     * construct the condition or action instance.
+     *
+     * @param name     the type string matching the condition or action's type
+     * @param metadata the required parameter metadata
+     */
+    public static void register(String name, RequiredParamMetadata metadata) {
+        requiredParamMetadata.put(name, metadata);
+    }
+
+    /**
+     * Registers a factory that builds a {@link SourceCondition} directly from a name and a list of
+     * parameter values, bypassing JSON deserialization. Used by the GUI editor's
+     * {@code ParamEditorScreen} to construct a condition instance from user-supplied values.
+     *
+     * @param name    the type string matching the condition's type
+     * @param factory the factory that creates a condition from a name and parameter values
+     */
+    public static void register(String name, ConditionParamsFactory factory) {
+        conditionParams.put(name, factory);
+    }
+
+    /**
+     * Registers a factory that builds a {@link RuleAction} directly from a name and a list of
+     * parameter values, bypassing JSON deserialization. Used by the GUI editor's
+     * {@code ParamEditorScreen} to construct an action instance from user-supplied values.
+     *
+     * @param name    the type string matching the action's type
+     * @param factory the factory that creates an action from a name and parameter values
+     */
+    public static void register(String name, ActionParamsFactory factory) {
+        actionParams.put(name, factory);
+    }
+
+    /**
      * Creates the {@link RuleEvent} instance for the given type string.
      *
      * @param name the event type string (e.g. {@code "TickEvent"})
@@ -223,6 +279,25 @@ public class RuleRegistry {
     }
 
     /**
+     * Builds the {@link SourceCondition} whose type matches {@code type} directly from
+     * {@code name} and {@code values}, via the {@link ConditionParamsFactory} registered for
+     * {@code type} - no placeholder/blank instance is ever constructed.
+     *
+     * @param type   the type string (the registry lookup key)
+     * @param name   the new instance's own name
+     * @param values the new instance's parameter values, in {@code getParameters()} order
+     * @return a new condition, or {@code null} if {@code type} is not registered
+     */
+    @Nullable
+    public static SourceCondition createCondition(String type, String name, List<RuleParameter<?>> values) {
+        ConditionParamsFactory factory = conditionParams.get(type);
+        if (factory == null) {
+            return null;
+        }
+        return factory.create(name, values);
+    }
+
+    /**
      * Deserializes the {@link RuleAction} whose type matches {@code name} from {@code json}.
      *
      * @param name the type string
@@ -254,13 +329,32 @@ public class RuleRegistry {
         return createRuleAction(type, json);
     }
 
-    private static void registerCore() {
-        RuleRegistry.register("Dummy", DummyEvent::getInstance);
+    /**
+     * Builds the {@link RuleAction} whose type matches {@code type} directly from {@code name}
+     * and {@code values}, via the {@link ActionParamsFactory} registered for {@code type} - no
+     * placeholder/blank instance is ever constructed.
+     *
+     * @param type   the type string (the registry lookup key)
+     * @param name   the new instance's own name
+     * @param values the new instance's parameter values, in {@code getParameters()} order
+     * @return a new action, or {@code null} if {@code type} is not registered
+     */
+    @Nullable
+    public static RuleAction createRuleAction(String type, String name, List<RuleParameter<?>> values) {
+        ActionParamsFactory factory = actionParams.get(type);
+        if (factory == null) {
+            return null;
+        }
+        return factory.create(name, values);
+    }
 
-        RuleRegistry.register("BinaryConditionExpression", BinaryConditionExpression::fromJson);
-        RuleRegistry.register("ConditionReference", ConditionReference::fromJson);
-        RuleRegistry.register("ConstCondition", ConstCondition::fromJson);
-        RuleRegistry.register("UnaryConditionExpression", UnaryConditionExpression::fromJson);
+    private static void registerCore() {
+        RuleRegistry.register(DummyEvent.TYPE, DummyEvent::getInstance);
+
+        RuleRegistry.register(BinaryConditionExpression.TYPE, BinaryConditionExpression::fromJson);
+        RuleRegistry.register(ConditionReference.TYPE, ConditionReference::fromJson);
+        RuleRegistry.register(ConstCondition.TYPE, ConstCondition::fromJson);
+        RuleRegistry.register(UnaryConditionExpression.TYPE, UnaryConditionExpression::fromJson);
     }
 
     /**
@@ -272,42 +366,73 @@ public class RuleRegistry {
     public static void registerDefault() {
         registerCore();
 
-        RuleRegistry.register("ServerTickEvent", ServerTickEvent::getInstance);
-        RuleRegistry.register("EntityDamageEvent", EntityDamageEvent::getInstance);
-        RuleRegistry.register("EntityDeathEvent", EntityDeathEvent::getInstance);
-        RuleRegistry.register("PlayerJoinEvent", PlayerJoinEvent::getInstance);
-        RuleRegistry.register("PlayerTickEvent", PlayerTickEvent::getInstance);
-        RuleRegistry.register("ProjectileHitEntityEvent", ProjectileHitEntityEvent::getInstance);
+        RuleRegistry.register(ServerTickEvent.TYPE, ServerTickEvent::getInstance);
+        RuleRegistry.register(EntityDamageEvent.TYPE, EntityDamageEvent::getInstance);
+        RuleRegistry.register(EntityDeathEvent.TYPE, EntityDeathEvent::getInstance);
+        RuleRegistry.register(PlayerJoinEvent.TYPE, PlayerJoinEvent::getInstance);
+        RuleRegistry.register(PlayerTickEvent.TYPE, PlayerTickEvent::getInstance);
+        RuleRegistry.register(ProjectileHitEntityEvent.TYPE, ProjectileHitEntityEvent::getInstance);
 
-        RuleRegistry.register("EntityPosition", EntityPosition::fromJson);
-        RuleRegistry.register("CheckPermission", CheckPermission::fromJson);
-        RuleRegistry.register("SmallerThan", SmallerThan::fromJson);
-        RuleRegistry.register("EqualsTo", EqualsTo::fromJson);
-        RuleRegistry.register("CheckBlockType", CheckBlockType::fromJson);
-        RuleRegistry.register("CheckEntityType", CheckEntityType::fromJson);
-        RuleRegistry.register("HasEntityType", HasEntityType::fromJson);
+        RuleRegistry.register(EntityPosition.TYPE, EntityPosition::fromJson);
+        RuleRegistry.register(CheckPermission.TYPE, CheckPermission::fromJson);
+        RuleRegistry.register(SmallerThan.TYPE, SmallerThan::fromJson);
+        RuleRegistry.register(EqualsTo.TYPE, EqualsTo::fromJson);
+        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType::fromJson);
+        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType::fromJson);
+        RuleRegistry.register(HasEntityType.TYPE, HasEntityType::fromJson);
 
-        RuleRegistry.register("BroadcastMessage", BroadcastMessage::fromJson);
-        RuleRegistry.register("SendMessage", SendMessage::fromJson);
-        RuleRegistry.register("BroadcastActionbar", BroadcastActionbar::fromJson);
-        RuleRegistry.register("SendActionbar", SendActionbar::fromJson);
-        RuleRegistry.register("ExecuteCommand", ExecuteCommandAction::fromJson);
-        RuleRegistry.register("RunFlow", RunFlowAction::fromJson);
+        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage::fromJson);
+        RuleRegistry.register(SendMessage.TYPE, SendMessage::fromJson);
+        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar::fromJson);
+        RuleRegistry.register(SendActionbar.TYPE, SendActionbar::fromJson);
+        RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction::fromJson);
+        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction::fromJson);
 
-        RuleRegistry.register("EntityPosition", EntityPosition::buildCommand);
-        RuleRegistry.register("CheckPermission", CheckPermission::buildCommand);
-        RuleRegistry.register("SmallerThan", SmallerThan::buildCommand);
-        RuleRegistry.register("EqualsTo", EqualsTo::buildCommand);
-        RuleRegistry.register("BlockType", CheckBlockType::buildCommand);
-        RuleRegistry.register("CheckEntityType", CheckEntityType::buildCommand);
-        RuleRegistry.register("HasEntityType", HasEntityType::buildCommand);
+        RuleRegistry.register(EntityPosition.TYPE, EntityPosition::buildCommand);
+        RuleRegistry.register(CheckPermission.TYPE, CheckPermission::buildCommand);
+        RuleRegistry.register(SmallerThan.TYPE, SmallerThan::buildCommand);
+        RuleRegistry.register(EqualsTo.TYPE, EqualsTo::buildCommand);
+        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType::buildCommand);
+        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType::buildCommand);
+        RuleRegistry.register(HasEntityType.TYPE, HasEntityType::buildCommand);
 
-        RuleRegistry.register("BroadcastMessage", BroadcastMessage::buildCommand);
-        RuleRegistry.register("SendMessage", SendMessage::buildCommand);
-        RuleRegistry.register("BroadcastActionbar", BroadcastActionbar::buildCommand);
-        RuleRegistry.register("SendActionbar", SendActionbar::buildCommand);
-        RuleRegistry.register("ExecuteCommand", ExecuteCommandAction::buildCommand);
-        RuleRegistry.register("RunFlow", RunFlowAction::buildCommand);
+        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage::buildCommand);
+        RuleRegistry.register(SendMessage.TYPE, SendMessage::buildCommand);
+        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar::buildCommand);
+        RuleRegistry.register(SendActionbar.TYPE, SendActionbar::buildCommand);
+        RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction::buildCommand);
+        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction::buildCommand);
+        
+        RuleRegistry.register(EntityPosition.TYPE, EntityPosition.PARAM_METADATA);
+        RuleRegistry.register(CheckPermission.TYPE, CheckPermission.PARAM_METADATA);
+        RuleRegistry.register(SmallerThan.TYPE, SmallerThan.PARAM_METADATA);
+        RuleRegistry.register(EqualsTo.TYPE, EqualsTo.PARAM_METADATA);
+        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType.PARAM_METADATA);
+        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType.PARAM_METADATA);
+        RuleRegistry.register(HasEntityType.TYPE, HasEntityType.PARAM_METADATA);
+
+        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage.PARAM_METADATA);
+        RuleRegistry.register(SendMessage.TYPE, SendMessage.PARAM_METADATA);
+        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar.PARAM_METADATA);
+        RuleRegistry.register(SendActionbar.TYPE, SendActionbar.PARAM_METADATA);
+        RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction.PARAM_METADATA);
+        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction.PARAM_METADATA);
+
+        RuleRegistry.register(EntityPosition.TYPE, EntityPosition::withParameters);
+        RuleRegistry.register(CheckPermission.TYPE, CheckPermission::withParameters);
+        RuleRegistry.register(SmallerThan.TYPE, SmallerThan::withParameters);
+        RuleRegistry.register(EqualsTo.TYPE, EqualsTo::withParameters);
+        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType::withParameters);
+        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType::withParameters);
+        RuleRegistry.register(HasEntityType.TYPE, HasEntityType::withParameters);
+
+        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage::withParameters);
+        RuleRegistry.register(SendMessage.TYPE, SendMessage::withParameters);
+        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar::withParameters);
+        RuleRegistry.register(SendActionbar.TYPE, SendActionbar::withParameters);
+        // permissionLevel is intentionally hidden from PARAM_METADATA. Default it to 3, matching the command path's own op-level cap.
+        RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction::withParameters);
+        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction::withParameters);
     }
 
     /**
@@ -373,5 +498,15 @@ public class RuleRegistry {
      */
     public static RuleActionCommandFactory getActionCommandFactory(String name) {
         return actionCommands.get(name);
+    }
+
+    /**
+     * Returns the {@link RequiredParamMetadata} registered under {@code name}, or {@code null}.
+     *
+     * @param name the condition or action type string
+     * @return the metadata, or {@code null} if not registered
+     */
+    public static RequiredParamMetadata getRequiredParamMetadata(String name) {
+        return requiredParamMetadata.get(name);
     }
 }

@@ -54,6 +54,8 @@ public class PlayerTickEvent implements RuleEvent {
 
     private final Set<String> variablesList;
 
+    public static final String TYPE = "PlayerTickEvent";
+
     private static final Map<String, Class<? extends Object>> createVariablesType() {
         Map<String, Class<? extends Object>> map = new HashMap<>();
         map.put("tick", Integer.class);
@@ -113,7 +115,7 @@ public class PlayerTickEvent implements RuleEvent {
 
     @Override
     public String getType() {
-        return "PlayerTickEvent";
+        return TYPE;
     }
 
     @Override

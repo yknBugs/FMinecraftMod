@@ -5,11 +5,14 @@
 
 package com.ykn.fmod.server.rule.tool;
 
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.BinaryConditionExpression;
 import com.ykn.fmod.server.rule.core.ConditionReference;
 import com.ykn.fmod.server.rule.core.ConditionRelationship;
 import com.ykn.fmod.server.rule.core.ConstCondition;
+import com.ykn.fmod.server.rule.core.IterableCondition;
 import com.ykn.fmod.server.rule.core.RuleCondition;
+import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.core.UnaryConditionExpression;
 
 /**
@@ -62,8 +65,33 @@ public class ConditionFormulaParser {
         return result;
     }
 
-    /** 
-     * Skip whitespace characters starting from the current position. 
+    /**
+     * Reconstructs a formula string for {@code condition}, the inverse of {@link #parse(String)}.
+     *
+     * <p>Composite nodes ({@link IterableCondition}) delegate to {@link IterableCondition#toFormula()};
+     * leaves render as their name ({@link SourceCondition}), reference name
+     * ({@link ConditionReference}), or literal ({@link ConstCondition}).
+     *
+     * @param condition the condition tree to render
+     * @return a formula string parseable by {@link #parse(String)}
+     */
+    public static String toFormula(RuleCondition condition) {
+        if (condition instanceof IterableCondition) {
+            return ((IterableCondition) condition).toFormula();
+        } else if (condition instanceof SourceCondition) {
+            return ((SourceCondition) condition).getName();
+        } else if (condition instanceof ConditionReference) {
+            return ((ConditionReference) condition).getReferenceName();
+        } else if (condition instanceof ConstCondition) {
+            return String.valueOf(((ConstCondition) condition).getValue());
+        } else {
+            Util.LOGGER.warn("Unknown RuleCondition type: " + condition.getClass().getName());
+            return condition.getType();
+        }
+    }
+
+    /**
+     * Skip whitespace characters starting from the current position.
      */
     private void skipWhitespace() {
         while (pos < formula.length() && Character.isWhitespace(formula.charAt(pos))) {

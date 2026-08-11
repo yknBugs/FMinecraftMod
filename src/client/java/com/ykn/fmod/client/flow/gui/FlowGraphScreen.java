@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicFlow;
@@ -581,29 +582,29 @@ public class FlowGraphScreen extends Screen {
 
         switch (this.mode) {
             case IDLE_ADD -> {
-                EditBox nameBox = new EditBox(this.font, x, y, 150, 20, Component.empty());
+                EditBox nameBox = new EditBox(this.font, x, y, this.width - 290, 20, Component.empty());
                 nameBox.setHint(Component.translatable("fmod.flowgui.graph.menu.namehint").withStyle(ChatFormatting.DARK_GRAY));
                 nameBox.setValue(this.pendingAddName);
                 nameBox.setResponder(v -> this.pendingAddName = v);
                 addMenuWidget(nameBox);
-                x += 155;
-                addMenuWidget(Button.builder(typeButtonLabel(), b -> openTypePicker()).pos(x, y).size(180, 20).build());
-                x += 185;
+                x = this.width - 270;
+                addMenuWidget(Button.builder(typeButtonLabel(), b -> openTypePicker()).pos(x, y).size(150, 20).build());
+                x = this.width - 110;
                 addMenuWidget(Button.builder(Component.translatable("fmod.flowgui.graph.addnode"), b -> doAddNode()).pos(x, y).size(100, 20).build());
             }
             case NODE_SELECTED -> {
                 FlowNode node = getNode(this.modeNodeId);
-                Button delete = Button.builder(Component.translatable("fmod.flowgui.graph.deletenode"), b -> doDeleteSelected()).pos(x, y).size(120, 20).build();
+                Button delete = Button.builder(Component.translatable("fmod.flowgui.graph.deletenode"), b -> doDeleteSelected()).pos(x, y).size(100, 20).build();
                 delete.active = node != null && !node.isEventNode();
                 addMenuWidget(delete);
             }
             case RENAMING -> {
                 FlowNode node = getNode(this.modeNodeId);
-                EditBox nameBox = new EditBox(this.font, x, y, 200, 20, Component.empty());
+                EditBox nameBox = new EditBox(this.font, x, y, this.width - 130, 20, Component.empty());
                 nameBox.setHint(Component.translatable("fmod.flowgui.graph.menu.namehint").withStyle(ChatFormatting.DARK_GRAY));
                 nameBox.setValue(node == null ? "" : node.getName());
                 addMenuWidget(nameBox);
-                x += 205;
+                x = this.width - 110;
                 addMenuWidget(Button.builder(Component.translatable("fmod.misc.rename"), b -> doRename(nameBox.getValue())).pos(x, y).size(100, 20).build());
             }
             case BRANCH_PICK -> {
@@ -613,10 +614,10 @@ public class FlowGraphScreen extends Screen {
                     ? Component.translatable("fmod.flowgui.graph.menu.branch.hint")
                     : Component.translatable("fmod.flowgui.graph.menu.branch.connected", target.getName());
                 addMenuWidget(hintWidget(hint, x, y));
-                x += 305;
+                x = this.width - 70;
                 // Always shown (just disabled when there's nothing to clear) so the control is never
                 // hidden - a branch that IS connected must always offer a way to disconnect it.
-                Button clearBranch = Button.builder(Component.translatable("fmod.misc.clear"), b -> doClearBranch()).pos(x, y).size(80, 20).build();
+                Button clearBranch = Button.builder(Component.translatable("fmod.misc.clear"), b -> doClearBranch()).pos(x, y).size(60, 20).build();
                 clearBranch.active = target != null;
                 addMenuWidget(clearBranch);
             }
@@ -641,23 +642,23 @@ public class FlowGraphScreen extends Screen {
                     constLabel = Component.translatable("fmod.misc.edit");
                 }
                 addMenuWidget(hintWidget(hint, x, y));
-                x += 305;
+                x = this.width - 140;
                 // Always shown (just disabled when already empty) - same reasoning as the branch Clear above.
-                Button clearInput = Button.builder(Component.translatable("fmod.misc.clear"), b -> doClearInput()).pos(x, y).size(80, 20).build();
+                Button clearInput = Button.builder(Component.translatable("fmod.misc.clear"), b -> doClearInput()).pos(x, y).size(60, 20).build();
                 clearInput.active = canClear;
                 addMenuWidget(clearInput);
-                x += 85;
-                addMenuWidget(Button.builder(constLabel, b -> enterEditConst(this.modeNodeId, this.modeIndex)).pos(x, y).size(80, 20).build());
+                x = this.width - 70;
+                addMenuWidget(Button.builder(constLabel, b -> enterEditConst(this.modeNodeId, this.modeIndex)).pos(x, y).size(60, 20).build());
             }
             case OUTPUT_PICK -> addMenuWidget(hintWidget(Component.translatable("fmod.flowgui.graph.menu.output.hint"), x, y));
             case EDIT_CONST -> {
-                EditBox valueBox = new EditBox(this.font, x, y, 250, 20, Component.empty());
+                EditBox valueBox = new EditBox(this.font, x, y, this.width - 90, 20, Component.empty());
                 valueBox.setHint(Component.translatable("fmod.flowgui.graph.menu.valuehint").withStyle(ChatFormatting.DARK_GRAY));
                 valueBox.setValue(this.pendingConstInitial);
                 valueBox.setMaxLength(512);
                 addMenuWidget(valueBox);
-                x += 255;
-                addMenuWidget(Button.builder(CommonComponents.GUI_DONE, b -> doSetConst(valueBox.getValue())).pos(x, y).size(80, 20).build());
+                x = this.width - 70;
+                addMenuWidget(Button.builder(CommonComponents.GUI_DONE, b -> doSetConst(valueBox.getValue())).pos(x, y).size(60, 20).build());
             }
             case FEEDBACK_MESSAGE -> {
                 addMenuWidget(hintWidget(this.statusMessage, x, y));
@@ -1162,6 +1163,7 @@ public class FlowGraphScreen extends Screen {
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        this.renderDirtBackground(context);
         updateNodeButtonPositions();
         context.fill(this.canvasX, this.canvasY, this.canvasX + this.canvasWidth, this.canvasY + this.canvasHeight, 0xFF1E1E1E);
         context.enableScissor(this.canvasX, this.canvasY, this.canvasX + viewWidth(), this.canvasY + viewHeight());

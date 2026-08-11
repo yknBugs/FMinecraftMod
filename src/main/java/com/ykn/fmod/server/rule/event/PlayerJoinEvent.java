@@ -48,6 +48,8 @@ public class PlayerJoinEvent implements RuleEvent {
 
     private final Set<String> variablesList;
 
+    public static final String TYPE = "PlayerJoinEvent";
+
     private static final Map<String, Class<? extends Object>> createVariablesType() {
         Map<String, Class<? extends Object>> map = new HashMap<>();
         map.put("player", UUID.class);
@@ -95,7 +97,7 @@ public class PlayerJoinEvent implements RuleEvent {
 
     @Override
     public String getType() {
-        return "PlayerJoinEvent";
+        return TYPE;
     }
 
     @Override

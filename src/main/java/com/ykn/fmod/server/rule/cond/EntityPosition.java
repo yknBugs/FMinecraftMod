@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
@@ -69,9 +70,9 @@ public class EntityPosition implements SourceCondition {
 
     private final RuleParameter<Double> radius;
 
-    private static final String TYPE = "EntityPosition";
+    public static final String TYPE = "EntityPosition";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.entityposition.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.entityposition.summary")
         .add(ParamKind.ENTITY, "fmod.rule.condition.entityposition.param.entity.name", "fmod.rule.condition.entityposition.param.entity.desc", "entity", "var.entity")
         .add(ParamKind.DIMENSION, "fmod.rule.condition.entityposition.param.dimension.name", "fmod.rule.condition.entityposition.param.dimension.desc", "dimension", "var.dimension")
         .add(ParamKind.POSITION, "fmod.rule.condition.entityposition.param.position.name", "fmod.rule.condition.entityposition.param.position.desc", "position", "var.position")
@@ -140,6 +141,11 @@ public class EntityPosition implements SourceCondition {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.entityId, this.dimension, this.position, this.radius);
+    }
+
+    @Override
     public Component render() {
         return Util.parseTranslatableText("fmod.rule.condition.entityposition", this.getName(), this.getType(), 
             this.entityId.render(), this.dimension.render(), this.position.render(), this.radius.render());
@@ -185,6 +191,12 @@ public class EntityPosition implements SourceCondition {
         });
         RuleParameter<Double> radius = RuleParameter.fromJson(json, "radius", JsonElement::getAsDouble);
         return new EntityPosition(json.get("name").getAsString(), entityId, dimension, position, radius);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
+        return new EntityPosition(name, (RuleParameter<UUID>) values.get(0), (RuleParameter<ResourceLocation>) values.get(1),
+            (RuleParameter<Vec3>) values.get(2), (RuleParameter<Double>) values.get(3));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {

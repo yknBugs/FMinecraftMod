@@ -46,6 +46,8 @@ public class EntityDeathEvent implements RuleEvent {
 
     private final Set<String> variablesList;
 
+    public static final String TYPE = "EntityDeathEvent";
+
     private static final Map<String, Class<? extends Object>> createVariablesType() {
         Map<String, Class<? extends Object>> map = new HashMap<>();
         map.put("entity", UUID.class);
@@ -87,7 +89,7 @@ public class EntityDeathEvent implements RuleEvent {
 
     @Override
     public String getType() {
-        return "EntityDeathEvent";
+        return TYPE;
     }
 
     @Override

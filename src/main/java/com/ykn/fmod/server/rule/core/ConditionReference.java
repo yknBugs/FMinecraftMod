@@ -47,6 +47,8 @@ public class ConditionReference implements RuleCondition {
 
     private final String referenceName;
 
+    public static final String TYPE = "ConditionReference";
+
     private ConditionReference(String name, String referenceName) {
         this.name = name;
         this.referenceName = referenceName;
@@ -105,7 +107,7 @@ public class ConditionReference implements RuleCondition {
 
     @Override
     public String getType() {
-        return "ConditionReference";
+        return TYPE;
     }
 
     @Nullable

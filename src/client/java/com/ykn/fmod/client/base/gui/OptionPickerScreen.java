@@ -3,7 +3,7 @@
  * This file is under the MIT License
  */
 
-package com.ykn.fmod.client.flow.gui;
+package com.ykn.fmod.client.base.gui;
 
 import java.util.List;
 import java.util.Locale;
@@ -14,6 +14,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.components.StringWidget;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -38,6 +40,14 @@ public class OptionPickerScreen extends Screen {
             this(label, tooltip, onSelect, label.getString());
         }
 
+        /**
+         * Constructs an option with a custom search text string.
+         *
+         * @param label      the display label shown in the list
+         * @param tooltip    optional tooltip shown on hover, or {@code null}
+         * @param onSelect   the action to run when this option is clicked
+         * @param searchText the lowercased text used for live filtering
+         */
         public Option(Component label, Component tooltip, Runnable onSelect, String searchText) {
             this.label = label;
             this.tooltip = tooltip;
@@ -87,11 +97,12 @@ public class OptionPickerScreen extends Screen {
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
-        super.render(context, mouseX, mouseY, delta);
+        // this.list is added via addWidget (not addRenderableWidget) so it isn't auto-rendered by
+        // super.render(); it must render first since AbstractSelectionList paints a full-width fade
+        // above/below its own bounds that would otherwise mask the renderable widgets drawn by super.render().
         this.list.render(context, mouseX, mouseY, delta);
         context.drawCenteredString(this.font, this.title, this.width / 2, 12, 0xFFFFFF);
-        this.search.render(context, mouseX, mouseY, delta);
-        this.cancelButton.render(context, mouseX, mouseY, delta);
+        super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
@@ -106,7 +117,7 @@ public class OptionPickerScreen extends Screen {
         }
 
         void addOption(Option option) {
-            this.addEntry(new Entry(option));
+            this.addEntry(new Entry(option, this.getRowWidth()));
         }
 
         void clear() {
@@ -125,9 +136,16 @@ public class OptionPickerScreen extends Screen {
 
         private static class Entry extends ObjectSelectionList.Entry<Entry> {
             private final Option option;
+            private final StringWidget textWidget;
 
-            Entry(Option option) {
+            Entry(Option option, int rowWidth) {
                 this.option = option;
+                this.textWidget = new StringWidget(0, 0, rowWidth, 20, option.label, Minecraft.getInstance().font).alignCenter();
+                if (option.tooltip != null) {
+                    // Tooltip (unlike a raw renderTooltip(Font, Component, ...) call) correctly renders
+                    // embedded "\n" as a line break instead of a missing-glyph box.
+                    this.textWidget.setTooltip(Tooltip.create(option.tooltip));
+                }
             }
 
             @Override
@@ -135,10 +153,9 @@ public class OptionPickerScreen extends Screen {
                 if (hovered) {
                     context.fill(x - 2, y - 1, x + entryWidth + 2, y + entryHeight + 1, 0x30FFFFFF);
                 }
-                context.drawCenteredString(Minecraft.getInstance().font, this.option.label, x + entryWidth / 2, y + (entryHeight - 9) / 2, 0xFFFFFF);
-                if (hovered && this.option.tooltip != null) {
-                    context.renderTooltip(Minecraft.getInstance().font, this.option.tooltip, mouseX, mouseY);
-                }
+                this.textWidget.setX(x);
+                this.textWidget.setY(y + (entryHeight - 18) / 2);
+                this.textWidget.render(context, mouseX, mouseY, tickDelta);
             }
 
             @Override

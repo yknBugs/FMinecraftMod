@@ -61,9 +61,9 @@ public class SendMessage implements RuleAction {
 
     private final RuleParameter<String> message;
 
-    private static final String TYPE = "SendMessage";
+    public static final String TYPE = "SendMessage";
 
-    private static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.sendmessage.summary")
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.sendmessage.summary")
         .add(ParamKind.PLAYERS, "fmod.rule.action.sendmessage.param.players.name", "fmod.rule.action.sendmessage.param.players.desc", "players", "var.players")
         .add(ParamKind.GREEDY_STRING, "fmod.rule.action.sendmessage.param.message.name", "fmod.rule.action.sendmessage.param.message.desc", "message", "var.message");
 
@@ -151,6 +151,12 @@ public class SendMessage implements RuleAction {
     }
 
     @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.players, this.message);
+    }
+    
+
+    @Override
     public String getType() {
         return TYPE;
     }
@@ -196,6 +202,11 @@ public class SendMessage implements RuleAction {
         });
         RuleParameter<String> message = RuleParameter.fromJson(json, "message", JsonElement::getAsString);
         return new SendMessage(name, players, message);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static RuleAction withParameters(String name, List<RuleParameter<?>> values) {
+        return new SendMessage(name, (RuleParameter<List<UUID>>) values.get(0), (RuleParameter<String>) values.get(1));
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {

@@ -42,6 +42,8 @@ public class ServerTickEvent implements RuleEvent {
 
     private final Map<String, Class<? extends Object>> variableTypes;
 
+    public static final String TYPE = "ServerTickEvent";
+
     private static final Map<String, Class<? extends Object>> createVariablesType() {
         Map<String, Class<? extends Object>> map = new HashMap<>();
         map.put("tick", Integer.class);
@@ -58,7 +60,7 @@ public class ServerTickEvent implements RuleEvent {
 
     @Override
     public String getType() {
-        return "ServerTickEvent";
+        return TYPE;
     }
 
     @Override
