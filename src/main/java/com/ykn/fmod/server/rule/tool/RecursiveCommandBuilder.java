@@ -277,38 +277,21 @@ public class RecursiveCommandBuilder {
         return this.add(entry.constArgName, entry.varArgName, entry.nameI18nKey, entry.descI18nKey, entry.kind, customSuggester);
     }
 
-    // /**
-    //  * Registers a new parameter that may appear in the command in {@code const}, {@code var}, or
-    //  * {@code mix} mode, using a fully custom Brigadier node supplier. Prefer {@link #add(String,
-    //  * String, String, String, ParamKind)} for parameters that fit a declared {@link ParamKind};
-    //  * this overload remains as an escape hatch for shapes the closed taxonomy doesn't cover.
-    //  * Arguments added this way must be resolved manually (via {@link RuleParameter#fromCommandContext})
-    //  * rather than through {@link #resolveParameter(int, Set, CommandContext)}.
-    //  *
-    //  * @param constArgumentName          argument name used to retrieve the constant value from the context
-    //  * @param variableArgumentName       argument name used to retrieve the variable name from the context
-    //  * @param nameKey                    i18n key for this parameter's short display name, used in usage output
-    //  * @param descKey                    i18n key for this parameter's description, used in usage output and
-    //  *                                    as the tooltip on its variable-name completions
-    //  * @param constArgumentNodeSupplier  supplier that produces the Brigadier argument node for the constant value;
-    //  *                                   called once per unique command path that includes the constant
-    //  * @return {@code this}, for method chaining
-    //  */
-    // public RecursiveCommandBuilder add(String constArgumentName, String variableArgumentName, String nameKey, String descKey, Supplier<RequiredArgumentBuilder<CommandSourceStack, ?>> constArgumentNodeSupplier) {
-    //     this.arguments.add(new RuleComponentArgument(constArgumentName, variableArgumentName, nameKey, descKey, constArgumentNodeSupplier, null));
-    //     return this;
-    // }
-
     /**
      * Registers a new parameter from a {@link RequiredParamMetadata} instance, which may contain
-     * multiple entries. Each entry is added in order.
+     * multiple entries. Each entry is added in order, using {@link RequiredParamMetadata.Entry#suggester}
+     * in place of the kind's default suggester when the entry declares one.
      *
      * @param params the metadata describing the parameters to add
      * @return {@code this}, for method chaining
      */
     public RecursiveCommandBuilder addAll(RequiredParamMetadata params) {
         for (RequiredParamMetadata.Entry entry : params.getArgumentList()) {
-            this.add(entry);
+            if (entry.suggester != null) {
+                this.add(entry, entry.suggester);
+            } else {
+                this.add(entry);
+            }
         }
         return this;
     }

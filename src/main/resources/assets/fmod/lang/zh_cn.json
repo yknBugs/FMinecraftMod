@@ -824,6 +824,7 @@
     "fmod.rulegui.rule.formula.apply": "应用公式",
     "fmod.rulegui.rule.formula.applied": "公式已应用。",
     "fmod.rulegui.rule.condition.noteditable": "\"%s\"(类型 %s) 是复合/表达式条件,无法在此编辑。",
+    "fmod.rulegui.rule.param.unsupported": "\"%s\"(类型 %s) 使用了此客户端没有编辑器的参数类型,无法在此编辑。",
     "fmod.rulegui.rule.section.extra": "附加条件",
     "fmod.rulegui.rule.section.satisfied": "条件满足时执行的动作",
     "fmod.rulegui.rule.section.violated": "条件不满足时执行的动作",

@@ -8,6 +8,9 @@ package com.ykn.fmod.server.rule.core;
 import java.util.List;
 
 import com.google.gson.JsonObject;
+import com.ykn.fmod.server.rule.tool.RuleComponentFactory;
+
+import net.minecraft.network.chat.Component;
 
 /**
  * Represents a single executable action within a {@link CustomRule}.
@@ -63,9 +66,17 @@ public interface RuleAction extends RuleComponent {
      * <p>The returned object is placed under the {@code "value"} key in the full
      * action JSON produced by {@link #toJson()}.
      *
+     * <p>The default implementation serializes {@link #getParameterValues()} against
+     * {@link #getParameters()} via {@link RuleComponentFactory#toValueJson}. Override only when
+     * the action has state beyond its declared parameters (e.g. a privileged field never exposed
+     * to command/GUI editing) - call {@code RuleAction.super.getValueJson()} first to get the
+     * declared-parameter portion, then add the extra state.
+     *
      * @return a non-null {@link JsonObject} containing parameters for this action
      */
-    public JsonObject getValueJson();
+    default public JsonObject getValueJson() {
+        return RuleComponentFactory.toValueJson(getParameters(), getParameterValues());
+    }
 
     /**
      * Returns the metadata describing the parameters required by this action.
@@ -84,6 +95,19 @@ public interface RuleAction extends RuleComponent {
      * @return a non-null list of this action's {@link RuleParameter} values
      */
     public List<RuleParameter<?>> getParameterValues();
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation renders {@code translate(renderKey, name, type,
+     * param1.render(), param2.render(), ...)} via {@link RuleComponentFactory#render}, where
+     * {@code renderKey} is {@link RequiredParamMetadata#getRenderI18nKey()}. Override only when
+     * the action needs to show something not derivable from its declared parameters.
+     */
+    @Override
+    default public Component render() {
+        return RuleComponentFactory.render(getParameters(), getName(), getType(), getParameterValues());
+    }
 
     /**
      * Serializes this action to a {@link JsonObject} that can be stored in a rule JSON file.

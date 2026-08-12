@@ -8,6 +8,9 @@ package com.ykn.fmod.server.rule.core;
 import java.util.List;
 
 import com.google.gson.JsonObject;
+import com.ykn.fmod.server.rule.tool.RuleComponentFactory;
+
+import net.minecraft.network.chat.Component;
 
 /**
  * Marker interface for <em>leaf</em> (source) conditions that directly inspect game state.
@@ -51,9 +54,15 @@ public interface SourceCondition extends RuleCondition {
      * {@link RuleParameter#toJson(RuleParameter, java.util.function.Function)} so that
      * both the variable name and the constant fallback are preserved.
      *
+     * <p>The default implementation serializes {@link #getParameterValues()} against
+     * {@link #getParameters()} via {@link RuleComponentFactory#toValueJson}. Override only when
+     * the condition has state beyond its declared parameters.
+     *
      * @return a non-null {@link JsonObject} containing the serialised parameters
      */
-    public JsonObject getValueJson();
+    default JsonObject getValueJson() {
+        return RuleComponentFactory.toValueJson(getParameters(), getParameterValues());
+    }
 
     /**
      * Returns this condition's current parameter values, in the same order as
@@ -63,6 +72,19 @@ public interface SourceCondition extends RuleCondition {
      */
     public List<RuleParameter<?>> getParameterValues();
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation renders {@code translate(renderKey, name, type,
+     * param1.render(), param2.render(), ...)} via {@link RuleComponentFactory#render}, where
+     * {@code renderKey} is {@link RequiredParamMetadata#getRenderI18nKey()}. Override only when
+     * the condition needs to show something not derivable from its declared parameters.
+     */
+    @Override
+    default Component render() {
+        return RuleComponentFactory.render(getParameters(), getName(), getType(), getParameterValues());
+    }
+
     @Override
     default JsonObject toJson() {
         JsonObject result = new JsonObject();
@@ -71,5 +93,5 @@ public interface SourceCondition extends RuleCondition {
         result.add("value", getValueJson());
         return result;
     }
-    
+
 }

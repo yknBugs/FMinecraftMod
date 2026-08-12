@@ -8,11 +8,9 @@ package com.ykn.fmod.client.rule.gui;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.rule.core.ParamKind;
 import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.core.RuleEvent;
@@ -27,16 +25,15 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.StringWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.network.chat.Component;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec3;
 
 import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 
 /**
  * Builds and reads back a single parameter-editing row for {@link ParamEditorScreen}: one row per
- * {@link RequiredParamMetadata.Entry}, switching only on {@link ParamKind} - never on the concrete
- * condition/action class - so no per-component-type UI code is needed.
+ * {@link RequiredParamMetadata.Entry}, dispatching the kind-specific constant widget(s) to
+ * {@link ParamWidgetRegistry} - never switching on the concrete condition/action class - so no
+ * per-component-type UI code is needed. The variable-picker half of each row (unrelated to which
+ * {@link ParamKind} is in use) stays here.
  *
  * <p>Each row is: a name/info line, a "Variable: ON/OFF" line (toggle + textbox + Pick button), and
  * a "Constant: ON/OFF" line (toggle + kind-specific constant widget(s)) - so it's always visually
@@ -62,9 +59,6 @@ import com.ykn.fmod.client.base.gui.OptionPickerScreen;
  */
 public final class ParamWidgetFactory {
 
-    private ParamWidgetFactory() {
-    }
-
     // label+info(12) + gap(4) + variable line(18) + gap(6) + constant line(18) = 58; padded to 64
     // so consecutive rows in the list don't touch.
     public static final int ROW_HEIGHT = 64;
@@ -85,8 +79,7 @@ public final class ParamWidgetFactory {
         private final List<AbstractWidget> variableWidgets;
         private final List<AbstractWidget> constantWidgets;
 
-        private record PositionedWidget(AbstractWidget widget, int offsetX, int offsetY) {
-        }
+        private record PositionedWidget(AbstractWidget widget, int offsetX, int offsetY) {}
 
         private ParamRow(CycleButton<Boolean> useConstantToggle, CycleButton<Boolean> bindVariableToggle,
                 EditBox variableBox, Supplier<Object> constantReader, List<PositionedWidget> widgets,
@@ -306,189 +299,8 @@ public final class ParamWidgetFactory {
         Minecraft.getInstance().setScreen(new OptionPickerScreen(owner, Component.translatable("fmod.rulegui.param.pickvariable"), options));
     }
 
-    /** 
-     * Replaces the row's constant value, preserving its variable half (if bound) unchanged. 
-     */
-    private static void applyPickedConstant(ParamEditorScreen<?> owner, int index, Object constant) {
-        RuleParameter<?> current = owner.getWorkingValue(index);
-        String variableName = current.getVariableName();
-        owner.setWorkingValue(index, variableName != null
-            ? RuleParameter.ofBoth(variableName, constant) : RuleParameter.ofConstant(constant));
-        Minecraft.getInstance().setScreen(owner);
-    }
-
     private static Supplier<Object> buildConstantWidgets(ParamEditorScreen<?> owner, int index, RequiredParamMetadata.Entry entry,
             Object initialConstant, int x, int y, int width, Consumer<AbstractWidget> widgetSink) {
-        ParamKind<?> kind = entry.kind;
-        Class<?> valueType = kind.valueType();
-
-        if (kind == ParamKind.DIMENSION) {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.dimension");
-            widgetSink.accept(box);
-            widgetSink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                RuleEditorBridge.onClient(RuleEditorBridge.dimensionCatalog(), locations -> openResourceLocationPicker(owner, index, locations));
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> ResourceLocation.tryParse(box.getValue().trim());
-        } else if (kind == ParamKind.BLOCK_ID) {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.block");
-            widgetSink.accept(box);
-            widgetSink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                openResourceLocationPicker(owner, index, BuiltInRegistries.BLOCK.keySet());
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> ResourceLocation.tryParse(box.getValue().trim());
-        } else if (kind == ParamKind.ENTITY_TYPE_ID) {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.entitytype");
-            widgetSink.accept(box);
-            widgetSink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                openResourceLocationPicker(owner, index, BuiltInRegistries.ENTITY_TYPE.keySet());
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> ResourceLocation.tryParse(box.getValue().trim());
-        } else if (valueType == UUID.class) {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.player");
-            widgetSink.accept(box);
-            widgetSink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                RuleEditorBridge.onClient(RuleEditorBridge.onlinePlayers(), players -> openPlayerPicker(owner, index, players, false));
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> {
-                try {
-                    return UUID.fromString(box.getValue().trim());
-                } catch (IllegalArgumentException e) {
-                    return null;
-                }
-            };
-        } else if (valueType == List.class) {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.players");
-            widgetSink.accept(box);
-            widgetSink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                RuleEditorBridge.onClient(RuleEditorBridge.onlinePlayers(), players -> openPlayerPicker(owner, index, players, true));
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> {
-                if (box.getValue().isBlank()) {
-                    return null;
-                }
-                List<UUID> uuids = new ArrayList<>();
-                for (String token : box.getValue().split(",")) {
-                    try {
-                        uuids.add(UUID.fromString(token.trim()));
-                    } catch (IllegalArgumentException ignored) {
-                        // Skip malformed tokens; the row is still usable with the remaining valid UUIDs.
-                    }
-                }
-                return uuids;
-            };
-        } else if (valueType == Vec3.class) {
-            int fieldWidth = (width - 8) / 3;
-            EditBox xBox = numberBox(x, y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.x) : "", "fmod.rulegui.param.hint.x");
-            EditBox yBox = numberBox(x + fieldWidth + 4, y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.y) : "", "fmod.rulegui.param.hint.y");
-            EditBox zBox = numberBox(x + 2 * (fieldWidth + 4), y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.z) : "", "fmod.rulegui.param.hint.z");
-            widgetSink.accept(xBox);
-            widgetSink.accept(yBox);
-            widgetSink.accept(zBox);
-            return () -> {
-                try {
-                    return new Vec3(Double.parseDouble(xBox.getValue().trim()), Double.parseDouble(yBox.getValue().trim()), Double.parseDouble(zBox.getValue().trim()));
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            };
-        } else if (valueType == Boolean.class) {
-            CycleButton<Boolean> box = CycleButton.onOffBuilder(initialConstant instanceof Boolean b && b)
-                .create(x, y, width, 18, Component.empty());
-            widgetSink.accept(box);
-            return box::getValue;
-        } else if (valueType == Integer.class) {
-            EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
-            widgetSink.accept(box);
-            return () -> {
-                try {
-                    return Integer.parseInt(box.getValue().trim());
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            };
-        } else if (valueType == Double.class) {
-            EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
-            widgetSink.accept(box);
-            return () -> {
-                try {
-                    return Double.parseDouble(box.getValue().trim());
-                } catch (NumberFormatException e) {
-                    return null;
-                }
-            };
-        } else if (kind == ParamKind.AUTO) {
-            EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
-            widgetSink.accept(box);
-            return () -> box.getValue().isEmpty() ? null : TypeAdaptor.parse(box.getValue()).autoCast();
-        } else {
-            // STRING / GREEDY_STRING, and the safe default for any future ParamKind.
-            EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
-            widgetSink.accept(box);
-            return box::getValue;
-        }
-    }
-
-    private static EditBox textBox(int x, int y, int width, Object initialValue, String hintI18nKey) {
-        EditBox box = new EditBox(Minecraft.getInstance().font, x, y, width, 18, Component.empty());
-        box.setMaxLength(512);
-        box.setHint(Component.translatable(hintI18nKey).withStyle(ChatFormatting.DARK_GRAY));
-        if (initialValue != null) {
-            box.setValue(TypeAdaptor.parse(initialValue).asString());
-        }
-        return box;
-    }
-
-    private static EditBox numberBox(int x, int y, int width, String initialValue, String hintI18nKey) {
-        EditBox box = new EditBox(Minecraft.getInstance().font, x, y, width, 18, Component.empty());
-        box.setMaxLength(32);
-        box.setHint(Component.translatable(hintI18nKey).withStyle(ChatFormatting.DARK_GRAY));
-        box.setValue(initialValue);
-        return box;
-    }
-
-    private static void openResourceLocationPicker(ParamEditorScreen<?> owner, int index, Iterable<ResourceLocation> locations) {
-        List<OptionPickerScreen.Option> options = new ArrayList<>();
-        for (ResourceLocation location : locations) {
-            options.add(new OptionPickerScreen.Option(Component.literal(location.toString()), null,
-                () -> applyPickedConstant(owner, index, location.toString())));
-        }
-        Minecraft.getInstance().setScreen(new OptionPickerScreen(owner, Component.translatable("fmod.rulegui.param.pick"), options));
-    }
-
-    /**
-     * Opens a player picker sub-screen, which hands back the picked UUID(s) through
-     * {@link ParamEditorScreen#setWorkingValue} rather than writing into a textbox directly:
-     * {@link Minecraft#setScreen} re-runs {@link ParamEditorScreen#init()} every time it switches
-     * back from the picker sub-screen, which discards and rebuilds every row's widgets from scratch,
-     * so anything written only into a widget that's about to be discarded would be silently lost.
-     * 
-     * @param owner   the screen this row belongs to, used to persist picker selections and to 
-     *                navigate to picker sub-screens and back
-     * @param index   this row's position among the component's declared parameters, i.e. its index
-     *                into {@link ParamEditorScreen#getWorkingValue}
-     * @param players the list of online players to pick from, each with a name and UUID
-     * @param append if {@code true} (the {@code List<UUID>} / "players" kind), the picked UUID is
-     *               comma-appended to whatever constant text is already present; otherwise (the
-     *               single {@code UUID} / "player" kind) it replaces the constant outright.
-     */
-    private static void openPlayerPicker(ParamEditorScreen<?> owner, int index, List<RuleEditorBridge.PlayerInfo> players, boolean append) {
-        List<OptionPickerScreen.Option> options = new ArrayList<>();
-        for (RuleEditorBridge.PlayerInfo player : players) {
-            options.add(new OptionPickerScreen.Option(Component.literal(player.name), Component.literal(player.uuid.toString()), () -> {
-                if (append) {
-                    Object existingConstant = owner.getWorkingValue(index).getConstantValue();
-                    String existing = existingConstant == null ? "" : TypeAdaptor.parse(existingConstant).asString();
-                    applyPickedConstant(owner, index, existing.isBlank() ? player.uuid.toString() : existing + "," + player.uuid.toString());
-                } else {
-                    applyPickedConstant(owner, index, player.uuid.toString());
-                }
-            }));
-        }
-        Minecraft.getInstance().setScreen(new OptionPickerScreen(owner, Component.translatable("fmod.rulegui.param.pickplayer"), options));
+        return ParamWidgetRegistry.build(owner, index, entry, initialConstant, x, y, width, widgetSink);
     }
 }

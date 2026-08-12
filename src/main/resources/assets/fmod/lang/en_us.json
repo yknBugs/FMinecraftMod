@@ -824,6 +824,7 @@
     "fmod.rulegui.rule.formula.apply": "Apply Formula",
     "fmod.rulegui.rule.formula.applied": "Formula applied.",
     "fmod.rulegui.rule.condition.noteditable": "\"%s\" (type %s) is a composite/expression condition and can't be edited here.",
+    "fmod.rulegui.rule.param.unsupported": "\"%s\" (type %s) uses a parameter type this client has no editor for and can't be edited here.",
     "fmod.rulegui.rule.section.extra": "Extra Conditions",
     "fmod.rulegui.rule.section.satisfied": "Actions (If Satisfied)",
     "fmod.rulegui.rule.section.violated": "Actions (If Violated)",

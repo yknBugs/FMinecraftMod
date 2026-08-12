@@ -5,6 +5,10 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+
+import net.minecraft.commands.CommandSourceStack;
+
 /**
  * Describes the parameters required by a {@link RuleAction} or {@link SourceCondition}.
  *
@@ -125,7 +129,7 @@ public class RequiredParamMetadata {
      * @return {@code this}, for method chaining
      */
     public RequiredParamMetadata add(ParamKind<?> kind, String nameI18nKey, String descI18nKey, String constArgName, String varArgName, @Nullable Object defaultValue) {
-        return add(new Entry(kind, nameI18nKey, descI18nKey, constArgName, varArgName, defaultValue));
+        return add(new Entry(kind, nameI18nKey, descI18nKey, constArgName, varArgName, defaultValue, null));
     }
 
     /**
@@ -142,7 +146,45 @@ public class RequiredParamMetadata {
      * @return {@code this}, for method chaining
      */
     public RequiredParamMetadata add(ParamKind<?> kind, String nameI18nKey, String descI18nKey, String constArgName, String varArgName) {
-        return add(new Entry(kind, nameI18nKey, descI18nKey, constArgName, varArgName, null));
+        return add(new Entry(kind, nameI18nKey, descI18nKey, constArgName, varArgName, null, null));
+    }
+
+    /**
+     * Registers a new parameter with a custom command-line suggester, overriding the kind's
+     * default (or hint-only) suggestions on its constant node - e.g. a chat-message field
+     * suggesting {@code ${var:...}} placeholders, or a flow-name field suggesting registered flow
+     * names. Consumed by both {@link com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder#addAll}
+     * and {@link com.ykn.fmod.server.rule.tool.RuleComponentFactory#buildCommand}.
+     *
+     * @param kind           the parameter's declared shape and value type
+     * @param nameI18nKey    i18n key for the parameter's short display name
+     * @param descI18nKey    i18n key for the parameter's description
+     * @param constArgName   argument name used for the constant value in the command context
+     * @param varArgName     argument name used for the variable name in the command context
+     * @param suggester      suggester attached to the const node in place of the kind's default
+     * @return {@code this}, for method chaining
+     */
+    public RequiredParamMetadata add(ParamKind<?> kind, String nameI18nKey, String descI18nKey, String constArgName, String varArgName, SuggestionProvider<CommandSourceStack> suggester) {
+        return add(new Entry(kind, nameI18nKey, descI18nKey, constArgName, varArgName, null, suggester));
+    }
+
+    /**
+     * Registers a new parameter with both an explicit {@code defaultValue} and a custom
+     * command-line suggester. See {@link #add(ParamKind, String, String, String, String, Object)}
+     * and {@link #add(ParamKind, String, String, String, String, SuggestionProvider)}.
+     *
+     * @param kind           the parameter's declared shape and value type
+     * @param nameI18nKey    i18n key for the parameter's short display name
+     * @param descI18nKey    i18n key for the parameter's description
+     * @param constArgName   argument name used for the constant value in the command context
+     * @param varArgName     argument name used for the variable name in the command context
+     * @param defaultValue   an optional default value, or {@code null} for none
+     * @param suggester      suggester attached to the const node in place of the kind's default
+     * @return {@code this}, for method chaining
+     */
+    public RequiredParamMetadata add(ParamKind<?> kind, String nameI18nKey, String descI18nKey, String constArgName, String varArgName,
+            @Nullable Object defaultValue, SuggestionProvider<CommandSourceStack> suggester) {
+        return add(new Entry(kind, nameI18nKey, descI18nKey, constArgName, varArgName, defaultValue, suggester));
     }
 
     /**
@@ -197,6 +239,19 @@ public class RequiredParamMetadata {
     }
 
     /**
+     * Returns the i18n key used by the generic {@code render()} default method, derived from
+     * {@link #getSummaryI18nKey()} by stripping a trailing {@code .summary} - the convention every
+     * built-in condition/action type's translation keys already follow (e.g.
+     * {@code fmod.rule.condition.checkpermission.summary} / {@code fmod.rule.condition.checkpermission}).
+     *
+     * @return the render i18n key
+     */
+    public String getRenderI18nKey() {
+        String suffix = ".summary";
+        return summaryI18nKey.endsWith(suffix) ? summaryI18nKey.substring(0, summaryI18nKey.length() - suffix.length()) : summaryI18nKey;
+    }
+
+    /**
      * A single parameter's metadata within a {@link RequiredParamMetadata} container.
      *
      * <p>Each entry declares the parameter's {@link ParamKind} (which determines its
@@ -242,6 +297,14 @@ public class RequiredParamMetadata {
         public final Object defaultValue;
 
         /**
+         * An optional custom command-line suggester for this parameter's constant node,
+         * overriding {@link ParamKind}'s own (or hint-only) suggestions, or {@code null} to use
+         * the kind's default.
+         */
+        @Nullable
+        public final SuggestionProvider<CommandSourceStack> suggester;
+
+        /**
          * Constructs a parameter metadata entry.
          *
          * @param kind           the parameter's declared shape and value type
@@ -250,14 +313,17 @@ public class RequiredParamMetadata {
          * @param constArgName   argument name for the constant value
          * @param varArgName     argument name for the variable name
          * @param defaultValue   an optional default value, or {@code null} for none
+         * @param suggester      an optional custom suggester, or {@code null} to use the kind's default
          */
-        public Entry(ParamKind<?> kind, String nameI18nKey, String descI18nKey, String constArgName, String varArgName, @Nullable Object defaultValue) {
+        public Entry(ParamKind<?> kind, String nameI18nKey, String descI18nKey, String constArgName, String varArgName,
+                @Nullable Object defaultValue, @Nullable SuggestionProvider<CommandSourceStack> suggester) {
             this.kind = kind;
             this.nameI18nKey = nameI18nKey;
             this.descI18nKey = descI18nKey;
             this.constArgName = constArgName;
             this.varArgName = varArgName;
             this.defaultValue = defaultValue;
+            this.suggester = suggester;
         }
 
         /**

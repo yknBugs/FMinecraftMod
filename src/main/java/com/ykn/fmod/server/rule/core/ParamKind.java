@@ -5,11 +5,16 @@
 
 package com.ykn.fmod.server.rule.core;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.DoubleArgumentType;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
@@ -32,9 +37,18 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * A closed taxonomy of parameter "shapes" usable in a {@link RecursiveCommandBuilder} {@code const}
- * node, pairing the Brigadier argument node to build with the extractor that reads the resolved
- * value back out of a {@link CommandContext}.
+ * A parameter "shape" usable in a {@link RecursiveCommandBuilder} {@code const} node, pairing the
+ * Brigadier argument node to build, the extractor that reads the resolved value back out of a
+ * {@link CommandContext}, and a JSON codec for persisting the constant value in a {@code .rule}
+ * file.
+ *
+ * <p>The constructor is public and every field is final, so third-party code can declare its own
+ * {@code ParamKind}s the same way the built-in constants below do - there is no closed taxonomy to
+ * extend. A custom kind used by a condition/action's {@link RequiredParamMetadata} works
+ * automatically with JSON (de)serialization and command-line editing via
+ * {@link com.ykn.fmod.server.rule.tool.RuleComponentFactory}; GUI editing (the client-side rule
+ * editor) additionally requires registering a widget builder with the client-side
+ * {@code ParamWidgetRegistry}, since server code cannot invoke client code.
  *
  * <p>{@link #valueType()} additionally lets {@link RecursiveCommandBuilder} filter {@code var}/
  * {@code mix} variable-name suggestions down to variables whose declared type
@@ -53,13 +67,32 @@ public final class ParamKind<T> {
 
     private final Class<T> valueType;
 
-    private ParamKind(Function<String, RequiredArgumentBuilder<CommandSourceStack, ?>> nodeFactory,
+    private final Function<T, JsonElement> jsonSerializer;
+
+    private final Function<JsonElement, T> jsonDeserializer;
+
+    /**
+     * Constructs a new {@code ParamKind}.
+     *
+     * @param nodeFactory        builds the Brigadier argument node for this kind's constant value
+     * @param extractor          extracts the resolved value from a command context
+     * @param hasBuiltinSuggestions whether {@code nodeFactory} already attaches a real suggester
+     * @param valueType          the boxed Java type this kind resolves to
+     * @param jsonSerializer     converts a value of this kind to a {@link JsonElement} for persistence
+     * @param jsonDeserializer   converts a persisted {@link JsonElement} back to a value of this kind;
+     *                           may throw an unchecked exception on malformed input, which callers
+     *                           (e.g. {@link RuleParameter#fromJson}) already catch and log
+     */
+    public ParamKind(Function<String, RequiredArgumentBuilder<CommandSourceStack, ?>> nodeFactory,
             ThrowingBiFunction<CommandContext<CommandSourceStack>, String, T, CommandSyntaxException> extractor,
-            boolean hasBuiltinSuggestions, Class<T> valueType) {
+            boolean hasBuiltinSuggestions, Class<T> valueType,
+            Function<T, JsonElement> jsonSerializer, Function<JsonElement, T> jsonDeserializer) {
         this.nodeFactory = nodeFactory;
         this.extractor = extractor;
         this.hasBuiltinSuggestions = hasBuiltinSuggestions;
         this.valueType = valueType;
+        this.jsonSerializer = jsonSerializer;
+        this.jsonDeserializer = jsonDeserializer;
     }
 
     /**
@@ -82,6 +115,26 @@ public final class ParamKind<T> {
      */
     public T extract(CommandContext<CommandSourceStack> ctx, String argName) throws CommandSyntaxException {
         return extractor.apply(ctx, argName);
+    }
+
+    /**
+     * Serializes a value of this kind to a {@link JsonElement} for persistence in a {@code .rule} file.
+     *
+     * @param value the value to serialize
+     * @return the serialized JSON element
+     */
+    public JsonElement toJson(T value) {
+        return jsonSerializer.apply(value);
+    }
+
+    /**
+     * Deserializes a persisted {@link JsonElement} back into a value of this kind.
+     *
+     * @param element the JSON element to deserialize
+     * @return the deserialized value
+     */
+    public T fromJson(JsonElement element) {
+        return jsonDeserializer.apply(element);
     }
 
     /**
@@ -113,7 +166,8 @@ public final class ParamKind<T> {
     public static final ParamKind<UUID> ENTITY = new ParamKind<>(
         name -> Commands.argument(name, EntityArgument.entity()),
         (ctx, name) -> EntityArgument.getEntity(ctx, name).getUUID(),
-        true, UUID.class);
+        true, UUID.class,
+        v -> new JsonPrimitive(v.toString()), e -> UUID.fromString(e.getAsString()));
 
     /**
      * A single online player selector.
@@ -124,7 +178,8 @@ public final class ParamKind<T> {
     public static final ParamKind<UUID> PLAYER = new ParamKind<>(
         name -> Commands.argument(name, EntityArgument.player()),
         (ctx, name) -> EntityArgument.getPlayer(ctx, name).getUUID(),
-        true, UUID.class);
+        true, UUID.class,
+        v -> new JsonPrimitive(v.toString()), e -> UUID.fromString(e.getAsString()));
 
     /**
      * A player selector that may match multiple players (e.g. {@code @a}).
@@ -136,7 +191,21 @@ public final class ParamKind<T> {
     public static final ParamKind<List<UUID>> PLAYERS = new ParamKind<>(
         name -> Commands.argument(name, EntityArgument.players()),
         (ctx, name) -> EntityArgument.getPlayers(ctx, name).stream().map(ServerPlayer::getUUID).collect(Collectors.toList()),
-        true, (Class<List<UUID>>) (Class<?>) List.class);
+        true, (Class<List<UUID>>) (Class<?>) List.class,
+        list -> {
+            JsonArray array = new JsonArray();
+            for (UUID uuid : list) {
+                array.add(uuid.toString());
+            }
+            return array;
+        },
+        e -> {
+            List<UUID> uuids = new ArrayList<>();
+            for (JsonElement elem : e.getAsJsonArray()) {
+                uuids.add(UUID.fromString(elem.getAsString()));
+            }
+            return uuids;
+        });
 
     /**
      * A 3D coordinate (e.g. {@code ~ ~ ~}, {@code 0 64 0}).
@@ -147,7 +216,27 @@ public final class ParamKind<T> {
     public static final ParamKind<Vec3> POSITION = new ParamKind<>(
         name -> Commands.argument(name, Vec3Argument.vec3()),
         (ctx, name) -> Vec3Argument.getVec3(ctx, name),
-        true, Vec3.class);
+        true, Vec3.class,
+        v -> {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("x", v.x);
+            obj.addProperty("y", v.y);
+            obj.addProperty("z", v.z);
+            return obj;
+        },
+        e -> {
+            JsonObject obj = e.getAsJsonObject();
+            return new Vec3(obj.get("x").getAsDouble(), obj.get("y").getAsDouble(), obj.get("z").getAsDouble());
+        });
+
+    private static ResourceLocation parseResourceLocation(JsonElement e) {
+        String s = e.getAsString();
+        ResourceLocation rl = ResourceLocation.tryParse(s);
+        if (rl == null) {
+            throw new IllegalArgumentException("Invalid ResourceLocation: " + s);
+        }
+        return rl;
+    }
 
     /**
      * A dimension identifier (e.g. {@code minecraft:overworld}).
@@ -158,7 +247,8 @@ public final class ParamKind<T> {
     public static final ParamKind<ResourceLocation> DIMENSION = new ParamKind<>(
         name -> Commands.argument(name, DimensionArgument.dimension()),
         (ctx, name) -> DimensionArgument.getDimension(ctx, name).dimension().location(),
-        true, ResourceLocation.class);
+        true, ResourceLocation.class,
+        v -> new JsonPrimitive(v.toString()), ParamKind::parseResourceLocation);
 
     /**
      * A block identifier (e.g. {@code minecraft:stone}).
@@ -169,7 +259,8 @@ public final class ParamKind<T> {
     public static final ParamKind<ResourceLocation> BLOCK_ID = new ParamKind<>(
         name -> Commands.argument(name, ResourceLocationArgument.id()),
         (ctx, name) -> ResourceLocationArgument.getId(ctx, name),
-        false, ResourceLocation.class);
+        false, ResourceLocation.class,
+        v -> new JsonPrimitive(v.toString()), ParamKind::parseResourceLocation);
 
     /**
      * An entity type identifier (e.g. {@code minecraft:creeper}).
@@ -180,7 +271,8 @@ public final class ParamKind<T> {
     public static final ParamKind<ResourceLocation> ENTITY_TYPE_ID = new ParamKind<>(
         name -> Commands.argument(name, ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES),
         (ctx, name) -> ResourceLocationArgument.getId(ctx, name),
-        true, ResourceLocation.class);
+        true, ResourceLocation.class,
+        v -> new JsonPrimitive(v.toString()), ParamKind::parseResourceLocation);
 
     /**
      * A boolean value ({@code true} or {@code false}).
@@ -191,7 +283,8 @@ public final class ParamKind<T> {
     public static final ParamKind<Boolean> BOOLEAN = new ParamKind<>(
         name -> Commands.argument(name, BoolArgumentType.bool()),
         (ctx, name) -> BoolArgumentType.getBool(ctx, name),
-        true, Boolean.class);
+        true, Boolean.class,
+        JsonPrimitive::new, JsonElement::getAsBoolean);
 
     /**
      * An unbounded integer value.
@@ -202,7 +295,8 @@ public final class ParamKind<T> {
     public static final ParamKind<Integer> INT = new ParamKind<>(
         name -> Commands.argument(name, IntegerArgumentType.integer()),
         (ctx, name) -> IntegerArgumentType.getInteger(ctx, name),
-        false, Integer.class);
+        false, Integer.class,
+        JsonPrimitive::new, JsonElement::getAsInt);
 
     /**
      * An integer value with a lower bound.
@@ -217,7 +311,8 @@ public final class ParamKind<T> {
         return new ParamKind<>(
             name -> Commands.argument(name, IntegerArgumentType.integer(min)),
             (ctx, name) -> IntegerArgumentType.getInteger(ctx, name),
-            false, Integer.class);
+            false, Integer.class,
+            JsonPrimitive::new, JsonElement::getAsInt);
     }
 
     /**
@@ -229,7 +324,8 @@ public final class ParamKind<T> {
     public static final ParamKind<Double> DOUBLE = new ParamKind<>(
         name -> Commands.argument(name, DoubleArgumentType.doubleArg()),
         (ctx, name) -> DoubleArgumentType.getDouble(ctx, name),
-        false, Double.class);
+        false, Double.class,
+        JsonPrimitive::new, JsonElement::getAsDouble);
 
     /**
      * A double-precision floating-point value with a lower bound.
@@ -244,7 +340,8 @@ public final class ParamKind<T> {
         return new ParamKind<>(
             name -> Commands.argument(name, DoubleArgumentType.doubleArg(min)),
             (ctx, name) -> DoubleArgumentType.getDouble(ctx, name),
-            false, Double.class);
+            false, Double.class,
+            JsonPrimitive::new, JsonElement::getAsDouble);
     }
 
     /**
@@ -256,7 +353,8 @@ public final class ParamKind<T> {
     public static final ParamKind<String> STRING = new ParamKind<>(
         name -> Commands.argument(name, StringArgumentType.string()),
         (ctx, name) -> StringArgumentType.getString(ctx, name),
-        false, String.class);
+        false, String.class,
+        JsonPrimitive::new, JsonElement::getAsString);
 
     /**
      * A free-form string value consuming the rest of the input (may contain whitespace).
@@ -269,7 +367,8 @@ public final class ParamKind<T> {
     public static final ParamKind<String> GREEDY_STRING = new ParamKind<>(
         name -> Commands.argument(name, StringArgumentType.greedyString()),
         (ctx, name) -> StringArgumentType.getString(ctx, name),
-        false, String.class);
+        false, String.class,
+        JsonPrimitive::new, JsonElement::getAsString);
 
     /**
      * A string value that is parsed and auto-cast through {@link TypeAdaptor#parse(String)}
@@ -282,5 +381,6 @@ public final class ParamKind<T> {
     public static final ParamKind<Object> AUTO = new ParamKind<>(
         name -> Commands.argument(name, StringArgumentType.string()),
         (ctx, name) -> TypeAdaptor.parse(StringArgumentType.getString(ctx, name)).autoCast(),
-        false, Object.class);
+        false, Object.class,
+        v -> new JsonPrimitive(TypeAdaptor.parse(v).asString()), e -> TypeAdaptor.parse(e).autoCast());
 }

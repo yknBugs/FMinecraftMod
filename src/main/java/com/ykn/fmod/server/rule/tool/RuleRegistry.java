@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -232,6 +233,46 @@ public class RuleRegistry {
     }
 
     /**
+     * Registers a condition type in one call: JSON deserialization, command-line creation, and
+     * GUI/params creation are all generated from {@code metadata} and {@code factory} via
+     * {@link RuleComponentFactory}, and {@code metadata} itself is registered for lookup by
+     * {@link #getRequiredParamMetadata(String)}.
+     *
+     * <p>Suitable for any condition whose entire state is described by {@code metadata} - i.e.
+     * every built-in condition. A condition with additional state (e.g. a privileged field not
+     * exposed to command/GUI editing) should instead call the individual {@code register(...)}
+     * overloads directly, reusing {@link RuleComponentFactory}'s static helpers where they still
+     * apply (see {@link com.ykn.fmod.server.rule.action.ExecuteCommandAction} for the action-side
+     * example of this pattern).
+     *
+     * @param type     the type string used in condition JSON and commands
+     * @param metadata the condition type's declared parameters
+     * @param factory  builds the condition from its name and parameter values, in {@code metadata} order
+     */
+    public static void registerCondition(String type, RequiredParamMetadata metadata, BiFunction<String, List<RuleParameter<?>>, SourceCondition> factory) {
+        register(type, metadata);
+        register(type, (JsonObject json) -> factory.apply(json.get("name").getAsString(), RuleComponentFactory.readValues(json, metadata)));
+        register(type, (ConditionCommandFactory) (node, consumer) -> RuleComponentFactory.buildCommand(type, metadata, node, factory, consumer));
+        register(type, (ConditionParamsFactory) factory::apply);
+    }
+
+    /**
+     * Registers an action type in one call - the action-side counterpart of
+     * {@link #registerCondition(String, RequiredParamMetadata, BiFunction)}; see its documentation
+     * for details and the escape hatch for actions with additional state.
+     *
+     * @param type     the type string used in action JSON and commands
+     * @param metadata the action type's declared parameters
+     * @param factory  builds the action from its name and parameter values, in {@code metadata} order
+     */
+    public static void registerAction(String type, RequiredParamMetadata metadata, BiFunction<String, List<RuleParameter<?>>, RuleAction> factory) {
+        register(type, metadata);
+        register(type, (JsonObject json) -> factory.apply(json.get("name").getAsString(), RuleComponentFactory.readValues(json, metadata)));
+        register(type, (RuleActionCommandFactory) (node, consumer) -> RuleComponentFactory.buildCommand(type, metadata, node, factory, consumer));
+        register(type, (ActionParamsFactory) factory::apply);
+    }
+
+    /**
      * Creates the {@link RuleEvent} instance for the given type string.
      *
      * @param name the event type string (e.g. {@code "TickEvent"})
@@ -373,66 +414,29 @@ public class RuleRegistry {
         RuleRegistry.register(PlayerTickEvent.TYPE, PlayerTickEvent::getInstance);
         RuleRegistry.register(ProjectileHitEntityEvent.TYPE, ProjectileHitEntityEvent::getInstance);
 
-        RuleRegistry.register(EntityPosition.TYPE, EntityPosition::fromJson);
-        RuleRegistry.register(CheckPermission.TYPE, CheckPermission::fromJson);
-        RuleRegistry.register(SmallerThan.TYPE, SmallerThan::fromJson);
-        RuleRegistry.register(EqualsTo.TYPE, EqualsTo::fromJson);
-        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType::fromJson);
-        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType::fromJson);
-        RuleRegistry.register(HasEntityType.TYPE, HasEntityType::fromJson);
+        RuleRegistry.registerCondition(EntityPosition.TYPE, EntityPosition.PARAM_METADATA, EntityPosition::new);
+        RuleRegistry.registerCondition(CheckPermission.TYPE, CheckPermission.PARAM_METADATA, CheckPermission::new);
+        RuleRegistry.registerCondition(SmallerThan.TYPE, SmallerThan.PARAM_METADATA, SmallerThan::new);
+        RuleRegistry.registerCondition(EqualsTo.TYPE, EqualsTo.PARAM_METADATA, EqualsTo::new);
+        RuleRegistry.registerCondition(CheckBlockType.TYPE, CheckBlockType.PARAM_METADATA, CheckBlockType::new);
+        RuleRegistry.registerCondition(CheckEntityType.TYPE, CheckEntityType.PARAM_METADATA, CheckEntityType::new);
+        RuleRegistry.registerCondition(HasEntityType.TYPE, HasEntityType.PARAM_METADATA, HasEntityType::new);
 
-        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage::fromJson);
-        RuleRegistry.register(SendMessage.TYPE, SendMessage::fromJson);
-        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar::fromJson);
-        RuleRegistry.register(SendActionbar.TYPE, SendActionbar::fromJson);
+        RuleRegistry.registerAction(BroadcastMessage.TYPE, BroadcastMessage.PARAM_METADATA, BroadcastMessage::new);
+        RuleRegistry.registerAction(SendMessage.TYPE, SendMessage.PARAM_METADATA, SendMessage::new);
+        RuleRegistry.registerAction(BroadcastActionbar.TYPE, BroadcastActionbar.PARAM_METADATA, BroadcastActionbar::new);
+        RuleRegistry.registerAction(SendActionbar.TYPE, SendActionbar.PARAM_METADATA, SendActionbar::new);
+        RuleRegistry.registerAction(RunFlowAction.TYPE, RunFlowAction.PARAM_METADATA, RunFlowAction::new);
+
+        // ExecuteCommandAction has a privileged permissionLevel field that's never accepted as
+        // parameter input (only ever derived from the issuing CommandSourceStack's own permission,
+        // or defaulted to 3 for the GUI path below) - see its class doc - so it can't go through
+        // registerAction(...) and registers its four pieces individually instead.
         RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction::fromJson);
-        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction::fromJson);
-
-        RuleRegistry.register(EntityPosition.TYPE, EntityPosition::buildCommand);
-        RuleRegistry.register(CheckPermission.TYPE, CheckPermission::buildCommand);
-        RuleRegistry.register(SmallerThan.TYPE, SmallerThan::buildCommand);
-        RuleRegistry.register(EqualsTo.TYPE, EqualsTo::buildCommand);
-        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType::buildCommand);
-        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType::buildCommand);
-        RuleRegistry.register(HasEntityType.TYPE, HasEntityType::buildCommand);
-
-        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage::buildCommand);
-        RuleRegistry.register(SendMessage.TYPE, SendMessage::buildCommand);
-        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar::buildCommand);
-        RuleRegistry.register(SendActionbar.TYPE, SendActionbar::buildCommand);
         RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction::buildCommand);
-        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction::buildCommand);
-        
-        RuleRegistry.register(EntityPosition.TYPE, EntityPosition.PARAM_METADATA);
-        RuleRegistry.register(CheckPermission.TYPE, CheckPermission.PARAM_METADATA);
-        RuleRegistry.register(SmallerThan.TYPE, SmallerThan.PARAM_METADATA);
-        RuleRegistry.register(EqualsTo.TYPE, EqualsTo.PARAM_METADATA);
-        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType.PARAM_METADATA);
-        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType.PARAM_METADATA);
-        RuleRegistry.register(HasEntityType.TYPE, HasEntityType.PARAM_METADATA);
-
-        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage.PARAM_METADATA);
-        RuleRegistry.register(SendMessage.TYPE, SendMessage.PARAM_METADATA);
-        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar.PARAM_METADATA);
-        RuleRegistry.register(SendActionbar.TYPE, SendActionbar.PARAM_METADATA);
         RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction.PARAM_METADATA);
-        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction.PARAM_METADATA);
-
-        RuleRegistry.register(EntityPosition.TYPE, EntityPosition::withParameters);
-        RuleRegistry.register(CheckPermission.TYPE, CheckPermission::withParameters);
-        RuleRegistry.register(SmallerThan.TYPE, SmallerThan::withParameters);
-        RuleRegistry.register(EqualsTo.TYPE, EqualsTo::withParameters);
-        RuleRegistry.register(CheckBlockType.TYPE, CheckBlockType::withParameters);
-        RuleRegistry.register(CheckEntityType.TYPE, CheckEntityType::withParameters);
-        RuleRegistry.register(HasEntityType.TYPE, HasEntityType::withParameters);
-
-        RuleRegistry.register(BroadcastMessage.TYPE, BroadcastMessage::withParameters);
-        RuleRegistry.register(SendMessage.TYPE, SendMessage::withParameters);
-        RuleRegistry.register(BroadcastActionbar.TYPE, BroadcastActionbar::withParameters);
-        RuleRegistry.register(SendActionbar.TYPE, SendActionbar::withParameters);
         // permissionLevel is intentionally hidden from PARAM_METADATA. Default it to 3, matching the command path's own op-level cap.
         RuleRegistry.register(ExecuteCommandAction.TYPE, ExecuteCommandAction::withParameters);
-        RuleRegistry.register(RunFlowAction.TYPE, RunFlowAction::withParameters);
     }
 
     /**

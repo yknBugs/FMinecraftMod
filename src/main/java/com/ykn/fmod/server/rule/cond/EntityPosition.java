@@ -7,28 +7,15 @@ package com.ykn.fmod.server.rule.cond;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.core.ParamKind;
 import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
-import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -49,7 +36,7 @@ import net.minecraft.world.phys.Vec3;
  * <p>JSON value format:
  * <pre>{@code
  * "value": {
- *   "entityId":  {"variable": "playerId"},
+ *   "entity":    {"variable": "playerId"},
  *   "dimension": {"constant": "minecraft:overworld"},
  *   "position":  {"variable": "worldSpawn", "constant": {"x": 0, "y": 64, "z": 0}},
  *   "radius":    {"constant": 128.0}
@@ -81,18 +68,17 @@ public class EntityPosition implements SourceCondition {
     /**
      * Creates a new {@code EntityPosition} condition.
      *
-     * @param name      the unique name of this condition instance within the rule
-     * @param entityId  the UUID of the entity to check
-     * @param dimension the dimension identifier where the entity and reference position reside
-     * @param position  the centre of the search sphere
-     * @param radius    the maximum allowed Euclidean distance from {@code position}
+     * @param name   the unique name of this condition instance within the rule
+     * @param values the parameter values, in {@link #getParameters()} order: {@code entityId},
+     *               {@code dimension}, {@code position}, {@code radius}
      */
-    public EntityPosition(String name, RuleParameter<UUID> entityId, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<Double> radius) {
+    @SuppressWarnings("unchecked")
+    public EntityPosition(String name, List<RuleParameter<?>> values) {
         this.name = name;
-        this.entityId = entityId;
-        this.dimension = dimension;
-        this.position = position;
-        this.radius = radius;
+        this.entityId = (RuleParameter<UUID>) values.get(0);
+        this.dimension = (RuleParameter<ResourceLocation>) values.get(1);
+        this.position = (RuleParameter<Vec3>) values.get(2);
+        this.radius = (RuleParameter<Double>) values.get(3);
     }
 
     @Override
@@ -137,82 +123,12 @@ public class EntityPosition implements SourceCondition {
 
     @Override
     public RuleCondition setName(String name) {
-        return new EntityPosition(name, this.entityId, this.dimension, this.position, this.radius);
+        return new EntityPosition(name, getParameterValues());
     }
 
     @Override
     public List<RuleParameter<?>> getParameterValues() {
         return List.of(this.entityId, this.dimension, this.position, this.radius);
-    }
-
-    @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.condition.entityposition", this.getName(), this.getType(), 
-            this.entityId.render(), this.dimension.render(), this.position.render(), this.radius.render());
-    }
-
-    @Override
-    public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("entityId", RuleParameter.toJson(entityId, e -> new JsonPrimitive(e.toString())));
-        json.add("dimension", RuleParameter.toJson(dimension, e -> new JsonPrimitive(e.toString())));
-        json.add("position", RuleParameter.toJson(position, e -> {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("x", e.x);
-            obj.addProperty("y", e.y);
-            obj.addProperty("z", e.z);
-            return obj;
-        }));
-        json.add("radius", RuleParameter.toJson(radius, JsonPrimitive::new));
-        return json;
-    }
-
-    public static JsonObject toJson(EntityPosition condition) {
-        return condition.toJson();
-    }
-
-    public static EntityPosition fromJson(JsonObject json) {
-        RuleParameter<UUID> entityId = RuleParameter.fromJson(json, "entityId", e -> UUID.fromString(e.getAsString()));
-        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> {
-            String s = e.getAsString();
-            ResourceLocation rl = ResourceLocation.tryParse(s);
-            if (rl == null) {
-                Util.LOGGER.warn("Invalid ResourceLocation in EntityPosition dimension: " + s + ". Defaulting to minecraft:overworld");
-                rl = new ResourceLocation("minecraft", "overworld");
-            }
-            return rl;
-        });
-        RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
-            JsonObject obj = e.getAsJsonObject();
-            double x = obj.get("x").getAsDouble();
-            double y = obj.get("y").getAsDouble();
-            double z = obj.get("z").getAsDouble();
-            return new Vec3(x, y, z);
-        });
-        RuleParameter<Double> radius = RuleParameter.fromJson(json, "radius", JsonElement::getAsDouble);
-        return new EntityPosition(json.get("name").getAsString(), entityId, dimension, position, radius);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
-        return new EntityPosition(name, (RuleParameter<UUID>) values.get(0), (RuleParameter<ResourceLocation>) values.get(1),
-            (RuleParameter<Vec3>) values.get(2), (RuleParameter<Double>) values.get(3));
-    }
-
-    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
-        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
-        builder.executes((arguments, ctx) -> {
-                String name = StringArgumentType.getString(ctx, "name");
-                RuleParameter<UUID> entityIdParameter = builder.resolveParameter(0, arguments, ctx);
-                RuleParameter<ResourceLocation> dimensionParameter = builder.resolveParameter(1, arguments, ctx);
-                RuleParameter<Vec3> positionParameter = builder.resolveParameter(2, arguments, ctx);
-                RuleParameter<Double> radiusParameter = builder.resolveParameter(3, arguments, ctx);
-                EntityPosition condition = new EntityPosition(name, entityIdParameter, dimensionParameter, positionParameter, radiusParameter);
-                conditionConsumer.accept(ctx, condition);
-            })
-            .addAll(PARAM_METADATA);
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 
 }

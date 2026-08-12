@@ -9,9 +9,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
@@ -27,6 +25,7 @@ import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.ParamKind;
 import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
+import com.ykn.fmod.server.rule.tool.RuleComponentFactory;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -42,6 +41,12 @@ import net.minecraft.world.entity.Entity;
  * creation - it is always captured from the {@link CommandSourceStack#getPermissionLevel()}
  * of the operator who created the action. The {@code command} parameter is the raw command
  * string to execute.
+ *
+ * <p>{@code permissionLevel} is <em>not</em> one of this action's declared parameters (see
+ * {@link #PARAM_METADATA}, which only covers {@code entity}/{@code command}): it's a privileged
+ * field, always derived server-side rather than accepted as user input, so this class opts out of
+ * {@link com.ykn.fmod.server.rule.tool.RuleRegistry#registerAction} and instead composes
+ * {@link RuleComponentFactory}'s individual helpers by hand around the extra field.
  *
  * <p>The {@code permissionLevel} is validated on every execution; values outside the
  * range {@code [0, 4]} cause the action to abort and record an error message on the
@@ -89,15 +94,16 @@ public class ExecuteCommandAction implements RuleAction {
      * Creates an {@code ExecuteCommandAction}.
      *
      * @param name            the unique name of this action instance within the rule
-     * @param entity          the UUID of the entity to use as the command source
+     * @param values          the declared parameter values, in {@link #getParameters()} order:
+     *                        {@code entity}, {@code command}
      * @param permissionLevel the permission level to run the command with (must be 0–4)
-     * @param command         the command string to execute
      */
-    public ExecuteCommandAction(String name, RuleParameter<UUID> entity, int permissionLevel, RuleParameter<String> command) {
+    @SuppressWarnings("unchecked")
+    public ExecuteCommandAction(String name, List<RuleParameter<?>> values, int permissionLevel) {
         this.name = name;
-        this.entity = entity;
+        this.entity = (RuleParameter<UUID>) values.get(0);
         this.permissionLevel = permissionLevel;
-        this.command = command;
+        this.command = (RuleParameter<String>) values.get(1);
     }
 
     @Override
@@ -145,7 +151,7 @@ public class ExecuteCommandAction implements RuleAction {
 
     @Override
     public RuleAction setName(String name) {
-        return new ExecuteCommandAction(name, this.entity, this.permissionLevel, this.command);
+        return new ExecuteCommandAction(name, getParameterValues(), this.permissionLevel);
     }
 
     /**
@@ -168,28 +174,20 @@ public class ExecuteCommandAction implements RuleAction {
         return PARAM_METADATA;
     }
 
-    @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.action.runcmd", this.getName(), this.getType(),
-            this.entity.render(), this.command.render());
-    }
-
+    /**
+     * Extends the generic default with {@code permissionLevel}, which - unlike {@code entity}/
+     * {@code command} - is not one of {@link #getParameterValues()}.
+     */
     @Override
     public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("entity", RuleParameter.toJson(entity, e -> new JsonPrimitive(e.toString())));
+        JsonObject json = RuleAction.super.getValueJson();
         json.addProperty("permissionLevel", this.permissionLevel);
-        json.add("command", RuleParameter.toJson(command, JsonPrimitive::new));
         return json;
-    }
-
-    public static JsonObject toJson(ExecuteCommandAction action) {
-        return action.toJson();
     }
 
     public static ExecuteCommandAction fromJson(JsonObject json) {
         String name = json.get("name").getAsString();
-        RuleParameter<UUID> entity = RuleParameter.fromJson(json, "entity", e -> UUID.fromString(e.getAsString()));
+        List<RuleParameter<?>> values = RuleComponentFactory.readValues(json, PARAM_METADATA);
         int permissionLevel = 0;
         if (json.has("value") && json.get("value").isJsonObject() && json.getAsJsonObject("value").has("permissionLevel") && json.getAsJsonObject("value").get("permissionLevel").isJsonPrimitive()) {
             permissionLevel = json.getAsJsonObject("value").get("permissionLevel").getAsInt();
@@ -199,13 +197,11 @@ public class ExecuteCommandAction implements RuleAction {
         if (permissionLevel < 0 || permissionLevel > 4) {
             Util.LOGGER.warn("FMinecraftMod: ExecuteCommandAction has an invalid permission level " + permissionLevel);
         }
-        RuleParameter<String> command = RuleParameter.fromJson(json, "command", JsonElement::getAsString);
-        return new ExecuteCommandAction(name, entity, permissionLevel, command);
+        return new ExecuteCommandAction(name, values, permissionLevel);
     }
 
-    @SuppressWarnings("unchecked")
     public static RuleAction withParameters(String name, List<RuleParameter<?>> values) {
-        return new ExecuteCommandAction(name, (RuleParameter<UUID>) values.get(0), 3, (RuleParameter<String>) values.get(1));
+        return new ExecuteCommandAction(name, values, 3);
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
@@ -213,10 +209,9 @@ public class ExecuteCommandAction implements RuleAction {
         RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
         builder.executes((arguments, ctx) -> {
                 String name = StringArgumentType.getString(ctx, "name");
-                RuleParameter<UUID> entityParameter = builder.resolveParameter(0, arguments, ctx);
+                List<RuleParameter<?>> values = RuleComponentFactory.resolveValues(builder, PARAM_METADATA, arguments, ctx);
                 int permissionLevel = ctx.getSource().hasPermission(3) ? 3 : 0;
-                RuleParameter<String> commandParameter = builder.resolveParameter(1, arguments, ctx);
-                ExecuteCommandAction action = new ExecuteCommandAction(name, entityParameter, permissionLevel, commandParameter);
+                ExecuteCommandAction action = new ExecuteCommandAction(name, values, permissionLevel);
                 actionConsumer.accept(ctx, action);
             })
             .add(PARAM_METADATA.get(0))

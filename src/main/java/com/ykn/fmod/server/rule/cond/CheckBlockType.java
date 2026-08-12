@@ -6,30 +6,17 @@
 package com.ykn.fmod.server.rule.cond;
 
 import java.util.List;
-import java.util.function.BiConsumer;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.core.ParamKind;
 import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
-import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -46,10 +33,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
  * <p>JSON value format:
  * <pre>{@code
  * "value": {
- *   "dimension":    {"constant": "minecraft:overworld"},
- *   "position":     {"variable": "pos"},
- *   "block":        {"constant": "minecraft:stone"},
- *   "defaultValue": {"constant": false}
+ *   "dimension": {"constant": "minecraft:overworld"},
+ *   "position":  {"variable": "pos"},
+ *   "block":     {"constant": "minecraft:stone"},
+ *   "default":   {"constant": false}
  * }
  * }</pre>
  *
@@ -75,12 +62,13 @@ public class CheckBlockType implements SourceCondition {
         .add(ParamKind.BLOCK_ID, "fmod.rule.condition.blocktype.param.block.name", "fmod.rule.condition.blocktype.param.block.desc", "block", "var.block")
         .add(ParamKind.BOOLEAN, "fmod.rule.condition.blocktype.param.default.name", "fmod.rule.condition.blocktype.param.default.desc", "default", "var.default");
 
-    public CheckBlockType(String name, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<ResourceLocation> block, RuleParameter<Boolean> defaultValue) {
+    @SuppressWarnings("unchecked")
+    public CheckBlockType(String name, List<RuleParameter<?>> values) {
         this.name = name;
-        this.dimension = dimension;
-        this.position = position;
-        this.block = block;
-        this.defaultValue = defaultValue;
+        this.dimension = (RuleParameter<ResourceLocation>) values.get(0);
+        this.position = (RuleParameter<Vec3>) values.get(1);
+        this.block = (RuleParameter<ResourceLocation>) values.get(2);
+        this.defaultValue = (RuleParameter<Boolean>) values.get(3);
     }
 
     @Override
@@ -125,90 +113,12 @@ public class CheckBlockType implements SourceCondition {
 
     @Override
     public RuleCondition setName(String name) {
-        return new CheckBlockType(name, this.dimension, this.position, this.block, this.defaultValue);
+        return new CheckBlockType(name, getParameterValues());
     }
 
     @Override
     public List<RuleParameter<?>> getParameterValues() {
         return List.of(this.dimension, this.position, this.block, this.defaultValue);
-    }
-
-    @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.condition.blocktype", this.getName(), this.getType(),
-            this.dimension.render(), this.position.render(), this.block.render(), this.defaultValue.render());
-    }
-
-    @Override
-    public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("dimension", RuleParameter.toJson(dimension, e -> new JsonPrimitive(e.toString())));
-        json.add("position", RuleParameter.toJson(position, e -> {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("x", e.x);
-            obj.addProperty("y", e.y);
-            obj.addProperty("z", e.z);
-            return obj;
-        }));
-        json.add("block", RuleParameter.toJson(block, e -> new JsonPrimitive(e.toString())));
-        json.add("defaultValue", RuleParameter.toJson(defaultValue, JsonPrimitive::new));
-        return json;
-    }
-
-    public static JsonObject toJson(CheckBlockType condition) {
-        return condition.toJson();
-    }
-
-    public static CheckBlockType fromJson(JsonObject json) {
-        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> {
-            String s = e.getAsString();
-            ResourceLocation rl = ResourceLocation.tryParse(s);
-            if (rl == null) {
-                Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType dimension: {}", s);
-                rl = new ResourceLocation("minecraft", "overworld");
-            }
-            return rl;
-        });
-        RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
-            JsonObject obj = e.getAsJsonObject();
-            double x = obj.get("x").getAsDouble();
-            double y = obj.get("y").getAsDouble();
-            double z = obj.get("z").getAsDouble();
-            return new Vec3(x, y, z);
-        });
-        RuleParameter<ResourceLocation> block = RuleParameter.fromJson(json, "block", e -> {
-            String s = e.getAsString();
-            ResourceLocation rl = ResourceLocation.tryParse(s);
-            if (rl == null) {
-                Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType block: " + s + ". Defaulting to minecraft:bedrock.");
-                rl = new ResourceLocation("minecraft", "bedrock");
-            }
-            return rl;
-        });
-        RuleParameter<Boolean> defaultValue = RuleParameter.fromJson(json, "defaultValue", JsonElement::getAsBoolean);
-        return new CheckBlockType(json.get("name").getAsString(), dimension, position, block, defaultValue);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static SourceCondition withParameters(String name, List<RuleParameter<?>> values) {
-        return new CheckBlockType(name, (RuleParameter<ResourceLocation>) values.get(0), (RuleParameter<Vec3>) values.get(1),
-            (RuleParameter<ResourceLocation>) values.get(2), (RuleParameter<Boolean>) values.get(3));
-    }
-
-    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
-        RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
-        builder.executes((arguments, ctx) -> {
-                String name = StringArgumentType.getString(ctx, "name");
-                RuleParameter<ResourceLocation> dimensionParameter = builder.resolveParameter(0, arguments, ctx);
-                RuleParameter<Vec3> positionParameter = builder.resolveParameter(1, arguments, ctx);
-                RuleParameter<ResourceLocation> blockParameter = builder.resolveParameter(2, arguments, ctx);
-                RuleParameter<Boolean> defaultValueParameter = builder.resolveParameter(3, arguments, ctx);
-                CheckBlockType condition = new CheckBlockType(name, dimensionParameter, positionParameter, blockParameter, defaultValueParameter);
-                conditionConsumer.accept(ctx, condition);
-            })
-            .addAll(PARAM_METADATA);
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = builder.build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.executes(builder.usageExecutor(TYPE, PARAM_METADATA.getSummaryI18nKey())).then(commandTree);
     }
 
 }

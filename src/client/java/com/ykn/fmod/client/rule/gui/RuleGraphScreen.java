@@ -14,11 +14,13 @@ import java.util.Objects;
 import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.client.base.gui.TextPromptScreen;
 import com.ykn.fmod.server.rule.core.CustomRule;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.SourceCondition;
 import com.ykn.fmod.server.rule.tool.ConditionFormulaParser;
 import com.ykn.fmod.server.rule.tool.RuleManager;
+import com.ykn.fmod.server.rule.tool.RuleRegistry;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -385,6 +387,10 @@ public class RuleGraphScreen extends Screen {
                     this.minecraft.setScreen(this);
                     return;
                 }
+                if (!checkGuiSupported(type, name)) {
+                    this.minecraft.setScreen(this);
+                    return;
+                }
                 this.minecraft.setScreen(ParamEditorScreen.forCreate(this, ParamEditorScreen.conditionAdapter(), type, name,
                     this.workingManager.getRule().getName(), this.workingManager.getRule().getEvent(), edited -> {
                         beforeMutate();
@@ -392,6 +398,28 @@ public class RuleGraphScreen extends Screen {
                         refreshAll();
                     }));
             }));
+    }
+
+    /**
+     * Whether every parameter kind declared by {@code type} has a registered client-side GUI
+     * widget ({@link ParamWidgetRegistry#isSupported(RequiredParamMetadata)}). Sets
+     * {@link #statusMessage} and returns {@code false} if not, so the caller can bail out before
+     * opening a {@link ParamEditorScreen} that couldn't actually render every row - the situation
+     * a third-party {@link com.ykn.fmod.server.rule.core.ParamKind} with no matching client-side
+     * registration produces, since the server can't invoke client code to build one itself.
+     *
+     * @param type the condition/action type to check
+     * @param name the instance's own name, used only to fill in the status message
+     * @return {@code true} if a {@link ParamEditorScreen} can be safely opened for this type
+     */
+    private boolean checkGuiSupported(String type, String name) {
+        RequiredParamMetadata metadata = RuleRegistry.getRequiredParamMetadata(type);
+        if (metadata != null && !ParamWidgetRegistry.isSupported(metadata)) {
+            this.statusMessage = Component.translatable("fmod.rulegui.rule.param.unsupported", name, type).withStyle(ChatFormatting.RED);
+            this.statusText.setMessage(this.statusMessage);
+            return false;
+        }
+        return true;
     }
 
     private void editCondition() {
@@ -403,6 +431,9 @@ public class RuleGraphScreen extends Screen {
             this.statusMessage = Component.translatable("fmod.rulegui.rule.condition.noteditable", existing.getName(), existing.getType())
                 .withStyle(ChatFormatting.RED);
             this.statusText.setMessage(this.statusMessage);
+            return;
+        }
+        if (!checkGuiSupported(sc.getType(), sc.getName())) {
             return;
         }
         this.minecraft.setScreen(ParamEditorScreen.forEdit(this, ParamEditorScreen.conditionAdapter(), sc,
@@ -466,6 +497,10 @@ public class RuleGraphScreen extends Screen {
                     this.minecraft.setScreen(this);
                     return;
                 }
+                if (!checkGuiSupported(type, name)) {
+                    this.minecraft.setScreen(this);
+                    return;
+                }
                 this.minecraft.setScreen(ParamEditorScreen.forCreate(this, ParamEditorScreen.actionAdapter(), type, name,
                     this.workingManager.getRule().getName(), this.workingManager.getRule().getEvent(), edited -> {
                         beforeMutate();
@@ -486,6 +521,9 @@ public class RuleGraphScreen extends Screen {
         }
         RuleAction existing = satisfied ? this.workingManager.getRule().getActionIfSatisfied(name) : this.workingManager.getRule().getActionIfViolated(name);
         if (existing == null) {
+            return;
+        }
+        if (!checkGuiSupported(existing.getType(), existing.getName())) {
             return;
         }
         this.minecraft.setScreen(ParamEditorScreen.forEdit(this, ParamEditorScreen.actionAdapter(), existing,

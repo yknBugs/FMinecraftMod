@@ -62,7 +62,7 @@ public class RuleSerializer {
      * The oldest mod version whose rules can be loaded without a compatibility warning.
      * Rules produced by an older mod version will still be attempted, but a warning is logged.
      */
-    public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.4+b3");
+    public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.9+b1");
 
     private static Gson buildGson() {
         GsonBuilder builder = new GsonBuilder();
