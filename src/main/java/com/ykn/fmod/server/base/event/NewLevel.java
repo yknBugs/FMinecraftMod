@@ -6,17 +6,15 @@
 package com.ykn.fmod.server.base.event;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
+import com.ykn.fmod.server.base.async.FlowBulkLoadExecutor;
+import com.ykn.fmod.server.base.async.RuleBulkLoadExecutor;
 import com.ykn.fmod.server.base.command.FlowFileSuggestion;
 import com.ykn.fmod.server.base.command.RuleFileSuggestion;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.logic.LogicFlow;
-import com.ykn.fmod.server.flow.tool.FlowManager;
-import com.ykn.fmod.server.flow.tool.FlowSerializer;
-import com.ykn.fmod.server.rule.core.CustomRule;
-import com.ykn.fmod.server.rule.tool.RuleManager;
-import com.ykn.fmod.server.rule.tool.RuleSerializer;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -61,33 +59,37 @@ public class NewLevel {
         }
         Path ruleFolder = Util.getConfigDir();
         RuleFileSuggestion.suggest();
-        int loadedCount = 0;
-        for (String ruleFileName : RuleFileSuggestion.getCachedRuleList()) {
-            Path rulePath = ruleFolder.resolve(ruleFileName).normalize();
-            if (!rulePath.startsWith(ruleFolder)) {
-                continue;
+        // Reading and JSON-parsing every .rule file synchronously here would stall server
+        // startup / new-save loading, so the actual file loading runs off the server thread.
+        List<String> fileNames = new ArrayList<>(RuleFileSuggestion.getCachedRuleList());
+        data.submitAsyncTask(new RuleBulkLoadExecutor(fileNames, ruleFolder, data, new RuleBulkLoadExecutor.ResultHandler() {
+            @Override
+            public void onFileNotFound(String fileName) {
+                Util.LOGGER.error("FMinecraftMod: Error auto loading rule file " + fileName);
             }
-            CustomRule rule = RuleSerializer.loadFile(rulePath);
-            if (rule == null) {
-                Util.LOGGER.error("FMinecraftMod: Error auto loading rule file " + ruleFileName);
-                continue;
+
+            @Override
+            public void onLoadFailed(String fileName) {
+                Util.LOGGER.error("FMinecraftMod: Error auto loading rule file " + fileName);
             }
-            if (data.getCustomRules().get(rule.getName()) != null) {
-                continue;
+
+            @Override
+            public void onAlreadyExists(String ruleName) {
+                // A name collision with an already-loaded rule is silently skipped, no message.
             }
-            RuleManager ruleManager = new RuleManager(rule);
-            data.getCustomRules().put(rule.getName(), ruleManager);
-            ruleManager.setEnabled(true);
-            loadedCount++;
-        }
-        Component message = Util.parseTranslatableText("fmod.command.rule.load.all", String.valueOf(loadedCount));
-        if (server.isSingleplayer()) {
-            // The integrated server loads the world before the local player actually joins it,
-            // so queue the message and deliver it once they do (see ServerPlayConnectionEvents.JOIN).
-            data.queueStartupMessage(message);
-        } else {
-            Util.LOGGER.info(message.getString());
-        }
+
+            @Override
+            public void onCompleted(int loadedCount) {
+                Component message = Util.parseTranslatableText("fmod.command.rule.load.all", String.valueOf(loadedCount));
+                if (server.isSingleplayer()) {
+                    // The integrated server loads the world before the local player actually joins
+                    // it, so queue the message and deliver it once they do (see ServerPlayConnectionEvents.JOIN).
+                    data.queueStartupMessage(message);
+                } else {
+                    Util.LOGGER.info(message.getString());
+                }
+            }
+        }));
     }
 
     /**
@@ -104,33 +106,37 @@ public class NewLevel {
         }
         Path flowFolder = Util.getConfigDir();
         FlowFileSuggestion.suggest();
-        int loadedCount = 0;
-        for (String flowFileName : FlowFileSuggestion.getCachedFlowList()) {
-            Path flowPath = flowFolder.resolve(flowFileName).normalize();
-            if (!flowPath.startsWith(flowFolder)) {
-                continue;
+        // Reading and JSON-parsing every .flow file synchronously here would stall server
+        // startup / new-save loading, so the actual file loading runs off the server thread.
+        List<String> fileNames = new ArrayList<>(FlowFileSuggestion.getCachedFlowList());
+        data.submitAsyncTask(new FlowBulkLoadExecutor(fileNames, flowFolder, data, new FlowBulkLoadExecutor.ResultHandler() {
+            @Override
+            public void onFileNotFound(String fileName) {
+                Util.LOGGER.error("FMinecraftMod: Error auto loading flow file " + fileName);
             }
-            LogicFlow flow = FlowSerializer.loadFile(flowPath);
-            if (flow == null) {
-                Util.LOGGER.error("FMinecraftMod: Error auto loading flow file " + flowFileName);
-                continue;
+
+            @Override
+            public void onLoadFailed(String fileName) {
+                Util.LOGGER.error("FMinecraftMod: Error auto loading flow file " + fileName);
             }
-            if (data.getLogicFlows().get(flow.getName()) != null) {
-                continue;
+
+            @Override
+            public void onAlreadyExists(String flowName) {
+                // A name collision with an already-loaded flow is silently skipped, no message.
             }
-            FlowManager flowManager = new FlowManager(flow);
-            data.getLogicFlows().put(flow.getName(), flowManager);
-            flowManager.setEnabled(true);
-            loadedCount++;
-        }
-        Component message = Util.parseTranslatableText("fmod.command.flow.load.all", String.valueOf(loadedCount));
-        if (server.isSingleplayer()) {
-            // The integrated server loads the world before the local player actually joins it,
-            // so queue the message and deliver it once they do (see ServerPlayConnectionEvents.JOIN).
-            data.queueStartupMessage(message);
-        } else {
-            Util.LOGGER.info(message.getString());
-        }
+
+            @Override
+            public void onCompleted(int loadedCount) {
+                Component message = Util.parseTranslatableText("fmod.command.flow.load.all", String.valueOf(loadedCount));
+                if (server.isSingleplayer()) {
+                    // The integrated server loads the world before the local player actually joins
+                    // it, so queue the message and deliver it once they do (see ServerPlayConnectionEvents.JOIN).
+                    data.queueStartupMessage(message);
+                } else {
+                    Util.LOGGER.info(message.getString());
+                }
+            }
+        }));
     }
 
 }

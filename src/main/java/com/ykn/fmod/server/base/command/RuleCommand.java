@@ -17,6 +17,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.ykn.fmod.server.base.async.RuleBulkLoadExecutor;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.CustomRule;
@@ -128,31 +129,32 @@ public class RuleCommand {
             }
             ServerData data = Util.getServerData(server);
             if ("*".equals(name)) {
-                // Load all rules
-                int loadedCount = 0;
-                for (String ruleFileName : RuleFileSuggestion.getCachedRuleList()) {
-                    Path rulePath = ruleFolder.resolve(ruleFileName).normalize();
-                    if (!rulePath.startsWith(ruleFolder)) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.load.filenotfound", ruleFileName), false);
-                        continue;
+                // Load all rule files off the server thread - reading and JSON-parsing every
+                // .rule file synchronously here would stall the server for large rule sets.
+                List<String> fileNames = new ArrayList<>(RuleFileSuggestion.getCachedRuleList());
+                CommandSourceStack source = context.getSource();
+                data.submitAsyncTask(new RuleBulkLoadExecutor(fileNames, ruleFolder, data, new RuleBulkLoadExecutor.ResultHandler() {
+                    @Override
+                    public void onFileNotFound(String fileName) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.load.filenotfound", fileName), false);
                     }
-                    CustomRule rule = RuleSerializer.loadFile(rulePath);
-                    if (rule == null) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.load.ioexception", ruleFileName), false);
-                        continue;
+
+                    @Override
+                    public void onLoadFailed(String fileName) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.load.ioexception", fileName), false);
                     }
-                    if (data.getCustomRules().get(rule.getName()) != null) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.exists", rule.getName()), false);
-                        continue;
+
+                    @Override
+                    public void onAlreadyExists(String ruleName) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.exists", ruleName), false);
                     }
-                    RuleManager ruleManager = new RuleManager(rule);
-                    data.getCustomRules().put(rule.getName(), ruleManager);
-                    ruleManager.setEnabled(true);
-                    loadedCount++;
-                }
-                int loadedCountFinal = loadedCount;
-                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.load.all", String.valueOf(loadedCountFinal)), true);
-                return loadedCountFinal;
+
+                    @Override
+                    public void onCompleted(int loadedCount) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.rule.load.all", String.valueOf(loadedCount)), true);
+                    }
+                }));
+                return Command.SINGLE_SUCCESS;
             }
             Path rulePath = ruleFolder.resolve(name).normalize();
             if (!rulePath.startsWith(ruleFolder)) {
