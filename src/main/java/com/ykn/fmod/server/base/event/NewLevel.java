@@ -14,6 +14,7 @@ import com.ykn.fmod.server.base.async.RuleBulkLoadExecutor;
 import com.ykn.fmod.server.base.command.FlowFileSuggestion;
 import com.ykn.fmod.server.base.command.RuleFileSuggestion;
 import com.ykn.fmod.server.base.data.ServerData;
+import com.ykn.fmod.server.base.schedule.StartupMessageTask;
 import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
@@ -83,8 +84,8 @@ public class NewLevel {
                 Component message = Util.parseTranslatableText("fmod.command.rule.load.all", String.valueOf(loadedCount));
                 if (server.isSingleplayer()) {
                     // The integrated server loads the world before the local player actually joins
-                    // it, so queue the message and deliver it once they do (see ServerPlayConnectionEvents.JOIN).
-                    data.queueStartupMessage(message);
+                    // it, so deliver the message via a task that waits for them (see StartupMessageTask).
+                    data.submitScheduledTask(new StartupMessageTask(server, message));
                 } else {
                     Util.LOGGER.info(message.getString());
                 }
@@ -130,8 +131,8 @@ public class NewLevel {
                 Component message = Util.parseTranslatableText("fmod.command.flow.load.all", String.valueOf(loadedCount));
                 if (server.isSingleplayer()) {
                     // The integrated server loads the world before the local player actually joins
-                    // it, so queue the message and deliver it once they do (see ServerPlayConnectionEvents.JOIN).
-                    data.queueStartupMessage(message);
+                    // it, so deliver the message via a task that waits for them (see StartupMessageTask).
+                    data.submitScheduledTask(new StartupMessageTask(server, message));
                 } else {
                     Util.LOGGER.info(message.getString());
                 }

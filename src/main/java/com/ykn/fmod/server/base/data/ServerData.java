@@ -34,7 +34,6 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -166,14 +165,6 @@ public class ServerData {
     private boolean autoLoadPerformed;
 
     /**
-     * Messages queued by startup logic (e.g. the auto load of rule/flow files in
-     * {@link com.ykn.fmod.server.base.event.NewLevel}) that could not be delivered yet because
-     * no player had joined the world. On a singleplayer integrated server, the world is loaded
-     * before the local player actually joins, so these are flushed to the player once they do.
-     */
-    private final List<Component> pendingStartupMessages;
-
-    /**
      * Constructs a new ServerData instance for the given server.
      * Initializes all collections, the async task pool, and sets the server tick to 0.
      * 
@@ -199,7 +190,6 @@ public class ServerData {
         lastCheckEntityTick = 0;
         lastCheckDensityTick = 0;
         autoLoadPerformed = false;
-        pendingStartupMessages = new ArrayList<>();
     }
 
     /**
@@ -669,30 +659,5 @@ public class ServerData {
         }
         autoLoadPerformed = true;
         return true;
-    }
-
-    /**
-     * Queues a message to be delivered to the next player that joins the world, via
-     * {@link #drainPendingStartupMessages()}.
-     * Used to report startup information (e.g. auto-loaded rule/flow counts) that occurs
-     * before any player has joined.
-     *
-     * @param message the message to queue; must not be null
-     */
-    public void queueStartupMessage(@NotNull Component message) {
-        pendingStartupMessages.add(message);
-    }
-
-    /**
-     * Returns all currently queued startup messages and clears the queue, so each message
-     * is only ever delivered once.
-     *
-     * @return the list of queued messages, in the order they were queued; never null, may be empty
-     */
-    @NotNull
-    public List<Component> drainPendingStartupMessages() {
-        List<Component> messages = new ArrayList<>(pendingStartupMessages);
-        pendingStartupMessages.clear();
-        return messages;
     }
 }

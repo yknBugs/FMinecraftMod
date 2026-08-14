@@ -11,13 +11,11 @@ import java.util.List;
 import java.util.Map;
 
 import com.ykn.fmod.server.base.data.ServerData;
-import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.rule.event.PlayerJoinEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -35,10 +33,6 @@ public class PlayerJoin {
 
     /**
      * This method is called when a player joins the world.
-     * <p>
-     * Delivers any startup messages (e.g. auto-loaded rule/flow counts, see {@link NewLevel})
-     * that were queued before this player joined, which always happens on a singleplayer
-     * integrated server, since the world is loaded before the local player joins it.
      */
     public void onPlayerJoin() {
         MinecraftServer server = player.getServer();
@@ -47,10 +41,6 @@ public class PlayerJoin {
         }
 
         ServerData data = Util.getServerData(server);
-        for (Component message : data.drainPendingStartupMessages()) {
-            MessageType.sendTextMessage(player, message);
-        }
-
         runCustomRule(data);
         runLogicFlow(data);
     }
