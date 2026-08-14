@@ -178,6 +178,7 @@ public class NodeRegistry {
         NodeRegistry.registerEvent("DummyNode", DummyNode::new);
         NodeRegistry.registerEvent("EntityDamageEventNode", EntityDamageEventNode::new);
         NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
+        NodeRegistry.registerEvent("PlayerJoinEventNode", PlayerJoinEventNode::new);
         NodeRegistry.registerEvent("ProjectileHitEntityEventNode", ProjectileHitEntityEventNode::new);
         NodeRegistry.registerEvent("TriggerNode", TriggerNode::new);
     }

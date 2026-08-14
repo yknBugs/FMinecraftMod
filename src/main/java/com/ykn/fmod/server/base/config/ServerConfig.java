@@ -32,6 +32,36 @@ public class ServerConfig extends ConfigReader {
     protected volatile boolean serverTranslation;
 
     /**
+     * If enabled, the server will automatically load all .rule files in the config
+     * directory whenever a server starts or a new save is entered.
+     * Default: false
+     */
+    @ConfigEntry(
+        type = ConfigEntry.ConfigType.BOOLEAN,
+        codeEntry = "autoLoadRuleFiles",
+        commandEntry = "autoLoadRuleFiles",
+        i18nEntry = "autoloadrule",
+        displayValueGetter = "getBooleanValueI18n",
+        commandValueHint = "enable"
+    )
+    protected volatile boolean autoLoadRuleFiles;
+
+    /**
+     * If enabled, the server will automatically load all .flow files in the config
+     * directory whenever a server starts or a new save is entered.
+     * Default: false
+     */
+    @ConfigEntry(
+        type = ConfigEntry.ConfigType.BOOLEAN,
+        codeEntry = "autoLoadFlowFiles",
+        commandEntry = "autoLoadFlowFiles",
+        i18nEntry = "autoloadflow",
+        displayValueGetter = "getBooleanValueI18n",
+        commandValueHint = "enable"
+    )
+    protected volatile boolean autoLoadFlowFiles;
+
+    /**
      * The maximum number of nodes that can be executed in a single flow execution.
      * This is designed to prevent infinite loops in flow executions.
      * Default: 32767
@@ -825,6 +855,8 @@ public class ServerConfig extends ConfigReader {
     public ServerConfig() {
         super("server.json");
         this.serverTranslation = true;
+        this.autoLoadRuleFiles = false;
+        this.autoLoadFlowFiles = false;
         this.maxFlowLength = 32767;
         this.maxFlowRecursionDepth = 16;
         this.maxFlowHistorySize = 32767;
@@ -885,6 +917,22 @@ public class ServerConfig extends ConfigReader {
 
     public void setServerTranslation(boolean serverTranslation) {
         this.serverTranslation = serverTranslation;
+    }
+
+    public boolean getAutoLoadRuleFiles() {
+        return autoLoadRuleFiles;
+    }
+
+    public void setAutoLoadRuleFiles(boolean autoLoadRuleFiles) {
+        this.autoLoadRuleFiles = autoLoadRuleFiles;
+    }
+
+    public boolean getAutoLoadFlowFiles() {
+        return autoLoadFlowFiles;
+    }
+
+    public void setAutoLoadFlowFiles(boolean autoLoadFlowFiles) {
+        this.autoLoadFlowFiles = autoLoadFlowFiles;
     }
 
     public int getMaxFlowLength() {

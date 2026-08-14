@@ -11,6 +11,10 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import com.ykn.fmod.client.flow.gui.FlowEditorBridge;
+import com.ykn.fmod.client.flow.gui.FlowEditorScreen;
+import com.ykn.fmod.client.rule.gui.RuleEditorBridge;
+import com.ykn.fmod.client.rule.gui.RuleEditorScreen;
 import com.ykn.fmod.server.base.config.ConfigEntry;
 import com.ykn.fmod.server.base.config.ConfigReader;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
@@ -60,6 +64,7 @@ public class OptionScreen extends Screen {
 
     private final Screen parent;
     private ConfigWidget configWidget;
+    private Button doneButton;
     
     public OptionScreen(Screen parent) {
         super(Component.translatable("fmod.options.title"));
@@ -70,19 +75,20 @@ public class OptionScreen extends Screen {
     protected void init() {
         super.init();
 
-        this.configWidget = new ConfigWidget(this.minecraft, this.width, this.height - 80, 40, this.height - 40);
+        this.configWidget = new ConfigWidget(this.minecraft, this.width, this.height, 40, this.height - 40);
         this.addWidget(this.configWidget);
 
-        this.addRenderableWidget(
-            Button.builder(CommonComponents.GUI_DONE, button -> {
-                Util.saveServerConfig();
-                this.minecraft.setScreen(this.parent);
-            }).pos(this.width / 2 - 100, this.height - 30).size(200, 20).build()
-        );
+        this.doneButton = Button.builder(CommonComponents.GUI_DONE, button -> {
+            Util.saveServerConfig();
+            this.minecraft.setScreen(this.parent);
+        }).pos(this.width / 2 - 100, this.height - 30).size(200, 20).build();
+        this.addRenderableWidget(this.doneButton);
     }
 
     @Override
     public void render(GuiGraphics context, int mouseX, int mouseY, float delta) {
+        // super.render() now renders the background and the renderable widgets itself, so it must
+        // come first; configWidget is added via addWidget (not auto-rendered) and drawn on top.
         super.render(context, mouseX, mouseY, delta);
         this.configWidget.render(context, mouseX, mouseY, delta);
         context.drawCenteredString(this.font, this.title, this.width / 2, 20, 0xffffff);
@@ -115,9 +121,25 @@ public class OptionScreen extends Screen {
 
         public ConfigWidget(Minecraft client, int width, int height, int top, int bottom) {
             // 630 234 40 274
-            super(client, width, height, top, 24);
-            // Copyright Info
-            this.addEntry(new TextHintEntry(
+            super(client, width, bottom - top, top, 24);
+            // Copyright info, with the flow/rule editor entry point on the right (singleplayer only)
+            Button flowEditorButton = Button.builder(Component.translatable("fmod.flowgui.entrypoint"), b ->
+                minecraft.setScreen(new FlowEditorScreen(OptionScreen.this))
+            ).size(95, 20).build();
+            if (!FlowEditorBridge.isAvailable()) {
+                flowEditorButton.active = false;
+                flowEditorButton.setTooltip(Tooltip.create(Component.translatable("fmod.flowgui.entrypoint.disabled")));
+            }
+            Button ruleEditorButton = Button.builder(Component.translatable("fmod.rulegui.entrypoint"), b ->
+                minecraft.setScreen(new RuleEditorScreen(OptionScreen.this))
+            ).size(95, 20).build();
+            if (!RuleEditorBridge.isAvailable()) {
+                ruleEditorButton.active = false;
+                ruleEditorButton.setTooltip(Tooltip.create(Component.translatable("fmod.rulegui.entrypoint.disabled")));
+            }
+            this.addEntry(new TwoButtonConfigEntry(
+                flowEditorButton,
+                ruleEditorButton,
                 Component.translatable("fmod.misc.version", Util.getMinecraftVersion(), Util.MOD_VERSION.toString(), Util.getModAuthors()),
                 Component.translatable("fmod.options.tip")
             ));
@@ -614,6 +636,50 @@ public class OptionScreen extends Screen {
             @Override
             public List<? extends GuiEventListener> children() {
                 return List.of(button, textWidget);
+            }
+        }
+
+        /**
+         * A config row backed by two {@link Button}s packed to the right edge; used for the
+         * flow-editor and rule-editor entry points, which share a single copyright/version label.
+         */
+        private class TwoButtonConfigEntry extends Entry {
+            private final Button leftButton;
+            private final Button rightButton;
+            private final StringWidget textWidget;
+
+            /**
+             * Constructs a {@code TwoButtonConfigEntry}.
+             *
+             * @param leftButton  the button rendered to the left of {@code rightButton}
+             * @param rightButton the button rendered flush against the row's right edge
+             * @param text        the label text shown on the left side
+             * @param hint        the tooltip shown when hovering over the label
+             */
+            TwoButtonConfigEntry(Button leftButton, Button rightButton, Component text, Component hint) {
+                this.leftButton = leftButton;
+                this.rightButton = rightButton;
+                this.textWidget = new StringWidget(0, 0, 200, 20, text, minecraft.font);
+                this.textWidget.alignLeft();
+                this.textWidget.setTooltip(Tooltip.create(hint));
+            }
+
+            @Override
+            public void render(GuiGraphics context, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+                textWidget.setX(x);
+                textWidget.setY(y);
+                textWidget.render(context, mouseX, mouseY, tickDelta);
+                rightButton.setX(x + entryWidth - rightButton.getWidth());
+                rightButton.setY(y);
+                rightButton.render(context, mouseX, mouseY, tickDelta);
+                leftButton.setX(x + entryWidth - rightButton.getWidth() - leftButton.getWidth() - 10);
+                leftButton.setY(y);
+                leftButton.render(context, mouseX, mouseY, tickDelta);
+            }
+
+            @Override
+            public List<? extends GuiEventListener> children() {
+                return List.of(leftButton, rightButton, textWidget);
             }
         }
 

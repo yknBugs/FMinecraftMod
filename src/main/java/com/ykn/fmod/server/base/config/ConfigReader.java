@@ -7,6 +7,7 @@ package com.ykn.fmod.server.base.config;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
@@ -20,6 +21,8 @@ import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.ykn.fmod.server.base.util.PlayerMessageType;
+import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
 
 /**
@@ -152,6 +155,9 @@ public class ConfigReader {
 		// 	builder.registerTypeAdapter(ServerAddress.class, ServerAddressAdapter.INSTANCE);
 		// }
 
+        builder.registerTypeAdapter(ServerMessageType.class, new ServerMessageType.Deserializer());
+        builder.registerTypeAdapter(PlayerMessageType.class, new PlayerMessageType.Deserializer());
+
         return builder.create();
     }
 
@@ -168,7 +174,45 @@ public class ConfigReader {
      * @return An instance of the configuration object, either loaded from the file or created fresh.
      */
     public static <T extends ConfigReader> T loadConfig(Class<T> configClass, Supplier<T> freshInstance, String fileName) {
-        return readFile(fileName, configClass).orElseGet(freshInstance);
+        Optional<T> loaded = readFile(fileName, configClass);
+        if (loaded.isEmpty()) {
+            return freshInstance.get();
+        }
+        T config = loaded.get();
+        repairNullFields(config, freshInstance.get());
+        return config;
+    }
+
+    /**
+     * Fills back in any declared field left {@code null} after deserialization with the
+     * value that a fresh instance would have.
+     * <p>
+     * A hand-edited (or otherwise malformed) config file can leave a field null in ways the
+     * subclass's own constructor never would - e.g. an explicit {@code "field": null} in the
+     * JSON overrides whatever default the constructor set. Left alone, that null field only
+     * surfaces as an NPE much later, whenever the field is actually used. This is a best
+     * effort, shallow repair: it only catches a field that is itself null, not a non-null
+     * field whose own internals are malformed (those are the deserializer's responsibility,
+     * see e.g. {@link com.ykn.fmod.server.base.util.ServerMessageType.Deserializer}).
+     *
+     * @param config   the just-deserialized config instance to repair in place
+     * @param defaults a fresh instance of the same class to source default values from
+     */
+    private static <T extends ConfigReader> void repairNullFields(T config, T defaults) {
+        for (Field field : config.getClass().getDeclaredFields()) {
+            if (Modifier.isStatic(field.getModifiers()) || field.getType().isPrimitive()) {
+                continue;
+            }
+            field.setAccessible(true);
+            try {
+                if (field.get(config) == null) {
+                    Util.LOGGER.warn("FMinecraftMod: Config field '" + field.getName() + "' in " + config.getFilePath() + " was null after loading (missing or malformed), resetting to default.");
+                    field.set(config, field.get(defaults));
+                }
+            } catch (IllegalAccessException e) {
+                Util.LOGGER.error("FMinecraftMod: Failed to repair config field '" + field.getName() + "' in " + config.getFilePath(), e);
+            }
+        }
     }
 
     /**

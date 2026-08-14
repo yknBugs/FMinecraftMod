@@ -11,6 +11,8 @@ import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import com.google.gson.JsonObject;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -266,6 +268,35 @@ public class MessageType {
             default:
                 return Component.literal(type.toString());
         }
+    }
+
+    /**
+     * Reads an enum-valued field out of a deserialized config JSON object, falling back to
+     * {@code fallback} when the key is absent or its value doesn't name a known constant.
+     * <p>
+     * Gson's built-in enum adapter silently resolves an unrecognized constant name to
+     * {@code null} instead of failing, and {@link ServerMessageType}/{@link PlayerMessageType}
+     * have no default constructor for Gson to fall back on - so a hand-edited or stale config
+     * (e.g. a field renamed or removed by hand) would otherwise deserialize with a null enum
+     * field that only NPEs much later, whenever that message is actually sent. Used by
+     * {@link ServerMessageType.Deserializer} and {@link PlayerMessageType.Deserializer}.
+     *
+     * @param obj      the JSON object being deserialized; may be null
+     * @param key      the field name to read
+     * @param enumType the enum class to resolve the value against
+     * @param fallback the value to use when the key is missing, null, or unrecognized
+     * @return the resolved enum constant, or {@code fallback}
+     */
+    protected static <E extends Enum<E>> E enumOrDefault(@Nullable JsonObject obj, String key, Class<E> enumType, E fallback) {
+        if (obj != null && obj.has(key) && !obj.get(key).isJsonNull()) {
+            String name = obj.get(key).getAsString();
+            for (E constant : enumType.getEnumConstants()) {
+                if (constant.name().equals(name)) {
+                    return constant;
+                }
+            }
+        }
+        return fallback;
     }
 
     /**

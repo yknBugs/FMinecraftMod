@@ -61,6 +61,11 @@ public class BinaryConditionExpression implements IterableCondition {
      */
     private final ConditionRelationship relationship;
 
+    /**
+     * The type string for this class.
+     */
+    public static final String TYPE = "BinaryConditionExpression";
+
     private BinaryConditionExpression(String name, RuleCondition leftOperand, RuleCondition rightOperand, ConditionRelationship relationship) {
         this.name = name;
         this.leftOperand = leftOperand;
@@ -181,7 +186,7 @@ public class BinaryConditionExpression implements IterableCondition {
 
     @Override
     public String getType() {
-        return "BinaryConditionExpression";
+        return TYPE;
     }
 
     @Override

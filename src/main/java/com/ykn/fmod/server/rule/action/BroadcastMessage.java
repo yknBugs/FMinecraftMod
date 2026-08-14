@@ -5,27 +5,18 @@
 
 package com.ykn.fmod.server.rule.action;
 
-import java.util.function.BiConsumer;
+import java.util.List;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.command.SayCommandSuggestion;
 import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.TextPlaceholderFactory;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
-import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
-import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
 
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -53,15 +44,22 @@ public class BroadcastMessage implements RuleAction {
 
     private final RuleParameter<String> message;
 
+    public static final String TYPE = "BroadcastMessage";
+
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.bcmessage.summary")
+        .add(ParamKind.GREEDY_STRING, "fmod.rule.action.bcmessage.param.message.name", "fmod.rule.action.bcmessage.param.message.desc", "message", "var.message", "",
+            SayCommandSuggestion.suggest().add("${", "var:"));
+
     /**
      * Creates a {@code BroadcastMessage} action.
      *
-     * @param name    the unique name of this action instance within the rule
-     * @param message the message parameter (variable reference and/or constant string)
+     * @param name   the unique name of this action instance within the rule
+     * @param values the parameter values, in {@link #getParameters()} order: {@code message}
      */
-    public BroadcastMessage(String name, RuleParameter<String> message) {
+    @SuppressWarnings("unchecked")
+    public BroadcastMessage(String name, List<RuleParameter<?>> values) {
         this.name = name;
-        this.message = message;
+        this.message = (RuleParameter<String>) values.get(0);
     }
 
     @Override
@@ -76,7 +74,7 @@ public class BroadcastMessage implements RuleAction {
             }
             MessageType.broadcastTextMessage(context.getServer(), factory.parse(message, null));
         }
-        return true;   
+        return true;
     }
 
     @Override
@@ -86,55 +84,22 @@ public class BroadcastMessage implements RuleAction {
 
     @Override
     public RuleAction setName(String name) {
-        return new BroadcastMessage(name, this.message);
+        return new BroadcastMessage(name, getParameterValues());
+    }
+
+    @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.message);
     }
 
     @Override
     public String getType() {
-        return "BroadcastMessage";
+        return TYPE;
     }
 
     @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.action.bcmessage", this.getName(), this.getType(), this.message.render());
-    }
-    
-    @Override
-    public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("message", RuleParameter.toJson(message, e -> new JsonPrimitive(e)));
-        return json;
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
-    public static JsonObject toJson(BroadcastMessage action) {
-        return action.toJson();
-    }
-
-    public static BroadcastMessage fromJson(JsonObject json) {
-        String name = json.get("name").getAsString();
-        RuleParameter<String> message = RuleParameter.fromJson(json, "message", e -> e.getAsString());
-        return new BroadcastMessage(name, message);
-    }
-
-    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
-        SayCommandSuggestion suggestion = SayCommandSuggestion.suggest().add("${", "var:");
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<String> messageParameter = RuleParameter.fromCommandContext("message", "var.message", () -> {
-                        return StringArgumentType.getString(ctx, "message");
-                    }, arguments, ctx);
-                    BroadcastMessage action = new BroadcastMessage(name, messageParameter);
-                    actionConsumer.accept(ctx, action);
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
-            })
-            .add("message", "var.message", () -> Commands.argument("message", StringArgumentType.greedyString()).suggests(suggestion))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
-    }
 }

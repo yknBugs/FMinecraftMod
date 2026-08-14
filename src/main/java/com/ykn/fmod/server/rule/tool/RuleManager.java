@@ -44,10 +44,10 @@ import com.ykn.fmod.server.rule.core.RuleEvent;
  */
 public class RuleManager {
 
-    /** 
-     * The mutable rule definition. Changes here require a call to {@link #setEnabled(boolean)} to take effect. 
+    /**
+     * The mutable rule definition. Changes here require a call to {@link #setEnabled(boolean)} to take effect.
      */
-    private final CustomRule rule;
+    private CustomRule rule;
 
     /** 
      * The immutable, optimised copy of {@link #rule} used for evaluation, rebuilt on {@link #setEnabled(boolean)}. 
@@ -265,6 +265,20 @@ public class RuleManager {
      */
     public CustomRule getRule() {
         return rule;
+    }
+
+    /**
+     * Replaces the entire rule definition wrapped by this manager.
+     *
+     * <p>Marks the rule as disabled; call {@link #setEnabled(boolean) setEnabled(true)} to
+     * re-enable. Intended for restoring a previously-{@link CustomRule#copy() copied} snapshot
+     * (e.g. client-side undo/redo in a rule editor GUI).
+     *
+     * @param rule the new rule definition
+     */
+    public void setRule(CustomRule rule) {
+        this.rule = rule;
+        this.enabled = false;
     }
 
     /**
