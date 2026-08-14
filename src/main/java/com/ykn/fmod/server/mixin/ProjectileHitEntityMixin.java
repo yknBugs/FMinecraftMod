@@ -5,9 +5,9 @@
 
 package com.ykn.fmod.server.mixin;
 
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
+// import org.spongepowered.asm.mixin.Mixin;
+// import org.spongepowered.asm.mixin.injection.At;
+// import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.ykn.fmod.server.base.event.ProjectileHitEntity;
@@ -16,10 +16,11 @@ import com.ykn.fmod.server.base.util.Util;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.phys.EntityHitResult;
 
-@Mixin(Projectile.class)
+// @Mixin(Projectile.class)
 public class ProjectileHitEntityMixin {
 
-    @Inject(method = "onHitEntity(Lnet/minecraft/world/phys/EntityHitResult;)V", at = @At("HEAD"))
+    // @Inject(method = "onHitEntity(Lnet/minecraft/world/phys/EntityHitResult;)V", at = @At("HEAD"))
+    @Deprecated
     private void onEntityHit(final EntityHitResult entityHitResult, CallbackInfo info) {
         try {
             Projectile projectile = (Projectile) (Object) this;

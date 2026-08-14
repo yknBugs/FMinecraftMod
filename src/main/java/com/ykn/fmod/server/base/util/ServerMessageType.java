@@ -5,10 +5,17 @@
 
 package com.ykn.fmod.server.base.util;
 
+import java.lang.reflect.Type;
 import java.util.Objects;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -75,6 +82,24 @@ public class ServerMessageType extends MessageType {
          * No player receives the main message; everyone receives the other message. 
          */
         NONE
+    }
+
+    /**
+     * Registered on the config {@code Gson} instance so a hand-edited or stale
+     * {@code server.json} can't leave a {@code ServerMessageType} field with null enum
+     * members - see {@link MessageType#enumOrDefault}. Any missing/unrecognized sub-field
+     * falls back to {@link MessageType.Location#NONE} / {@link ServerMessageType.Receiver#NONE},
+     * matching {@link #empty()}.
+     */
+    public static final class Deserializer implements JsonDeserializer<ServerMessageType> {
+        @Override
+        public ServerMessageType deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
+            JsonObject obj = json != null && json.isJsonObject() ? json.getAsJsonObject() : null;
+            MessageType.Location main = MessageType.enumOrDefault(obj, "mainPlayerLocation", MessageType.Location.class, MessageType.Location.NONE);
+            MessageType.Location other = MessageType.enumOrDefault(obj, "otherPlayerLocation", MessageType.Location.class, MessageType.Location.NONE);
+            ServerMessageType.Receiver receiver = MessageType.enumOrDefault(obj, "receiver", ServerMessageType.Receiver.class, ServerMessageType.Receiver.NONE);
+            return ServerMessageType.of(main, other, receiver);
+        }
     }
 
     /**

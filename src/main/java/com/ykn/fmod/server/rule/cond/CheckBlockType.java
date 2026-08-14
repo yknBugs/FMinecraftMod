@@ -5,35 +5,18 @@
 
 package com.ykn.fmod.server.rule.cond;
 
-import java.util.function.BiConsumer;
+import java.util.List;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.BoolArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
-import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.DimensionArgument;
-import net.minecraft.commands.arguments.ResourceLocationArgument;
-import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -50,10 +33,10 @@ import net.minecraft.core.registries.BuiltInRegistries;
  * <p>JSON value format:
  * <pre>{@code
  * "value": {
- *   "dimension":    {"constant": "minecraft:overworld"},
- *   "position":     {"variable": "pos"},
- *   "block":        {"constant": "minecraft:stone"},
- *   "defaultValue": {"constant": false}
+ *   "dimension": {"constant": "minecraft:overworld"},
+ *   "position":  {"variable": "pos"},
+ *   "block":     {"constant": "minecraft:stone"},
+ *   "default":   {"constant": false}
  * }
  * }</pre>
  *
@@ -71,12 +54,21 @@ public class CheckBlockType implements SourceCondition {
 
     private final RuleParameter<Boolean> defaultValue;
 
-    public CheckBlockType(String name, RuleParameter<ResourceLocation> dimension, RuleParameter<Vec3> position, RuleParameter<ResourceLocation> block, RuleParameter<Boolean> defaultValue) {
+    public static final String TYPE = "CheckBlockType";
+
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.blocktype.summary")
+        .add(ParamKind.DIMENSION, "fmod.rule.condition.blocktype.param.dimension.name", "fmod.rule.condition.blocktype.param.dimension.desc", "dimension", "var.dimension")
+        .add(ParamKind.POSITION, "fmod.rule.condition.blocktype.param.position.name", "fmod.rule.condition.blocktype.param.position.desc", "position", "var.position")
+        .add(ParamKind.BLOCK_ID, "fmod.rule.condition.blocktype.param.block.name", "fmod.rule.condition.blocktype.param.block.desc", "block", "var.block")
+        .add(ParamKind.BOOLEAN, "fmod.rule.condition.blocktype.param.default.name", "fmod.rule.condition.blocktype.param.default.desc", "default", "var.default");
+
+    @SuppressWarnings("unchecked")
+    public CheckBlockType(String name, List<RuleParameter<?>> values) {
         this.name = name;
-        this.dimension = dimension;
-        this.position = position;
-        this.block = block;
-        this.defaultValue = defaultValue;
+        this.dimension = (RuleParameter<ResourceLocation>) values.get(0);
+        this.position = (RuleParameter<Vec3>) values.get(1);
+        this.block = (RuleParameter<ResourceLocation>) values.get(2);
+        this.defaultValue = (RuleParameter<Boolean>) values.get(3);
     }
 
     @Override
@@ -106,7 +98,12 @@ public class CheckBlockType implements SourceCondition {
 
     @Override
     public String getType() {
-        return "CheckBlockType";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -116,100 +113,12 @@ public class CheckBlockType implements SourceCondition {
 
     @Override
     public RuleCondition setName(String name) {
-        return new CheckBlockType(name, this.dimension, this.position, this.block, this.defaultValue);
+        return new CheckBlockType(name, getParameterValues());
     }
 
     @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.condition.blocktype", this.getName(), this.getType(),
-            this.dimension.render(), this.position.render(), this.block.render(), this.defaultValue.render());
-    }
-
-    @Override
-    public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("dimension", RuleParameter.toJson(dimension, e -> new JsonPrimitive(e.toString())));
-        json.add("position", RuleParameter.toJson(position, e -> {
-            JsonObject obj = new JsonObject();
-            obj.addProperty("x", e.x);
-            obj.addProperty("y", e.y);
-            obj.addProperty("z", e.z);
-            return obj;
-        }));
-        json.add("block", RuleParameter.toJson(block, e -> new JsonPrimitive(e.toString())));
-        json.add("defaultValue", RuleParameter.toJson(defaultValue, JsonPrimitive::new));
-        return json;
-    }
-
-    public static JsonObject toJson(CheckBlockType condition) {
-        return condition.toJson();
-    }
-
-    public static CheckBlockType fromJson(JsonObject json) {
-        RuleParameter<ResourceLocation> dimension = RuleParameter.fromJson(json, "dimension", e -> {
-            String s = e.getAsString();
-            ResourceLocation rl = ResourceLocation.tryParse(s);
-            if (rl == null) {
-                Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType dimension: {}", s);
-                rl = new ResourceLocation("minecraft", "overworld");
-            }
-            return rl;
-        });
-        RuleParameter<Vec3> position = RuleParameter.fromJson(json, "position", e -> {
-            JsonObject obj = e.getAsJsonObject();
-            double x = obj.get("x").getAsDouble();
-            double y = obj.get("y").getAsDouble();
-            double z = obj.get("z").getAsDouble();
-            return new Vec3(x, y, z);
-        });
-        RuleParameter<ResourceLocation> block = RuleParameter.fromJson(json, "block", e -> {
-            String s = e.getAsString();
-            ResourceLocation rl = ResourceLocation.tryParse(s);
-            if (rl == null) {
-                Util.LOGGER.warn("Invalid ResourceLocation in CheckBlockType block: " + s + ". Defaulting to minecraft:bedrock.");
-                rl = new ResourceLocation("minecraft", "bedrock");
-            }
-            return rl;
-        });
-        RuleParameter<Boolean> defaultValue = RuleParameter.fromJson(json, "defaultValue", JsonElement::getAsBoolean);
-        return new CheckBlockType(json.get("name").getAsString(), dimension, position, block, defaultValue);
-    }
-
-    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<ResourceLocation> dimensionParameter = RuleParameter.fromCommandContext("dimension", "var.dimension", () -> {
-                        ServerLevel serverWorld = DimensionArgument.getDimension(ctx, "dimension");
-                        return serverWorld.dimension().location();
-                    }, arguments, ctx);
-                    RuleParameter<Vec3> positionParameter = RuleParameter.fromCommandContext("position", "var.position", () -> {
-                        return Vec3Argument.getVec3(ctx, "position");
-                    }, arguments, ctx);
-                    RuleParameter<ResourceLocation> blockParameter = RuleParameter.fromCommandContext("block", "var.block", () -> {
-                        return ResourceLocationArgument.getId(ctx, "block");
-                    }, arguments, ctx);
-                    RuleParameter<Boolean> defaultValueParameter = RuleParameter.fromCommandContext("default", "var.default", () -> {
-                        return BoolArgumentType.getBool(ctx, "default");
-                    }, arguments, ctx);
-                    CheckBlockType condition = new CheckBlockType(name, dimensionParameter, positionParameter, blockParameter, defaultValueParameter);
-                    conditionConsumer.accept(ctx, condition);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
-            })
-            .add("dimension", "var.dimension", () -> Commands.argument("dimension", DimensionArgument.dimension()))
-            .add("position", "var.position", () -> Commands.argument("position", Vec3Argument.vec3()))
-            .add("block", "var.block", () -> Commands.argument("block", ResourceLocationArgument.id()))
-            .add("default", "var.default", () -> Commands.argument("default", BoolArgumentType.bool()))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.dimension, this.position, this.block, this.defaultValue);
     }
 
 }

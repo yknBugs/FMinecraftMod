@@ -28,6 +28,8 @@ public class DummyEvent implements RuleEvent {
 
     private static final DummyEvent INSTANCE = new DummyEvent();
 
+    public static final String TYPE = "Dummy";
+
     private DummyEvent() {
     }
 
@@ -42,7 +44,7 @@ public class DummyEvent implements RuleEvent {
 
     @Override
     public String getType() {
-        return "Dummy";
+        return TYPE;
     }
 
     @Override

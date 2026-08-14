@@ -5,29 +5,14 @@
 
 package com.ykn.fmod.server.rule.cond;
 
-import java.util.function.BiConsumer;
+import java.util.List;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.DoubleArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
-import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
-
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 
 /**
  * A {@link SourceCondition} that tests whether {@code left} is strictly less than {@code right}.
@@ -50,10 +35,17 @@ public class SmallerThan implements SourceCondition {
 
     private final RuleParameter<Double> right;
 
-    public SmallerThan(String name, RuleParameter<Double> left, RuleParameter<Double> right) {
+    public static final String TYPE = "SmallerThan";
+
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.smallerthan.summary")
+        .add(ParamKind.DOUBLE, "fmod.rule.condition.smallerthan.param.left.name", "fmod.rule.condition.smallerthan.param.left.desc", "left", "var.left")
+        .add(ParamKind.DOUBLE, "fmod.rule.condition.smallerthan.param.right.name", "fmod.rule.condition.smallerthan.param.right.desc", "right", "var.right");
+
+    @SuppressWarnings("unchecked")
+    public SmallerThan(String name, List<RuleParameter<?>> values) {
         this.name = name;
-        this.left = left;
-        this.right = right;
+        this.left = (RuleParameter<Double>) values.get(0);
+        this.right = (RuleParameter<Double>) values.get(1);
     }
 
     @Override
@@ -70,7 +62,12 @@ public class SmallerThan implements SourceCondition {
 
     @Override
     public String getType() {
-        return "SmallerThan";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -80,59 +77,12 @@ public class SmallerThan implements SourceCondition {
 
     @Override
     public RuleCondition setName(String name) {
-        return new SmallerThan(name, this.left, this.right);
+        return new SmallerThan(name, getParameterValues());
     }
 
     @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.condition.smallerthan", this.getName(), this.getType(),
-            this.left.render(), this.right.render());
-    }
-
-    @Override
-    public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("left", RuleParameter.toJson(left, JsonPrimitive::new));
-        json.add("right", RuleParameter.toJson(right, JsonPrimitive::new));
-        return json;
-    }
-
-    public static JsonObject toJson(SmallerThan condition) {
-        return condition.toJson();
-    }
-
-    public static SmallerThan fromJson(JsonObject json) {
-        RuleParameter<Double> left = RuleParameter.fromJson(json, "left", JsonElement::getAsDouble);
-        RuleParameter<Double> right = RuleParameter.fromJson(json, "right", JsonElement::getAsDouble);
-        return new SmallerThan(json.get("name").getAsString(), left, right);
-    }
-
-    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<Double> leftParameter = RuleParameter.fromCommandContext("left", "var.left", () -> {
-                        return DoubleArgumentType.getDouble(ctx, "left");
-                    }, arguments, ctx);
-                    RuleParameter<Double> rightParameter = RuleParameter.fromCommandContext("right", "var.right", () -> {
-                        return DoubleArgumentType.getDouble(ctx, "right");
-                    }, arguments, ctx);
-                    SmallerThan condition = new SmallerThan(name, leftParameter, rightParameter);
-                    conditionConsumer.accept(ctx, condition);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
-            })
-            .add("left", "var.left", () -> Commands.argument("left", DoubleArgumentType.doubleArg()))
-            .add("right", "var.right", () -> Commands.argument("right", DoubleArgumentType.doubleArg()))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.left, this.right);
     }
 
 }

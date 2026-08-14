@@ -5,31 +5,16 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import java.util.List;
 import java.util.UUID;
-import java.util.function.BiConsumer;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 import com.ykn.fmod.server.rule.core.SourceCondition;
-import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.commands.arguments.EntityArgument;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -64,19 +49,26 @@ public class CheckPermission implements SourceCondition {
 
     private final RuleParameter<Integer> max;
 
+    public static final String TYPE = "CheckPermission";
+
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.condition.checkpermission.summary")
+        .add(ParamKind.PLAYER, "fmod.rule.condition.checkpermission.param.player.name", "fmod.rule.condition.checkpermission.param.player.desc", "player", "var.player")
+        .add(ParamKind.INT, "fmod.rule.condition.checkpermission.param.min.name", "fmod.rule.condition.checkpermission.param.min.desc", "min", "var.min")
+        .add(ParamKind.INT, "fmod.rule.condition.checkpermission.param.max.name", "fmod.rule.condition.checkpermission.param.max.desc", "max", "var.max");
+
     /**
      * Creates a new {@code CheckPermission} condition.
      *
      * @param name   the unique name of this condition instance within the rule
-     * @param player the UUID of the player to check
-     * @param min    the minimum permission level (inclusive); values below 0 or above 4 are allowed
-     * @param max    the maximum permission level (inclusive); values below 0 or above 4 are allowed
+     * @param values the parameter values, in {@link #getParameters()} order: {@code player},
+     *               {@code min}, {@code max}
      */
-    public CheckPermission(String name, RuleParameter<UUID> player, RuleParameter<Integer> min, RuleParameter<Integer> max) {
+    @SuppressWarnings("unchecked")
+    public CheckPermission(String name, List<RuleParameter<?>> values) {
         this.name = name;
-        this.player = player;
-        this.min = min;
-        this.max = max;
+        this.player = (RuleParameter<UUID>) values.get(0);
+        this.min = (RuleParameter<Integer>) values.get(1);
+        this.max = (RuleParameter<Integer>) values.get(2);
     }
 
     @Override
@@ -100,7 +92,12 @@ public class CheckPermission implements SourceCondition {
 
     @Override
     public String getType() {
-        return "CheckPermission";
+        return TYPE;
+    }
+
+    @Override
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
     @Override
@@ -110,66 +107,12 @@ public class CheckPermission implements SourceCondition {
 
     @Override
     public RuleCondition setName(String name) {
-        return new CheckPermission(name, this.player, this.min, this.max);
+        return new CheckPermission(name, getParameterValues());
     }
 
     @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.condition.checkpermission", this.getName(), this.getType(),
-            this.player.render(), this.min.render(), this.max.render());
-    }
-
-    @Override
-    public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("player", RuleParameter.toJson(player, e -> new JsonPrimitive(e.toString())));
-        json.add("min", RuleParameter.toJson(min, JsonPrimitive::new));
-        json.add("max", RuleParameter.toJson(max, JsonPrimitive::new));
-        return json;
-    }
-
-    public static JsonObject toJson(CheckPermission condition) {
-        return condition.toJson();
-    }
-
-    public static CheckPermission fromJson(JsonObject json) {
-        RuleParameter<UUID> player = RuleParameter.fromJson(json, "player", e -> UUID.fromString(e.getAsString()));
-        RuleParameter<Integer> min = RuleParameter.fromJson(json, "min", JsonElement::getAsInt);
-        RuleParameter<Integer> max = RuleParameter.fromJson(json, "max", JsonElement::getAsInt);
-        return new CheckPermission(json.get("name").getAsString(), player, min, max);
-    }
-
-    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleCondition> conditionConsumer) {
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<UUID> playerParameter = RuleParameter.fromCommandContext("player", "var.player", () -> {
-                        ServerPlayer player = EntityArgument.getPlayer(ctx, "player");
-                        return player.getUUID();
-                    }, arguments, ctx);
-                    RuleParameter<Integer> minParameter = RuleParameter.fromCommandContext("min", "var.min", () -> {
-                        return IntegerArgumentType.getInteger(ctx, "min");
-                    }, arguments, ctx);
-                    RuleParameter<Integer> maxParameter = RuleParameter.fromCommandContext("max", "var.max", () -> {
-                        return IntegerArgumentType.getInteger(ctx, "max");
-                    }, arguments, ctx);
-                    CheckPermission condition = new CheckPermission(name, playerParameter, minParameter, maxParameter);
-                    conditionConsumer.accept(ctx, condition);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
-            })
-            .add("player", "var.player", () -> Commands.argument("player", EntityArgument.player()))
-            .add("min", "var.min", () -> Commands.argument("min", IntegerArgumentType.integer()))
-            .add("max", "var.max", () -> Commands.argument("max", IntegerArgumentType.integer()))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.player, this.min, this.max);
     }
 
 }

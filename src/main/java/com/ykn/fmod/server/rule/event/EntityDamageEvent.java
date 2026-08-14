@@ -20,6 +20,30 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
+/**
+ * A {@link RuleEvent} that fires when a {@code LivingEntity} takes damage.
+ *
+ * <p>Variable contract:
+ * <table border="1">
+ *   <tr><th>Name</th><th>Type</th><th>Nullable</th><th>Description</th></tr>
+ *   <tr><td>{@code entity}</td><td>{@code UUID}</td><td>No</td><td>The entity that took damage.</td></tr>
+ *   <tr><td>{@code damage}</td><td>{@code Double}</td><td>No</td><td>The amount of damage dealt.</td></tr>
+ *   <tr><td>{@code cause}</td><td>{@code UUID}</td><td>Yes</td><td>The entity causing the damage.</td></tr>
+ *   <tr><td>{@code source}</td><td>{@code UUID}</td><td>Yes</td><td>The direct damage source entity.</td></tr>
+ *   <tr><td>{@code x}/{@code y}/{@code z}</td><td>{@code Double}</td><td>No</td><td>The entity's coordinates.</td></tr>
+ *   <tr><td>{@code position}</td><td>{@code Vec3}</td><td>No</td><td>The entity's position.</td></tr>
+ *   <tr><td>{@code dimension}</td><td>{@code ResourceLocation}</td><td>No</td><td>The dimension the entity is in.</td></tr>
+ *   <tr><td>{@code biome}</td><td>{@code ResourceLocation}</td><td>Yes</td><td>The biome the entity is in.</td></tr>
+ *   <tr><td>{@code pitch}/{@code yaw}</td><td>{@code Double}</td><td>No</td><td>The entity's rotation angles.</td></tr>
+ *   <tr><td>{@code rotation}</td><td>{@code Vec2}</td><td>No</td><td>The entity's rotation vector.</td></tr>
+ *   <tr><td>{@code message}</td><td>{@code String}</td><td>No</td><td>The damage message id.</td></tr>
+ *   <tr><td>{@code exhaustion}</td><td>{@code Double}</td><td>No</td><td>The exhaustion caused by the damage.</td></tr>
+ *   <tr><td>{@code health}</td><td>{@code Double}</td><td>No</td><td>The entity's health before damage.</td></tr>
+ *   <tr><td>{@code name}</td><td>{@code String}</td><td>No</td><td>The entity's display name.</td></tr>
+ * </table>
+ *
+ * <p>This class is a singleton; obtain the instance via {@link #getInstance()}.
+ */
 public class EntityDamageEvent implements RuleEvent {
 
     private static final EntityDamageEvent INSTANCE = new EntityDamageEvent();
@@ -27,6 +51,8 @@ public class EntityDamageEvent implements RuleEvent {
     private final Map<String, Class<? extends Object>> variableTypes;
 
     private final Set<String> variablesList;
+
+    public static final String TYPE = "EntityDamageEvent";
 
     private static final Map<String, Class<? extends Object>> createVariablesType() {
         Map<String, Class<? extends Object>> map = new HashMap<>();
@@ -81,7 +107,7 @@ public class EntityDamageEvent implements RuleEvent {
 
     @Override
     public String getType() {
-        return "EntityDamageEvent";
+        return TYPE;
     }
 
     @Override

@@ -48,6 +48,11 @@ public class UnaryConditionExpression implements IterableCondition {
      * The unary operator (currently only {@link ConditionRelationship#NOT} is evaluated). 
      */
     private final ConditionRelationship relationship;
+
+    /**
+     * The type string for this class.
+     */
+    public static final String TYPE = "UnaryConditionExpression";
     
     private UnaryConditionExpression(String name, RuleCondition operand, ConditionRelationship relationship) {
         this.name = name;
@@ -143,7 +148,7 @@ public class UnaryConditionExpression implements IterableCondition {
 
     @Override
     public String getType() {
-        return "UnaryConditionExpression";
+        return TYPE;
     }
 
     @Override
