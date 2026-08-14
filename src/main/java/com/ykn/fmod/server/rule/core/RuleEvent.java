@@ -15,11 +15,11 @@ import com.ykn.fmod.server.base.util.Util;
  *
  * <p>An event declaration serves two purposes:
  * <ol>
- *   <li><b>Documentation contract</b> — it advertises which variables (and their types) the
+ *   <li><b>Documentation contract</b> - it advertises which variables (and their types) the
  *       event dispatcher will place into the {@link RuleContext} variables map before invoking
  *       the rule.  Rule authors refer to these variable names in their condition parameter
  *       bindings (e.g. {@code {"variable": "playerId"}}).</li>
- *   <li><b>Validation</b> — {@link #validateVariables(RuleContext)} is called automatically
+ *   <li><b>Validation</b> - {@link #validateVariables(RuleContext)} is called automatically
  *       when a rule fires, allowing early detection of mis-configured event dispatchers.</li>
  * </ol>
  *
@@ -52,7 +52,7 @@ public interface RuleEvent extends RuleComponent {
     /**
      * Returns a map from <em>every</em> declared variable name to its expected boxed {@link Class} type.
      *
-     * <p>This map covers all variables the event dispatcher may place into the context —
+     * <p>This map covers all variables the event dispatcher may place into the context -
      * both those required to be non-null (see {@link #variablesList()}) and those that are
      * optionally present.
      *
@@ -88,7 +88,7 @@ public interface RuleEvent extends RuleComponent {
      * </ol>
      *
      * <p>A warning is produced by {@link CustomRule#test(RuleContext)} when this returns
-     * {@code false}, but rule execution is not aborted — condition evaluation proceeds
+     * {@code false}, but rule execution is not aborted - condition evaluation proceeds
      * and individual {@link RuleParameter}s fall back to their constant values as needed.
      *
      * @param context the execution context whose variable map is checked

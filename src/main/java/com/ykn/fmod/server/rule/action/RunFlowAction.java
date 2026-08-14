@@ -6,19 +6,9 @@
 package com.ykn.fmod.server.rule.action;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
-import com.mojang.brigadier.Command;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
-import com.mojang.brigadier.builder.LiteralArgumentBuilder;
-import com.mojang.brigadier.builder.RequiredArgumentBuilder;
-import com.mojang.brigadier.context.CommandContext;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ykn.fmod.server.base.command.LogicFlowSuggestion;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.ScheduledFlow;
@@ -27,12 +17,8 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.rule.core.RuleAction;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
-import com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder;
-
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.commands.Commands;
-import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentUtils;
+import com.ykn.fmod.server.rule.core.ParamKind;
+import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 
 /**
  * A {@link RuleAction} that schedules the execution of a named logic flow.
@@ -53,8 +39,8 @@ import net.minecraft.network.chat.ComponentUtils;
  * <p>JSON value format:
  * <pre>{@code
  * "value": {
- *   "flowName": {"constant": "MyFlow"},
- *   "delay":    {"constant": 1}
+ *   "flow":  {"constant": "MyFlow"},
+ *   "delay": {"constant": 1}
  * }
  * }</pre>
  */
@@ -66,17 +52,25 @@ public class RunFlowAction implements RuleAction {
 
     private final RuleParameter<Integer> delay;
 
+    public static final String TYPE = "RunFlow";
+
+    public static final RequiredParamMetadata PARAM_METADATA = RequiredParamMetadata.create("fmod.rule.action.runflow.summary")
+        .add(ParamKind.STRING, "fmod.rule.action.runflow.param.flow.name", "fmod.rule.action.runflow.param.flow.desc", "flow", "var.flow",
+            LogicFlowSuggestion.suggest(true))
+        .add(ParamKind.intAtLeast(1), "fmod.rule.action.runflow.param.delay.name", "fmod.rule.action.runflow.param.delay.desc", "delay", "var.delay");
+
     /**
      * Creates a {@code RunFlowAction}.
      *
-     * @param name     the unique name of this action instance within the rule
-     * @param flowName the name of the logic flow to trigger
-     * @param delay    the number of ticks to wait before running the flow (clamped to ≥ 1)
+     * @param name   the unique name of this action instance within the rule
+     * @param values the parameter values, in {@link #getParameters()} order: {@code flowName},
+     *               {@code delay} (clamped to ≥ 1 at execution time)
      */
-    public RunFlowAction(String name, RuleParameter<String> flowName, RuleParameter<Integer> delay) {
+    @SuppressWarnings("unchecked")
+    public RunFlowAction(String name, List<RuleParameter<?>> values) {
         this.name = name;
-        this.flowName = flowName;
-        this.delay = delay;
+        this.flowName = (RuleParameter<String>) values.get(0);
+        this.delay = (RuleParameter<Integer>) values.get(1);
     }
 
     @Override
@@ -109,65 +103,22 @@ public class RunFlowAction implements RuleAction {
 
     @Override
     public RuleAction setName(String name) {
-        return new RunFlowAction(name, this.flowName, this.delay);
+        return new RunFlowAction(name, getParameterValues());
+    }
+
+    @Override
+    public List<RuleParameter<?>> getParameterValues() {
+        return List.of(this.flowName, this.delay);
     }
 
     @Override
     public String getType() {
-        return "RunFlow";
+        return TYPE;
     }
 
     @Override
-    public Component render() {
-        return Util.parseTranslatableText("fmod.rule.action.runflow", this.getName(), this.getType(),
-            this.flowName.render(), this.delay.render());
+    public RequiredParamMetadata getParameters() {
+        return PARAM_METADATA;
     }
 
-    @Override
-    public JsonObject getValueJson() {
-        JsonObject json = new JsonObject();
-        json.add("flowName", RuleParameter.toJson(flowName, JsonPrimitive::new));
-        json.add("delay", RuleParameter.toJson(delay, JsonPrimitive::new));
-        return json;
-    }
-
-    public static JsonObject toJson(RunFlowAction action) {
-        return action.toJson();
-    }
-
-    public static RunFlowAction fromJson(JsonObject json) {
-        String name = json.get("name").getAsString();
-        RuleParameter<String> flowName = RuleParameter.fromJson(json, "flowName", JsonElement::getAsString);
-        RuleParameter<Integer> delay = RuleParameter.fromJson(json, "delay", JsonElement::getAsInt);
-        return new RunFlowAction(name, flowName, delay);
-    }
-
-    public static LiteralArgumentBuilder<CommandSourceStack> buildCommand(LiteralArgumentBuilder<CommandSourceStack> commandNode, BiConsumer<CommandContext<CommandSourceStack>, RuleAction> actionConsumer) {
-        LogicFlowSuggestion flowSuggestion = LogicFlowSuggestion.suggest(true);
-        RequiredArgumentBuilder<CommandSourceStack, ?> commandTree = RecursiveCommandBuilder.builder((arguments, ctx) -> {
-                try {
-                    String name = StringArgumentType.getString(ctx, "name");
-                    RuleParameter<String> flowNameParameter = RuleParameter.fromCommandContext("flow", "var.flow", () -> {
-                        return StringArgumentType.getString(ctx, "flow");
-                    }, arguments, ctx);
-                    RuleParameter<Integer> delayParameter = RuleParameter.fromCommandContext("delay", "var.delay", () -> {
-                        return IntegerArgumentType.getInteger(ctx, "delay");
-                    }, arguments, ctx);
-                    RunFlowAction action = new RunFlowAction(name, flowNameParameter, delayParameter);
-                    actionConsumer.accept(ctx, action);
-                } catch (CommandSyntaxException e) {
-                    ctx.getSource().sendFailure(ComponentUtils.fromMessage(e.getRawMessage()));
-                    return 0;
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f rule edit", e);
-                    ctx.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
-                    return 0;
-                }
-                return Command.SINGLE_SUCCESS;
-            })
-            .add("flow", "var.flow", () -> Commands.argument("flow", StringArgumentType.string()).suggests(flowSuggestion))
-            .add("delay", "var.delay", () -> Commands.argument("delay", IntegerArgumentType.integer(1)))
-            .build(Commands.argument("name", StringArgumentType.string()));
-        return commandNode.then(commandTree);
-    }
 }

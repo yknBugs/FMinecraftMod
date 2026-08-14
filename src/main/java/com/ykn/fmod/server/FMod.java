@@ -18,6 +18,7 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
@@ -28,6 +29,7 @@ import com.ykn.fmod.server.base.event.EntityDeath;
 import com.ykn.fmod.server.base.event.LivingEntityDamage;
 import com.ykn.fmod.server.base.event.NewLevel;
 import com.ykn.fmod.server.base.event.PlayerDeath;
+import com.ykn.fmod.server.base.event.PlayerJoin;
 import com.ykn.fmod.server.base.event.ProjectileHitEntity;
 import com.ykn.fmod.server.base.event.WorldTick;
 import com.ykn.fmod.server.base.util.Util;
@@ -76,6 +78,14 @@ public class FMod {
 	@SubscribeEvent
 	public void onWorldTick(ServerTickEvent.Post event) {
         WorldTick.onWorldTick(event.getServer());
+	}
+
+	@SubscribeEvent
+	public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
+		if (event.getEntity() instanceof ServerPlayer player) {
+			PlayerJoin playerJoin = new PlayerJoin(player);
+			playerJoin.onPlayerJoin();
+		}
 	}
 
 	@SubscribeEvent

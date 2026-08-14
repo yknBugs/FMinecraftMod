@@ -20,6 +20,35 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
+/**
+ * A {@link RuleEvent} that fires when a projectile hits an entity.
+ *
+ * <p>Variable contract:
+ * <table border="1">
+ *   <tr><th>Name</th><th>Type</th><th>Nullable</th><th>Description</th></tr>
+ *   <tr><td>{@code entity}</td><td>{@code UUID}</td><td>No</td><td>The entity that was hit.</td></tr>
+ *   <tr><td>{@code shooter}</td><td>{@code UUID}</td><td>No</td><td>The entity that launched the projectile; equals {@code projectile} if launched from a dispenser.</td></tr>
+ *   <tr><td>{@code projectile}</td><td>{@code UUID}</td><td>No</td><td>The projectile entity.</td></tr>
+ *   <tr><td>{@code x}/{@code y}/{@code z}</td><td>{@code Double}</td><td>No</td><td>The hit entity's coordinates.</td></tr>
+ *   <tr><td>{@code position}</td><td>{@code Vec3}</td><td>No</td><td>The hit entity's position.</td></tr>
+ *   <tr><td>{@code dimension}</td><td>{@code ResourceLocation}</td><td>No</td><td>The dimension of the hit entity.</td></tr>
+ *   <tr><td>{@code biome}</td><td>{@code ResourceLocation}</td><td>Yes</td><td>The biome of the hit entity.</td></tr>
+ *   <tr><td>{@code pitch}/{@code yaw}</td><td>{@code Double}</td><td>No</td><td>The hit entity's rotation angles.</td></tr>
+ *   <tr><td>{@code rotation}</td><td>{@code Vec2}</td><td>No</td><td>The hit entity's rotation vector.</td></tr>
+ *   <tr><td>{@code sx}/{@code sy}/{@code sz}</td><td>{@code Double}</td><td>No</td><td>The shooter's coordinates.</td></tr>
+ *   <tr><td>{@code sposition}</td><td>{@code Vec3}</td><td>No</td><td>The shooter's position.</td></tr>
+ *   <tr><td>{@code sdimension}</td><td>{@code ResourceLocation}</td><td>No</td><td>The dimension of the shooter.</td></tr>
+ *   <tr><td>{@code sbiome}</td><td>{@code ResourceLocation}</td><td>Yes</td><td>The biome of the shooter.</td></tr>
+ *   <tr><td>{@code spitch}/{@code syaw}</td><td>{@code Double}</td><td>No</td><td>The shooter's rotation angles.</td></tr>
+ *   <tr><td>{@code srotation}</td><td>{@code Vec2}</td><td>No</td><td>The shooter's rotation vector.</td></tr>
+ *   <tr><td>{@code distance}</td><td>{@code Double}</td><td>No</td><td>The distance between the shooter and the hit entity.</td></tr>
+ *   <tr><td>{@code health}</td><td>{@code Double}</td><td>No</td><td>The hit entity's health before being hit.</td></tr>
+ *   <tr><td>{@code name}</td><td>{@code String}</td><td>No</td><td>The hit entity's display name.</td></tr>
+ *   <tr><td>{@code sname}</td><td>{@code String}</td><td>No</td><td>The shooter's display name.</td></tr>
+ * </table>
+ *
+ * <p>This class is a singleton; obtain the instance via {@link #getInstance()}.
+ */
 public class ProjectileHitEntityEvent implements RuleEvent {
 
     private static final ProjectileHitEntityEvent INSTANCE = new ProjectileHitEntityEvent();
@@ -27,6 +56,8 @@ public class ProjectileHitEntityEvent implements RuleEvent {
     private final Map<String, Class<? extends Object>> variableTypes;
 
     private final Set<String> variablesList;
+
+    public static final String TYPE = "ProjectileHitEntityEvent";
 
     private static final Map<String, Class<? extends Object>> createVariablesType() {
         Map<String, Class<? extends Object>> map = new HashMap<>();
@@ -98,7 +129,7 @@ public class ProjectileHitEntityEvent implements RuleEvent {
 
     @Override
     public String getType() {
-        return "ProjectileHitEntityEvent";
+        return TYPE;
     }
 
     @Override

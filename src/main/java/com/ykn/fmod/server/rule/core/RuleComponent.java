@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 /**
  * Base marker interface for all rule components.
  *
- * <p>Every element of a {@link CustomRule} — events, conditions, and actions —
+ * <p>Every element of a {@link CustomRule} - events, conditions, and actions -
  * implements {@code RuleComponent}, which provides a common type identifier and
  * a human-readable representation for display in chat or command feedback.
  *

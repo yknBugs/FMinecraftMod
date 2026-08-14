@@ -18,6 +18,7 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
+import com.ykn.fmod.server.base.async.FlowBulkLoadExecutor;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.DataReference;
@@ -118,31 +119,32 @@ public class FlowCommand {
             }
             ServerData data = Util.getServerData(server);
             if ("*".equals(name)) {
-                // Load all flow files
-                int loadedCount = 0;
-                for (String flowFileName : FlowFileSuggestion.getCachedFlowList()) {
-                    Path flowPath = flowFolder.resolve(flowFileName).normalize();
-                    if (!flowPath.startsWith(flowFolder)) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.load.filenotfound", flowFileName), false);
-                        continue;
+                // Load all flow files off the server thread - reading and JSON-parsing every
+                // .flow file synchronously here would stall the server for large flow sets.
+                List<String> fileNames = new ArrayList<>(FlowFileSuggestion.getCachedFlowList());
+                CommandSourceStack source = context.getSource();
+                data.submitAsyncTask(new FlowBulkLoadExecutor(fileNames, flowFolder, data, new FlowBulkLoadExecutor.ResultHandler() {
+                    @Override
+                    public void onFileNotFound(String fileName) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.load.filenotfound", fileName), false);
                     }
-                    LogicFlow flow = FlowSerializer.loadFile(flowPath);
-                    if (flow == null) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.load.ioexception", flowFileName), false);
-                        continue;
+
+                    @Override
+                    public void onLoadFailed(String fileName) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.load.ioexception", fileName), false);
                     }
-                    if (data.getLogicFlows().get(flow.getName()) != null) {
-                        context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.exists", flow.getName()), false);
-                        continue;
+
+                    @Override
+                    public void onAlreadyExists(String flowName) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.exists", flowName), false);
                     }
-                    FlowManager flowManager = new FlowManager(flow);
-                    data.getLogicFlows().put(flow.getName(), flowManager);
-                    flowManager.setEnabled(true);
-                    loadedCount++;
-                }
-                int loadedCountFinal = loadedCount;
-                context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.load.all", String.valueOf(loadedCountFinal)), true);
-                return loadedCountFinal;
+
+                    @Override
+                    public void onCompleted(int loadedCount) {
+                        source.sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.load.all", String.valueOf(loadedCount)), true);
+                    }
+                }));
+                return Command.SINGLE_SUCCESS;
             }
             Path flowPath = flowFolder.resolve(name).normalize();
             if (!flowPath.startsWith(flowFolder)) {
