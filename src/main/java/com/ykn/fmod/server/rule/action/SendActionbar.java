@@ -111,7 +111,12 @@ public class SendActionbar implements RuleAction {
     public boolean execute(RuleContext context) {
         List<UUID> playerIds = resolvePlayers(context);
         String message = this.message.resolve(context, String.class);
-        if (playerIds == null || message == null) {
+        if (playerIds == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return true;
+        }
+        if (message == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
             return true;
         }
         TextPlaceholderFactory<ServerPlayer> factory = TextPlaceholderFactory.ofDefault();

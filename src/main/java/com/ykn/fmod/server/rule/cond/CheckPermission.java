@@ -8,6 +8,7 @@ package com.ykn.fmod.server.rule.cond;
 import java.util.List;
 import java.util.UUID;
 
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
@@ -77,8 +78,20 @@ public class CheckPermission implements SourceCondition {
         Integer min = this.min.resolve(context, Integer.class);
         Integer max = this.max.resolve(context, Integer.class);
 
-        if (playerId == null || min == null || max == null) {
+        if (playerId == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
             return false;
+        }
+        if (min == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
+            return false;
+        }
+        if (max == null) {
+            warnNullInput(context, PARAM_METADATA.get(2));
+            return false;
+        }
+        if (min > max) {
+            addWarning(context, Util.parseTranslatableText("fmod.rule.condition.checkpermission.minmax", min, max));
         }
 
         ServerPlayer player = context.getServer().getPlayerList().getPlayer(playerId);

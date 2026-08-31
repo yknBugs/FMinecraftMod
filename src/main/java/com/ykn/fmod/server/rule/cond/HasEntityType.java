@@ -79,12 +79,26 @@ public class HasEntityType implements SourceCondition {
         Double radius = this.radius.resolve(context, Double.class);
         ResourceLocation entityType = this.entityType.resolve(context, ResourceLocation.class);
 
-        if (dimension == null || position == null || radius == null || entityType == null) {
+        if (dimension == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return false;
+        }
+        if (position == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
+            return false;
+        }
+        if (radius == null) {
+            warnNullInput(context, PARAM_METADATA.get(2));
+            return false;
+        }
+        if (entityType == null) {
+            warnNullInput(context, PARAM_METADATA.get(3));
             return false;
         }
 
         ServerLevel world = context.getServer().getLevel(ResourceKey.create(Registries.DIMENSION, dimension));
         if (world == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
             return false;
         }
 

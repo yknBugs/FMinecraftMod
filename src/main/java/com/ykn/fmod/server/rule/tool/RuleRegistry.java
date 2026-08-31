@@ -421,6 +421,7 @@ public class RuleRegistry {
         RuleRegistry.registerCondition(CheckBlockType.TYPE, CheckBlockType.PARAM_METADATA, CheckBlockType::new);
         RuleRegistry.registerCondition(CheckEntityType.TYPE, CheckEntityType.PARAM_METADATA, CheckEntityType::new);
         RuleRegistry.registerCondition(HasEntityType.TYPE, HasEntityType.PARAM_METADATA, HasEntityType::new);
+        RuleRegistry.registerCondition(ComputeAdd.TYPE, ComputeAdd.PARAM_METADATA, ComputeAdd::new);
 
         RuleRegistry.registerAction(BroadcastMessage.TYPE, BroadcastMessage.PARAM_METADATA, BroadcastMessage::new);
         RuleRegistry.registerAction(SendMessage.TYPE, SendMessage.PARAM_METADATA, SendMessage::new);

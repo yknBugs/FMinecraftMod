@@ -78,7 +78,12 @@ public class RunFlowAction implements RuleAction {
         String targetFlowName = this.flowName.resolve(context, String.class);
         Integer delayValue = this.delay.resolve(context, Integer.class);
 
-        if (targetFlowName == null || delayValue == null) {
+        if (targetFlowName == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return true;
+        }
+        if (delayValue == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
             return true;
         }
 
@@ -86,7 +91,12 @@ public class RunFlowAction implements RuleAction {
 
         ServerData data = Util.getServerData(context.getServer());
         FlowManager targetFlow = data.getLogicFlows().get(targetFlowName);
-        if (targetFlow == null || !targetFlow.isEnabled()) {
+        if (targetFlow == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return true;
+        }
+        if (!targetFlow.isEnabled()) {
+            addWarning(context, Util.parseTranslatableText("fmod.rule.action.runflow.disabled", targetFlowName));
             return true;
         }
 

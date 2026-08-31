@@ -116,7 +116,12 @@ public class ExecuteCommandAction implements RuleAction {
         UUID entityId = this.entity.resolve(context, UUID.class);
         String command = this.command.resolve(context, String.class);
 
-        if (entityId == null || command == null) {
+        if (entityId == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return true;
+        }
+        if (command == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
             return true;
         }
 
@@ -128,6 +133,7 @@ public class ExecuteCommandAction implements RuleAction {
             }
         }
         if (sourceEntity == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
             return true;
         }
 

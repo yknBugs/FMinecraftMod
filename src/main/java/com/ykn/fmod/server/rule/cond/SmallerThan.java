@@ -53,7 +53,12 @@ public class SmallerThan implements SourceCondition {
         Double left = this.left.resolve(context, Double.class);
         Double right = this.right.resolve(context, Double.class);
 
-        if (left == null || right == null) {
+        if (left == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return false;
+        }
+        if (right == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
             return false;
         }
 

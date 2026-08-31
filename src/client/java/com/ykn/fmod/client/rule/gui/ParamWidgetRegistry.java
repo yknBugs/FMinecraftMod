@@ -18,6 +18,7 @@ import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.rule.core.ParamKind;
 import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
+import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 
 import net.minecraft.ChatFormatting;
@@ -176,6 +177,15 @@ public final class ParamWidgetRegistry {
                 openResourceLocationPicker(owner, index, BuiltInRegistries.ENTITY_TYPE.keySet());
             }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
             return () -> ResourceLocation.tryParse(box.getValue().trim());
+        });
+
+        registerByKind(ParamKind.VARIABLE_NAME, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.varname");
+            sink.accept(box);
+            return () -> {
+                String value = box.getValue().trim();
+                return RuleCondition.NAME_PATTERN.matcher(value).matches() ? value : null;
+            };
         });
 
         registerByKind(ParamKind.AUTO, (owner, index, entry, initialConstant, x, y, width, sink) -> {

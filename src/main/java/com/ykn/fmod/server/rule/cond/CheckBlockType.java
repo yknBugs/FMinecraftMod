@@ -7,6 +7,7 @@ package com.ykn.fmod.server.rule.cond;
 
 import java.util.List;
 
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleParameter;
@@ -78,7 +79,16 @@ public class CheckBlockType implements SourceCondition {
         ResourceLocation block = this.block.resolve(context, ResourceLocation.class);
         Boolean defaultValue = this.defaultValue.resolve(context, Boolean.class);
 
-        if (dimension == null || position == null || block == null) {
+        if (dimension == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return defaultValue != null && defaultValue;
+        }
+        if (position == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
+            return defaultValue != null && defaultValue;
+        }
+        if (block == null) {
+            warnNullInput(context, PARAM_METADATA.get(2));
             return defaultValue != null && defaultValue;
         }
 
@@ -89,6 +99,7 @@ public class CheckBlockType implements SourceCondition {
 
         BlockPos blockPos = BlockPos.containing(position);
         if (!world.isInWorldBounds(blockPos) || !world.hasChunk(SectionPos.blockToSectionCoord(blockPos.getX()), SectionPos.blockToSectionCoord(blockPos.getZ()))) {
+            addWarning(context, Util.parseTranslatableText("fmod.rule.condition.blocktype.unloaded", blockPos.toShortString(), dimension.toString()));
             return defaultValue != null && defaultValue;
         }
 

@@ -34,7 +34,9 @@ import net.minecraft.server.MinecraftServer;
  *
  * <p>Status fields ({@link #isExecuted()}, {@link #isPassed()}, {@link #isSkipActions()},
  * {@link #getErrorMessage()}) are mutable and are set by {@link #test()} / {@link #trigger()}.
- * They are reset before each execution via {@link #resetStatus()}.
+ * They are reset before each execution via {@link #resetStatus()}. The variable map is similarly
+ * split into an immutable, event-supplied half and a mutable, per-evaluation overlay written via
+ * {@link #setVariable(String, Object)} - see that method's docs for why.
  *
  * <p>The context stores a <em>copy</em> of the rule at construction time, so modifications
  * to the original rule during execution do not affect an in-flight evaluation.
@@ -59,6 +61,20 @@ public class RuleContext {
      * An empty map is used when no variables were provided.
      */
     private final Map<String, Object> variables;
+
+    /**
+     * Mutable overlay written by {@link #setVariable(String, Object)}, layered on top of
+     * {@link #variables} by {@link #getVariable(String)}/{@link #getVariables()} so that a
+     * side-effecting component (e.g. a "compute and store" condition or action) can hand a
+     * derived value to every component evaluated after it, without the event dispatcher needing
+     * to know about it.
+     *
+     * <p>Entries here take precedence over same-named entries in {@link #variables} - a computed
+     * value is a more local, more recent write than whatever the event happened to supply.
+     * Cleared by {@link #resetStatus()} before each new evaluation, same lifetime as the other
+     * status fields.
+     */
+    private Map<String, Object> computedVariables;
 
     /** 
      * Whether this context has already run {@link #test()} or {@link #trigger()}. 
@@ -91,11 +107,21 @@ public class RuleContext {
      */
     private HashSet<RuleCondition> testingConditions;
 
-    /** 
-     * Optional error text set when an unexpected exception occurs during evaluation. 
+    /**
+     * Optional error text set when an unexpected exception occurs during evaluation.
      */
     @Nullable
     private Component errorMessage;
+
+    /**
+     * Non-fatal warning messages logged by {@link RuleEvent}/{@link RuleCondition}/{@link RuleAction}
+     * implementations during evaluation, for admin debugging.
+     *
+     * <p>Unlike {@link #errorMessage}, warnings do not abort evaluation or affect
+     * {@link #isPassed()}; components simply append to this list via {@link #addWarning(Component)}
+     * as they run. Cleared by {@link #resetStatus()} before each new evaluation.
+     */
+    private List<Component> warnings;
 
     /**
      * Creates a new {@code RuleContext}.
@@ -117,29 +143,62 @@ public class RuleContext {
         this.skipActions = false;
         this.testingConditions = new HashSet<>();
         this.errorMessage = null;
+        this.warnings = new ArrayList<>();
+        this.computedVariables = new HashMap<>();
     }
 
     /**
-     * Returns an unmodifiable view of the variable map supplied by the event dispatcher.
+     * Returns an unmodifiable view of every variable currently visible to components: the
+     * event-supplied {@link #variables} with {@link #computedVariables} layered on top.
      *
      * @return a non-null, unmodifiable map
      */
     @NotNull
     public Map<String, Object> getVariables() {
-        return variables;
+        if (computedVariables.isEmpty()) {
+            return variables;
+        }
+        Map<String, Object> merged = new HashMap<>(variables);
+        merged.putAll(computedVariables);
+        return Collections.unmodifiableMap(merged);
     }
 
     /**
      * Returns the value of a single variable, or {@code null} if not present.
+     *
+     * <p>Checks {@link #computedVariables} first, falling back to the event-supplied
+     * {@link #variables} - see {@link #setVariable(String, Object)} for why.
      *
      * @param name the variable name
      * @return the variable value, or {@code null}
      */
     @Nullable
     public Object getVariable(String name) {
+        if (computedVariables.containsKey(name)) {
+            return computedVariables.get(name);
+        }
         return variables.get(name);
     }
-    
+
+    /**
+     * Writes (or overwrites) a variable in the mutable overlay, making it visible to every
+     * component evaluated after this call via {@link #getVariable(String)}/{@link #getVariables()} -
+     * including a triggered flow, since {@code RunFlowAction} forwards {@link #getVariables()}.
+     *
+     * <p>Intended for components whose whole purpose is to derive and publish a value for later
+     * use in the same evaluation (e.g. a "compute and store" condition/action), not for general
+     * mutation of event data. The write only lives for the current {@link #test()}/{@link #trigger()}
+     * call - it is cleared by {@link #resetStatus()} like every other status field, so nothing
+     * persists across separate rule evaluations.
+     *
+     * @param name  the variable name to write
+     * @param value the value to store; {@code null} is a valid value and shadows any
+     *              same-named event-supplied variable with an explicit null
+     */
+    public void setVariable(String name, Object value) {
+        this.computedVariables.put(name, value);
+    }
+
     /**
      * Returns the rule snapshot that this context was created for.
      *
@@ -244,8 +303,32 @@ public class RuleContext {
     }
 
     /**
+     * Returns an unmodifiable view of the warning messages logged so far during this evaluation.
+     *
+     * @return a non-null, unmodifiable list, in the order the warnings were added
+     */
+    @NotNull
+    public List<Component> getWarnings() {
+        return Collections.unmodifiableList(warnings);
+    }
+
+    /**
+     * Logs a non-fatal warning message for admin debugging.
+     *
+     * <p>Intended to be called by {@link RuleEvent}, {@link RuleCondition}, and {@link RuleAction}
+     * implementations while they run, e.g. to flag a recoverable misconfiguration. Does not affect
+     * {@link #isPassed()} or abort evaluation.
+     *
+     * @param warning the warning text to record
+     */
+    public void addWarning(Component warning) {
+        this.warnings.add(warning);
+    }
+
+    /**
      * Resets all execution status fields to their initial state
-     * (not executed, not passed, actions not skipped, no error message, no testing conditions).
+     * (not executed, not passed, actions not skipped, no error message, no warnings, no computed
+     * variables, no testing conditions).
      *
      * <p>Also clears the {@code testingConditions} set so that cyclic-reference detection
      * state from a previous evaluation does not bleed into the next one.
@@ -256,6 +339,8 @@ public class RuleContext {
         this.skipActions = false;
         this.testingConditions.clear();
         this.errorMessage = null;
+        this.warnings.clear();
+        this.computedVariables.clear();
     }
 
     /**
@@ -365,7 +450,7 @@ public class RuleContext {
         // RuleName: true/false/notrun/error (variable: value, variable: value, ...)
         MutableComponent title = Component.literal(rule.getName()).append(": ");
         List<Component> variableTexts = new ArrayList<>();
-        for (Map.Entry<String, Object> entry : variables.entrySet()) {
+        for (Map.Entry<String, Object> entry : getVariables().entrySet()) {
             String varName = entry.getKey();
             String varValue = TypeAdaptor.parse(entry.getValue()).asString();
             Component varText = Component.literal(varName + ": " + varValue);
@@ -401,6 +486,9 @@ public class RuleContext {
                 i++;
             }
             title = title.append(")");
+        }
+        for (Component warning : warnings) {
+            title = title.append("\n").append(Util.parseTranslatableText("fmod.rule.status.warning")).append(warning);
         }
         return title;
     }

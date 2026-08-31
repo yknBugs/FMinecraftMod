@@ -8,6 +8,7 @@ package com.ykn.fmod.server.rule.core;
 import java.util.List;
 
 import com.google.gson.JsonObject;
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.tool.RuleComponentFactory;
 
 import net.minecraft.network.chat.Component;
@@ -92,6 +93,34 @@ public interface SourceCondition extends RuleCondition {
         result.addProperty("type", getType());
         result.add("value", getValueJson());
         return result;
+    }
+
+    /**
+     * Logs an admin-debugging warning to {@code context}, prefixed with this condition
+     * instance's user-defined {@link #getName() name} so that a rule with several conditions
+     * still reads unambiguously (e.g. {@code [myCondition] ...}) instead of leaving the admin to
+     * guess which condition a message came from.
+     *
+     * @param context the current rule execution context
+     * @param message the warning body, appended after the identifying prefix
+     */
+    default public void addWarning(RuleContext context, Component message) {
+        context.addWarning(Util.parseTranslatableText("fmod.rule.warning.prefix", getName(), message));
+    }
+
+    /**
+     * Logs the standard "required parameter resolved to null" warning for {@code param}, using
+     * its i18n display name rather than the raw {@link RequiredParamMetadata.Entry#constArgName}.
+     *
+     * <p>Meant to be called at the point where a required {@link RuleParameter} resolves to
+     * {@code null} (neither its variable nor its constant produced a usable value), right before
+     * falling back to a default result.
+     *
+     * @param context the current rule execution context
+     * @param param   the metadata entry (from {@link #getParameters()}) for the null parameter
+     */
+    default public void warnNullInput(RuleContext context, RequiredParamMetadata.Entry param) {
+        addWarning(context, Util.parseTranslatableText("fmod.rule.warning.nullinput", Util.parseTranslatableText(param.nameI18nKey)));
     }
 
 }

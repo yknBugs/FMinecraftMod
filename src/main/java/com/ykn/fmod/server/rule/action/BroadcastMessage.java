@@ -65,15 +65,17 @@ public class BroadcastMessage implements RuleAction {
     @Override
     public boolean execute(RuleContext context) {
         String message = this.message.resolve(context, String.class);
-        if (message != null) {
-            TextPlaceholderFactory<ServerPlayer> factory = TextPlaceholderFactory.ofDefault();
-            for (String variable : context.getVariables().keySet()) {
-                Object value = context.getVariable(variable);
-                Component toShow = value == null ? Component.literal("${var:" + variable + "}") : Component.literal(TypeAdaptor.parse(value).asString());
-                factory = factory.add("${var:" + variable + "}", player -> toShow);
-            }
-            MessageType.broadcastTextMessage(context.getServer(), factory.parse(message, null));
+        if (message == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return true;
         }
+        TextPlaceholderFactory<ServerPlayer> factory = TextPlaceholderFactory.ofDefault();
+        for (String variable : context.getVariables().keySet()) {
+            Object value = context.getVariable(variable);
+            Component toShow = value == null ? Component.literal("${var:" + variable + "}") : Component.literal(TypeAdaptor.parse(value).asString());
+            factory = factory.add("${var:" + variable + "}", player -> toShow);
+        }
+        MessageType.broadcastTextMessage(context.getServer(), factory.parse(message, null));
         return true;
     }
 

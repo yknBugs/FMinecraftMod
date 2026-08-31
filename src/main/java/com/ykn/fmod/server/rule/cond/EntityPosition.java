@@ -88,7 +88,20 @@ public class EntityPosition implements SourceCondition {
         Vec3 position = this.position.resolve(context, Vec3.class);
         Double radius = this.radius.resolve(context, Double.class);
 
-        if (entityId == null || dimension == null || position == null || radius == null) {
+        if (entityId == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return false;
+        }
+        if (dimension == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
+            return false;
+        }
+        if (position == null) {
+            warnNullInput(context, PARAM_METADATA.get(2));
+            return false;
+        }
+        if (radius == null) {
+            warnNullInput(context, PARAM_METADATA.get(3));
             return false;
         }
 
@@ -98,6 +111,7 @@ public class EntityPosition implements SourceCondition {
             entity = world.getEntity(entityId);
         }
         if (entity == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
             return false;
         }
 

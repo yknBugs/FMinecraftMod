@@ -64,10 +64,17 @@ public class CheckEntityType implements SourceCondition {
         ResourceLocation entityType = this.entityType.resolve(context, ResourceLocation.class);
 
         if (entityId == null && entityType == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            warnNullInput(context, PARAM_METADATA.get(1));
             return true;
         }
 
-        if (entityId == null || entityType == null) {
+        if (entityId == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return false;
+        }
+        if (entityType == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
             return false;
         }
 
