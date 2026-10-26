@@ -183,10 +183,8 @@ public class LogicFlow implements Cloneable {
         for (FlowNode node : nodeList) {
             nodeInDegrees.putIfAbsent(node.getId(), 0);
             for (long neighborId : node.getNextNodeIds()) {
-                if (!this.nodes.containsKey(neighborId)) {
-                    nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(-1, 0) + 1);
-                } else {
-                    nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(neighborId, 0) + 1);
+                if (this.nodes.containsKey(neighborId)) {
+                    nodeInDegrees.merge(neighborId, 1, Integer::sum);
                 }
             }
         }
