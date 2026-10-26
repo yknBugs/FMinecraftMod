@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import org.joml.Matrix4f;
+
 import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.FlowNode;
@@ -19,6 +22,7 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.flow.tool.FlowSerializer;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -75,6 +79,12 @@ public class FlowGraphScreen extends Screen {
     private int canvasHeight;
     private int scrollX;
     private int scrollY;
+    private int positionedScrollX;
+    private int positionedScrollY;
+    private boolean nodePositionsDirty = true;
+    private boolean contentBoundsDirty = true;
+    private int cachedContentWidth;
+    private int cachedContentHeight;
     private Long draggingId;
     private int dragOffsetX;
     private int dragOffsetY;
@@ -212,6 +222,7 @@ public class FlowGraphScreen extends Screen {
     // ------------------------------------------------------------------
 
     private static final class NodeBox {
+        final List<Button> buttons;
         final long nodeId;
         final int width;
         final int height;
@@ -251,15 +262,16 @@ public class FlowGraphScreen extends Screen {
             this.inputValueOffsets = inputValueOffsets;
             this.outputButtons = outputButtons;
             this.outputOffsets = outputOffsets;
-        }
-
-        List<Button> allButtons() {
             List<Button> all = new ArrayList<>();
             all.add(this.nameButton);
             all.addAll(this.branchButtons);
             all.addAll(this.inputButtons);
             all.addAll(this.outputButtons);
-            return all;
+            this.buttons = List.copyOf(all);
+        }
+
+        List<Button> allButtons() {
+            return this.buttons;
         }
     }
 
@@ -359,6 +371,8 @@ public class FlowGraphScreen extends Screen {
     }
 
     private void rebuildNodeButtons() {
+        this.nodePositionsDirty = true;
+        this.contentBoundsDirty = true;
         for (NodeBox box : this.nodeBoxes.values()) {
             box.allButtons().forEach(this::removeWidget);
         }
@@ -377,6 +391,12 @@ public class FlowGraphScreen extends Screen {
     }
 
     private void updateNodeButtonPositions() {
+        if (!this.nodePositionsDirty && this.positionedScrollX == this.scrollX && this.positionedScrollY == this.scrollY) {
+            return;
+        }
+        this.nodePositionsDirty = false;
+        this.positionedScrollX = this.scrollX;
+        this.positionedScrollY = this.scrollY;
         for (NodeBox box : this.nodeBoxes.values()) {
             int[] pos = this.positions.get(box.nodeId);
             if (pos == null) {
@@ -851,26 +871,32 @@ public class FlowGraphScreen extends Screen {
         return this.canvasHeight - SCROLLBAR_SIZE;
     }
 
-    private int contentWidth() {
-        int max = MARGIN;
-        for (Map.Entry<Long, int[]> entry : this.positions.entrySet()) {
-            NodeBox box = this.nodeBoxes.get(entry.getKey());
-            if (box != null) {
-                max = Math.max(max, entry.getValue()[0] + box.width);
+    private void updateContentBounds() {
+        if (!this.contentBoundsDirty) {
+            return;
+        }
+        int right = MARGIN;
+        int bottom = MARGIN;
+        for (NodeBox box : this.nodeBoxes.values()) {
+            int[] pos = this.positions.get(box.nodeId);
+            if (pos != null) {
+                right = Math.max(right, pos[0] + box.width);
+                bottom = Math.max(bottom, pos[1] + box.height);
             }
         }
-        return max + MARGIN;
+        this.cachedContentWidth = right + MARGIN;
+        this.cachedContentHeight = bottom + MARGIN;
+        this.contentBoundsDirty = false;
+    }
+
+    private int contentWidth() {
+        updateContentBounds();
+        return this.cachedContentWidth;
     }
 
     private int contentHeight() {
-        int max = MARGIN;
-        for (Map.Entry<Long, int[]> entry : this.positions.entrySet()) {
-            NodeBox box = this.nodeBoxes.get(entry.getKey());
-            if (box != null) {
-                max = Math.max(max, entry.getValue()[1] + box.height);
-            }
-        }
-        return max + MARGIN;
+        updateContentBounds();
+        return this.cachedContentHeight;
     }
 
     private int maxScrollX() {
@@ -1003,6 +1029,8 @@ public class FlowGraphScreen extends Screen {
             if (pos != null) {
                 pos[0] = Math.max(0, (int) mouseX - this.canvasX - this.dragOffsetX + this.scrollX);
                 pos[1] = Math.max(0, (int) mouseY - this.canvasY - this.dragOffsetY + this.scrollY);
+                this.nodePositionsDirty = true;
+                this.contentBoundsDirty = true;
             }
             return true;
         }
@@ -1086,15 +1114,29 @@ public class FlowGraphScreen extends Screen {
         return button.getY() + button.getHeight() / 2;
     }
 
-    private static void drawLine(GuiGraphics context, int x1, int y1, int x2, int y2, int color) {
-        int dx = Math.abs(x2 - x1);
-        int dy = Math.abs(y2 - y1);
-        int steps = Math.max(Math.max(dx, dy), 1);
-        for (int i = 0; i <= steps; i++) {
-            int x = x1 + (x2 - x1) * i / steps;
-            int y = y1 + (y2 - y1) * i / steps;
-            context.fill(x, y, x + 1, y + 1, color);
+    /** Submit one thin quad per wire; scissoring alone does not avoid CPU work for off-screen wires. */
+    private void drawLine(GuiGraphics context, int x1, int y1, int x2, int y2, int color) {
+        // Keep crossing wires even when both endpoints are outside the viewport.
+        if (Math.max(x1, x2) < this.canvasX - 1 || Math.min(x1, x2) > this.canvasX + viewWidth()
+                || Math.max(y1, y2) < this.canvasY - 1 || Math.min(y1, y2) > this.canvasY + viewHeight()) {
+            return;
         }
+        float dx = (float) x2 - x1;
+        float dy = (float) y2 - y1;
+        float length = (float) Math.hypot(dx, dy);
+        if (length == 0) {
+            context.fill(x1, y1, x1 + 1, y1 + 1, color);
+            return;
+        }
+        float nx = -dy / length * 0.5F;
+        float ny = dx / length * 0.5F;
+        Matrix4f pose = context.pose().last().pose();
+        VertexConsumer vertices = context.bufferSource().getBuffer(RenderType.gui());
+        // Match GUI quad winding, with a one-pixel width in GUI coordinates.
+        vertices.vertex(pose, x1 + 0.5F + nx, y1 + 0.5F + ny, 0).color(color).endVertex();
+        vertices.vertex(pose, x2 + 0.5F + nx, y2 + 0.5F + ny, 0).color(color).endVertex();
+        vertices.vertex(pose, x2 + 0.5F - nx, y2 + 0.5F - ny, 0).color(color).endVertex();
+        vertices.vertex(pose, x1 + 0.5F - nx, y1 + 0.5F - ny, 0).color(color).endVertex();
     }
 
     private void drawNodeBoxes(GuiGraphics context) {
@@ -1168,6 +1210,7 @@ public class FlowGraphScreen extends Screen {
         context.fill(this.canvasX, this.canvasY, this.canvasX + this.canvasWidth, this.canvasY + this.canvasHeight, 0xFF1E1E1E);
         context.enableScissor(this.canvasX, this.canvasY, this.canvasX + viewWidth(), this.canvasY + viewHeight());
         drawConnections(context);
+        context.flush(); // Batch wires together, then draw node bodies over them.
         drawNodeBoxes(context);
         renderNodeButtons(context, mouseX, mouseY, delta);
         context.disableScissor();
