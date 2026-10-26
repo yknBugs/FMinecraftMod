@@ -17,13 +17,13 @@ import com.ykn.fmod.server.rule.core.SourceCondition;
 
 /**
  * A {@link SourceCondition} that computes {@code a + b} and stores the result in a variable,
- * always evaluating to {@code true}.
+ * returning {@code true} from {@link #onEvaluate(RuleContext)}, even when invalid inputs skip the write.
  *
  * <p>This is a data-flow component, not a logical test: its only purpose is the side effect of
  * {@link RuleContext#setVariable(String, Object)}. Being a condition (not a {@link
  * com.ykn.fmod.server.rule.core.RuleAction RuleAction}) lets it be threaded into the condition
- * tree itself via the non-short-circuit {@code &} relationship, guaranteeing the write happens -
- * regardless of what else is in the formula - before the tree's overall result is used, e.g.:
+ * tree itself via the non-short-circuit {@code &} relationship, ensuring this operand is evaluated before
+ * the tree's overall result is used, provided the enclosing expression is reached, e.g.:
  * <pre>{@code
  * (ComputeAdd & ComputeAdd) & (RealFormulaA && RealFormulaB)
  * }</pre>
@@ -31,12 +31,12 @@ import com.ykn.fmod.server.rule.core.SourceCondition;
  * ComputeAdd} in such a chain runs, in written order, before the real formula is evaluated -
  * unlike {@code &&}, which would skip the right-hand side once the left is {@code false}.
  *
- * <p>The {@code variable} parameter uses {@link ParamKind#VARIABLE_NAME}, which validates a
- * literal ({@code const}) name against {@link RuleCondition#NAME_PATTERN} at command-parse time.
+ * <p>The {@code variable} parameter uses {@link ParamKind#VARIABLE_NAME}, which accepts a
+ * single-word literal ({@code const}) name without validating {@link RuleCondition#NAME_PATTERN}.
  * A {@code var}-bound name is resolved at evaluation time instead - the variable's current value
  * becomes the target name (pointer-style indirection: if {@code player} currently holds
  * {@code "steve"}, {@code var player} writes into a variable literally named {@code steve}), so
- * it cannot be validated until then. {@link #onEvaluate(RuleContext)} re-checks the resolved name
+ * it cannot be validated until then. {@link #onEvaluate(RuleContext)} validates the resolved name
  * against {@link RuleCondition#NAME_PATTERN} and skips the write (with a warning) if it fails.
  *
  * <p>JSON value format:

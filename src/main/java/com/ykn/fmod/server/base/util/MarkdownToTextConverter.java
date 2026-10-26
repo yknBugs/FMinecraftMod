@@ -481,10 +481,10 @@ public class MarkdownToTextConverter {
     }
 
     /**
-     * Converts a given markdown string into a Text object with simple syntax highlighting.
+     * Converts a given markdown string into a Component object with simple syntax highlighting.
      *
      * @param markdown The input markdown string to be converted.
-     * @return A Text object representing the parsed content of the markdown string.
+     * @return A Component object representing the parsed content of the markdown string.
      */
     public static Component parseMarkdownToText(String markdown) {
         MutableComponent result = Component.empty();

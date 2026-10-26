@@ -42,7 +42,7 @@ public class LivingEntityDamage {
 
     /**
      * This method is called when a living entity is damaged.
-     * @see com.ykn.fmod.mixin.LivingEntityDamageMixin
+     * @see com.ykn.fmod.server.mixin.LivingEntityDamageMixin
      */
     public void onDamage() {
         if (entity.getServer() == null) {

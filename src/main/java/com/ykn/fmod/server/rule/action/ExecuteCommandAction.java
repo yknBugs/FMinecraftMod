@@ -38,7 +38,7 @@ import net.minecraft.world.entity.Entity;
  *
  * <p>The {@code entity} parameter identifies a single entity (by UUID) that acts as the
  * command source. The {@code permissionLevel} field is hidden from interactive command
- * creation - it is always captured from the {@link CommandSourceStack#getPermissionLevel()}
+ * creation - it is always captured from the {@link CommandSourceStack#hasPermission(int)} checks
  * of the operator who created the action. The {@code command} parameter is the raw command
  * string to execute.
  *

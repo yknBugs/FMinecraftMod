@@ -43,7 +43,8 @@ import net.minecraft.world.entity.LivingEntity;
  * This class stores per-player data, logic flows, scheduled tasks, and async task execution.
  * <p>
  * <br><b>WARNING:</b> The asyncTaskPool must be gracefully shutdown when replacing or resetting ServerData.
- * <br><b>NOTE:</b> All data stored here is not persisted and will be lost when the server restarts.
+ * <br><b>NOTE:</b> Runtime state is lost when the server restarts. Rule and flow definitions can be
+ * saved separately as files and restored by explicit loading or enabled startup auto-load options.
  * </p>
  */
 public class ServerData {
@@ -201,7 +202,7 @@ public class ServerData {
      *   <li>Polls completed {@link AsyncTaskExecutor}s and invokes their post-completion callbacks on the server thread.</li>
      *   <li>Increments the internal {@code serverTick} counter.</li>
      * </ol>
-     * </p>
+     *
      */
     public void tick() {
         try {
@@ -239,11 +240,11 @@ public class ServerData {
     }
 
     /**
-     * Retrieves the PlayerData associated with the given ServerPlayerEntity.
+     * Retrieves the PlayerData associated with the given ServerPlayer.
      * If no PlayerData exists for the player, a new PlayerData instance is created,
      * associated with the player's UUID, and returned.
      *
-     * @param player the ServerPlayerEntity for which to retrieve the PlayerData
+     * @param player the ServerPlayer for which to retrieve the PlayerData
      * @return the PlayerData associated with the given player, never null
      */
     @NotNull
@@ -283,11 +284,11 @@ public class ServerData {
 
     /**
      * Submits an {@link AsyncTaskExecutor} for asynchronous execution on the internal thread pool.
-     * The executor's {@code executeAsyncTask()} runs off the server thread; once it completes,
-     * {@code runAfterCompletion()} is invoked on the server thread during the next {@link #tick()}.
+     * The executor's {@code executeAsyncTask()} runs off the server thread; once it signals readiness,
+     * {@code runAfterCompletion()} is invoked on the server thread during a subsequent {@link #tick()}.
      * <p>
-     * <b>This is the only thread-safe method in {@link ServerData}.</b>
-     * Do NOT call any other method of this class from off the server thread, including
+     * <b>Task submission is thread-safe.</b> Mutable server state remains owned by the
+     * server thread; do not manipulate it from background work, including via
      * {@link #submitScheduledTask(ScheduledTask)}.
      * </p>
      * <p>

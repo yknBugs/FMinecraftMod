@@ -28,12 +28,13 @@ import net.minecraft.core.registries.BuiltInRegistries;
 /**
  * Get a block at a specified position
  * Inputs:
- * 1. World - The world to get the block from.
- * 2. Vec3d - The position of the block to get.
+ * 1. ServerLevel - The world to get the block from.
+ * 2. Vec3 - The position of the block to get.
  * Outputs:
- * 1. Identifier - The identifier of the block at the specified position.
+ * 1. ResourceLocation - The identifier of the block at the specified position.
  * 2. BlockState - The block state of the block at the specified position.
  * 3. BlockEntity - The block entity of the block at the specified position, if any.
+ * Branches: 1 (Next node)
  */
 public class GetBlockNode extends FlowNode {
 

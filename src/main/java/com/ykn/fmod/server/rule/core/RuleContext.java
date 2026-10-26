@@ -24,7 +24,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Execution context that is created for each rule evaluation with immutable input fields and mutable status fields.
+ * Execution context for a rule evaluation, with a copied rule definition and mutable evaluation state.
  *
  * <p>A {@code RuleContext} bundles together everything needed to evaluate a rule:
  * the {@link MinecraftServer}, the optimised {@link CustomRule}, and the
@@ -39,7 +39,8 @@ import net.minecraft.server.MinecraftServer;
  * {@link #setVariable(String, Object)} - see that method's docs for why.
  *
  * <p>The context stores a <em>copy</em> of the rule at construction time, so modifications
- * to the original rule during execution do not affect an in-flight evaluation.
+ * to the original rule's lists during execution do not affect an in-flight evaluation.
+ * Components and constant value objects remain shared through {@link CustomRule#copy()}.
  *
  * @see RuleManager
  * @see CustomRule

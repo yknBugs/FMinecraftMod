@@ -13,7 +13,7 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
  * Inputs: None
  * Outputs:
  * 1. Player - The player that joined.
- * 2. Vec3d - The position of the player.
+ * 2. Vec3 - The position of the player.
  * Branches: 1 (Next node)
  */
 public class PlayerJoinEventNode extends EventNode {

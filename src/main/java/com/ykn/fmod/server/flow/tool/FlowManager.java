@@ -49,7 +49,7 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  * Note: This class is designed to be an interface between user interactions and the underlying logic flow data structure.
  * (i.e. Be an intermediate layer between commands and the {@link LogicFlow} class). It is not recommended for developers
  * to use this class for programmatically manipulating flows in code, as it is optimized for user-driven editing with undo/redo 
- * support rather than direct flow manipulation. Instead, please dirctly use the {@link LogicFlow} class for flow manipulation in code.
+ * support rather than direct flow manipulation. Instead, please directly use the {@link LogicFlow} class for flow manipulation in code.
  * <p>
  * Note: User should not see the node ids, because ids are internal immutable identifiers for nodes and what we used to
  * identify nodes in code. For users, they should always use node names to manage nodes. While node names are mutable and 
@@ -61,7 +61,7 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  * manager.createNode("BinaryArithmeticNode", "AddOne");
  * manager.setConstInput("AddOne", 0, 1.0);
  * manager.setNextNode("OnDeath", 0, "AddOne");
- * manager.isEnabled = true;
+ * manager.setEnabled(true);
  * </pre>
  * 
  * @see LogicFlow
@@ -514,8 +514,8 @@ public class FlowManager {
      * This method:
      * <ol>
      *   <li>Creates a new ExecutionContext for this flow</li>
+     *   <li>Stores the context in history before execution, so failed nested calls remain visible</li>
      *   <li>Executes the flow within the provided parent context</li>
-     *   <li>Stores the execution context in the server's history</li>
      *   <li>Trims the history if it exceeds the configured limit</li>
      * </ol>
      * 

@@ -34,11 +34,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * Thread-safe bridge between the client-side flow editor GUI and the live {@link FlowManager}/
- * {@link ServerData} state of the local integrated server.
+ * Connects the client-side flow editor to the local integrated server's {@link FlowManager}/
+ * {@link ServerData} state, dispatching live-state operations to the server thread.
  *
- * <p>Editing works on a <b>detached deep copy</b>: {@link #beginEdit} hops onto the server thread
- * once to deep-copy the live {@link LogicFlow} ({@link LogicFlow#copy()}) and hands the resulting
+ * <p>Editing works on a <b>detached structural copy</b>: {@link #beginEdit} hops onto the server thread
+ * once to copy the structure of the live {@link LogicFlow} ({@link LogicFlow#copy()}) and hands the resulting
  * orphan {@link FlowManager} back to the client. That copy is registered nowhere and touched by no
  * other thread, so the GUI is free to mutate it directly and synchronously on the client thread for
  * the rest of the editing session - no further hops needed for individual node edits, and undo/redo
@@ -46,8 +46,9 @@ import net.minecraft.server.MinecraftServer;
  *
  * <p>The live flow registered in {@link ServerData} is only touched again when the user explicitly
  * commits: {@link #commitEdit} hops back to the server thread to replace the registered flow with a
- * (re-copied, so still never shared across threads) snapshot of the edited copy, disabling it in the
- * process. Closing the editor without committing leaves the live flow completely untouched.</p>
+ * snapshot copied by the caller before submission, disabling it in the process. The copy isolates graph edits; mutable constant values remain shared
+ * and must not be mutated in place by the editor. Closing without committing discards
+ * the edited structure.</p>
  *
  * <p>No packets, no registered channels: a remote dedicated server never exposes an
  * {@link IntegratedServer} instance to any client, so there is no code path here that could ever
@@ -186,7 +187,7 @@ public final class FlowEditorBridge {
 
     /**
      * An in-progress edit of one flow: {@code originalName} identifies the live flow this session
-     * was started from, and {@code manager} is a fully detached, client-thread-owned copy that the
+     * was started from, and {@code manager} is a structurally detached, client-thread-owned copy that the
      * GUI can freely mutate (including its own independent undo/redo history) until it is discarded
      * or committed back with {@link #commitEdit}.
      */
@@ -226,7 +227,7 @@ public final class FlowEditorBridge {
     }
 
     /** 
-     * Lists `.flow` files in the mod's config directory. Pure file I/O, no ServerData involved. 
+     * Lists {@code .flow} files in the mod's config directory. Pure file I/O, no ServerData involved.
      */
     public static List<String> listFlowFiles() {
         List<String> result = new ArrayList<>();
@@ -324,7 +325,7 @@ public final class FlowEditorBridge {
     }
 
     /**
-     * Deep-copies the live flow {@code flowName} and hands back an orphan {@link FlowManager}
+     * Copies the structure of the live flow {@code flowName} and hands back an orphan {@link FlowManager}
      * wrapping the copy, ready for the client thread to edit freely. Fails if the flow no longer
      * exists (e.g. deleted concurrently).
      */
@@ -353,6 +354,8 @@ public final class FlowEditorBridge {
      * different (even if structurally identical) copy. This matches the existing behavior of
      * {@code /f flow load} and {@code /f flow copy}, which already reset history the same way.</p>
      *
+     * @param originalName the live definition name captured when the edit session began
+     * @param saveToDisk whether to save the committed definition to its config file
      * @param editedFlowCopy a copy of the edited flow, freshly taken on the client thread right
      *                       before calling this method so the caller's own working copy is never
      *                       shared with the server thread

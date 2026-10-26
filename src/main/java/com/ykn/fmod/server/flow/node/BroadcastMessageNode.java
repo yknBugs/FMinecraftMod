@@ -24,10 +24,10 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * A flow node that sends a message to players based on receiver settings.
  * Inputs:
- * 1. Player - The main receiver (can be null).
- * 2. MessageReceiver - The receiver method.
- * 3. MessageLocation - The location to send the message (chat or actionbar).
- * 4. Text - The message to send.
+ * 1. ServerPlayer - The source player for audience filtering; null allows ALL, OP, or NONE only.
+ * 2. PlayerMessageType.Receiver or String - Audience filter (null defaults to ALL).
+ * 3. MessageType.Location or String - Display location (null defaults to CHAT).
+ * 4. Component or Object - Message to send; other non-null values are converted to literal text.
  * Outputs: None
  * Branches: 1 (Next node)
  */

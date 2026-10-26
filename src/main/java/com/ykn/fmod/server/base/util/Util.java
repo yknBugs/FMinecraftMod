@@ -99,7 +99,6 @@ public class Util {
      * Retrieves a comma-separated string of the authors of the mod.
      *
      * @return A string containing the names of the authors of the mod, separated by commas.
-     * @throws IllegalStateException If the mod container cannot be found.
      */
     public static String getModAuthors() {
         // Collection<String> authors = FabricLoader.getInstance().getModContainer(MODID).orElseThrow(IllegalStateException::new).getModInfo().getAuthors();
@@ -277,9 +276,9 @@ public class Util {
     }
 
     /**
-     * Retrieves the PlayerData associated with the given ServerPlayerEntity.
+     * Retrieves the PlayerData associated with the given ServerPlayer.
      *
-     * @param player The ServerPlayerEntity for which the PlayerData is to be retrieved. Must not be null.
+     * @param player The ServerPlayer for which the PlayerData is to be retrieved. Must not be null.
      * @return The PlayerData object associated with the specified player.
      */
     @NotNull
@@ -352,9 +351,9 @@ public class Util {
     }
 
     /**
-     * Retrieves all entities from the specified ServerWorld that are loaded and not removed.
+     * Retrieves all entities from the specified ServerLevel that are loaded and not removed.
      *
-     * @param world the ServerWorld instance from which to collect entities.
+     * @param world the ServerLevel instance from which to collect entities.
      * @return a list of all entities in the specified world that meet the criteria.
      */
     @NotNull
@@ -371,10 +370,8 @@ public class Util {
      * in the provided list.
      * 
      * @param entities a list of entities to analyze
-     * @return a Map.Entry containing:
-     *         <li> key: an example Entity of the most frequent type
-     *         <li> value: the count of entities of that type
-     *         <li> Returns null if the input list is empty
+     * @return an entry whose key is an example entity of the most frequent type and whose
+     *         value is that type's count, or null if the input list is empty
      */
     public static Map.Entry<Entity, Integer> getDominantEntities(List<Entity> entities) {
         Map<ResourceLocation, List<Entity>> entityMap = new HashMap<>();
@@ -396,7 +393,7 @@ public class Util {
      * Retrieves the biome name as a localized text for the given biome identifier.
      * 
      * @param biomeId The identifier of the biome. Can be null.
-     * @return A {@link MutableText} representing the localized name of the biome. If the biomeId is null,
+     * @return A {@link MutableComponent} representing the localized name of the biome. If the biomeId is null,
      *         a default "unknown" text is returned.
      */
     @NotNull
@@ -428,7 +425,7 @@ public class Util {
      * Generates a formatted text representation of a boolean value, displaying "On" in green for true and "Off" in red for false.
      *
      * @param value the boolean value to be represented as text
-     * @return a {@link MutableText} object containing the formatted text representation of the boolean value
+     * @return a {@link MutableComponent} object containing the formatted text representation of the boolean value
      */
     @NotNull
     public static MutableComponent getBooleanText(boolean value) {

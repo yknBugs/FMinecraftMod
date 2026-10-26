@@ -40,11 +40,13 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 /**
  * Node that retrieves a value from an NBT compound
  * Inputs:
- * 1. Block/Entity/NbtCompound - The source to retrieve from.
+ * 1. BlockEntity/Entity/Tag - The source to retrieve from.
  * 2. String - The NBT path to the desired value.
  * 3. Double - The scale factor to apply to numeric values (null means 1.0).
  * Outputs:
- * 1. NbtCompound/Primitive - The retrieved value, or null if not found.
+ * 1. Object - A converted value, or a List of converted values for multiple matches.
+ *    Numbers are scaled doubles, strings are Java strings, and compound tags remain Tags.
+ *    Invalid paths or missing path elements can raise LogicException.
  * Branches: 1 (Next node)
  */
 public class GetNbtValueNode extends FlowNode {

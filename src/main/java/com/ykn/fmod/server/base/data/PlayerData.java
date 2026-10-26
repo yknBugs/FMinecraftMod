@@ -110,7 +110,11 @@ public class PlayerData {
 
     /**
      * Constructs a new PlayerData instance with default values.
-     * All counters are initialized to 0, all objects to null, and collections to empty.
+     * Stores the player UUID and owning server data; counters start at zero, cached
+     * world state is initially null, and position history is empty.
+     *
+     * @param player The player whose UUID identifies this data
+     * @param serverData The owning server data
      */
     public PlayerData(ServerPlayer player, ServerData serverData) {
         this.playerUuid = player.getUUID();
@@ -146,6 +150,7 @@ public class PlayerData {
      * Appends the player's current position to the recent positions history and trims the history
      * to the specified maximum size by removing the oldest entries.
      *
+     * @param player the player whose current position is recorded; a mismatched UUID is ignored
      * @param maxHistorySize the maximum number of positions to retain
      */
     public void updatePositionHistory(ServerPlayer player, int maxHistorySize) {

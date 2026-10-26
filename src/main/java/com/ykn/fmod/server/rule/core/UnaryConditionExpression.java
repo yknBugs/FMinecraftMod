@@ -19,7 +19,7 @@ import com.ykn.fmod.server.rule.tool.ConditionFormulaParser;
  *
  * <p>The only meaningful runtime operator is {@link ConditionRelationship#NOT} ({@code !}).
  * {@link ConditionRelationship#TRUE} and {@link ConditionRelationship#FALSE} are constant
- * sentinels that are folded away during {@link RuleCondition#optimize(CustomRule)}.
+ * sentinels that are folded away during {@link RuleCondition#optimize(CustomRule, java.util.HashSet)}.
  *
  * <p>Instances are created programmatically via {@link RuleCondition#not()} or by
  * deserializing from a formula string through

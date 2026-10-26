@@ -36,7 +36,7 @@ import net.minecraft.network.chat.MutableComponent;
 /**
  * Recursively constructs nested Brigadier command trees for rule component parameters.
  *
- * <h3>Problem</h3>
+ * <h2>Problem</h2>
  * <p>Each {@link com.ykn.fmod.server.rule.core.RuleParameter} in a condition or action can be
  * specified in three modes:
  * <ul>
@@ -48,7 +48,7 @@ import net.minecraft.network.chat.MutableComponent;
  * {@code RecursiveCommandBuilder} handles this combinatorial explosion by building the command
  * tree dynamically through recursion.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
  * builder.executes((arguments, ctx) -> {

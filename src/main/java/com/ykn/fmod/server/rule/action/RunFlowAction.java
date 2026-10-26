@@ -28,12 +28,11 @@ import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
  * variables currently in the {@link RuleContext} are copied into a mutable map and
  * forwarded to the flow's execution context, allowing rules and flows to share data.
  *
- * <p>The {@code delay} is clamped to a minimum of {@code 1} tick to prevent
- * {@link StackOverflowError} and {@link java.util.ConcurrentModificationException}
- * that would occur if the flow were triggered synchronously within the same tick
+ * <p>The {@code delay} is clamped to a minimum of {@code 1} tick to defer execution
+ * to a later server tick and break synchronous rule-to-flow recursion
  * (e.g., via a "trigger rule" flow node).
  *
- * <p>If the named flow does not exist or is not enabled, the action silently returns
+ * <p>If the named flow does not exist or is not enabled, the action records a warning and returns
  * {@code true} without executing the flow.
  *
  * <p>JSON value format:

@@ -21,7 +21,7 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
  * Inputs:
  * 1. ScheduledFlow - The scheduled flow to add the variable to.
  * 2. String - The name of the variable to add, if not provided, it will add all variables from the current flow.
- * 3. Object - The value of the variable to add, if not provided, it will use the value from the current flow.
+ * 3. Object - The value of the variable to add, if not provided, it will use the value from the current flow if non-null; otherwise no variable is added.
  * Outputs:
  * 1. Number - The number of variables in the scheduled flow after adding.
  * Branches: 1 (Next node)

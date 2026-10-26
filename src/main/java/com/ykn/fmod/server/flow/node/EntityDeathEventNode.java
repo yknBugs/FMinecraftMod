@@ -16,8 +16,8 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
  * 2. DamageType - The type of damage that caused the death.
  * 3. Entity - The entity that killed the living entity. (e.g. arrow)
  * 4. Entity - Source of damage (e.g. shooter of arrow)
- * 5. Vec3d - Position of the damage source.
- * 6. Text - The death message.
+ * 5. Vec3 - Position of the damage source.
+ * 6. Component - The death message.
  * Branches: 1 (Next node)
  */
 public class EntityDeathEventNode extends EventNode {

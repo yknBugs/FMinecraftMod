@@ -24,6 +24,7 @@ import net.minecraft.world.phys.Vec3;
  *
  * <p>Variable contract:
  * <table border="1">
+ * <caption>Event context variables</caption>
  *   <tr><th>Name</th><th>Type</th><th>Nullable</th><th>Description</th></tr>
  *   <tr><td>{@code entity}</td><td>{@code UUID}</td><td>No</td><td>The entity that died.</td></tr>
  *   <tr><td>{@code cause}</td><td>{@code UUID}</td><td>Yes</td><td>The entity causing the death.</td></tr>

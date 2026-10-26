@@ -24,7 +24,7 @@ import net.minecraft.world.entity.Entity;
  * 1. Entity - The source entity.
  * 2. String - The command to execute.
  * Outputs:
- * 1. Text - The feedback message from command execution, if any.
+ * 1. Component - The feedback message from command execution, if any.
  * 2. String - The raw output from command execution, if any.
  * Branches: 1 (Next node)
  */

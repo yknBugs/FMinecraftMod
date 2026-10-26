@@ -30,6 +30,7 @@ import net.minecraft.network.chat.Component;
  *
  * <p>Variable contract:
  * <table border="1">
+ * <caption>Event context variables</caption>
  *   <tr><th>Name</th><th>Type</th><th>Description</th></tr>
  *   <tr><td>{@code tick}</td><td>{@code Integer}</td><td>The server tick counter at the time of dispatch.</td></tr>
  * </table>

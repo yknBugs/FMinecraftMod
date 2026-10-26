@@ -38,7 +38,7 @@ import net.minecraft.network.chat.Component;
  * actions-if-violated) each with add/edit/rename/remove, a validated main-condition formula box,
  * client-side undo/redo, and Save/Save &amp; Persist/Cancel.
  *
- * <p>Holds one {@code final RuleManager} for the whole session (the deep copy handed over by
+ * <p>Holds one {@code final RuleManager} for the whole session (the structural copy handed over by
  * {@link RuleEditorBridge#beginEdit}) and mutates it directly and synchronously on the client
  * thread - the copy is registered nowhere, so nothing here is visible to the live rule until
  * {@link #save} explicitly commits. Undo/redo is a client-side {@link CustomRule#copy()} snapshot

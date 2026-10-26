@@ -28,7 +28,7 @@ import net.minecraft.server.level.ServerPlayer;
  * audience can be filtered by team membership and/or source player identity in addition
  * to permission level.
  * <p> 
- * A single {@code PlayerMessageType} field replaces both and is fully serializable by Gson:
+ * The locations and receiver are stored together and are serializable by Gson:
  * <pre>
  * {
  *   "mainPlayerLocation": "CHAT",
@@ -198,7 +198,7 @@ public class PlayerMessageType extends MessageType {
      * Broadcasts a message to all online players according to this type's receiver filter.
      * <p>
      * Iterates over every online player and delegates to
-     * {@link #postMessage(ServerPlayerEntity, ServerPlayerEntity, Text, Text)} for each one.
+     * {@link #postMessage(ServerPlayer, ServerPlayer, Component, Component)} for each one.
      *
      * @param sourcePlayer the player who triggered the event; must not be null
      * @param mainMessage  the message shown to the primary audience; must not be null
@@ -279,7 +279,7 @@ public class PlayerMessageType extends MessageType {
      *
      * @param serverMessageType the ServerMessageType to convert
      * @return a new PlayerMessageType with the converted values
-     * @throws IllegalArgumentException if the receiver type is invalid (logs error and defaults to NONE)
+     * Unmappable receiver types are logged and converted to NONE.
      */
     public static PlayerMessageType fromServerMessageType(ServerMessageType serverMessageType) {
         MessageType.Location mainLocation = serverMessageType.mainPlayerLocation;

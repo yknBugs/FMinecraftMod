@@ -46,7 +46,7 @@ public class EntityDeath {
 
     /**
      * This method is called when an entity dies.
-     * @see com.ykn.fmod.mixin.EntityDeathMixin
+     * @see com.ykn.fmod.server.mixin.EntityDeathMixin
      */
     public void onEntityDeath() {
         if (livingEntity.getServer() == null) {

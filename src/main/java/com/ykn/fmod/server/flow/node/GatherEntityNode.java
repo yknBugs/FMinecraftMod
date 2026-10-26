@@ -27,13 +27,13 @@ import net.minecraft.world.phys.Vec3;
 /**
  * Get entities matching certain criteria, such as nearby entities, entities in a certain area, etc.
  * Inputs:
- * 1. String - UUID, if provided, ignore all other filters and directly get the entity with this UUID.
- * 2. Identifier - The type of the entity (e.g. "minecraft:player") to filter by (optional).
- * 3. World - The world to search for entities in (optional, defaults from all loaded worlds).
- * 4. Vec3d - The center position to search around (optional, if provided, 5 must not be null).
+ * 1. String - UUID; a nonempty value selects UUID lookup across all levels after filter inputs are validated.
+ * 2. ResourceLocation - The type of the entity (e.g. "minecraft:player") to filter by (optional).
+ * 3. ServerLevel - The world to search for entities in (optional, defaults from all loaded worlds).
+ * 4. Vec3 - The center position to search around (optional, if provided, 5 must not be null).
  * 5. Double - The radius to search within (optional, if provided, 4 must not be null).
  * Outputs:
- * 1. List - The list of entities matching the specified criteria.
+ * 1. Object - Matching entities: null for no matches, an Entity for one, or a List for multiple matches.
  * Branches: 1 (Next node)
  */
 public class GatherEntityNode extends FlowNode {

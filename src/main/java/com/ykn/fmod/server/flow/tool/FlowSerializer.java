@@ -75,7 +75,7 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  * }
  * </pre>
  * <p>
- * The serializer supports various value types including Vec3d, Vec2f, Double,
+ * The serializer supports various value types including Vec3, Vec2, Double,
  * Boolean, and String. Values are automatically parsed during deserialization.
  * <p>
  * File operations use atomic writes (via temporary files) when replacing existing
@@ -94,8 +94,8 @@ public class FlowSerializer {
     private static final Gson GSON = buildGson();
 
     /**
-     * The last compatible mod version for logic flows. Flows created with versions
-     * newer than this may not be loadable in older versions of the mod.
+     * The oldest mod version treated as compatible with the current flow format.
+     * Loading older files logs a warning; it does not reject them solely for their version.
      */
     public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.4+b3");
 
@@ -195,8 +195,8 @@ public class FlowSerializer {
      * This method attempts to parse the string as various types in order:
      * <ol>
      *   <li>null (if string is "null" or null)</li>
-     *   <li>Vec3d (3D vector)</li>
-     *   <li>Vec2f (2D float vector)</li>
+     *   <li>Vec3 (3D vector)</li>
+     *   <li>Vec2 (2D float vector)</li>
      *   <li>List (comma-separated values in square brackets)</li>
      *   <li>Double (numeric value)</li>
      *   <li>Boolean (true/false)</li>

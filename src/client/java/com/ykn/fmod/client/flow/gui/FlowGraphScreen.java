@@ -30,7 +30,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 
 /**
- * The node-graph editor for one flow being edited via a detached deep copy
+ * The node-graph editor for one flow being edited via a detached structural copy
  * ({@link FlowEditorBridge.EditSession}) - see {@link FlowEditorBridge} for why edits never touch
  * the live, registered flow until the user explicitly commits.
  *

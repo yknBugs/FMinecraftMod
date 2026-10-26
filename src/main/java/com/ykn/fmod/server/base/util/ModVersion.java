@@ -4,7 +4,7 @@ import java.util.Objects;
 
 /**
  * Represents an immutable version identifier for the mod, following the format
- * {@code major.release[.push][+b&lt;build&gt;]}.
+ * {@code major.release[.push][+b<build>]}.
  *
  * <p>Examples of valid version strings:
  * <ul>
@@ -40,13 +40,14 @@ public final class ModVersion implements Comparable<ModVersion> {
 
     /**
      * Whether this version is a stable release.
-     * {@code true} means there is no {@code +b&lt;build&gt;} suffix.
+     * {@code true} means there is no {@code +b<build>} suffix.
      */
     public final boolean stable;
 
     /**
      * The build number for unstable versions (the {@code 1} in {@code +b1}).
-     * Starts from {@code 1}; {@code 0} when {@link #stable} is {@code true}.
+     * Parsed build numbers are non-negative; parsing a stable version sets this to {@code 0}.
+     * The explicit constructor stores the supplied value even for stable versions.
      */
     public final int build;
 
@@ -57,7 +58,7 @@ public final class ModVersion implements Comparable<ModVersion> {
      * @param release the release version number (≥ 0)
      * @param push    the push version number (0 to omit from string output)
      * @param stable  {@code true} if this is a stable release
-     * @param build   the build number for unstable versions (ignored when {@code stable} is {@code true})
+     * @param build   the build number stored in the instance; the suffix is omitted when stable
      */
     public ModVersion(int major, int release, int push, boolean stable, int build) {
         this.major = major;
@@ -74,7 +75,7 @@ public final class ModVersion implements Comparable<ModVersion> {
      * <ul>
      *   <li>{@code major.release}</li>
      *   <li>{@code major.release.push}</li>
-     *   <li>{@code major.release.push+b&lt;build&gt;}</li>
+     *   <li>{@code major.release[.push]+b<build>}</li>
      * </ul>
      *
      * @param version the version string to parse; must not be {@code null}
@@ -116,9 +117,9 @@ public final class ModVersion implements Comparable<ModVersion> {
     /**
      * Returns the canonical string representation of this version.
      *
-     * <p>The format is {@code major.release[.push][+b&lt;build&gt;]}, where the
+     * <p>The format is {@code major.release[.push][+b<build>]}, where the
      * {@code .push} segment is omitted when {@link #push} is {@code 0}, and the
-     * {@code +b&lt;build&gt;} suffix is omitted for stable versions.
+     * {@code +b<build>} suffix is omitted for stable versions.
      *
      * @return the version string; never {@code null}
      */
@@ -203,7 +204,7 @@ public final class ModVersion implements Comparable<ModVersion> {
     }
 
     /**
-     * Compares two version strings lexicographically according to the version
+     * Parses and compares two version strings numerically according to the version
      * ordering defined by {@link #compareTo(ModVersion)}.
      *
      * @param v1 the first version string; must not be {@code null}

@@ -397,14 +397,14 @@ public class FormulaSuggestionGenerator {
     }
     
     /**
-     * Check if a string is an operator (|, &, or ^)
+     * Check if a string is an operator ({@code |}, {@code &}, or {@code ^})
      */
     private static boolean isOperator(String s) {
         return s.length() > 0 && s.matches("[|&^]+");
     }
     
     /**
-     * Complete partial operator (| -> ||, & -> &&)
+     * Complete partial operator ({@code | -> ||}, {@code & -> &&})
      */
     private static String completeOperator(String op) {
         if (op.equals("|")) {

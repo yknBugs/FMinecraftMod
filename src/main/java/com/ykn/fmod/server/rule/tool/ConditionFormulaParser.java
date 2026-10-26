@@ -33,7 +33,7 @@ import com.ykn.fmod.server.rule.core.UnaryConditionExpression;
  *
  * Operator precedence (lowest → highest): {@code ||}, {@code &&}, {@code |}, {@code ^}, {@code &}, {@code !}.
  *
- * @throws IllegalArgumentException if the formula is null, empty, or contains invalid syntax
+ * Use {@link #parse(String)} to parse a formula; invalid syntax throws {@link IllegalArgumentException}.
  */
 public class ConditionFormulaParser {
 

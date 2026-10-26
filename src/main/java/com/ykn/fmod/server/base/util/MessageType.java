@@ -127,7 +127,7 @@ public class MessageType {
      * Broadcasts a message to players on the server based on the specified message location type.
      *
      * @param server The Minecraft server instance. Can be null if no server is available.
-     * @param type   The location type where the message should be broadcasted. Must not be null.
+     * @param location The location type where the message should be broadcasted. Must not be null.
      * @param message The message to broadcast. Must not be null.
      */
     public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageType.Location location, @NotNull Component message) {

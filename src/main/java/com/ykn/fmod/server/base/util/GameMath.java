@@ -443,7 +443,7 @@ public class GameMath {
      *
      * @param pitch the pitch angle in degrees
      * @param yaw the yaw angle in degrees
-     * @return a Vec3d representing the unit direction vector
+     * @return a Vec3 representing the unit direction vector
      */
     public static Vec3 getUnitDirectionVector(double pitch, double yaw) {
         double pitchRadians = Math.toRadians(pitch);

@@ -28,7 +28,7 @@ import com.ykn.fmod.server.rule.tool.RuleManager;
  * 3. Boolean - Whether to pass current flow variables to the rule context. Default is true.
  * Outputs:
  * 1. Boolean - Whether the rule condition passed.
- * 2. Text - The error message set by the rule, or null if none.
+ * 2. Component - The error message set by the rule, or null if none.
  * Branches: 1 (Next node)
  */
 public class TriggerRuleNode extends FlowNode {

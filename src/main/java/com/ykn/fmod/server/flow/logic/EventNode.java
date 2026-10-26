@@ -12,8 +12,8 @@ import java.util.List;
  * <p>
  * Event nodes are special nodes that:
  * <ul>
- *   <li>Must always be the starting point of a logic flow</li>
- *   <li>Are automatically triggered by game events (e.g., entity death, player interaction)</li>
+ *   <li>Serve as the starting point of command-created flows</li>
+ *   <li>May be dispatched by game events, commands, or other flows, depending on their type</li>
  *   <li>Have their outputs populated by the event system rather than computation</li>
  *   <li>Do not perform computation in {@link #onExecute} - their outputs come from event parameters</li>
  * </ul>
@@ -36,7 +36,7 @@ import java.util.List;
  * Example subclasses: EntityDeathEventNode, EntityDamageEventNode, ProjectileHitEntityEventNode
  * 
  * @see FlowNode
- * @see ExecutionContext#execute(long, List, java.util.Map)
+ * @see ExecutionContext#execute(List, java.util.Map)
  * @see com.ykn.fmod.server.flow.tool.NodeRegistry#registerEvent
  */
 public class EventNode extends FlowNode {
@@ -52,6 +52,7 @@ public class EventNode extends FlowNode {
      * @param inputNumber The number of input ports (typically 0 for event nodes)
      * @param outputNumber The number of output ports (event parameters)
      * @param branchNumber The number of branch connections (typically 1)
+     * @param type The type name registered in NodeRegistry
      */
     public EventNode(long id, String name, int inputNumber, int outputNumber, int branchNumber, String type) {
         super(id, name, inputNumber, outputNumber, branchNumber, type);
@@ -78,7 +79,7 @@ public class EventNode extends FlowNode {
      * Identifies this node as an event node.
      * <p>
      * Event nodes are special entry point nodes that can be used as flow start nodes
-     * and are automatically triggered by game events.
+     * and may be dispatched by event listeners or explicitly invoked.
      * 
      * @return Always returns {@code true} for event nodes
      */

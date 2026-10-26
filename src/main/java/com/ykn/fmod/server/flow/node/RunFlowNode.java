@@ -28,7 +28,10 @@ import net.minecraft.server.MinecraftServer;
  * 2. Number - The delay before running the flow (in ticks). Default is 0.
  * 3. Boolean - Whether to keep all the variables from the current flow. Default is true.
  * Outputs:
- * 1. ScheduledTask - The scheduled task representing the running flow.
+ * 1. ScheduledFlow - The pending task when delay is positive; null for immediate execution.
+ * <p>Only enabled target flows can be run. Immediate calls inherit the parent execution
+ * limits and propagate failures. Delayed calls copy the variable map when scheduled and
+ * execute later with the configured limits; mutable values within the map are shared.
  * Branches: 1 (Next node)
  */
 public class RunFlowNode extends FlowNode {

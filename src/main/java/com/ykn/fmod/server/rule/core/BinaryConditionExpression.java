@@ -25,7 +25,7 @@ import com.ykn.fmod.server.rule.tool.ConditionFormulaParser;
  *   <li>{@link ConditionRelationship#BITOR}  – non-short-circuit bitwise OR ({@code |})</li>
  *   <li>{@link ConditionRelationship#XOR}    – XOR ({@code ^})</li>
  *   <li>{@link ConditionRelationship#TRUE} / {@link ConditionRelationship#FALSE} – constant sentinels,
- *       folded away by {@link RuleCondition#optimize(CustomRule)}</li>
+ *       folded away by {@link RuleCondition#optimize(CustomRule, java.util.HashSet)}</li>
  * </ul>
  *
  * <p>Instances are created either programmatically via {@link RuleCondition#and(RuleCondition)},

@@ -30,18 +30,18 @@ import net.minecraft.world.phys.Vec2;
  * Inputs:
  * 1. Entity - The source entity.
  * Outputs:
- * 1. Text - The custom display name of the entity, if available.
+ * 1. Component - The custom display name of the entity, if available.
  * 2. String - The raw custom name of the entity, if available.
- * 3. Identifier - The type identifier of the entity.
+ * 3. ResourceLocation - The type identifier of the entity.
  * 4. String - The UUID of the entity.
- * 5. World - The current world/dimension of the entity, if applicable.
- * 6. Vec3d - The current coordinates of the entity, if applicable.
- * 7. Vec3d - The currecnt velocity of the entity, if applicable.
- * 8. Vec2f - The current rotation (pitch and yaw) of the entity, if applicable.
- * 9. Identifier - The dimension identifier of the entity's current world, if applicable.
+ * 5. Level - The current world/dimension of the entity, if applicable.
+ * 6. Vec3 - The current coordinates of the entity, if applicable.
+ * 7. Vec3 - The current velocity of the entity, if applicable.
+ * 8. Vec2 - The current rotation (pitch and yaw) of the entity, if applicable.
+ * 9. ResourceLocation - The dimension identifier of the entity's current world, if applicable.
  * 10. Entity - The vehicle the entity is currently riding, if applicable.
- * 11. List<ItemStack> - The hand contents of the entity, if applicable.
- * 12. List<ItemStack> - The armor contents of the entity, if applicable.
+ * 11. {@code List<ItemStack>} - Main-hand and off-hand items for living entities; null for other entities.
+ * 12. {@code List<ItemStack>} - Head, chest, legs, and feet items for living entities; null for other entities.
  * Branches: 1 (Next node)
  */
 public class GetEntityDataNode extends FlowNode {

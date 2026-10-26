@@ -37,7 +37,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * A parameter "shape" usable in a {@link RecursiveCommandBuilder} {@code const} node, pairing the
+ * A parameter "shape" usable in a {@link com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder} {@code const} node, pairing the
  * Brigadier argument node to build, the extractor that reads the resolved value back out of a
  * {@link CommandContext}, and a JSON codec for persisting the constant value in a {@code .rule}
  * file.
@@ -50,12 +50,12 @@ import net.minecraft.world.phys.Vec3;
  * editor) additionally requires registering a widget builder with the client-side
  * {@code ParamWidgetRegistry}, since server code cannot invoke client code.
  *
- * <p>{@link #valueType()} additionally lets {@link RecursiveCommandBuilder} filter {@code var}/
+ * <p>{@link #valueType()} additionally lets {@link com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder} filter {@code var}/
  * {@code mix} variable-name suggestions down to variables whose declared type
  * ({@link com.ykn.fmod.server.rule.core.RuleEvent#variablesType()}) actually matches this kind.
  *
  * @param <T> the Java type this kind resolves to
- * @see RecursiveCommandBuilder
+ * @see com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder
  */
 public final class ParamKind<T> {
 
@@ -345,10 +345,10 @@ public final class ParamKind<T> {
     }
 
     /**
-     * A single-word string value (no whitespace).
+     * A string value accepting one word or a quoted string containing whitespace.
      * Resolves to a {@link String}.
      *
-     * <p>No built-in suggestions. Use {@link #GREEDY_STRING} when the value may contain spaces.
+     * <p>No built-in suggestions. Use {@link #GREEDY_STRING} to consume the rest of the input.
      */
     public static final ParamKind<String> STRING = new ParamKind<>(
         name -> Commands.argument(name, StringArgumentType.string()),
@@ -361,7 +361,7 @@ public final class ParamKind<T> {
      * Resolves to a {@link String}.
      *
      * <p>No built-in suggestions. Can be combined with a custom suggester (e.g. placeholder
-     * completion) via {@link RecursiveCommandBuilder#add(String, String, String, String,
+     * completion) via {@link com.ykn.fmod.server.rule.tool.RecursiveCommandBuilder#add(String, String, String, String,
      * ParamKind, com.mojang.brigadier.suggestion.SuggestionProvider)}.
      */
     public static final ParamKind<String> GREEDY_STRING = new ParamKind<>(
@@ -370,32 +370,14 @@ public final class ParamKind<T> {
         false, String.class,
         JsonPrimitive::new, JsonElement::getAsString);
 
-    /**
-     * Thrown by {@link #VARIABLE_NAME}'s extractor when the entered constant fails
-     * {@link RuleCondition#NAME_PATTERN}.
-     */
     // private static final DynamicCommandExceptionType INVALID_VARIABLE_NAME = new DynamicCommandExceptionType(
     //     value -> Util.parseTranslatableText("fmod.rule.param.variablename.invalid", value));
 
     /**
-     * A variable name to be written to (e.g. by a "compute and store" condition/action), as
-     * opposed to {@link #STRING}/{@link #GREEDY_STRING} which hold arbitrary text.
-     * Resolves to a {@link String}.
-     *
-     * <p>The constant form is validated against {@link RuleCondition#NAME_PATTERN} at
-     * command-parse time, so a malformed literal name (spaces, leading digit, {@code true}/
-     * {@code false}, etc.) is rejected immediately with a clear error instead of silently failing
-     * later when the component tries to use it.
-     *
-     * <p>This kind cannot validate the {@code var} form the same way: {@code var somePlayer}
-     * doesn't use the literal text {@code "somePlayer"} as the target name - it resolves
-     * {@code somePlayer}'s <em>current value</em> at evaluation time and uses <em>that</em> as the
-     * target variable name (pointer-style indirection, same as every other {@code var}-bound
-     * {@link RuleParameter}). That value isn't known until the rule actually runs, so components
-     * using this kind for a write-target parameter must still re-validate the resolved name
-     * against {@link RuleCondition#NAME_PATTERN} themselves in {@code onEvaluate}/{@code execute}
-     * and warn (via {@link RuleAction#addWarning}/{@link SourceCondition#addWarning}) rather than
-     * write to an unusable name.
+     * A single-word string used as a variable write target.
+     * Resolves to a {@link String}. The extractor does not validate
+     * {@link RuleCondition#NAME_PATTERN}; components must validate a resolved target name
+     * before writing it, including names obtained through a variable-bound parameter.
      *
      * <p>No built-in suggestions.
      */
@@ -412,12 +394,12 @@ public final class ParamKind<T> {
         JsonPrimitive::new, JsonElement::getAsString);
 
     /**
-     * A string value that is parsed and auto-cast through {@link TypeAdaptor#parse(String)}
-     * into the most appropriate Java type ({@link Integer}, {@link Double}, {@link Boolean},
+     * A string value that is parsed and auto-cast through {@link TypeAdaptor#parse(Object)} and {@link TypeAdaptor#autoCast()}
+     * into the most appropriate Java type ({@link Double}, {@link Boolean},
      * {@link String}, etc.).
      *
      * <p>Resolves to an {@link Object} - callers should use the actual runtime type
-     * returned by {@link RuleParameter#getValue(Object...)}. No built-in suggestions.
+     * returned by {@link RuleParameter#resolve(RuleContext, Class)}. No built-in suggestions.
      */
     public static final ParamKind<Object> AUTO = new ParamKind<>(
         name -> Commands.argument(name, StringArgumentType.string()),

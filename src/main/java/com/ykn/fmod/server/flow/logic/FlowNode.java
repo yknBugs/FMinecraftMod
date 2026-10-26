@@ -102,6 +102,7 @@ public class FlowNode implements Cloneable {
      * @param inputNumber The number of input ports this node has
      * @param outputNumber The number of output ports this node has
      * @param branchNumber The number of branch connections this node has
+     * @param type The type name registered in NodeRegistry
      */
     public FlowNode(long id, String name, int inputNumber, int outputNumber, int branchNumber, String type) {
         if (inputNumber < 0 || outputNumber < 0 || branchNumber < 0) {
@@ -306,8 +307,8 @@ public class FlowNode implements Cloneable {
      * @param context The execution context
      * @param index The index of the output port (0-based)
      * @return The output value
-     * @throws LogicException If the node has not been executed yet
-     * @throws IndexOutOfBoundsException If the index is out of range
+     * @throws LogicException If the node status is missing, the node has not executed,
+     *                        or the output index is out of range
      */
     public Object getOutput(ExecutionContext context, int index) throws LogicException {
         NodeStatus status = context.getNodeStatus(this.id);
@@ -329,6 +330,7 @@ public class FlowNode implements Cloneable {
      * @param context The execution context
      * @param index The index of the output port (0-based)
      * @param value The value to set as output
+     * @throws LogicException If the node status is missing or the output index is out of range
      */
     protected void setOutput(ExecutionContext context, int index, Object value) throws LogicException {
         NodeStatus status = context.getNodeStatus(this.id);
@@ -343,8 +345,8 @@ public class FlowNode implements Cloneable {
 
     /**
      * This method indicates whether this node is an event node.
-     * Event nodes should always be the starting point of a logic flow execution.
-     * And the event nodes will be automatically triggered by the system when the corresponding event occurs.
+     * Command-created flows use an event node as their start node. Dispatchers match
+     * the start-node type; dummy and trigger nodes require explicit invocation.
      * By default, nodes are not event nodes. Override this method in subclasses to specify event nodes.
      * @return true if this node is an event node, false otherwise
      */
@@ -410,7 +412,7 @@ public class FlowNode implements Cloneable {
     }
 
     /**
-     * Creates a deep copy of this node.
+     * Copies this node's configuration into a new instance of its registered type.
      * <p>
      * The copy includes:
      * <ul>
@@ -420,7 +422,7 @@ public class FlowNode implements Cloneable {
      * </ul>
      * <p>
      * Note: This uses {@link com.ykn.fmod.server.flow.tool.NodeRegistry} to preserve
-     * the correct subclass type.
+     * the correct subclass type. Constant input values themselves are shared, not deep-copied.
      * 
      * @return A new FlowNode instance with the same configuration
      */
@@ -457,13 +459,13 @@ public class FlowNode implements Cloneable {
      *   <li>Checks that the number of inputs matches the metadata definition</li>
      *   <li>Checks that the number of branches matches the metadata definition</li>
      * </ul>
-     * </p>
+     *
      * 
      * <p>All validation failures are logged as warnings with details about the node and the specific issue.
      * The method aggregates all validation results and returns false if any check fails.</p>
      * 
      * @return {@code true} if all integrity checks pass, {@code false} if any validation fails
-     * @see FlowNodeMetadata#verifyIntegrity()
+     * @see NodeMetadata#verifyIntegrity()
      */
     public boolean verifyIntegrity() {
         boolean passed = true;
@@ -502,7 +504,7 @@ public class FlowNode implements Cloneable {
      * use {@link NodeStatus#render(long, LogicFlow)} instead.
      * 
      * @param flow The logic flow containing this node (used to resolve node references)
-     * @return A Text object suitable for display in Minecraft
+     * @return A Component object suitable for display in Minecraft
      */
     public Component render(LogicFlow flow) {
         // Render title

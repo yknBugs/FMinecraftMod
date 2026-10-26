@@ -15,14 +15,16 @@ import com.ykn.fmod.server.rule.core.ParamKind;
 import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
 
 /**
- * A {@link SourceCondition} that tests whether {@code left.equals(right)}.
+ * A {@link SourceCondition} that compares two values with {@link Object#equals(Object)}.
+ * Two null values compare equal; exactly one null value compares unequal.
  *
  * <p>Parameters are resolved as {@link Object} and compared with
  * {@link Object#equals(Object)}.
  *
  * <p>Because constants are stored as strings in JSON, both the {@code left} and
  * {@code right} parameters are serialised as plain string values. Variable
- * bindings may carry any runtime type.
+ * bindings may carry any runtime type. Serialized constants are auto-cast on load
+ * through {@link ParamKind#AUTO}, so the resolved values need not be strings.
  *
  * <p>JSON value format:
  * <pre>{@code

@@ -36,13 +36,13 @@ import net.minecraft.world.item.ItemStack;
  * </ul>
  * <p>
  * Placeholders are defined as key-value pairs where the key is a string pattern
- * and the value is a function that generates Text based on the context object.
+ * and the value is a function that generates Component based on the context object.
  * Custom styles use regex patterns to match style markers and apply formatting.
  * <p>
  * Example usage:
  * <pre>{@code
- * TextPlaceholderFactory<ServerPlayerEntity> factory = TextPlaceholderFactory.ofDefault();
- * MutableText result = factory.parse("Hello ${player}! Your health is ${health}.", player);
+ * TextPlaceholderFactory<ServerPlayer> factory = TextPlaceholderFactory.ofDefault();
+ * MutableComponent result = factory.parse("Hello ${player}! Your health is ${health}.", player);
  * }</pre>
  *
  * @param <T> The type of context object used for placeholder resolution
@@ -82,7 +82,7 @@ public class TextPlaceholderFactory<T> {
      * Adds a placeholder with a dynamic value function.
      *
      * @param key The placeholder key (e.g., "${player}")
-     * @param value A function that generates Text based on the context object
+     * @param value A function that generates Component based on the context object
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> add(String key, Function<T, Component> value) {
@@ -91,10 +91,10 @@ public class TextPlaceholderFactory<T> {
     }
 
     /**
-     * Adds a placeholder with a static Text value.
+     * Adds a placeholder with a static Component value.
      *
      * @param key The placeholder key (e.g., "${greeting}")
-     * @param value The static Text value to use for this placeholder
+     * @param value The static Component value to use for this placeholder
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> add(String key, Component value) {
@@ -486,7 +486,7 @@ public class TextPlaceholderFactory<T> {
      *
      * @param <U> The type of context object for placeholder resolution
      * @param key The placeholder key
-     * @param value A function that generates Text based on the context object
+     * @param value A function that generates Component based on the context object
      * @return A new factory instance with the single placeholder
      */
     public static <U> TextPlaceholderFactory<U> of(String key, Function<U, Component> value) {
@@ -494,11 +494,11 @@ public class TextPlaceholderFactory<T> {
     }
 
     /**
-     * Creates a new TextPlaceholderFactory with a single static Text placeholder.
+     * Creates a new TextPlaceholderFactory with a single static Component placeholder.
      *
      * @param <U> The type of context object for placeholder resolution
      * @param key The placeholder key
-     * @param value The static Text value for this placeholder
+     * @param value The static Component value for this placeholder
      * @return A new factory instance with the single placeholder
      */
     public static <U> TextPlaceholderFactory<U> of(String key, Component value) {
@@ -518,7 +518,7 @@ public class TextPlaceholderFactory<T> {
     }
 
     /**
-     * Creates a pre-configured TextPlaceholderFactory for ServerPlayerEntity with common placeholders and styles.
+     * Creates a pre-configured TextPlaceholderFactory for ServerPlayer with common placeholders and styles.
      * <p>
      * Includes the following style patterns:
      * <ul>
@@ -546,7 +546,7 @@ public class TextPlaceholderFactory<T> {
      *   <li>{@code ${mainhand}, ${offhand}} - Item in hand</li>
      * </ul>
      *
-     * @return A pre-configured factory for ServerPlayerEntity context
+     * @return A pre-configured factory for ServerPlayer context
      */
     public static TextPlaceholderFactory<ServerPlayer> ofDefault() {
         return new TextPlaceholderFactory<ServerPlayer>()

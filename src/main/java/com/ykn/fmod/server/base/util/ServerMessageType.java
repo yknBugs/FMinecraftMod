@@ -27,7 +27,7 @@ import net.minecraft.server.level.ServerPlayer;
  * A {@link MessageType} specialization for server-wide events where the message
  * audience is determined by player permission level rather than team membership.
  * <p>
- * A single {@code ServerMessageType} field replaces both and is fully serializable by Gson:
+ * The locations and receiver are stored together and are serializable by Gson:
  * <pre>
  * {
  *   "mainPlayerLocation": "CHAT",
@@ -218,7 +218,7 @@ public class ServerMessageType extends MessageType {
      *
      * @param playerMessageType the {@link PlayerMessageType} to convert
      * @return a new {@link ServerMessageType} instance with the converted properties
-     * @throws IllegalArgumentException if the receiver type is invalid (defaults to NONE and logs an error)
+     * Unmappable receiver types are logged and converted to NONE.
      */
     public static ServerMessageType fromPlayerMessageType(PlayerMessageType playerMessageType) {
         MessageType.Location mainLocation = playerMessageType.mainPlayerLocation;

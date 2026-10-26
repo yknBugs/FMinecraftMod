@@ -17,7 +17,7 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
  * 3. DamageType - The type of damage.
  * 4. Entity - The entity that caused the damage. (e.g. arrow)
  * 5. Entity - Source of damage (e.g. shooter of arrow)
- * 6. Vec3d - Position of the damage source.
+ * 6. Vec3 - Position of the damage source.
  * Branches: 1 (Next node)
  */
 public class EntityDamageEventNode extends EventNode {

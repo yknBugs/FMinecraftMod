@@ -30,7 +30,7 @@ import net.minecraft.network.chat.MutableComponent;
  * with one status per node. They are updated during execution and can be copied
  * to create snapshots of execution state.
  * <p>
- * This class is separate from FlowNode to allow multiple simultaneous executions
+ * This class is separate from FlowNode to allow separate executions
  * of the same flow with different states.
  * 
  * @see FlowNode
@@ -281,7 +281,7 @@ public class NodeStatus implements Cloneable {
      * 
      * @param index The position of this node in the execution sequence (for display)
      * @param flow The logic flow (used to resolve next node references)
-     * @return A Text object suitable for display in Minecraft
+     * @return A Component object suitable for display in Minecraft
      */
     public Component render(long index, LogicFlow flow) {
         // Render title

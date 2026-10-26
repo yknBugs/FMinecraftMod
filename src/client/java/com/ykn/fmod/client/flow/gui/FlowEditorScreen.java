@@ -27,7 +27,7 @@ import net.minecraft.network.chat.Component;
  * Top-level flow editor entry screen: lists every flow currently loaded on the (local, singleplayer)
  * server. Click a row to select it, then New / Edit / Delete act on the selection.
  *
- * <p>"Edit" opens {@link FlowGraphScreen} on a detached deep copy of the flow - see
+ * <p>"Edit" opens {@link FlowGraphScreen} on a detached structural copy of the flow - see
  * {@link FlowEditorBridge} for why nothing here is written back to the live flow until the user
  * explicitly commits from that screen.</p>
  */

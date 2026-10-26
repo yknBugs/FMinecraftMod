@@ -25,14 +25,14 @@ import net.minecraft.commands.CommandSourceStack;
 /**
  * Provides command auto-completion suggestions for say commands with special formatting.
  * This suggestion provider maintains a map of keys to suggestion lists, enabling
- * context-aware auto-completion for formatting codes (e.g., "&" for color codes,
+ * context-aware auto-completion for formatting codes (e.g., {@code &} for color codes,
  * "${" for variable placeholders).
  */
 public class SayCommandSuggestion implements SuggestionProvider<CommandSourceStack> {
 
     /**
      * Map storing keys and their associated suggestion lists.
-     * Keys represent special formatting prefixes (e.g., "&", "${").
+     * Keys represent special formatting prefixes (e.g., {@code &}, "${").
      */
     private Map<String, List<String>> suggestionsMap;
 
@@ -180,7 +180,7 @@ public class SayCommandSuggestion implements SuggestionProvider<CommandSourceSta
 
     /**
      * Creates a new SayCommandSuggestion instance with default suggestions.
-     * Includes suggestions for color codes ("&") and variable placeholders ("${").
+     * Includes suggestions for color codes ({@code &}) and variable placeholders ("${").
      *
      * @return a new SayCommandSuggestion with default formatting suggestions
      */

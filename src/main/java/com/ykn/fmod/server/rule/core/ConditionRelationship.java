@@ -14,7 +14,7 @@ package com.ykn.fmod.server.rule.core;
  * unary operators ({@link #NOT}, {@link #TRUE}, {@link #FALSE}).
  *
  * <p>Operator precedence (lowest → highest) when parsed from a formula string:
- * {@code ||} < {@code &&} < {@code |} < {@code ^} < {@code &} < {@code !}.
+ * {@code ||} &lt; {@code &&} &lt; {@code |} &lt; {@code ^} &lt; {@code &} &lt; {@code !}.
  */
 public enum ConditionRelationship {
 
@@ -53,7 +53,7 @@ public enum ConditionRelationship {
      *
      * <p>Used as an optimisation hint: a binary/unary expression whose relationship is
      * {@code FALSE} is folded to {@link ConstCondition#of(boolean) ConstCondition.of(false)}
-     * during {@link RuleCondition#optimize(CustomRule)}.
+     * during {@link RuleCondition#optimize(CustomRule, java.util.HashSet)}.
      */
     FALSE,
 
@@ -62,7 +62,7 @@ public enum ConditionRelationship {
      *
      * <p>Used as an optimisation hint: a binary/unary expression whose relationship is
      * {@code TRUE} is folded to {@link ConstCondition#of(boolean) ConstCondition.of(true)}
-     * during {@link RuleCondition#optimize(CustomRule)}.
+     * during {@link RuleCondition#optimize(CustomRule, java.util.HashSet)}.
      */
     TRUE
     

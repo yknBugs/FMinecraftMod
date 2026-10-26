@@ -29,18 +29,18 @@ import net.minecraft.world.phys.Vec3;
  * <b>Casting Rules:</b>
  * <ul>
  * <li><b>String:</b> Available for all kinds of objects. Implements a sophisticated toString()
- *     that handles Minecraft-specific types like Entity, ItemStack, Block, and Text.</li>
- * <li><b>Double, Boolean, List, Vec3d, Vec2f:</b> One single object can only be successfully cast to
- *     one of these types. Null values are returned if conversion is not possible.</li>
+ *     that handles Minecraft-specific types like Entity, ItemStack, Block, and Component.</li>
+ * <li><b>Double, Boolean, List, Vec3, Vec2:</b> Conversions are independent and may overlap.
+ *     Null is returned when a conversion fails; {@link #autoCast()} selects the first success.</li>
  * </ul>
  * <p>
- * <b>Recommended Casting Sequence:</b> Null → Vec3d → Vec2f → List → Double → Boolean → String
+ * <b>Recommended Casting Sequence:</b> Null → Vec3 → Vec2 → List → Double → Boolean → String
  * <p>
  * <b>Usage Example:</b>
  * <pre>
- *     Vec3d position = TypeAdaptor.parse(someObject).asVec3d();
+ *     Vec3 position = TypeAdaptor.parse(someObject).asVec3d();
  *     if (position != null) {
- *         // successfully converted to Vec3d
+ *         // successfully converted to Vec3
  *     }
  * </pre>
  */
@@ -80,7 +80,7 @@ public class TypeAdaptor {
      * <ul>
      * <li>null → empty string ""</li>
      * <li>String → returned as-is</li>
-     * <li>Text → getString() is called</li>
+     * <li>Component → getString() is called</li>
      * <li>Entity → entity display name is retrieved</li>
      * <li>ItemStack → item display name is retrieved</li>
      * <li>Block → block name is retrieved</li>
@@ -120,10 +120,10 @@ public class TypeAdaptor {
      * <ul>
      * <li>null → null</li>
      * <li>Boolean → returned as-is</li>
-     * <li>String values (case-insensitive):
+     * <li>Trimmed string representations (case-insensitive):
      *     <ul>
-     *     <li>True values: "yes", "true", "on", "enable", "y", "open"</li>
-     *     <li>False values: "no", "false", "off", "disable", "n", "close"</li>
+     *     <li>True values: "yes", "true", "on", "enable", "open"</li>
+     *     <li>False values: "no", "false", "off", "disable", "close"</li>
      *     <li>Any other string → null</li>
      *     </ul>
      * </li>
@@ -159,7 +159,7 @@ public class TypeAdaptor {
      * <li>null → null</li>
      * <li>Number → doubleValue() is called</li>
      * <li>ItemStack → item count is returned as a double</li>
-     * <li>String → parsed as a double value; null if parsing fails</li>
+     * <li>Other objects → trimmed string representation parsed as a double; null if parsing fails</li>
      * </ul>
      *
      * @return the double value, or null if the object cannot be converted to a double
@@ -186,21 +186,21 @@ public class TypeAdaptor {
     }
 
     /**
-     * Converts the wrapped object to a Vec3d (3D vector) value.
+     * Converts the wrapped object to a Vec3 (3D vector) value.
      * <p>
      * Returns null if conversion is not possible. The following conversions are supported:
      * <ul>
      * <li>null → null</li>
-     * <li>Vec3d → returned as-is</li>
-     * <li>Vec3i → converted to Vec3d with integer coordinates</li>
-     * <li>Entity → the entity's position (getPos()) is returned</li>
-     * <li>String format "(x, y, z)" → parsed into Vec3d coordinates; null if parsing fails</li>
+     * <li>Vec3 → returned as-is</li>
+     * <li>Vec3i → converted to Vec3 with integer coordinates</li>
+     * <li>Entity → the entity's position ({@code position()}) is returned</li>
+     * <li>String format "(x, y, z)" → parsed into Vec3 coordinates; null if parsing fails</li>
      * </ul>
      * <p>
-     * String parsing is case-insensitive and allows flexible whitespace. For example,
+     * Parsing the string representation allows flexible whitespace. For example,
      * "(1, 2, 3)", "( 1 , 2 , 3 )", and "(1.5, -2.3, 0)" are all valid.
      *
-     * @return the Vec3d vector, or null if the object cannot be converted to a Vec3d
+     * @return the Vec3 vector, or null if the object cannot be converted to a Vec3
      */
     @Nullable
     public Vec3 asVec3d() {
@@ -237,19 +237,19 @@ public class TypeAdaptor {
     }
 
     /**
-     * Converts the wrapped object to a Vec2f (2D float vector) value.
+     * Converts the wrapped object to a Vec2 (2D float vector) value.
      * <p>
      * Returns null if conversion is not possible. The following conversions are supported:
      * <ul>
      * <li>null → null</li>
-     * <li>Vec2f → returned as-is</li>
-     * <li>String format "(x, y)" → parsed into Vec2f coordinates; null if parsing fails</li>
+     * <li>Vec2 → returned as-is</li>
+     * <li>String format "(x, y)" → parsed into Vec2 coordinates; null if parsing fails</li>
      * </ul>
      * <p>
-     * String parsing is case-insensitive and allows flexible whitespace. For example,
+     * Parsing the string representation allows flexible whitespace. For example,
      * "(1.5, 2.5)" and "( 1.5 , 2.5 )" are both valid.
      *
-     * @return the Vec2f vector, or null if the object cannot be converted to a Vec2f
+     * @return the Vec2 vector, or null if the object cannot be converted to a Vec2
      */
     @Nullable
     public Vec2 asVec2f() {
@@ -285,11 +285,12 @@ public class TypeAdaptor {
      * <li>List → a new ArrayList copy is returned</li>
      * <li>Iterable → all items are collected into a new ArrayList</li>
      * <li>String format "[a, b, c]" → parsed into a list of elements, where each element
-     *     is recursively auto-cast (see {@link #autoCast()}); null if parsing fails</li>
+     *     is auto-cast (see {@link #autoCast()}); nested lists and embedded commas are not supported</li>
      * </ul>
      * <p>
      * When parsing from string format, each element is white-space trimmed and then auto-cast
-     * to its most appropriate type. This allows for heterogeneous lists containing mixed types.
+     * to its most appropriate type. Splitting is by comma without nesting or quoting support;
+     * an empty bracket pair currently produces one empty-string element.
      *
      * @return a list of objects, or null if the object cannot be converted to a list
      */
@@ -335,8 +336,8 @@ public class TypeAdaptor {
      * conversions in a specific priority order. The casting priority is:
      * <ol>
      * <li>null (if string is "null")</li>
-     * <li>Vec3d (3D vector)</li>
-     * <li>Vec2f (2D float vector)</li>
+     * <li>Vec3 (3D vector)</li>
+     * <li>Vec2 (2D float vector)</li>
      * <li>List</li>
      * <li>Double (numeric)</li>
      * <li>Boolean</li>
@@ -349,12 +350,12 @@ public class TypeAdaptor {
      * <b>Example:</b>
      * <pre>
      *     Object result1 = TypeAdaptor.parse("123").autoCast();      // Returns 123.0 (Double)
-     *     Object result2 = TypeAdaptor.parse("(1, 2, 3)").autoCast(); // Returns Vec3d
+     *     Object result2 = TypeAdaptor.parse("(1, 2, 3)").autoCast(); // Returns Vec3
      *     Object result3 = TypeAdaptor.parse("hello").autoCast();     // Returns "hello" (String)
      * </pre>
      *
-     * @return the auto-cast object in its most appropriate type, or null if the object is null
-     *         and the string representation is "null"
+     * @return the first successful conversion, null for the exact string "null", or the
+     *         string representation as a fallback (a null input becomes an empty string)
      */
     @Nullable
     public Object autoCast() {
@@ -393,11 +394,11 @@ public class TypeAdaptor {
      *   <li>If the list is null, returns null</li>
      *   <li>If the list contains exactly one element, returns that element</li>
      *   <li>If the list is empty, returns null</li>
-     *   <li>Otherwise, returns the list itself</li>
+     *   <li>Otherwise, returns the converted list</li>
      * </ul>
-     * </p>
+     *
      * 
-     * @return the collapsed result - a single object, the original list, or null
+     * @return the collapsed result - a single object, a converted list, or null
      * @see #asList()
      */
     @Nullable

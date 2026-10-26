@@ -477,14 +477,14 @@ public class ServerConfigRegistry {
     }
 
     /**
-     * Returns a {@link Text} representation of {@code value} suitable for display in
+     * Returns a {@link Component} representation of {@code value} suitable for display in
      * command feedback and the options screen UI.
      *
      * <p>If {@link ConfigEntry#displayValueGetter()} is non-empty, that method is invoked
      * reflectively on the owning {@link ConfigReader} instance with {@code value} as its
-     * argument and the result is returned. If the method returns a {@link Text} it is used
-     * directly; otherwise it is wrapped with {@link Text#literal(String)}. If the attribute
-     * is empty, {@code Text.literal(String.valueOf(value))} is returned as a default.</p>
+     * argument and the result is returned. If the method returns a {@link Component} it is used
+     * directly; otherwise it is wrapped with {@link Component#literal(String)}. If the attribute
+     * is empty, {@code Component.literal(String.valueOf(value))} is returned as a default.</p>
      *
      * @param name  the code-entry name of the config entry
      * @param value the config value to convert to a display {@link Component}

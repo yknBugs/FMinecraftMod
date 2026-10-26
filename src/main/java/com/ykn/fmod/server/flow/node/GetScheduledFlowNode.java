@@ -31,11 +31,13 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
  * 6. Number - Filter, if not null, only the flows with the same or more ticks left will be returned
  * 7. Number - Filter, if not null, only the flows with the same or less ticks left will be returned
  * Outputs:
- * 1. List - A list of ScheduledFlow that satisfy the filter conditions, or the ScheduledFlow object if only one flow satisfies.
+ * 1. Object - Null for no matches, a ScheduledFlow for one match, or a List for multiple matches.
  * 2. Integer - The number of flows that satisfy the filter conditions
- * 3. List - A list of context variable values of the flows that satisfy the filter conditions, or else null.
- * 4. List - The number of nodes of the flows that satisfy the filter conditions.
- * 5. List - The ticks left of the flows that satisfy the filter conditions.
+ * 3. Object - Values of the named context variable, or null entries when no variable filter is set.
+ * 4. Object - Node counts for the matching flows.
+ * 5. Object - Remaining delays in ticks for the matching flows.
+ * <p>Outputs 1, 3, 4, and 5 use {@link TypeAdaptor#collapseList()}: an empty list becomes
+ * null, a singleton becomes its sole element, and larger lists remain lists.
  * Branches: 1 (Next node)
  */
 public class GetScheduledFlowNode extends FlowNode {

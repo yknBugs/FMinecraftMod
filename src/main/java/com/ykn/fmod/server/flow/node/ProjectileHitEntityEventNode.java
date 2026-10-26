@@ -15,7 +15,7 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
  * 1. Entity - The projectile that hit the entity.
  * 2. Entity - The shooter of the projectile.
  * 3. Entity - The entity that was hit.
- * 4. Vec3d - The position of the hit.
+ * 4. Vec3 - The position of the hit.
  * 5. Double - The distance between the shooter and the hit entity.
  * Branches: 1 (Next node)
  */

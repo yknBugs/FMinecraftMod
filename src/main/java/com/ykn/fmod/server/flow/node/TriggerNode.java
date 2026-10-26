@@ -12,8 +12,8 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
  * This node can be triggered by a dedicated command by players without OP permission.
  * Inputs: None
  * Outputs: 
- * 1. Player - The player who triggered this node.
- * 2. String - The parameter provided by the player. Empty String if not provided.
+ * 1. ServerPlayer - The player who triggered this node, or null for a console invocation.
+ * 2. Object - The command argument converted through TypeAdaptor.autoCast(); an empty String if omitted.
  * Branches: 1 (Next node)
  */
 public class TriggerNode extends EventNode {

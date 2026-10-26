@@ -25,6 +25,7 @@ import net.minecraft.world.phys.Vec3;
  *
  * <p>Variable contract:
  * <table border="1">
+ * <caption>Event context variables</caption>
  *   <tr><th>Name</th><th>Type</th><th>Nullable</th><th>Description</th></tr>
  *   <tr><td>{@code player}</td><td>{@code UUID}</td><td>No</td><td>The player that joined.</td></tr>
  *   <tr><td>{@code x}/{@code y}/{@code z}</td><td>{@code Double}</td><td>No</td><td>The player's coordinates.</td></tr>

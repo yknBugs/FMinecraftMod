@@ -22,9 +22,10 @@ import net.minecraft.server.level.ServerLevel;
 /**
  * Get all the worlds in the server
  * Inputs:
- * 1. Identifier - The dimension identifier to filter worlds by (optional).
+ * 1. ResourceLocation - The dimension identifier to filter worlds by (optional).
  * Outputs:
- * 1. List - The list of worlds matching the specified dimension, or all worlds if no dimension is specified.
+ * 1. Object - Matching ServerLevels: null for none, a ServerLevel for one, or a List for multiple matches.
+ *    A null dimension filter selects all loaded levels.
  * Branches: 1 (Next node)
  */
 public class GetWorldListNode extends FlowNode {
