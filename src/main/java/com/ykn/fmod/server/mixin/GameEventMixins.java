@@ -20,12 +20,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.ykn.fmod.server.base.event.GameEventHandler;
 import com.ykn.fmod.server.base.event.ProjectileHitEntity;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.advancements.critereon.EnchantedItemTrigger;
 import net.minecraft.advancements.critereon.ItemUsedOnLocationTrigger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -252,7 +255,8 @@ public final class GameEventMixins {
             if (this.player instanceof ServerPlayer) {
                 fmod$merchant = merchant;
                 fmod$tradeItem = offer.getResult().copy();
-                fmod$tradeOffer = offer.createTag().copy();
+                RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, this.player.registryAccess());
+                fmod$tradeOffer = (CompoundTag) MerchantOffer.CODEC.encodeStart(ops, offer).getOrThrow(IllegalArgumentException::new);
             }
         }
 
@@ -341,7 +345,7 @@ public final class GameEventMixins {
         private ServerPlayer player;
 
         @Inject(method = "award", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancements/AdvancementRewards;grant(Lnet/minecraft/server/level/ServerPlayer;)V", shift = At.Shift.AFTER))
-        private void fmod$advancementAwarded(Advancement advancement, String criterion, CallbackInfoReturnable<Boolean> info) {
+        private void fmod$advancementAwarded(AdvancementHolder advancement, String criterion, CallbackInfoReturnable<Boolean> info) {
             GameEventHandler.playerAdvancementEventDispatcher(player, advancement, criterion);
         }
     }

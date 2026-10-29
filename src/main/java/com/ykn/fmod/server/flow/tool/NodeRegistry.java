@@ -166,6 +166,8 @@ public class NodeRegistry {
         NodeRegistry.register("GetPlayerInventoryNode", GetPlayerInventoryNode::new);
         NodeRegistry.register("UpdateEntityNode", UpdateEntityNode::new);
         NodeRegistry.register("NbtApplyNode", NbtApplyNode::new);
+        NodeRegistry.register("ItemComponentsApplyNode", ItemComponentsApplyNode::new);
+        NodeRegistry.register("ItemComponentsPatchNode", ItemComponentsPatchNode::new);
         NodeRegistry.register("NbtPatchNode", NbtPatchNode::new);
         NodeRegistry.register("RandomNode", RandomNode::new);
         NodeRegistry.register("AddVariableToScheduledFlowNode", AddVariableToScheduledFlowNode::new);

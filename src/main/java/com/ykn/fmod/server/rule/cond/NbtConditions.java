@@ -5,6 +5,7 @@
 
 package com.ykn.fmod.server.rule.cond;
 
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.ComponentCall;
 import com.ykn.fmod.server.rule.core.Components;
@@ -91,20 +92,21 @@ public final class NbtConditions {
                 .output("variable", ParamKind.VARIABLE_NAME),
                 (call) -> read(call, RuleGameAccess.entityNbt(call.context(), call.uuid(0))));
 
-        Components.writer("GetMainHandItemNbt", Params.of("fmod.rule.condition.getmainhanditemnbt")
+        Components.writer("GetMainHandItemComponents", Params.of("fmod.rule.condition.getmainhanditemcomponents")
                 .param("entity", ParamKind.ENTITY)
                 .output("variable", ParamKind.VARIABLE_NAME),
-                (call) -> RuleGameAccess.mainHandNbt(call.context(), call.uuid(0)));
+                (call) -> RuleGameAccess.mainHandComponents(call.context(), call.uuid(0)));
 
-        Components.writer("GetMainHandItemNbtValue",
-                Params.of("fmod.rule.condition.getmainhanditemnbtvalue")
+        Components.writer("GetMainHandItemComponentsValue",
+                Params.of("fmod.rule.condition.getmainhanditemcomponentsvalue")
                         .param("entity", ParamKind.ENTITY)
                         .param("path", ParamKind.NBT_PATH)
                         .output("variable", ParamKind.VARIABLE_NAME),
                 (call) -> read(call,
-                        RuleGameAccess.mainHandNbt(call.context(), call.uuid(0))));
+                        ItemComponents.encode(RuleGameAccess.mainHandComponents(call.context(), call.uuid(0)),
+                                call.context().getServer().registryAccess())));
 
-        Components.writer("GetSlotItemNbt", Params.of("fmod.rule.condition.getslotitemnbt")
+        Components.writer("GetSlotItemComponents", Params.of("fmod.rule.condition.getslotitemcomponents")
                 .param("player", ParamKind.PLAYER)
                 .param("slot", ParamKind.INT)
                 .output("variable", ParamKind.VARIABLE_NAME),
@@ -118,7 +120,7 @@ public final class NbtConditions {
                     if (stack == null || stack.isEmpty()) {
                         return null;
                     }
-                    return stack.getTag() == null ? new CompoundTag() : stack.getTag().copy();
+                    return ItemComponents.copy(stack.getComponentsPatch(), player.registryAccess());
                 });
 
         Components.writer("GetBlockEntityNbt", Params.of("fmod.rule.condition.getblockentitynbt")
@@ -132,7 +134,7 @@ public final class NbtConditions {
                         return null;
                     }
                     BlockEntity blockEntity = world.getBlockEntity(BlockPos.containing(position));
-                    return blockEntity == null ? null : blockEntity.saveWithFullMetadata().copy();
+                    return blockEntity == null ? null : blockEntity.saveWithFullMetadata(world.registryAccess()).copy();
                 });
     }
 

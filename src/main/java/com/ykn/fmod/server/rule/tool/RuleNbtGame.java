@@ -5,6 +5,8 @@
 
 package com.ykn.fmod.server.rule.tool;
 
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -12,6 +14,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.ComponentCall;
 
@@ -29,25 +32,30 @@ public final class RuleNbtGame {
     }
 
     /**
-     * Creates one legal-sized, non-empty item stack with a copied custom tag.
+     * Creates one legal-sized, non-empty item stack with copied item components.
      *
-     * @param id    the item id
-     * @param count the stack size, at least one and at most the item's maximum
-     * @param tag   the custom tag, copied
+     * @param id         the item id
+     * @param count      the stack size, at least one and at most the item's maximum
+     * @param components the component overrides and removals, copied
+     * @param registries the executing world's registries
      * @return the stack, or {@code null} for an unknown item or an illegal count
-     * @throws IllegalArgumentException when the tag is too deep
+     * @throws IllegalArgumentException when the item components are invalid
      */
-    public static ItemStack item(ResourceLocation id, int count, CompoundTag tag) {
-        RuleNbt.validateDepth(tag);
+    public static ItemStack item(ResourceLocation id, int count, DataComponentPatch components,
+            HolderLookup.Provider registries) {
         if (!BuiltInRegistries.ITEM.containsKey(id) || count < 1) {
             return null;
         }
         ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(id));
-        if (stack.isEmpty() || count > stack.getMaxStackSize()) {
+        if (stack.isEmpty()) {
+            return null;
+        }
+        DataComponentPatch normalized = components == null ? DataComponentPatch.EMPTY : components;
+        ItemComponents.apply(stack, normalized, registries);
+        if (count > stack.getMaxStackSize()) {
             return null;
         }
         stack.setCount(count);
-        stack.setTag(tag.copy());
         return stack;
     }
 
@@ -70,18 +78,18 @@ public final class RuleNbtGame {
     }
 
     /**
-     * Component-side variant of {@link #item(ResourceLocation, int, CompoundTag)} that reports a
-     * validation failure as a warning instead of an exception.
+     * Component-side variant of {@link #item(ResourceLocation, int, DataComponentPatch, HolderLookup.Provider)}
+     * that reports a validation failure as a warning instead of an exception.
      *
-     * @param call  the current evaluation
-     * @param id    the item id
-     * @param count the stack size
-     * @param tag   the custom tag, copied
+     * @param call       the current evaluation
+     * @param id         the item id
+     * @param count      the stack size
+     * @param components the component overrides and removals, copied
      * @return the stack, or {@code null} when the input was rejected
      */
-    public static ItemStack item(ComponentCall call, ResourceLocation id, int count, CompoundTag tag) {
+    public static ItemStack item(ComponentCall call, ResourceLocation id, int count, DataComponentPatch components) {
         try {
-            return item(id, count, tag);
+            return item(id, count, components, call.context().getServer().registryAccess());
         } catch (IllegalArgumentException exception) {
             call.fail(Util.parseTranslatableText("fmod.rule.warning.operationfailed"));
             return null;

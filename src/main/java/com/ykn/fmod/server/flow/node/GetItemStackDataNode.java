@@ -5,9 +5,10 @@
 package com.ykn.fmod.server.flow.node;
 
 import java.util.List;
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.ykn.fmod.server.base.util.Util;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.resources.ResourceLocation;
@@ -18,14 +19,14 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 /**
- * A flow node that reads the identifier, count, display name and a full-stack NBT copy of an item stack.
+ * A flow node that reads the identifier, count, display name and item components of an item stack.
  * Inputs:
  * 1. ItemStack - Required ItemStack. Empty stacks are valid; null is rejected.
  * Outputs:
  * 1. ResourceLocation - Registry identifier, for example minecraft:diamond_sword.
  * 2. Integer - Number of items as an Integer.
  * 3. Component - Copied hover-name Component, including a custom name if present.
- * 4. CompoundTag - Detached full-stack NBT: id, Count and optional tag. Compatible with NbtApplyNode.
+ * 4. DataComponentPatch - Detached component overrides and removals. Compatible with ItemComponentsApplyNode.
  * Branches: 1 (Next node)
  */
 public class GetItemStackDataNode extends FlowNode {
@@ -50,10 +51,10 @@ public class GetItemStackDataNode extends FlowNode {
         ResourceLocation id = BuiltInRegistries.ITEM.getKey(stack.getItem());
         int count = stack.getCount();
         MutableComponent displayName = stack.getHoverName().copy();
-        CompoundTag nbt = stack.save(new CompoundTag()).copy();
+        DataComponentPatch components = ItemComponents.copy(stack.getComponentsPatch(), context.getServer().registryAccess());
         status.setOutput(0,id);
         status.setOutput(1,count);
         status.setOutput(2,displayName);
-        status.setOutput(3,nbt);
+        status.setOutput(3,components);
     }
 }

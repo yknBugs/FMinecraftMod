@@ -170,7 +170,7 @@ public final class StateActions {
                 .param("player", ParamKind.PLAYER)
                 .param("slot", ParamKind.INT)
                 .param("item", ParamKind.RESOURCE_ID)
-                .param("nbt", ParamKind.NBT_COMPOUND),
+                .param("components", ParamKind.ITEM_COMPONENTS),
                 (call) -> {
                     Entity target = RuleGameAccess.entity(call.context(), call.uuid(0));
                     if (!(target instanceof ServerPlayer player)) {
@@ -180,7 +180,7 @@ public final class StateActions {
                     if (RuleState.slot(player.getInventory(), index) == null) {
                         return false;
                     }
-                    ItemStack stack = RuleNbtGame.item(call, call.resourceId(2), 1, call.compound(3));
+                    ItemStack stack = RuleNbtGame.item(call, call.resourceId(2), 1, call.components(3));
                     if (stack == null) {
                         return false;
                     }

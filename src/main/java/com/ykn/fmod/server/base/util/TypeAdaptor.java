@@ -11,7 +11,7 @@ import java.util.List;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.Holder;
 import net.minecraft.core.Vec3i;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -181,8 +181,8 @@ public class TypeAdaptor {
         if (o instanceof LevelChunk chunk) {
             return chunk.getLevel().dimension().location();
         }
-        if (o instanceof Advancement advancement) {
-            return advancement.getId();
+        if (o instanceof AdvancementHolder advancement) {
+            return advancement.id();
         }
         if (o instanceof FluidState fluidState) {
             return BuiltInRegistries.FLUID.getKey(fluidState.getType());
@@ -191,7 +191,7 @@ public class TypeAdaptor {
             return BuiltInRegistries.FLUID.getKey(fluid);
         }
         if (o instanceof MobEffectInstance effectInstance) {
-            return BuiltInRegistries.MOB_EFFECT.getKey(effectInstance.getEffect());
+            return BuiltInRegistries.MOB_EFFECT.getKey(effectInstance.getEffect().value());
         }
         if (o instanceof MobEffect effect) {
             return BuiltInRegistries.MOB_EFFECT.getKey(effect);

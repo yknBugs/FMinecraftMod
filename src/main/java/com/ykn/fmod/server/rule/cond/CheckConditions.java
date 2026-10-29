@@ -9,6 +9,7 @@ import java.util.Locale;
 import java.util.function.Predicate;
 import java.util.function.ToDoubleBiFunction;
 
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.ykn.fmod.server.base.util.GameMath;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
@@ -290,15 +291,16 @@ public final class CheckConditions {
                     }
                 });
 
-        Components.predicate("CheckMainHandItemNbtValue",
-                Params.of("fmod.rule.condition.checkmainhanditemnbtvalue")
+        Components.predicate("CheckMainHandItemComponentsValue",
+                Params.of("fmod.rule.condition.checkmainhanditemcomponentsvalue")
                         .param("entity", ParamKind.ENTITY)
                         .param("path", ParamKind.NBT_PATH)
                         .param("expected", ParamKind.NBT),
                 (call) -> {
                     try {
-                        return RuleNbt.check(RuleGameAccess.mainHandNbt(call.context(), call.uuid(0)),
-                                call.text(1), call.tag(2));
+                        return RuleNbt.check(ItemComponents.encode(
+                                RuleGameAccess.mainHandComponents(call.context(), call.uuid(0)),
+                                call.context().getServer().registryAccess()), call.text(1), call.tag(2));
                     } catch (IllegalArgumentException exception) {
                         call.warn(Util.parseTranslatableText("fmod.rule.warning.nbtcheck", call.text(1)));
                         return false;

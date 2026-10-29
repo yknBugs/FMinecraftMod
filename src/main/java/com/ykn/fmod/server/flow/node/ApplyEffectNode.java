@@ -73,7 +73,7 @@ public class ApplyEffectNode extends FlowNode {
         if (hide == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.boolean", hideParticles), null);
         }
-        return new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.get(id), ticks, strength, false, !hide, !hide);
+        return new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.getHolder(id).orElseThrow(), ticks, strength, false, !hide, !hide);
     }
 
     private static int integer(Object input, int min, int max, String name) throws LogicException {

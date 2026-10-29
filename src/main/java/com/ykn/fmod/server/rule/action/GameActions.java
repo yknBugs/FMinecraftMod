@@ -22,7 +22,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
@@ -53,14 +52,14 @@ public final class GameActions {
                 .param("entity", ParamKind.PLAYER)
                 .param("item", ParamKind.RESOURCE_ID)
                 .param("count", ParamKind.INT)
-                .param("nbt", ParamKind.NBT_COMPOUND),
+                .param("components", ParamKind.ITEM_COMPONENTS),
                 (call) -> {
                     Entity target = RuleGameAccess.entity(call.context(), call.uuid(0));
                     if (!(target instanceof ServerPlayer player)) {
                         return false;
                     }
                     ItemStack stack = RuleNbtGame.item(call, call.resourceId(1), call.integer(2),
-                            call.compound(3));
+                            call.components(3));
                     if (stack == null) {
                         return false;
                     }
@@ -82,14 +81,14 @@ public final class GameActions {
                         .param("entity", ParamKind.ENTITY)
                         .param("item", ParamKind.RESOURCE_ID)
                         .param("count", ParamKind.INT)
-                        .param("nbt", ParamKind.NBT_COMPOUND),
+                        .param("components", ParamKind.ITEM_COMPONENTS),
                 (call) -> {
                     Entity target = RuleGameAccess.entity(call.context(), call.uuid(0));
                     if (!(target instanceof LivingEntity living)) {
                         return false;
                     }
                     ItemStack stack = RuleNbtGame.item(call, call.resourceId(1), call.integer(2),
-                            call.compound(3));
+                            call.components(3));
                     if (stack == null) {
                         return false;
                     }
@@ -201,8 +200,7 @@ public final class GameActions {
                             || duration < 1 || amplifier < 0 || amplifier > 255) {
                         return false;
                     }
-                    MobEffect effect = BuiltInRegistries.MOB_EFFECT.get(id);
-                    return living.addEffect(new MobEffectInstance(effect, duration, amplifier));
+                    return living.addEffect(new MobEffectInstance(BuiltInRegistries.MOB_EFFECT.getHolder(id).orElseThrow(), duration, amplifier));
                 });
 
         Components.action("SetWorldTime", Params.of("fmod.rule.action.setworldtime")

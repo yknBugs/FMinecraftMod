@@ -33,13 +33,16 @@ import net.minecraft.nbt.LongTag;
 import net.minecraft.nbt.ShortTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.nbt.TagParser;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.commands.data.BlockDataAccessor;
 import net.minecraft.server.commands.data.EntityDataAccessor;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+
+import com.ykn.fmod.server.base.util.ItemComponents;
 
 /**
  * Automatic conversion between flow port values and the shapes nodes need.
@@ -277,19 +280,21 @@ public final class FlowConvert {
      *
      * <p>A {@code null} source starts an empty compound, a {@code null} path addresses the root, and
      * a {@code null} value deletes. Missing deletions are successful no-ops. Vanilla paths can match
-     * several values; incompatible writes fail instead of reporting success. Item stacks serialize
-     * to their full stack NBT, including id, Count and tag.
+     * several values; incompatible writes fail instead of reporting success. Item components
+     * serialize to their encoded compound form.
      *
-     * @param source   the value to edit: NBT, an entity, a block entity, an item stack, or a supported scalar
-     * @param pathText the NBT path to edit, or {@code null} to replace the root
-     * @param value    the value to write, or {@code null} to delete
+     * @param source     the value to edit: NBT, an entity, a block entity, item components, or a supported scalar
+     * @param pathText   the NBT path to edit, or {@code null} to replace the root
+     * @param value      the value to write, or {@code null} to delete
+     * @param registries the executing world's registries, required for item components
      * @return the edit result
      * @throws LogicException for an invalid path, an unsupported value, excessive depth, or a path
      *                        that cannot accept the value
      */
-    public static NbtEdit editNbt(Object source, String pathText, Object value) throws LogicException {
-        Tag original = source == null ? null : adapt(source, 0);
-        Tag replacement = value == null ? null : adapt(value, 0);
+    public static NbtEdit editNbt(Object source, String pathText, Object value, HolderLookup.Provider registries)
+            throws LogicException {
+        Tag original = source == null ? null : adapt(source, 0, registries);
+        Tag replacement = value == null ? null : adapt(value, 0, registries);
         if (original != null) {
             validateDepth(original);
         }
@@ -350,7 +355,7 @@ public final class FlowConvert {
      * @throws LogicException if the text is not valid SNBT
      */
     public static Tag parseNbt(String text) throws LogicException {
-        return adapt(text, 0);
+        return adapt(text, 0, null);
     }
 
     /**
@@ -361,7 +366,20 @@ public final class FlowConvert {
      * @throws LogicException if the value cannot be represented as NBT
      */
     public static Tag snapshotNbt(Object value) throws LogicException {
-        Tag tag = adapt(value, 0);
+        return snapshotNbt(value, null);
+    }
+
+    /**
+     * Serializes a supported value to a detached NBT tree, using the executing world's registries
+     * for item components.
+     *
+     * @param value      the value to serialize
+     * @param registries the executing world's registries, required for item components
+     * @return the detached, depth-checked tag
+     * @throws LogicException if the value cannot be represented as NBT
+     */
+    public static Tag snapshotNbt(Object value, HolderLookup.Provider registries) throws LogicException {
+        Tag tag = adapt(value, 0, registries);
         validateDepth(tag);
         return tag;
     }
@@ -372,7 +390,7 @@ public final class FlowConvert {
         }
     }
 
-    private static Tag adapt(Object value, int depth) throws LogicException {
+    private static Tag adapt(Object value, int depth, HolderLookup.Provider registries) throws LogicException {
         if (depth >= 512) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.nbtdeep"), null);
         }
@@ -386,8 +404,15 @@ public final class FlowConvert {
         if (value instanceof BlockEntity block) {
             return new BlockDataAccessor(block, block.getBlockPos()).getData().copy();
         }
-        if (value instanceof ItemStack stack) {
-            return stack.save(new CompoundTag()).copy();
+        if (value instanceof DataComponentPatch components) {
+            if (registries == null) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.itemcomponents"), null);
+            }
+            try {
+                return ItemComponents.encode(components, registries);
+            } catch (IllegalArgumentException exception) {
+                throw new LogicException(exception, Util.parseTranslatableText("fmod.node.error.itemcomponents"), null);
+            }
         }
         if (value instanceof Boolean b) {
             return ByteTag.valueOf(b);
@@ -440,14 +465,14 @@ public final class FlowConvert {
                 if (!(entry.getKey() instanceof String key)) {
                     throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.nbtkeys"), null);
                 }
-                result.put(key, adapt(entry.getValue(), depth + 1));
+                result.put(key, adapt(entry.getValue(), depth + 1, registries));
             }
             return result;
         }
         if (value instanceof List<?> list) {
             ListTag result = new ListTag();
             for (Object entry : list) {
-                if (!result.addTag(result.size(), adapt(entry, depth + 1))) {
+                if (!result.addTag(result.size(), adapt(entry, depth + 1, registries))) {
                     throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.nbtmixed"), null);
                 }
             }

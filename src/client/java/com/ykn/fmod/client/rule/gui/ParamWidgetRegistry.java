@@ -298,6 +298,7 @@ public final class ParamWidgetRegistry {
         // Kinds that need an editor their value type can't express.
         registerByKind(ParamKind.ROTATION, vec2);
         registerByKind(ParamKind.NBT, snbt);
+        registerByKind(ParamKind.ITEM_COMPONENTS, snbt);
         registerByKind(ParamKind.NBT_COMPOUND, snbt);
         registerByKind(ParamKind.NBT_PATH, snbt);
         registerByKind(ParamKind.RESOURCE_ID, resourceId);

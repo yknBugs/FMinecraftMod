@@ -11,7 +11,7 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowEventHooks;
 import com.ykn.fmod.server.rule.tool.RuleEventHooks;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
@@ -184,7 +184,7 @@ public final class GameEventHandler {
         dispatch(RuleEventHooks.playerVehicleLeave(player, vehicle), FlowEventHooks.playerVehicleLeave(player, vehicle));
     }
 
-    public static void playerAdvancementEventDispatcher(ServerPlayer player, Advancement advancement, String criterion) {
+    public static void playerAdvancementEventDispatcher(ServerPlayer player, AdvancementHolder advancement, String criterion) {
         dispatch(RuleEventHooks.playerAdvancement(player, advancement, criterion), FlowEventHooks.playerAdvancement(player, advancement, criterion));
     }
 

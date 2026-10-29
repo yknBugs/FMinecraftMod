@@ -414,6 +414,7 @@ public class RuleRegistry {
         CheckConditions.register();
         StringConditions.register();
         NbtConditions.register();
+        ItemComponentsConditions.register();
         GetterConditions.register();
 
         MessageActions.register();
