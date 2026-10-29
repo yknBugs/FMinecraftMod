@@ -298,10 +298,10 @@ cd FMinecraftMod
 If you encounter an error, add the following line to `gradle.properties`:
 
 ```text
-org.gradle.java.home=<path_to_your_JDK>
+org.gradle.java.home=<path_to_your_JDK21>
 ```
 
-Use JDK 17 for Minecraft 1.20.1 builds and JDK 21 for Minecraft 1.21.1 builds.
+The build requires JDK 21. The 1.20.1 JARs still target Java 17, and the 1.21.1 JARs target Java 21.
 
 #### Step 3: Install
 

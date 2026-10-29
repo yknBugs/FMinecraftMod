@@ -302,10 +302,10 @@ cd FMinecraftMod
 如果遇到错误，请在 `gradle.properties` 中添加以下内容：
 
 ```text
-org.gradle.java.home=<你的_JDK_路径>
+org.gradle.java.home=<你的_JDK21_路径>
 ```
 
-Minecraft 1.20.1 使用 JDK 17 构建，Minecraft 1.21.1 使用 JDK 21 构建。
+构建需要 JDK 21；1.20.1 的 jar 仍以 Java 17 为目标，1.21.1 的 jar 以 Java 21 为目标。
 
 #### 步骤 3：安装
 
