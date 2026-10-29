@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.client.base.gui.TextPromptScreen;
@@ -40,7 +42,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * actions-if-violated) each with add/edit/rename/remove, a validated main-condition formula box,
  * client-side undo/redo, and Save/Save &amp; Persist/Cancel.
  *
- * <p>Holds one {@code final RuleManager} for the whole session (the deep copy handed over by
+ * <p>Holds one {@code final RuleManager} for the whole session (the structural copy handed over by
  * {@link RuleEditorBridge#beginEdit}) and mutates it directly and synchronously on the client
  * thread - the copy is registered nowhere, so nothing here is visible to the live rule until
  * {@link #save} explicitly commits. Undo/redo is a client-side {@link CustomRule#copy()} snapshot
@@ -114,7 +116,11 @@ public class RuleGraphScreen extends Screen {
         int gap = 4;
         int topY = 8;
 
-        int cancelW = 60, updateW = 60, saveW = 60, redoW = 60, undoW = 60;
+        int cancelW = 60;
+        int updateW = 60;
+        int saveW = 60;
+        int redoW = 60;
+        int undoW = 60;
         int cancelX = this.width - 8 - cancelW;
         int saveX = cancelX - gap - saveW;
         int updateX = saveX - gap - updateW;
@@ -632,11 +638,11 @@ public class RuleGraphScreen extends Screen {
         record NameLabel(String name, Component label) {
         }
 
-        private final java.util.function.Supplier<String> selectedSupplier;
-        private final java.util.function.Consumer<String> onSelectToggle;
+        private final Supplier<String> selectedSupplier;
+        private final Consumer<String> onSelectToggle;
 
         NamedListWidget(Minecraft client, int width, int height, int top, int bottom,
-                java.util.function.Supplier<String> selectedSupplier, java.util.function.Consumer<String> onSelectToggle) {
+                Supplier<String> selectedSupplier, Consumer<String> onSelectToggle) {
             super(client, width, height, top, bottom, 18);
             this.selectedSupplier = selectedSupplier;
             this.onSelectToggle = onSelectToggle;

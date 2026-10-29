@@ -29,13 +29,13 @@ import net.minecraft.network.chat.Component;
  * Executes a GPT request asynchronously and delivers the result back to the
  * original command sender. This executor prepares the HTTP POST request using
  * data provided by a {@link GptData} instance, sends it to the configured GPT
- * server, parses the response and converts markdown to Minecraft Text for
+ * server, parses the response and converts markdown to Minecraft Component for
  * feedback.
  *
  * <p>Execution is performed on a background thread (see
  * {@link AsyncTaskExecutor}) and once finished the result handling occurs in
  * {@link #taskAfterCompletion()} which sends feedback to the originating
- * {@link net.minecraft.server.command.ServerCommandSource}.</p>
+ * {@link net.minecraft.commands.CommandSourceStack}.</p>
  *
  * @see AsyncTaskExecutor
  * @see GptData

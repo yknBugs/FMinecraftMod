@@ -10,6 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import org.joml.Matrix4f;
+
 import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.server.flow.logic.DataReference;
 import com.ykn.fmod.server.flow.logic.FlowNode;
@@ -19,6 +22,7 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import com.ykn.fmod.server.flow.tool.FlowSerializer;
 
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -32,7 +36,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 
 /**
- * The node-graph editor for one flow being edited via a detached deep copy
+ * The node-graph editor for one flow being edited via a detached structural copy
  * ({@link FlowEditorBridge.EditSession}) - see {@link FlowEditorBridge} for why edits never touch
  * the live, registered flow until the user explicitly commits.
  *
@@ -78,6 +82,12 @@ public class FlowGraphScreen extends Screen {
     private int canvasHeight;
     private int scrollX;
     private int scrollY;
+    private int positionedScrollX;
+    private int positionedScrollY;
+    private boolean nodePositionsDirty = true;
+    private boolean contentBoundsDirty = true;
+    private int cachedContentWidth;
+    private int cachedContentHeight;
     private Long draggingId;
     private int dragOffsetX;
     private int dragOffsetY;
@@ -142,7 +152,7 @@ public class FlowGraphScreen extends Screen {
 
     private static int bodyRows(FlowNode node) {
         NodeMetadata meta = node.getMetadata();
-        return meta.branchNumber + Math.max(meta.inputNumber, meta.outputNumber);
+        return meta.branchNumber() + Math.max(meta.inputNumber(), meta.outputNumber());
     }
 
     private static int nodeBoxHeight(FlowNode node) {
@@ -215,6 +225,7 @@ public class FlowGraphScreen extends Screen {
     // ------------------------------------------------------------------
 
     private static final class NodeBox {
+        final List<Button> buttons;
         final long nodeId;
         final int width;
         final int height;
@@ -254,15 +265,16 @@ public class FlowGraphScreen extends Screen {
             this.inputValueOffsets = inputValueOffsets;
             this.outputButtons = outputButtons;
             this.outputOffsets = outputOffsets;
-        }
-
-        List<Button> allButtons() {
             List<Button> all = new ArrayList<>();
             all.add(this.nameButton);
             all.addAll(this.branchButtons);
             all.addAll(this.inputButtons);
             all.addAll(this.outputButtons);
-            return all;
+            this.buttons = List.copyOf(all);
+        }
+
+        List<Button> allButtons() {
+            return this.buttons;
         }
     }
 
@@ -282,7 +294,7 @@ public class FlowGraphScreen extends Screen {
         int nameButtonWidth = 100;
 
         Button nameButton = Button.builder(Component.literal(node.getName()), b -> onNameClicked(id)).size(nameButtonWidth, 14).build();
-        nameButton.setTooltip(Tooltip.create(meta.description));
+        nameButton.setTooltip(Tooltip.create(meta.description()));
         int[] nameOffset = {PADDING, PADDING, nameButtonWidth, 14};
         Component typeText = Component.literal(this.font.plainSubstrByWidth(node.getType(), NODE_WIDTH - PADDING * 2 - nameButtonWidth - 6));
         int[] typeTextOffset = {PADDING + nameButtonWidth + 6, PADDING + 3};
@@ -297,10 +309,10 @@ public class FlowGraphScreen extends Screen {
         int branchButtonX = NODE_WIDTH - PADDING - branchButtonWidth;
         int branchValueX = PADDING;
         int branchValueWidth = branchButtonX - PADDING - 4;
-        for (int i = 0; i < meta.branchNumber; i++) {
+        for (int i = 0; i < meta.branchNumber(); i++) {
             int index = i;
-            Button branchButton = Button.builder(meta.branchNames.get(i), b -> onBranchClicked(id, index)).size(branchButtonWidth, ROW_HEIGHT - 2).build();
-            branchButton.setTooltip(Tooltip.create(meta.branchDescriptions.get(i)));
+            Button branchButton = Button.builder(meta.branchNames().get(i), b -> onBranchClicked(id, index)).size(branchButtonWidth, ROW_HEIGHT - 2).build();
+            branchButton.setTooltip(Tooltip.create(meta.branchDescriptions().get(i)));
             branchButtons.add(branchButton);
             int y = bodyTop + i * ROW_HEIGHT;
             branchOffsets.add(new int[]{branchButtonX, y, branchButtonWidth, ROW_HEIGHT - 2});
@@ -311,7 +323,7 @@ public class FlowGraphScreen extends Screen {
             branchValueOffsets.add(new int[]{branchValueX, y + 3});
         }
 
-        int rowOffset = meta.branchNumber;
+        int rowOffset = meta.branchNumber();
         List<Button> inputButtons = new ArrayList<>();
         List<int[]> inputOffsets = new ArrayList<>();
         List<Component> inputValueTexts = new ArrayList<>();
@@ -319,10 +331,10 @@ public class FlowGraphScreen extends Screen {
         int inputButtonWidth = NODE_INPUT_WIDTH;
         int inputValueX = PADDING + inputButtonWidth + 4;
         int inputValueWidth = NODE_INPUT_VALUE_WIDTH;
-        for (int i = 0; i < meta.inputNumber; i++) {
+        for (int i = 0; i < meta.inputNumber(); i++) {
             int index = i;
-            Button inputButton = Button.builder(meta.inputNames.get(i), b -> onInputClicked(id, index)).size(inputButtonWidth, ROW_HEIGHT - 2).build();
-            inputButton.setTooltip(Tooltip.create(combineTooltip(meta.inputDataTypes.get(i), meta.inputDescriptions.get(i))));
+            Button inputButton = Button.builder(meta.inputNames().get(i), b -> onInputClicked(id, index)).size(inputButtonWidth, ROW_HEIGHT - 2).build();
+            inputButton.setTooltip(Tooltip.create(combineTooltip(meta.inputDataTypes().get(i), meta.inputDescriptions().get(i))));
             inputButtons.add(inputButton);
             int y = bodyTop + (rowOffset + i) * ROW_HEIGHT;
             inputOffsets.add(new int[]{PADDING, y, inputButtonWidth, ROW_HEIGHT - 2});
@@ -331,8 +343,8 @@ public class FlowGraphScreen extends Screen {
             if (ref.getType() == DataReference.ReferenceType.NODE_OUTPUT) {
                 FlowNode source = flow.getNode(ref.getReferenceId());
                 String outputName = "?";
-                if (source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber) {
-                    outputName = source.getMetadata().outputNames.get(ref.getReferenceIndex()).getString();
+                if (source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber()) {
+                    outputName = source.getMetadata().outputNames().get(ref.getReferenceIndex()).getString();
                 }
                 valueText = (source == null ? "?" : source.getName()) + " " + outputName;
             } else if (ref.getValue() == null) {
@@ -346,10 +358,10 @@ public class FlowGraphScreen extends Screen {
 
         List<Button> outputButtons = new ArrayList<>();
         List<int[]> outputOffsets = new ArrayList<>();
-        for (int i = 0; i < meta.outputNumber; i++) {
+        for (int i = 0; i < meta.outputNumber(); i++) {
             int index = i;
-            Button outputButton = Button.builder(meta.outputNames.get(i), b -> onOutputClicked(id, index)).size(rightWidth, ROW_HEIGHT - 2).build();
-            outputButton.setTooltip(Tooltip.create(combineTooltip(meta.outputDataTypes.get(i), meta.outputDescriptions.get(i))));
+            Button outputButton = Button.builder(meta.outputNames().get(i), b -> onOutputClicked(id, index)).size(rightWidth, ROW_HEIGHT - 2).build();
+            outputButton.setTooltip(Tooltip.create(combineTooltip(meta.outputDataTypes().get(i), meta.outputDescriptions().get(i))));
             outputButtons.add(outputButton);
             int y = bodyTop + (rowOffset + i) * ROW_HEIGHT;
             outputOffsets.add(new int[]{rightX, y, rightWidth, ROW_HEIGHT - 2});
@@ -362,6 +374,8 @@ public class FlowGraphScreen extends Screen {
     }
 
     private void rebuildNodeButtons() {
+        this.nodePositionsDirty = true;
+        this.contentBoundsDirty = true;
         for (NodeBox box : this.nodeBoxes.values()) {
             box.allButtons().forEach(this::removeWidget);
         }
@@ -380,6 +394,12 @@ public class FlowGraphScreen extends Screen {
     }
 
     private void updateNodeButtonPositions() {
+        if (!this.nodePositionsDirty && this.positionedScrollX == this.scrollX && this.positionedScrollY == this.scrollY) {
+            return;
+        }
+        this.nodePositionsDirty = false;
+        this.positionedScrollX = this.scrollX;
+        this.positionedScrollY = this.scrollY;
         for (NodeBox box : this.nodeBoxes.values()) {
             int[] pos = this.positions.get(box.nodeId);
             if (pos == null) {
@@ -568,7 +588,7 @@ public class FlowGraphScreen extends Screen {
     private Component typeButtonLabel() {
         for (FlowEditorBridge.NodeTypeInfo info : FlowEditorBridge.nodeTypeCatalog()) {
             if (info.type.equals(this.pendingAddType)) {
-                return info.metadata.displayName;
+                return info.metadata.displayName();
             }
         }
         return Component.literal(this.pendingAddType == null ? "?" : this.pendingAddType);
@@ -635,8 +655,8 @@ public class FlowGraphScreen extends Screen {
                     canClear = false;
                 } else if (ref.getType() == DataReference.ReferenceType.NODE_OUTPUT) {
                     FlowNode source = getNode(ref.getReferenceId());
-                    String outputName = source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber
-                        ? source.getMetadata().outputNames.get(ref.getReferenceIndex()).getString() : "?";
+                    String outputName = source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber()
+                        ? source.getMetadata().outputNames().get(ref.getReferenceIndex()).getString() : "?";
                     hint = Component.translatable("fmod.flowgui.graph.menu.input.connected", source == null ? "?" : source.getName(), outputName);
                     canClear = true;
                 } else {
@@ -685,12 +705,12 @@ public class FlowGraphScreen extends Screen {
             if (info.event) {
                 continue;
             }
-            Component label = Component.literal(info.type + " (").append(info.metadata.displayName).append(")");
-            options.add(new OptionPickerScreen.Option(label, info.metadata.description, () -> {
+            Component label = Component.literal(info.type + " (").append(info.metadata.displayName()).append(")");
+            options.add(new OptionPickerScreen.Option(label, info.metadata.description(), () -> {
                 this.pendingAddType = info.type;
                 this.minecraft.setScreen(this);
                 rebuildMenu();
-            }, info.type + " " + info.metadata.displayName.getString()));
+            }, info.type + " " + info.metadata.displayName().getString()));
         }
         this.minecraft.setScreen(new OptionPickerScreen(this, Component.translatable("fmod.flowgui.graph.addnode"), options));
     }
@@ -854,26 +874,32 @@ public class FlowGraphScreen extends Screen {
         return this.canvasHeight - SCROLLBAR_SIZE;
     }
 
-    private int contentWidth() {
-        int max = MARGIN;
-        for (Map.Entry<Long, int[]> entry : this.positions.entrySet()) {
-            NodeBox box = this.nodeBoxes.get(entry.getKey());
-            if (box != null) {
-                max = Math.max(max, entry.getValue()[0] + box.width);
+    private void updateContentBounds() {
+        if (!this.contentBoundsDirty) {
+            return;
+        }
+        int right = MARGIN;
+        int bottom = MARGIN;
+        for (NodeBox box : this.nodeBoxes.values()) {
+            int[] pos = this.positions.get(box.nodeId);
+            if (pos != null) {
+                right = Math.max(right, pos[0] + box.width);
+                bottom = Math.max(bottom, pos[1] + box.height);
             }
         }
-        return max + MARGIN;
+        this.cachedContentWidth = right + MARGIN;
+        this.cachedContentHeight = bottom + MARGIN;
+        this.contentBoundsDirty = false;
+    }
+
+    private int contentWidth() {
+        updateContentBounds();
+        return this.cachedContentWidth;
     }
 
     private int contentHeight() {
-        int max = MARGIN;
-        for (Map.Entry<Long, int[]> entry : this.positions.entrySet()) {
-            NodeBox box = this.nodeBoxes.get(entry.getKey());
-            if (box != null) {
-                max = Math.max(max, entry.getValue()[1] + box.height);
-            }
-        }
-        return max + MARGIN;
+        updateContentBounds();
+        return this.cachedContentHeight;
     }
 
     private int maxScrollX() {
@@ -1006,6 +1032,8 @@ public class FlowGraphScreen extends Screen {
             if (pos != null) {
                 pos[0] = Math.max(0, (int) mouseX - this.canvasX - this.dragOffsetX + this.scrollX);
                 pos[1] = Math.max(0, (int) mouseY - this.canvasY - this.dragOffsetY + this.scrollY);
+                this.nodePositionsDirty = true;
+                this.contentBoundsDirty = true;
             }
             return true;
         }
@@ -1089,15 +1117,29 @@ public class FlowGraphScreen extends Screen {
         return button.getY() + button.getHeight() / 2;
     }
 
-    private static void drawLine(GuiGraphics context, int x1, int y1, int x2, int y2, int color) {
-        int dx = Math.abs(x2 - x1);
-        int dy = Math.abs(y2 - y1);
-        int steps = Math.max(Math.max(dx, dy), 1);
-        for (int i = 0; i <= steps; i++) {
-            int x = x1 + (x2 - x1) * i / steps;
-            int y = y1 + (y2 - y1) * i / steps;
-            context.fill(x, y, x + 1, y + 1, color);
+    /** Submit one thin quad per wire; scissoring alone does not avoid CPU work for off-screen wires. */
+    private void drawLine(GuiGraphics context, int x1, int y1, int x2, int y2, int color) {
+        // Keep crossing wires even when both endpoints are outside the viewport.
+        if (Math.max(x1, x2) < this.canvasX - 1 || Math.min(x1, x2) > this.canvasX + viewWidth()
+                || Math.max(y1, y2) < this.canvasY - 1 || Math.min(y1, y2) > this.canvasY + viewHeight()) {
+            return;
         }
+        float dx = (float) x2 - x1;
+        float dy = (float) y2 - y1;
+        float length = (float) Math.hypot(dx, dy);
+        if (length == 0) {
+            context.fill(x1, y1, x1 + 1, y1 + 1, color);
+            return;
+        }
+        float nx = -dy / length * 0.5F;
+        float ny = dx / length * 0.5F;
+        Matrix4f pose = context.pose().last().pose();
+        VertexConsumer vertices = context.bufferSource().getBuffer(RenderType.gui());
+        // Match GUI quad winding, with a one-pixel width in GUI coordinates.
+        vertices.vertex(pose, x1 + 0.5F + nx, y1 + 0.5F + ny, 0).color(color).endVertex();
+        vertices.vertex(pose, x2 + 0.5F + nx, y2 + 0.5F + ny, 0).color(color).endVertex();
+        vertices.vertex(pose, x2 + 0.5F - nx, y2 + 0.5F - ny, 0).color(color).endVertex();
+        vertices.vertex(pose, x1 + 0.5F - nx, y1 + 0.5F - ny, 0).color(color).endVertex();
     }
 
     private void drawNodeBoxes(GuiGraphics context) {
@@ -1171,6 +1213,7 @@ public class FlowGraphScreen extends Screen {
         context.fill(this.canvasX, this.canvasY, this.canvasX + this.canvasWidth, this.canvasY + this.canvasHeight, 0xFF1E1E1E);
         context.enableScissor(this.canvasX, this.canvasY, this.canvasX + viewWidth(), this.canvasY + viewHeight());
         drawConnections(context);
+        context.flush(); // Batch wires together, then draw node bodies over them.
         drawNodeBoxes(context);
         renderNodeButtons(context, mouseX, mouseY, delta);
         context.disableScissor();

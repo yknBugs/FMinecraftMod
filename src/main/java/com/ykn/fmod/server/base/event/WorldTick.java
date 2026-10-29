@@ -6,51 +6,140 @@
 package com.ykn.fmod.server.base.event;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.ykn.fmod.server.base.async.EntityDensityCalculator;
+import com.ykn.fmod.server.base.data.AfkState;
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.BiomeMessage;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.rule.event.PlayerTickEvent;
-import com.ykn.fmod.server.rule.event.ServerTickEvent;
-import com.ykn.fmod.server.rule.tool.RuleManager;
 import com.ykn.fmod.server.base.util.GameMath;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 
-import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
-public class WorldTick {
+/**
+ * The per-tick player features: AFK, biome, travel/teleport, sleep status, entity warnings.
+ *
+ * <p>This class is the existing feature only; {@link GameEventHandler#serverTickEventDispatcher}
+ * runs it and then dispatches the events its {@link PlayerTickReport}s describe, so the feature
+ * never calls the dispatcher itself.
+ */
+public final class WorldTick {
+
+    private WorldTick() {
+    }
 
     /**
-     * This method is called every tick.
+     * Runs one server tick of the existing per-tick features and reports what the tick produced.
+     *
+     * <p>The report is what {@link GameEventHandler#serverTickEventDispatcher} turns into events:
+     * this class detects the transitions (AFK on/off, teleport, level and hunger change) while it
+     * already has the previous-tick state at hand, but does not dispatch anything itself.
+     *
+     * @param server the server being ticked
+     * @return one report per online player, in the order they were ticked
      */
-    public static void onWorldTick(MinecraftServer server) {
+    public static List<PlayerTickReport> runFeatures(MinecraftServer server) {
         ServerData serverData = Util.getServerData(server);
         checkEntityNumber(server, serverData);
-        List<ServerPlayer> players = server.getPlayerList().getPlayers();
-        for (ServerPlayer player : players) {
+        List<PlayerTickReport> reports = new ArrayList<>();
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
             PlayerData playerData = serverData.getPlayerData(player);
-            handleAfkPlayers(player, playerData);
+            AfkTransition afk = handleAfkPlayers(player, playerData);
             handleChangeBiomePlayer(player, serverData, playerData);
-            handlePlayerTravelStatus(player, playerData);
+            PlayerTeleport teleport = handlePlayerTravelStatus(player, playerData);
             handlePlayerCanSleepStatus(player, playerData);
+            int oldLevel = playerData.getLastLevel();
+            int oldHunger = playerData.getLastHunger();
+            int newLevel = player.experienceLevel;
+            int newHunger = player.getFoodData().getFoodLevel();
             playerData.updateLastTickData(player);
+            reports.add(new PlayerTickReport(player, afk, teleport, oldLevel, newLevel, oldHunger, newHunger));
+        }
+        return reports;
+    }
+
+    /**
+     * What one player's feature pass detected, for {@link GameEventHandler} to dispatch.
+     *
+     * @param player      the player that was ticked
+     * @param afk         the AFK transition of this tick
+     * @param teleport    the detected teleport, or {@code null}
+     * @param oldLevel    experience level before this tick
+     * @param newLevel    experience level after this tick
+     * @param oldHunger   food level before this tick
+     * @param newHunger   food level after this tick
+     */
+    public record PlayerTickReport(ServerPlayer player, AfkTransition afk, PlayerTeleport teleport,
+            int oldLevel, int newLevel, int oldHunger, int newHunger) {
+
+        /**
+         * Whether the player just crossed the AFK threshold.
+         *
+         * @return {@code true} when this tick is the transition into AFK
+         */
+        public boolean enteredAfk() {
+            return afk.direction() > 0;
         }
 
-        runCustomRule(serverData);
-        serverData.tick();
+        /**
+         * Whether the player just came back from being AFK.
+         *
+         * @return {@code true} when this tick is the transition out of AFK
+         */
+        public boolean returnedFromAfk() {
+            return afk.direction() < 0;
+        }
+
+        /**
+         * Whether the player's experience level rose during this tick.
+         *
+         * @return {@code true} when the level went up
+         */
+        public boolean leveledUp() {
+            return newLevel > oldLevel;
+        }
+
+        /**
+         * Whether the player's food level changed during this tick.
+         *
+         * @return {@code true} when the food level is different
+         */
+        public boolean hungerChanged() {
+            return newHunger != oldHunger;
+        }
+    }
+
+    /**
+     * An AFK episode transition detected by one tick.
+     *
+     * @param direction {@code 1} entered AFK, {@code -1} returned, {@code 0} no transition
+     * @param ticks     the tick count at the moment of the transition
+     */
+    public record AfkTransition(int direction, int ticks) {
+
+        /** No transition happened. */
+        public static final AfkTransition NONE = new AfkTransition(0, 0);
+    }
+
+    /**
+     * A detected teleport, kept until the event is dispatched.
+     *
+     * @param origin the dimension the player was in
+     * @param from   the position before the teleport
+     * @param to     the position after the teleport
+     */
+    public record PlayerTeleport(ResourceLocation origin, Vec3 from, Vec3 to) {
     }
 
     private static void checkEntityNumber(MinecraftServer server, ServerData serverData) {
@@ -140,23 +229,28 @@ public class WorldTick {
         }
     }
 
-    private static void handleAfkPlayers(ServerPlayer player, PlayerData playerData) {
-        if (playerData.isFacingDirectionChanged(player)) {
-            postMessageToBackPlayer(player, playerData);
+    private static AfkTransition handleAfkPlayers(ServerPlayer player, PlayerData playerData) {
+        boolean moved = playerData.isFacingDirectionChanged(player);
+        int ticks = playerData.getAfkTicks();
+        int transition = playerData.afkState().update(ticks,
+                Util.getServerConfig().getBroadcastAfkThreshold(), moved);
+        if (moved) {
+            postMessageToBackPlayer(player, playerData, transition == AfkState.RETURNED);
             playerData.resetAfkTicks();
-        } else {
-            postMessageToAfkingPlayer(player, playerData);
-            playerData.updateAfkTicks();
+            return transition == AfkState.RETURNED ? new AfkTransition(-1, ticks) : AfkTransition.NONE;
         }
+        postMessageToAfkingPlayer(player, playerData, transition == AfkState.ENTERED);
+        playerData.updateAfkTicks();
+        return transition == AfkState.ENTERED ? new AfkTransition(1, ticks) : AfkTransition.NONE;
     }
 
-    private static void postMessageToAfkingPlayer(ServerPlayer player, PlayerData playerData) {
+    private static void postMessageToAfkingPlayer(ServerPlayer player, PlayerData playerData, boolean becomesAfk) {
         if (playerData.getAfkTicks() > Util.getServerConfig().getInformAfkThreshold() && playerData.getAfkTicks() % 20 == 0) {
             Component mainText = Util.parseTranslatableText("fmod.message.afk.inform.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
             Component otherText = Util.parseTranslatableText("fmod.message.afk.inform.other", player.getDisplayName());
             Util.getServerConfig().getInformAfk().postMessage(player, mainText, otherText);
         }
-        if (playerData.getAfkTicks() == Util.getServerConfig().getBroadcastAfkThreshold()) {
+        if (becomesAfk) {
             Component playerName = player.getDisplayName();
             Component coord = Util.parseCoordText(player);
             Component mainText = Util.parseTranslatableText("fmod.message.afk.broadcast.main", playerName, coord);
@@ -165,8 +259,8 @@ public class WorldTick {
         }
     }
 
-    private static void postMessageToBackPlayer(ServerPlayer player, PlayerData playerData) {
-        if (playerData.getAfkTicks() >= Util.getServerConfig().getBroadcastAfkThreshold()) {
+    private static void postMessageToBackPlayer(ServerPlayer player, PlayerData playerData, boolean wasAfk) {
+        if (wasAfk) {
             Component mainText = Util.parseTranslatableText("fmod.message.afk.stop.main", player.getDisplayName(), (int) (playerData.getAfkTicks() / 20));
             Component otherText = Util.parseTranslatableText("fmod.message.afk.stop.other", player.getDisplayName());
             Util.getServerConfig().getStopAfk().postMessage(player, mainText, otherText);
@@ -174,7 +268,7 @@ public class WorldTick {
     }
 
     private static void handleChangeBiomePlayer(ServerPlayer player, ServerData serverData, PlayerData playerData) {
-        ResourceLocation biomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        ResourceLocation biomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
         if (playerData.isBiomeChanged(player)) {
             serverData.submitScheduledTask(new BiomeMessage(player, biomeId));
         }
@@ -203,7 +297,7 @@ public class WorldTick {
         playerData.setLastCanSleep(currentCanSleepStatus);
     }
 
-    private static void handlePlayerTravelStatus(ServerPlayer player, PlayerData playerData) {
+    private static PlayerTeleport handlePlayerTravelStatus(ServerPlayer player, PlayerData playerData) {
         int window = Util.getServerConfig().getTravelWindow();
 
         // Update positions history
@@ -217,33 +311,29 @@ public class WorldTick {
         double teleportThreshold = Util.getServerConfig().getTeleportThreshold();
         if (lastIdx > 0 && GameMath.getHorizontalEuclideanDistance(snapshot[lastIdx - 1], snapshot[lastIdx]) > teleportThreshold) {
             playerData.clearPositionHistory(player);
-            handleTeleportedPlayer(player, playerData, snapshot[lastIdx - 1], snapshot[lastIdx]);
-            return;
+            return reportTeleport(player, playerData, snapshot[lastIdx - 1], snapshot[lastIdx]);
         }
 
         // Check if player changed dimensions
         if (playerData.isDimensionChanged(player)) {
             playerData.clearPositionHistory(player);
-            if (lastIdx > 0) {
-                handleTeleportedPlayer(player, playerData, snapshot[lastIdx - 1], snapshot[lastIdx]);
-            }
-            return;
+            return lastIdx > 0 ? reportTeleport(player, playerData, snapshot[lastIdx - 1], snapshot[lastIdx]) : null;
         }
 
         // Check if we have enough history
         if (snapshot.length < maxSamples) {
-            return; 
+            return null;
         }
 
         // Check message interval
         if (playerData.getTravelMessageTickPassed() < Util.getServerConfig().getTravelMessageInterval()) {
-            return;
+            return null;
         }
-        
+
         // Total distance check
         double totalDistance = GameMath.getHorizontalEuclideanDistance(snapshot[0], snapshot[lastIdx]);
         if (totalDistance < Util.getServerConfig().getTravelTotalDistanceThreshold()) {
-            return;
+            return null;
         }
 
         // Partial distance check
@@ -252,7 +342,7 @@ public class WorldTick {
         for (int i = interval; i <= lastIdx; i++) {
             double partialDistance = GameMath.getHorizontalEuclideanDistance(snapshot[i - interval], snapshot[i]);
             if (partialDistance < partialThreshold) {
-                return;
+                return null;
             }
         }
 
@@ -261,56 +351,18 @@ public class WorldTick {
         Component otherText = Util.parseTranslatableText("fmod.message.travel.fast.other", player.getDisplayName(), speedStr);
         Util.getServerConfig().getTravelMessage().postMessage(player, mainText, otherText);
         playerData.setLastTravelMessageTick();
+        return null;
     }
 
-    private static void handleTeleportedPlayer(ServerPlayer player, PlayerData playerData, Vec3 fromPos, Vec3 toPos) {
+    private static PlayerTeleport reportTeleport(ServerPlayer player, PlayerData playerData, Vec3 fromPos, Vec3 toPos) {
+        ResourceLocation origin = playerData.getLastDimensionId();
         Component playerName = player.getDisplayName();
-        Component fromCoord = Util.parseCoordText(playerData.getLastDimensionId(), playerData.getLastBiomeId(), fromPos.x, fromPos.y, fromPos.z);
+        Component fromCoord = Util.parseCoordText(origin, playerData.getLastBiomeId(), fromPos.x, fromPos.y, fromPos.z);
         Component toCoord = Util.parseCoordText(player);
         Component mainText = Util.parseTranslatableText("fmod.message.teleport.main", playerName, fromCoord, toCoord);
         Component otherText = Util.parseTranslatableText("fmod.message.teleport.other", playerName);
         Util.getServerConfig().getTeleportMessage().postMessage(player, mainText, otherText);
-    }
-
-    private static void runCustomRule(ServerData serverData) {
-        List<RuleManager> tickEventRules = serverData.gatherRuleByEventType(ServerTickEvent.class, true);
-        for (RuleManager rule : tickEventRules) {
-            Map<String, Object> eventVariables = new HashMap<>();
-            eventVariables.put("tick", serverData.getServerTick());
-            rule.trigger(serverData, eventVariables);
-        }
-        tickEventRules = serverData.gatherRuleByEventType(PlayerTickEvent.class, true);
-        List<ServerPlayer> onlinePlayers = Util.getOnlinePlayers(serverData.getServer());
-        for (RuleManager rule : tickEventRules) {
-            for (ServerPlayer player : onlinePlayers) {
-                PlayerData playerData = serverData.getPlayerData(player);
-                Map<String, Object> eventVariables = new HashMap<>();
-                eventVariables.put("tick", serverData.getServerTick());
-                eventVariables.put("player", player.getUUID());
-                eventVariables.put("x", player.getX());
-                eventVariables.put("y", player.getY());
-                eventVariables.put("z", player.getZ());
-                eventVariables.put("position", player.position());
-                eventVariables.put("dimension", player.level().dimension().location());
-                eventVariables.put("biome", player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
-                eventVariables.put("pitch", Double.valueOf(player.getXRot()));
-                eventVariables.put("yaw", Double.valueOf(player.getYRot()));
-                eventVariables.put("rotation", player.getRotationVector());
-                eventVariables.put("health", Double.valueOf(player.getHealth()));
-                eventVariables.put("name", player.getDisplayName().getString());
-                eventVariables.put("afk", playerData.getAfkTicks());
-                eventVariables.put("lastpitch", Double.valueOf(playerData.getLastPitch()));
-                eventVariables.put("lastyaw", Double.valueOf(playerData.getLastYaw()));
-                eventVariables.put("lastrotation", new Vec2(playerData.getLastPitch(), playerData.getLastYaw()));
-                eventVariables.put("lastbiome", playerData.getLastBiomeId());
-                eventVariables.put("lastdimension", playerData.getLastDimensionId());
-                eventVariables.put("cansleep", playerData.getLastCanSleep());
-                eventVariables.put("__player__", player);
-                eventVariables.put("__world__", player.level());
-                eventVariables.put("__name__", player.getDisplayName());
-                rule.trigger(serverData, eventVariables);
-            }
-        }
+        return new PlayerTeleport(origin, fromPos, toPos);
     }
 
 }

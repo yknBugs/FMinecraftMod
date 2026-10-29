@@ -5,7 +5,6 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
@@ -15,15 +14,17 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
+import com.ykn.fmod.server.flow.tool.FlowConvert;
+
 /**
- * A node to get an object at a specific index in a list
+ * A flow node that reads the object at an index of a list.
  * Inputs:
- * 1. List - The list to get the object from, can be any type of list
- * 2. Number - The index of the object to get, if negative, it will count from the end of the list, if out of bounds, the output will be null
- * 3. String - If not null, the output will be stored in the variable even if the output is null
+ * 1. List - The list to get the object from.
+ * 2. Integer - The index of the object to get, starting from 0. Negative values count from the end.
+ * 3. String - Optional variable name to store the result.
  * Outputs:
- * 1. Object - The object at the specified index in the list
- * 2. Number - The number of elements in the list
+ * 1. Object - The object at the specified index.
+ * 2. Integer - The number of elements in the list.
  * Branches: 1 (Next node)
  */
 public class GetObjectAtIndexNode extends FlowNode {
@@ -75,16 +76,7 @@ public class GetObjectAtIndexNode extends FlowNode {
         status.setOutput(1, listSize);
     }
 
-    private List<Object> parseList(Object obj) {
-        if (obj == null) {
-            return new ArrayList<Object>();
-        }
-        List<Object> tryCastList = TypeAdaptor.parse(obj).asList();
-        if (tryCastList == null) {
-            List<Object> singleItemList = new ArrayList<>();
-            singleItemList.add(obj);
-            return singleItemList;
-        }
-        return tryCastList;
+    private List<Object> parseList(Object obj) throws LogicException {
+        return FlowConvert.listInput(obj);
     }
 }

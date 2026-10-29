@@ -15,8 +15,8 @@ import com.ykn.fmod.server.base.util.Util;
  * work has reached a safe completion point.
  *
  * <p>Intended usage:
- * - Subclass and override {@link #executeAsyncTask()} to perform non-thread-safe
- *   or long-running work off the main thread.
+ * - Subclass and override {@link #executeAsyncTask()} to perform background-safe
+ *   work off the main thread; access mutable Minecraft state in the follow-up instead.
  * - From {@link #executeAsyncTask()} call {@link #markAsyncFinished()} once the
  *   task has reached the point where the main-thread follow-up is safe to run.
  *   markAsyncFinished() may be called even if additional cleanup is still pending.
@@ -44,7 +44,8 @@ public class AsyncTaskExecutor implements Runnable {
     /**
      * Implement this method with the logic to be executed after async task is finished.
      * This method will be called in the main thread, which is designed for non-thread-safe operations.
-     * This will be called exactly once by the main thread.
+     * The server task pool calls this on the server thread at most once.
+     * {@link #runAfterCompletion()} enforces the once-only guard, not thread affinity.
      */
     protected void taskAfterCompletion() {
 
@@ -88,8 +89,8 @@ public class AsyncTaskExecutor implements Runnable {
     }
 
     /**
-     * Check if the async task has finished execution.
-     * @return True if the async task is finished, false otherwise.
+     * Checks whether the main-thread follow-up is ready.
+     * @return True after completion has been signaled, even if background cleanup is still running
      */
     public final boolean isAsyncFinished() {
         return asyncFinished.get();
@@ -105,7 +106,8 @@ public class AsyncTaskExecutor implements Runnable {
 
     /**
      * Run the after-completion task if it hasn't been executed yet.
-     * This method should be called from the main thread.
+     * This method must be called from the server thread after {@link #isAsyncFinished()}
+     * returns true; it does not check readiness or dispatch to that thread itself.
      */
     public final void runAfterCompletion() {
         if (afterCompletionExecuted.compareAndSet(false, true)) {

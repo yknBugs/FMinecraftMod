@@ -163,8 +163,8 @@ public @interface ConfigEntry {
 
     /**
      * The name of a method on the owning {@link ConfigReader} instance that converts a raw
-     * config value to a display {@link net.minecraft.text.Text} for the options screen and
-     * command feedback. The method signature must be {@code Text methodName(T value)} where
+     * config value to a display {@link net.minecraft.network.chat.Component} for the options screen and
+     * command feedback. The method signature must be {@code Component methodName(T value)} where
      * {@code T} is the type of the field.
      * If empty, {@link String#valueOf(Object)} is used as a fallback.
      *

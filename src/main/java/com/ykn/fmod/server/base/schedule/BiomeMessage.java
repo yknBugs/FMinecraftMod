@@ -9,6 +9,7 @@ import com.ykn.fmod.server.base.util.Util;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -41,7 +42,7 @@ public class BiomeMessage extends ScheduledTask {
         if (player == null || player.hasDisconnected() || player.isRemoved() || player.getHealth() <= 0) {
             return true;
         }
-        ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
         if (currentBiomeId == null && biomeId == null) {
             return false;
         } else if (currentBiomeId == null || biomeId == null) {

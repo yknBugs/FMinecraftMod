@@ -24,7 +24,7 @@ import net.minecraft.commands.CommandSourceStack;
  *       each component's parameter schema without parsing command nodes or JSON.</li>
  * </ul>
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * private static final RequiredParamMetadata PARAM_METADATA =
  *     RequiredParamMetadata.create("fmod.rule.condition.foo.summary")

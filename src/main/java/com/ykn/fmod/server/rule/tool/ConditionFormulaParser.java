@@ -33,7 +33,7 @@ import com.ykn.fmod.server.rule.core.UnaryConditionExpression;
  *
  * Operator precedence (lowest → highest): {@code ||}, {@code &&}, {@code |}, {@code ^}, {@code &}, {@code !}.
  *
- * @throws IllegalArgumentException if the formula is null, empty, or contains invalid syntax
+ * Use {@link #parse(String)} to parse a formula; invalid syntax throws {@link IllegalArgumentException}.
  */
 public class ConditionFormulaParser {
 
@@ -53,7 +53,7 @@ public class ConditionFormulaParser {
      * @throws IllegalArgumentException if the formula is null, empty, or contains invalid syntax
      */
     public static RuleCondition parse(String formula) {
-        if (formula == null || formula.strip().isEmpty()) {
+        if (formula == null || formula.isBlank()) {
             throw new IllegalArgumentException("At position 0 in formula: '" + formula + "': Formula cannot be null or empty.");
         }
         ConditionFormulaParser parser = new ConditionFormulaParser(formula.strip());
@@ -231,14 +231,11 @@ public class ConditionFormulaParser {
                 pos++;
             }
             String name = formula.substring(start, pos);
-            switch (name) {
-                case "true":
-                    return ConstCondition.of(true);
-                case "false":
-                    return ConstCondition.of(false);
-                default:
-                    return ConditionReference.need(name);
-            }
+            return switch (name) {
+                case "true" -> ConstCondition.of(true);
+                case "false" -> ConstCondition.of(false);
+                default -> ConditionReference.need(name);
+            };
         }
         throw new IllegalArgumentException("At position " + pos + " in formula: '" + formula + "': Unexpected character '" + c + "', expected '(', identifier, or boolean constant.");
     }

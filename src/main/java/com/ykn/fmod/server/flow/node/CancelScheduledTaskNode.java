@@ -16,12 +16,12 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 /**
- * A node that cancels a scheduled task.
+ * A flow node that cancels a scheduled task.
  * Inputs:
- * 1. ScheduledTask - The scheduled task to cancel.
+ * 1. Scheduled Task - The scheduled task to cancel.
  * Outputs:
- * 1. Integer - The number of ticks left before the task is executed.
- * 2. Integer - The number of ticks left before the task is finished.
+ * 1. Integer - The number of ticks left before the task was executed.
+ * 2. Integer - The duration left for the task before finishing.
  * Branches: 1 (Next node)
  */
 public class CancelScheduledTaskNode extends FlowNode {
@@ -52,11 +52,11 @@ public class CancelScheduledTaskNode extends FlowNode {
 
     private ScheduledTask parseScheduledTask(Object obj) throws LogicException {
         if (obj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(0)), null);
         } else if (obj instanceof ScheduledTask) {
             return (ScheduledTask) obj;
         } else {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(0), this.metadata.inputDataTypes().get(0)), null);
         }
     }
     

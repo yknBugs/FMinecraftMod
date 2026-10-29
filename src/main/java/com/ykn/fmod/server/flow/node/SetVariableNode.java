@@ -15,12 +15,12 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 /**
- * A flow node that sets the value of a variable in the execution context.
+ * A flow node that writes a variable in the execution context.
  * Inputs:
- * 1. String - The name of the variable to set.
- * 2. Object - The value to set the variable to.
+ * 1. String - The name of this variable.
+ * 2. Object - The value of this variable.
  * Outputs:
- * 1. Object - The previous value of the variable.
+ * 1. Object - Original value before set.
  * Branches: 1 (Next node)
  */
 public class SetVariableNode extends FlowNode {

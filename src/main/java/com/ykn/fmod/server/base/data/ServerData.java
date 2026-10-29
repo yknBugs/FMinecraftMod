@@ -34,7 +34,6 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -44,7 +43,8 @@ import net.minecraft.world.entity.LivingEntity;
  * This class stores per-player data, logic flows, scheduled tasks, and async task execution.
  * <p>
  * <br><b>WARNING:</b> The asyncTaskPool must be gracefully shutdown when replacing or resetting ServerData.
- * <br><b>NOTE:</b> All data stored here is not persisted and will be lost when the server restarts.
+ * <br><b>NOTE:</b> Runtime state is lost when the server restarts. Rule and flow definitions can be
+ * saved separately as files and restored by explicit loading or enabled startup auto-load options.
  * </p>
  */
 public class ServerData {
@@ -166,14 +166,6 @@ public class ServerData {
     private boolean autoLoadPerformed;
 
     /**
-     * Messages queued by startup logic (e.g. the auto load of rule/flow files in
-     * {@link com.ykn.fmod.server.base.event.NewLevel}) that could not be delivered yet because
-     * no player had joined the world. On a singleplayer integrated server, the world is loaded
-     * before the local player actually joins, so these are flushed to the player once they do.
-     */
-    private final List<Component> pendingStartupMessages;
-
-    /**
      * Constructs a new ServerData instance for the given server.
      * Initializes all collections, the async task pool, and sets the server tick to 0.
      * 
@@ -199,7 +191,6 @@ public class ServerData {
         lastCheckEntityTick = 0;
         lastCheckDensityTick = 0;
         autoLoadPerformed = false;
-        pendingStartupMessages = new ArrayList<>();
     }
 
     /**
@@ -211,7 +202,7 @@ public class ServerData {
      *   <li>Polls completed {@link AsyncTaskExecutor}s and invokes their post-completion callbacks on the server thread.</li>
      *   <li>Increments the internal {@code serverTick} counter.</li>
      * </ol>
-     * </p>
+     *
      */
     public void tick() {
         try {
@@ -249,11 +240,11 @@ public class ServerData {
     }
 
     /**
-     * Retrieves the PlayerData associated with the given ServerPlayerEntity.
+     * Retrieves the PlayerData associated with the given ServerPlayer.
      * If no PlayerData exists for the player, a new PlayerData instance is created,
      * associated with the player's UUID, and returned.
      *
-     * @param player the ServerPlayerEntity for which to retrieve the PlayerData
+     * @param player the ServerPlayer for which to retrieve the PlayerData
      * @return the PlayerData associated with the given player, never null
      */
     @NotNull
@@ -293,11 +284,11 @@ public class ServerData {
 
     /**
      * Submits an {@link AsyncTaskExecutor} for asynchronous execution on the internal thread pool.
-     * The executor's {@code executeAsyncTask()} runs off the server thread; once it completes,
-     * {@code runAfterCompletion()} is invoked on the server thread during the next {@link #tick()}.
+     * The executor's {@code executeAsyncTask()} runs off the server thread; once it signals readiness,
+     * {@code runAfterCompletion()} is invoked on the server thread during a subsequent {@link #tick()}.
      * <p>
-     * <b>This is the only thread-safe method in {@link ServerData}.</b>
-     * Do NOT call any other method of this class from off the server thread, including
+     * <b>Task submission is thread-safe.</b> Mutable server state remains owned by the
+     * server thread; do not manipulate it from background work, including via
      * {@link #submitScheduledTask(ScheduledTask)}.
      * </p>
      * <p>
@@ -420,17 +411,18 @@ public class ServerData {
     }
 
     /**
-     * Gathers all RuleManager instances whose associated RuleEvent is an instance of the given type.
+     * Gathers all RuleManager instances whose rule is bound to the given event type.
      * Optionally filters to include only enabled rules.
-     * 
-     * @param type the RuleEvent class type to match
+     *
+     * @param type the event type id, as stored in the rule's {@code "event"} field
      * @param enableOnly if true, only include enabled rules; if false, include all rules
      * @return a list of matching RuleManager instances, never null
      */
-    public List<RuleManager> gatherRuleByEventType(Class<? extends RuleEvent> type, boolean enableOnly) {
+    public List<RuleManager> gatherRuleByEventType(String type, boolean enableOnly) {
         List<RuleManager> result = new ArrayList<>();
         for (RuleManager manager : customRules.values()) {
-            if (type.isInstance(manager.getRule().getEvent())) {
+            RuleEvent event = manager.getRule().getEvent();
+            if (event != null && type.equals(event.getType())) {
                 if (!enableOnly || manager.isEnabled()) {
                     result.add(manager);
                 }
@@ -669,30 +661,5 @@ public class ServerData {
         }
         autoLoadPerformed = true;
         return true;
-    }
-
-    /**
-     * Queues a message to be delivered to the next player that joins the world, via
-     * {@link #drainPendingStartupMessages()}.
-     * Used to report startup information (e.g. auto-loaded rule/flow counts) that occurs
-     * before any player has joined.
-     *
-     * @param message the message to queue; must not be null
-     */
-    public void queueStartupMessage(@NotNull Component message) {
-        pendingStartupMessages.add(message);
-    }
-
-    /**
-     * Returns all currently queued startup messages and clears the queue, so each message
-     * is only ever delivered once.
-     *
-     * @return the list of queued messages, in the order they were queued; never null, may be empty
-     */
-    @NotNull
-    public List<Component> drainPendingStartupMessages() {
-        List<Component> messages = new ArrayList<>(pendingStartupMessages);
-        pendingStartupMessages.clear();
-        return messages;
     }
 }

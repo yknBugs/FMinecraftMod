@@ -9,8 +9,7 @@ import com.ykn.fmod.server.flow.logic.EventNode;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 
 /**
- * This node will be the first node in a logic flow
- * It does nothing and will never be executed unless explicitly called by user or another logic flow.
+ * An event node that is only triggered by a user or by another flow.
  * Inputs: None
  * Outputs: None
  * Branches: 1 (Next node)

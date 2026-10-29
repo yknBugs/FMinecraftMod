@@ -44,8 +44,8 @@ import com.ykn.fmod.client.base.gui.OptionPickerScreen;
  * actually contributing to the row's value. Together the two toggles losslessly represent all four
  * {@link RuleParameter} states ({@code ofVariable}/{@code ofConstant}/{@code ofBoth}/{@code ofNull}).
  * {@link ParamKind#buildNode}/{@code extract} are never used here - this GUI bypasses Brigadier
- * entirely, so only {@link ParamKind#valueType()} and which named constant a kind <i>is</i> matter
- * for the widget switch below.
+ * entirely, so constant widgets are chosen by {@link ParamWidgetRegistry}, using registered kind
+ * identities first and {@link ParamKind#valueType()} as a fallback.
  *
  * <p>Rows live inside a {@code ContainerObjectSelectionList}, which repositions each entry's widgets
  * every frame as the list scrolls. Widgets are therefore built once at a relative (0,0) origin and

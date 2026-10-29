@@ -147,6 +147,7 @@ public class DataReference implements Cloneable {
      * in the given context, or a {@link LogicException} will be thrown.
      * 
      * @param context The execution context containing node execution states
+     * @param currentNode The node resolving this input, used for diagnostics
      * @return The resolved value, which may be null
      * @throws LogicException If the referenced node doesn't exist or hasn't been executed yet
      */

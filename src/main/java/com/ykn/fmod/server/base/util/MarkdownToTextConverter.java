@@ -108,7 +108,7 @@ public class MarkdownToTextConverter {
             int startIndex = mathMatcher.start();
             int endIndex = mathMatcher.end();
             String mathContent = mathMatcher.group(1);
-            if (mathContent.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!mathContent.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.MATH);
@@ -122,7 +122,7 @@ public class MarkdownToTextConverter {
             int startIndex = headerMatcher.start();
             int endIndex = headerMatcher.end();
             String headerContent = headerMatcher.group(3);
-            if (headerContent.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!headerContent.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.HEADER);
@@ -136,7 +136,7 @@ public class MarkdownToTextConverter {
             int startIndex = boldMatcher.start();
             int endIndex = boldMatcher.end();
             String boldContent = boldMatcher.group(1);
-            if (boldContent.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!boldContent.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.BOLD);
@@ -150,7 +150,7 @@ public class MarkdownToTextConverter {
             int startIndex = italicMatcher.start();
             int endIndex = italicMatcher.end();
             String italicContent = italicMatcher.group(1);
-            if (italicContent.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!italicContent.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.ITALIC);
@@ -164,7 +164,7 @@ public class MarkdownToTextConverter {
             int startIndex = strikeMatcher.start();
             int endIndex = strikeMatcher.end();
             String strikeContent = strikeMatcher.group(1);
-            if (strikeContent.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!strikeContent.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.STRIKE);
@@ -178,7 +178,7 @@ public class MarkdownToTextConverter {
             int startIndex = inlineMatcher.start();
             int endIndex = inlineMatcher.end();
             String inlineContent = inlineMatcher.group(1);
-            if (inlineContent.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!inlineContent.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.INLINE);
@@ -192,7 +192,7 @@ public class MarkdownToTextConverter {
             int startIndex = enumMatcher.start();
             int endIndex = enumMatcher.end();
             String enumContent = enumMatcher.group(3);
-            if (enumContent.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!enumContent.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.ENUM);
@@ -207,7 +207,7 @@ public class MarkdownToTextConverter {
             int endIndex = hyperlinkMatcher.end();
             String hyperlinkContent = hyperlinkMatcher.group(1);
             String hyperlinkUrl = hyperlinkMatcher.group(2);
-            if (hyperlinkContent.length() > 0 && hyperlinkUrl.length() > 0 && isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) == false && isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex) == false) {
+            if (!hyperlinkContent.isEmpty() && !hyperlinkUrl.isEmpty() && !isNumberBetween(codePartStartIndex, codePartEndIndex, startIndex) && !isNumberBetween(codePartStartIndex, codePartEndIndex, endIndex)) {
                 unitStartIndex.add(startIndex);
                 unitEndIndex.add(endIndex);
                 unitType.add(MarkdownUnit.HYPERLINK);
@@ -338,7 +338,7 @@ public class MarkdownToTextConverter {
             boolean alreadyApplyBold = false;
             boolean alreadyApplyItalic = false;
             boolean alreadyApplyStrike = false;
-            if (type.size() == 0) {
+            if (type.isEmpty()) {
                 result.append(text.withStyle(ChatFormatting.RESET));
                 continue;
             }
@@ -360,25 +360,25 @@ public class MarkdownToTextConverter {
                 alreadyApplyColor = true;
             }
             if (type.contains(MarkdownUnit.BOLD)) {
-                if (alreadyApplyBold == false) {
+                if (!alreadyApplyBold) {
                     text = text.withStyle(ChatFormatting.BOLD);
                     alreadyApplyBold = true;
                 }
             }
             if (type.contains(MarkdownUnit.ITALIC)) {
-                if (alreadyApplyItalic == false) {
+                if (!alreadyApplyItalic) {
                     text = text.withStyle(ChatFormatting.ITALIC);
                     alreadyApplyItalic = true;
                 }
             }
             if (type.contains(MarkdownUnit.STRIKE)) {
-                if (alreadyApplyStrike == false) {
+                if (!alreadyApplyStrike) {
                     text = text.withStyle(ChatFormatting.STRIKETHROUGH);
                     alreadyApplyStrike = true;
                 }
             }
             if (type.contains(MarkdownUnit.INLINE)) {
-                if (alreadyApplyColor == false) {
+                if (!alreadyApplyColor) {
                     text = text.withStyle(ChatFormatting.GOLD);
                     alreadyApplyColor = true;
                 }
@@ -394,23 +394,23 @@ public class MarkdownToTextConverter {
                 );
             }
             if (type.contains(MarkdownUnit.HEADER)) {
-                if (alreadyApplyColor == false) {
+                if (!alreadyApplyColor) {
                     text = text.withStyle(ChatFormatting.DARK_AQUA);
                     alreadyApplyColor = true;
                 } 
-                if (alreadyApplyBold == false) {
+                if (!alreadyApplyBold) {
                     text = text.withStyle(ChatFormatting.BOLD);
                     alreadyApplyBold = true;
                 }
             }
             if (type.contains(MarkdownUnit.ENUM)) {
-                if (alreadyApplyColor == false) {
+                if (!alreadyApplyColor) {
                     text = text.withStyle(ChatFormatting.YELLOW);
                     alreadyApplyColor = true;
                 }
             }
             if (type.contains(MarkdownUnit.HYPERLINK)) {
-                if (alreadyApplyColor == false) {
+                if (!alreadyApplyColor) {
                     text = text.withStyle(ChatFormatting.AQUA);
                     alreadyApplyColor = true;
                 }
@@ -481,10 +481,10 @@ public class MarkdownToTextConverter {
     }
 
     /**
-     * Converts a given markdown string into a Text object with simple syntax highlighting.
+     * Converts a given markdown string into a Component object with simple syntax highlighting.
      *
      * @param markdown The input markdown string to be converted.
-     * @return A Text object representing the parsed content of the markdown string.
+     * @return A Component object representing the parsed content of the markdown string.
      */
     public static Component parseMarkdownToText(String markdown) {
         MutableComponent result = Component.empty();
@@ -515,20 +515,12 @@ public class MarkdownToTextConverter {
             return codeText;
         }
 
-        switch (lang.toLowerCase()) {
-            case "java":
-                codeText = syntaxHighlightJava(code);
-                break;
-            case "c":
-            case "cpp":
-                codeText = syntaxHighlightCpp(code);
-                break;
-            case "python":
-                codeText = syntaxHighlightPython(code);
-                break;
-            default:
-                codeText = Component.literal(code).withStyle(ChatFormatting.GRAY);
-        }
+        codeText = switch (lang.toLowerCase()) {
+            case "java" -> syntaxHighlightJava(code);
+            case "c", "cpp" -> syntaxHighlightCpp(code);
+            case "python" -> syntaxHighlightPython(code);
+            default -> Component.literal(code).withStyle(ChatFormatting.GRAY);
+        };
 
         return codeText.withStyle(s -> s
                 .withClickEvent(new ClickEvent(
@@ -578,7 +570,7 @@ public class MarkdownToTextConverter {
             String token = tokens.get(i);
             List<CodeUnit> type = tokenTypes.get(i);
 
-            if (type.size() == 0) {
+            if (type.isEmpty()) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GOLD));
@@ -650,7 +642,7 @@ public class MarkdownToTextConverter {
             List<CodeUnit> type = tokenTypes.get(i);
             // In code block, each part of the text can only have one style, high priority style first
             // For example, string has a higher priority than keyword, because inside a string may contain keywords
-            if (type.size() == 0) {
+            if (type.isEmpty()) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GOLD));
@@ -716,7 +708,7 @@ public class MarkdownToTextConverter {
         for (int i = 0; i < tokenCount; i++) {
             String token = tokens.get(i);
             List<CodeUnit> type = tokenTypes.get(i);
-            if (type.size() == 0) {
+            if (type.isEmpty()) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GRAY));
             } else if (type.contains(CodeUnit.STRING)) {
                 result.append(Component.literal(token).withStyle(ChatFormatting.GOLD));

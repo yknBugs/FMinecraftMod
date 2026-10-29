@@ -28,7 +28,7 @@ import net.minecraftforge.api.distmarker.OnlyIn;
  * Top-level rule editor entry screen: lists every rule currently loaded on the (local, singleplayer)
  * server. Click a row to select it, then Edit / Delete / Enable act on the selection.
  *
- * <p>"Edit" opens {@link RuleGraphScreen} on a detached deep copy of the rule - see
+ * <p>"Edit" opens {@link RuleGraphScreen} on a detached structural copy of the rule - see
  * {@link RuleEditorBridge} for why nothing here is written back to the live rule until the user
  * explicitly commits from that screen.</p>
  */

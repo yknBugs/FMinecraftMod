@@ -66,7 +66,7 @@ public interface RuleEvent extends RuleComponent {
      *
      * @return an unmodifiable map of variable name → expected boxed type; never {@code null}
      */
-    public Map<String, Class<? extends Object>> variablesType();
+    public Map<String, Class<?>> variablesType();
 
     /**
      * Validates that the variables supplied in {@code context} satisfy this event's contract.
@@ -97,13 +97,13 @@ public interface RuleEvent extends RuleComponent {
      */
     default public boolean validateVariables(RuleContext context) {
         Set<String> requiredNotNullVariables = variablesList();
-        Map<String, Class<? extends Object>> expectedTypes = variablesType();
+        Map<String, Class<?>> expectedTypes = variablesType();
         Set<String> requiredNullableVariables = expectedTypes.keySet();
         boolean isPassed = true;
         for (String variable : requiredNullableVariables) {
             Object value = context.getVariable(variable);
             boolean shouldBeNotNull = requiredNotNullVariables.contains(variable);
-            Class<? extends Object> expectedType = expectedTypes.get(variable);
+            Class<?> expectedType = expectedTypes.get(variable);
             if (value == null) {
                 if (shouldBeNotNull) {
                     isPassed = false;

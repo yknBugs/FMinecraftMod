@@ -17,13 +17,13 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 /**
- * A flow node that adds a variable to a scheduled flow.
+ * A flow node that adds variables to a scheduled task of another flow.
  * Inputs:
- * 1. ScheduledFlow - The scheduled flow to add the variable to.
- * 2. String - The name of the variable to add, if not provided, it will add all variables from the current flow.
- * 3. Object - The value of the variable to add, if not provided, it will use the value from the current flow.
+ * 1. Scheduled Task - The scheduled task of the target flow.
+ * 2. String - The name of the variable to add. Leave empty to add all variables from the current flow.
+ * 3. Object - The value of the variable to add. Leave empty to use the value from the current flow.
  * Outputs:
- * 1. Number - The number of variables in the scheduled flow after adding.
+ * 1. Integer - The total number of variables in the target flow after adding.
  * Branches: 1 (Next node)
  */
 public class AddVariableToScheduledFlowNode extends FlowNode {
@@ -49,7 +49,7 @@ public class AddVariableToScheduledFlowNode extends FlowNode {
         Object varObj = resolvedInputs.get(1);
         if (varObj == null) {
             flow.addContextVariables(context.getVariables());
-            status.setOutput(0, flow.getContextVariables().keySet().size());
+            status.setOutput(0, flow.getContextVariables().size());
             return;
         }
         String varName = TypeAdaptor.parse(varObj).asString();
@@ -59,20 +59,20 @@ public class AddVariableToScheduledFlowNode extends FlowNode {
             if (currentValue != null) {
                 flow.addContextVariable(varName, currentValue);
             }
-            status.setOutput(0, flow.getContextVariables().keySet().size());
+            status.setOutput(0, flow.getContextVariables().size());
             return;
         }
         flow.addContextVariable(varName, valueObj);
-        status.setOutput(0, flow.getContextVariables().keySet().size());
+        status.setOutput(0, flow.getContextVariables().size());
     }
 
     private ScheduledFlow parseScheduledFlow(Object flowObj) throws LogicException {
         if (flowObj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(0)), null);
         } else if (flowObj instanceof ScheduledFlow) {
             return (ScheduledFlow) flowObj;
         } else {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(0), this.metadata.inputDataTypes().get(0)), null);
         }
     }
 }

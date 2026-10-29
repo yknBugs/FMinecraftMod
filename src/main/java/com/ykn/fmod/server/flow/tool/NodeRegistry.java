@@ -12,8 +12,8 @@ import java.util.Map;
 
 import javax.annotation.Nullable;
 
-import com.ykn.fmod.server.flow.node.*;
 import com.ykn.fmod.server.flow.logic.FlowNode;
+import com.ykn.fmod.server.flow.node.*;
 
 /**
  * Central registry for all node types in the logic flow system.
@@ -37,7 +37,7 @@ import com.ykn.fmod.server.flow.logic.FlowNode;
  * Example registration:
  * <pre>
  * NodeRegistry.register("BinaryArithmeticNode", BinaryArithmeticNode::new);
- * NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
+ * NodeRegistry.registerEvent("PlayerJoinEventNode", (id, name) -> new GameEventNode(id, name, FlowEvents.get("PlayerJoinEvent")));
  * </pre>
  * 
  * @see FlowNode
@@ -101,7 +101,7 @@ public class NodeRegistry {
      * <p>
      * Example:
      * <pre>
-     * NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
+     * NodeRegistry.registerEvent("PlayerJoinEventNode", (id, name) -> new GameEventNode(id, name, FlowEvents.get("PlayerJoinEvent")));
      * </pre>
      * 
      * @param type The unique type name for this event node
@@ -149,12 +149,25 @@ public class NodeRegistry {
      *   <li>Logic nodes (BinaryArithmeticNode, IfConditionNode, etc.)</li>
      *   <li>Variable nodes (GetVariableNode, SetVariableNode)</li>
      *   <li>Action nodes (BroadcastMessageNode, RunFlowNode)</li>
-     *   <li>Event nodes (EntityDeathEventNode, EntityDamageEventNode, etc.)</li>
+     *   <li>Event nodes (all flow events, served by GameEventNode)</li>
      * </ul>
      * <p>
      * Custom mods can register additional node types after this method is called.
      */
     public static void registerDefaultNodes() {
+        ValueRenderers.registerDefaults();
+        NodeRegistry.register("PlaceBlockNode", PlaceBlockNode::new);
+        NodeRegistry.register("SummonEntityNode", SummonEntityNode::new);
+        NodeRegistry.register("ApplyEffectNode", ApplyEffectNode::new);
+        NodeRegistry.register("ManageTagNode", ManageTagNode::new);
+        NodeRegistry.register("GiveItemToPlayerNode", GiveItemToPlayerNode::new);
+        NodeRegistry.register("MakeItemStackNode", MakeItemStackNode::new);
+        NodeRegistry.register("GetItemStackDataNode", GetItemStackDataNode::new);
+        NodeRegistry.register("GetPlayerInventoryNode", GetPlayerInventoryNode::new);
+        NodeRegistry.register("UpdateEntityNode", UpdateEntityNode::new);
+        NodeRegistry.register("NbtApplyNode", NbtApplyNode::new);
+        NodeRegistry.register("NbtPatchNode", NbtPatchNode::new);
+        NodeRegistry.register("RandomNode", RandomNode::new);
         NodeRegistry.register("AddVariableToScheduledFlowNode", AddVariableToScheduledFlowNode::new);
         NodeRegistry.register("BinaryArithmeticNode", BinaryArithmeticNode::new);
         NodeRegistry.register("BroadcastMessageNode", BroadcastMessageNode::new);
@@ -167,6 +180,7 @@ public class NodeRegistry {
         NodeRegistry.register("GetObjectAtIndexNode", GetObjectAtIndexNode::new);
         NodeRegistry.register("GetScheduledFlowNode", GetScheduledFlowNode::new);
         NodeRegistry.register("GetVariableNode", GetVariableNode::new);
+        NodeRegistry.register("GetOnlinePlayersNode", GetOnlinePlayersNode::new);
         NodeRegistry.register("GetWorldListNode", GetWorldListNode::new);
         NodeRegistry.register("IfConditionNode", IfConditionNode::new);
         NodeRegistry.register("SetObjectAtIndexNode", SetObjectAtIndexNode::new);
@@ -176,10 +190,7 @@ public class NodeRegistry {
         NodeRegistry.register("UnaryArithmeticNode", UnaryArithmeticNode::new);
 
         NodeRegistry.registerEvent("DummyNode", DummyNode::new);
-        NodeRegistry.registerEvent("EntityDamageEventNode", EntityDamageEventNode::new);
-        NodeRegistry.registerEvent("EntityDeathEventNode", EntityDeathEventNode::new);
-        NodeRegistry.registerEvent("PlayerJoinEventNode", PlayerJoinEventNode::new);
-        NodeRegistry.registerEvent("ProjectileHitEntityEventNode", ProjectileHitEntityEventNode::new);
+        GameEventNode.register();
         NodeRegistry.registerEvent("TriggerNode", TriggerNode::new);
     }
 

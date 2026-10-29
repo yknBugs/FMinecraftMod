@@ -9,7 +9,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.UUID;
 
-import javax.annotation.Nullable;
+import net.minecraft.resources.ResourceKey;
+import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.base.util.Util;
 
@@ -46,6 +47,16 @@ public class PlayerData {
      * Increments when the player is idle.
      */
     private int afkTicks;
+
+    /**
+     * Whether the player is currently inside an AFK episode, and the rules that decide it.
+     * <p>
+     * The episode is remembered here rather than re-derived from {@link #afkTicks} and the
+     * configured threshold at each transition: the threshold can change while a player is idle, and
+     * comparing the tick count against the current threshold at that moment both misses the entry
+     * and reports an unmatched return.
+     */
+    private final AfkState afkState = new AfkState();
     
     /**
      * The player's view pitch from the last tick.
@@ -109,8 +120,24 @@ public class PlayerData {
     private int lastTravelMessageTick;
 
     /**
+     * The player's experience level during the last tick.
+     * Used to detect level changes for the level-up event.
+     */
+    private int lastLevel;
+
+    /**
+     * The player's food level during the last tick.
+     * Used to detect hunger changes for the hunger-change event.
+     */
+    private int lastHunger;
+
+    /**
      * Constructs a new PlayerData instance with default values.
-     * All counters are initialized to 0, all objects to null, and collections to empty.
+     * Stores the player UUID and owning server data; counters start at zero, cached
+     * world state starts at the player's current values, and position history is empty.
+     *
+     * @param player The player whose UUID identifies this data
+     * @param serverData The owning server data
      */
     public PlayerData(ServerPlayer player, ServerData serverData) {
         this.playerUuid = player.getUUID();
@@ -124,11 +151,14 @@ public class PlayerData {
         this.lastBossFightTick = 0;
         this.lastMonsterSurroundTick = 0;
         this.lastTravelMessageTick = 0;
+        this.lastLevel = player.experienceLevel;
+        this.lastHunger = player.getFoodData().getFoodLevel();
         this.recentPositions = new ArrayDeque<>();
     }
 
     /**
-     * Updates the cached last-tick state (pitch, yaw, dimension, biome) to the player's current values.
+     * Updates the cached last-tick state (pitch, yaw, dimension, biome, experience level and food
+     * level) to the player's current values.
      * Should be called once per tick after all per-tick logic has been processed.
      */
     public void updateLastTickData(ServerPlayer player) {
@@ -139,13 +169,16 @@ public class PlayerData {
         this.lastPitch = player.getXRot();
         this.lastYaw = player.getYRot();
         this.lastDimensionId = player.level().dimension().location();
-        this.lastBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        this.lastBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
+        this.lastLevel = player.experienceLevel;
+        this.lastHunger = player.getFoodData().getFoodLevel();
     }
 
     /**
      * Appends the player's current position to the recent positions history and trims the history
      * to the specified maximum size by removing the oldest entries.
      *
+     * @param player the player whose current position is recorded; a mismatched UUID is ignored
      * @param maxHistorySize the maximum number of positions to retain
      */
     public void updatePositionHistory(ServerPlayer player, int maxHistorySize) {
@@ -197,7 +230,7 @@ public class PlayerData {
             Util.LOGGER.warn("FMinecraftMod: Attempted to check biome change with a player entity that does not match the stored UUID. Returning false.");
             return false;
         }
-        ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        ResourceLocation currentBiomeId = player.level().getBiome(player.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
         if (this.lastBiomeId == null && currentBiomeId == null) {
             return false; 
         } else if (this.lastBiomeId == null || currentBiomeId == null) {
@@ -238,6 +271,15 @@ public class PlayerData {
         int ticks = this.afkTicks;
         this.afkTicks = 0;
         return ticks;
+    }
+
+    /**
+     * Returns the AFK episode state of this player.
+     *
+     * @return the per-player {@link AfkState}; never null
+     */
+    public AfkState afkState() {
+        return this.afkState;
     }
 
     /**
@@ -330,6 +372,24 @@ public class PlayerData {
     @Nullable
     public Boolean getLastCanSleep() {
         return this.lastCanSleep;
+    }
+
+    /**
+     * Returns the player's experience level during the last tick.
+     *
+     * @return the experience level recorded by {@link #updateLastTickData(ServerPlayer)}
+     */
+    public int getLastLevel() {
+        return this.lastLevel;
+    }
+
+    /**
+     * Returns the player's food level during the last tick.
+     *
+     * @return the food level recorded by {@link #updateLastTickData(ServerPlayer)}
+     */
+    public int getLastHunger() {
+        return this.lastHunger;
     }
 
     /**

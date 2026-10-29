@@ -33,7 +33,7 @@ public class FlowNodeSuggestion implements SuggestionProvider<CommandSourceStack
     
     /**
      * The index position of the flow name in the command input.
-     * For example, in "/f flow edit "<flowName>" ...", the index is 3.
+     * For example, in {@code /f flow edit "<flowName>" ...}, the index is 3.
      */
     private final int flowNameIndex;
 

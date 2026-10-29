@@ -151,7 +151,7 @@ public class NoteBlockSong {
      *   <li>Identifies and stores unique notes with instruments as requirements.</li>
      * </ul>
      *
-     * <p>Note: The method assumes that the `notesMap` contains the mapping of ticks to notes
+     * <p>Note: The method assumes that the {@code notesMap} contains the mapping of ticks to notes
      * and that each note may have an associated instrument.
      */
     public void createIndex() {
@@ -187,23 +187,21 @@ public class NoteBlockSong {
         }
         this.maxRealTick = Collections.max(this.realTickIndex.keySet()); 
         this.requirements = new HashSet<>();
-        this.notesMap.values().stream().distinct().forEach(notes -> {
-            notes.forEach(note -> {
-                if (note.instrument != null) {
-                    requirements.add(note);
-                }
-            });
-        });
+        this.notesMap.values().stream().distinct().forEach(notes -> notes.forEach(note -> {
+            if (note.instrument() != null) {
+                requirements.add(note);
+            }
+        }));
     }
 
     /**
-     * Creates a deep copy of this NoteBlockSong instance.
+     * Copies this song's note map and lists into a new song at the default speed of 1.0.
      * <p>
      * The method creates a new NoteBlockSong object with a copied notes map, while keeping the same title and author.
      * The copied notes map is constructed by creating new lists for each tick, ensuring that modifications to the
-     * notes in the copied song do not affect the original song.
+     * lists in the copied song do not affect the original lists. NoteBlockNote objects are shared.
      *
-     * @return A new NoteBlockSong instance that is a deep copy of the original.
+     * @return A new song with independent note collections, shared notes, and speed reset to 1.0.
      */
     public NoteBlockSong copy() {
         HashMap<Double, List<NoteBlockNote>> copiedNotesMap = new HashMap<>();
