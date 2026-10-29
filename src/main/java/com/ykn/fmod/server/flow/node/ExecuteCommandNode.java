@@ -18,14 +18,17 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 import net.minecraft.world.entity.Entity;
 
+import com.ykn.fmod.server.flow.tool.FlowConvert;
+
 /**
- * Node that executes a command string
+ * A flow node that runs a server command as if the source entity had executed it.
+ * Permissions of the source are ignored; the command runs with its full effect.
  * Inputs:
- * 1. Entity - The source entity.
- * 2. String - The command to execute.
+ * 1. Entity - The entity executing the command.
+ * 2. String - The command to execute. Leading / is optional.
  * Outputs:
- * 1. Component - The feedback message from command execution, if any.
- * 2. String - The raw output from command execution, if any.
+ * 1. Text - The feedback message from the command execution.
+ * 2. String - All output raw messages from the command.
  * Branches: 1 (Next node)
  */
 public class ExecuteCommandNode extends FlowNode {
@@ -47,7 +50,7 @@ public class ExecuteCommandNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        Entity sourceEntity = parseEntity(resolvedInputs.get(0));
+        Entity sourceEntity = parseEntity(resolvedInputs.get(0), context);
         String command = parseCommand(resolvedInputs.get(1));
         RedirectedCommandOutput output = RedirectedCommandOutput.create();
         // To create a flow or load a flow from file, user must have a permission level of at least 3
@@ -56,26 +59,20 @@ public class ExecuteCommandNode extends FlowNode {
         // So we use a permission level of 3 here to mimic vanilla trigger command behavior.
         Util.runCommand(output, sourceEntity, command, 3);
         status.setOutput(0, output.getAllMessage());
-        status.setOutput(1, output.getRawOutput());
+        status.setOutput(1, FlowConvert.unwrapOutput(output.getRawOutput()));
     }
 
-    private Entity parseEntity(Object entityObject) throws LogicException {
-        if (entityObject == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
-        } else if (entityObject instanceof Entity) {
-            return (Entity) entityObject;
-        } else {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
-        }
+    private Entity parseEntity(Object entityObject, ExecutionContext context) throws LogicException {
+        return FlowConvert.entity(entityObject, context.getServer());
     }
 
     private String parseCommand(Object commandObject) throws LogicException {
         if (commandObject == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(1)), null);
         }
         String command = TypeAdaptor.parse(commandObject).asString().strip();
         if (command.isEmpty()) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(1)), null);
         }
         return command;
     }

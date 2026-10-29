@@ -20,24 +20,24 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
+import com.ykn.fmod.server.flow.tool.FlowConvert;
+
 /**
- * A node to get a list of all the scheduled flows, which are flows that are submitted by RunFlowNode but not executed yet
+ * A flow node that lists the scheduled flow tasks that match the given filters.
  * Inputs:
- * 1. String - Filter, if not null, only the flows with the same name will be returned
- * 2. String - Filter, if not null, only the flows with the same start node type will be returned
- * 3. String - Filter, if not null, only the flows containing the same context variable name will be returned
- * 4. Number - Filter, if not null, only the flows with the same or more nodes will be returned
- * 5. Number - Filter, if not null, only the flows with the same or less nodes will be returned
- * 6. Number - Filter, if not null, only the flows with the same or more ticks left will be returned
- * 7. Number - Filter, if not null, only the flows with the same or less ticks left will be returned
+ * 1. String - Filter by flow name.
+ * 2. String - Filter by start node type.
+ * 3. String - Filter by existence of a variable with the given name.
+ * 4. Integer - Filter by minimum number of nodes.
+ * 5. Integer - Filter by maximum number of nodes.
+ * 6. Integer - Filter by minimum ticks left.
+ * 7. Integer - Filter by maximum ticks left.
  * Outputs:
- * 1. Object - Null for no matches, a ScheduledFlow for one match, or a List for multiple matches.
- * 2. Integer - The number of flows that satisfy the filter conditions
- * 3. Object - Values of the named context variable, or null entries when no variable filter is set.
- * 4. Object - Node counts for the matching flows.
- * 5. Object - Remaining delays in ticks for the matching flows.
- * <p>Outputs 1, 3, 4, and 5 use {@link TypeAdaptor#collapseList()}: an empty list becomes
- * null, a singleton becomes its sole element, and larger lists remain lists.
+ * 1. List[Scheduled Task] - List of matching tasks.
+ * 2. Integer - Number of matching tasks.
+ * 3. List[Object] - List of variable values for each matching task, mapped by the given variable name filter.
+ * 4. List[Integer] - List of node counts for the flow in each matching task.
+ * 5. List[Integer] - List of ticks left for each matching task.
  * Branches: 1 (Next node)
  */
 public class GetScheduledFlowNode extends FlowNode {
@@ -84,9 +84,7 @@ public class GetScheduledFlowNode extends FlowNode {
         
         List<ScheduledTask> allTasks = Util.getServerData(context.getServer()).getScheduledTasks();
         for (ScheduledTask task : allTasks) {
-            if (task instanceof ScheduledFlow) {
-                ScheduledFlow flow = (ScheduledFlow) task;
-                
+            if (task instanceof ScheduledFlow flow) {
                 // Get flow properties
                 LogicFlow logicFlow = flow.getFlowManager().getFlow();
                 String flowName = logicFlow.getName();
@@ -120,6 +118,7 @@ public class GetScheduledFlowNode extends FlowNode {
                 }
                 
                 // This flow matches all filters
+                FlowConvert.checkListSize((long) matchedFlows.size() + 1);
                 matchedFlows.add(flow);
                 nodeCounts.add(nodeCount);
                 ticksLeftList.add(ticksLeft);
@@ -134,11 +133,11 @@ public class GetScheduledFlowNode extends FlowNode {
         }
         
         // Set outputs
-        status.setOutput(0, TypeAdaptor.parse(matchedFlows).collapseList());
+        status.setOutput(0, FlowConvert.unwrapOutput(matchedFlows.isEmpty() ? null : matchedFlows));
         status.setOutput(1, matchedFlows.size());
-        status.setOutput(2, TypeAdaptor.parse(variableValues).collapseList());
-        status.setOutput(3, TypeAdaptor.parse(nodeCounts).collapseList());
-        status.setOutput(4, TypeAdaptor.parse(ticksLeftList).collapseList());
+        status.setOutput(2, FlowConvert.unwrapOutput(variableValues.isEmpty() ? null : variableValues));
+        status.setOutput(3, FlowConvert.unwrapOutput(nodeCounts.isEmpty() ? null : nodeCounts));
+        status.setOutput(4, FlowConvert.unwrapOutput(ticksLeftList.isEmpty() ? null : ticksLeftList));
     }
     
     private String parseStringFilter(Object obj) {
@@ -146,7 +145,7 @@ public class GetScheduledFlowNode extends FlowNode {
             return null;
         }
         String str = TypeAdaptor.parse(obj).asString();
-        if (str.strip().isEmpty()) {
+        if (str.isBlank()) {
             return null;
         }
         return str;

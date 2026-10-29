@@ -117,7 +117,6 @@ public class SayCommandSuggestion implements SuggestionProvider<CommandSourceSta
                 result = key;
             } else if (keyPosition == position) {
                 if (result == null || result.length() < key.length()) {
-                    position = keyPosition;
                     result = key;
                 }
             }

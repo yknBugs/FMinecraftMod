@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.flow.tool.ValueRenderers;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -85,13 +86,13 @@ public class NodeStatus implements Cloneable {
      */
     public NodeStatus(FlowNode node) {
         this.node = node;
-        int inputNumber = node.metadata.inputNumber;
+        int inputNumber = node.metadata.inputNumber();
         this.inputs = new ArrayList<>();
         for (int i = 0; i < inputNumber; i++) {
             this.inputs.add(null);
         }
         this.hasExecuted = false;
-        int outputNumber = node.metadata.outputNumber;
+        int outputNumber = node.metadata.outputNumber();
         this.outputs = new ArrayList<>();
         for (int i = 0; i < outputNumber; i++) {
             this.outputs.add(null);
@@ -115,13 +116,13 @@ public class NodeStatus implements Cloneable {
      */
     public NodeStatus copy() {
         NodeStatus cloned = new NodeStatus(node);
-        int inputNumber = node.metadata.inputNumber;
+        int inputNumber = node.metadata.inputNumber();
         cloned.inputs = new ArrayList<>();
         for (int i = 0; i < inputNumber; i++) {
             cloned.inputs.add(this.inputs.get(i));
         }
         cloned.hasExecuted = this.hasExecuted;
-        int outputNumber = node.metadata.outputNumber;
+        int outputNumber = node.metadata.outputNumber();
         cloned.outputs = new ArrayList<>();
         for (int i = 0; i < outputNumber; i++) {
             cloned.outputs.add(this.outputs.get(i));
@@ -167,13 +168,9 @@ public class NodeStatus implements Cloneable {
      * Called by {@link ExecutionContext#resetExecutionStatus()}.
      */
     public void reset() {
-        for (int i = 0; i < this.inputs.size(); i++) {
-            this.inputs.set(i, null);
-        }
+        Collections.fill(this.inputs, null);
         this.hasExecuted = false;
-        for (int i = 0; i < this.outputs.size(); i++) {
-            this.outputs.set(i, null);
-        }
+        Collections.fill(this.outputs, null);
         this.nextBranchId = -1;
     }
 
@@ -209,8 +206,8 @@ public class NodeStatus implements Cloneable {
      * @param inputs The list of input values to set (must match the number of input ports)
      */
     public void setInputs(List<Object> inputs) {
-        if (inputs.size() != this.node.metadata.inputNumber) {
-            Util.LOGGER.warn("FMinecraftMod: Attempted to set inputs for node " + this.node.name + " with incorrect number of inputs: expected " + this.node.metadata.inputNumber + ", got " + inputs.size());
+        if (inputs.size() != this.node.metadata.inputNumber()) {
+            Util.LOGGER.warn("FMinecraftMod: Attempted to set inputs for node " + this.node.name + " with incorrect number of inputs: expected " + this.node.metadata.inputNumber() + ", got " + inputs.size());
         }
         this.inputs = new ArrayList<>(inputs);
     }
@@ -218,7 +215,9 @@ public class NodeStatus implements Cloneable {
     /**
      * Sets the value for a specific output port.
      * <p>
-     * Called by nodes during execution to produce output values.
+     * Called by nodes during execution to produce output values. The value is stored as given;
+     * nodes that want a one-element list collapsed to a scalar call
+     * {@link com.ykn.fmod.server.flow.tool.FlowConvert#unwrapOutput(Object)} themselves.
      * 
      * @param index The output port index (0-based)
      * @param value The value to set (can be null)
@@ -285,25 +284,25 @@ public class NodeStatus implements Cloneable {
      */
     public Component render(long index, LogicFlow flow) {
         // Render title
-        MutableComponent text = Util.parseTranslatableText("fmod.flow.execute.node", String.valueOf(index), this.node.name, this.node.metadata.displayName);
+        MutableComponent text = Util.parseTranslatableText("fmod.flow.execute.node", String.valueOf(index), this.node.name, this.node.metadata.displayName());
         text = text.append("\n");
         // Render inputs
-        for (int i = 0; i < this.node.metadata.inputNumber; i++) {
+        for (int i = 0; i < this.node.metadata.inputNumber(); i++) {
             Object inputValue = this.inputs.get(i);
             if (inputValue == null) {
-                text = text.append(Util.parseTranslatableText("fmod.flow.execute.input", this.node.metadata.inputNames.get(i), Util.parseTranslatableText("fmod.misc.null")));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.input", this.node.metadata.inputNames().get(i), Util.parseTranslatableText("fmod.misc.null")));
             } else {
-                text = text.append(Util.parseTranslatableText("fmod.flow.execute.input", this.node.metadata.inputNames.get(i), String.valueOf(inputValue)));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.input", this.node.metadata.inputNames().get(i), render(inputValue)));
             }
             text = text.append("\n");
         }
         // Render outputs
-        for (int i = 0; i < this.node.metadata.outputNumber; i++) {
+        for (int i = 0; i < this.node.metadata.outputNumber(); i++) {
             Object outputValue = this.outputs.get(i);
             if (outputValue == null) {
-                text = text.append(Util.parseTranslatableText("fmod.flow.execute.output", this.node.metadata.outputNames.get(i), Util.parseTranslatableText("fmod.misc.null")));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.output", this.node.metadata.outputNames().get(i), Util.parseTranslatableText("fmod.misc.null")));
             } else {
-                text = text.append(Util.parseTranslatableText("fmod.flow.execute.output", this.node.metadata.outputNames.get(i), String.valueOf(outputValue)));
+                text = text.append(Util.parseTranslatableText("fmod.flow.execute.output", this.node.metadata.outputNames().get(i), render(outputValue)));
             }
             text = text.append("\n");
         }
@@ -315,5 +314,15 @@ public class NodeStatus implements Cloneable {
             text = text.append(Util.parseTranslatableText("fmod.flow.execute.next", nextNode.name));
         }
         return text;
+    }
+
+    /**
+     * Renders a value of this node's input/output for display.
+     *
+     * @param value the value to render
+     * @return the display text
+     */
+    private static String render(Object value) {
+        return ValueRenderers.render(value);
     }
 }

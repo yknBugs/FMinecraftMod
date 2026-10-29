@@ -8,8 +8,6 @@ package com.ykn.fmod.server.flow.node;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ykn.fmod.server.base.util.TypeAdaptor;
-import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
@@ -25,23 +23,25 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec2;
 
+import com.ykn.fmod.server.flow.tool.FlowConvert;
+
 /**
- * Node that retrieves data from an entity
+ * A flow node that reads the common data of an entity in one go.
  * Inputs:
- * 1. Entity - The source entity.
+ * 1. Entity - The source entity to read data from.
  * Outputs:
- * 1. Component - The custom display name of the entity, if available.
- * 2. String - The raw custom name of the entity, if available.
- * 3. ResourceLocation - The type identifier of the entity.
+ * 1. Text - The custom display name of the entity.
+ * 2. String - The raw custom name string.
+ * 3. Enum - The identifier of the entity type.
  * 4. String - The UUID of the entity.
- * 5. Level - The current world/dimension of the entity, if applicable.
- * 6. Vec3 - The current coordinates of the entity, if applicable.
- * 7. Vec3 - The current velocity of the entity, if applicable.
- * 8. Vec2 - The current rotation (pitch and yaw) of the entity, if applicable.
- * 9. ResourceLocation - The dimension identifier of the entity's current world, if applicable.
- * 10. Entity - The vehicle the entity is currently riding, if applicable.
- * 11. {@code List<ItemStack>} - Main-hand and off-hand items for living entities; null for other entities.
- * 12. {@code List<ItemStack>} - Head, chest, legs, and feet items for living entities; null for other entities.
+ * 5. World - The world the entity is currently in.
+ * 6. Vec3d - The current position of the entity.
+ * 7. Vec3d - The current velocity of the entity.
+ * 8. Vec2f - The pitch and yaw rotation of the entity.
+ * 9. Enum - The identifier of the entity's current dimension.
+ * 10. Entity - The vehicle the entity is riding.
+ * 11. List[Item] - The hand items of the entity.
+ * 12. List[Item] - The armor items of the entity.
  * Branches: 1 (Next node)
  */
 public class GetEntityDataNode extends FlowNode {
@@ -72,7 +72,7 @@ public class GetEntityDataNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        Entity entity = parseEntity(resolvedInputs.get(0));
+        Entity entity = parseEntity(resolvedInputs.get(0), context);
         Component customName = entity.getCustomName();
         Level world = entity.level();
         status.setOutput(0, customName);
@@ -92,7 +92,7 @@ public class GetEntityDataNode extends FlowNode {
             handItems.add(livingEntity.getItemBySlot(EquipmentSlot.OFFHAND));
         }
 
-        status.setOutput(10, TypeAdaptor.parse(handItems).collapseList());
+        status.setOutput(10, FlowConvert.unwrapOutput(handItems.isEmpty() ? null : handItems));
 
         List<ItemStack> armorItems = new ArrayList<>();
         if (entity instanceof LivingEntity livingEntity) {
@@ -102,16 +102,10 @@ public class GetEntityDataNode extends FlowNode {
             armorItems.add(livingEntity.getItemBySlot(EquipmentSlot.FEET));
         }
         
-        status.setOutput(11, TypeAdaptor.parse(armorItems).collapseList());
+        status.setOutput(11, FlowConvert.unwrapOutput(armorItems.isEmpty() ? null : armorItems));
     }
 
-    private Entity parseEntity(Object entityObject) throws LogicException {
-        if (entityObject == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
-        } else if (entityObject instanceof Entity) {
-            return (Entity) entityObject;
-        } else {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
-        }
+    private Entity parseEntity(Object entityObject, ExecutionContext context) throws LogicException {
+        return FlowConvert.entity(entityObject, context.getServer());
     }
 }

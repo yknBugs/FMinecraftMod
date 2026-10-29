@@ -135,8 +135,7 @@ public class ConditionReference implements RuleCondition {
         }
         HashSet<RuleCondition> visitedNode = new HashSet<>();
         visitedNode.add(this);
-        while (condition instanceof ConditionReference) {
-            ConditionReference reference = (ConditionReference) condition;
+        while (condition instanceof ConditionReference reference) {
             if (visitedNode.contains(reference)) {
                 // Circular reference detected; bail out to prevent infinite recursion.
                 return null;

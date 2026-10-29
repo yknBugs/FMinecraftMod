@@ -5,19 +5,12 @@
 
 package com.ykn.fmod.server.base.event;
 
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.MessageType;
 import com.ykn.fmod.server.base.util.ServerMessageType;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.tool.FlowManager;
-import com.ykn.fmod.server.rule.event.EntityDeathEvent;
-import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -26,31 +19,30 @@ import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 
-public class EntityDeath {
+/**
+ * The non-player entity death messages.
+ *
+ * <p>This class is the existing feature only; the rule and flow events of the same moment are
+ * dispatched by {@link GameEventHandler}, which calls this method first. Players are not handled
+ * here - their death message lives in {@link PlayerDeath}.
+ */
+public final class EntityDeath {
 
-    private final LivingEntity livingEntity;
-    private final DamageSource damageSource;
-
-    public EntityDeath(LivingEntity livingEntity, DamageSource damageSource) {
-        this.livingEntity = livingEntity;
-        this.damageSource = damageSource;
-    }
-
-    public LivingEntity getLivingEntity() {
-        return livingEntity;
-    }
-
-    public DamageSource getDamageSource() {
-        return damageSource;
+    private EntityDeath() {
     }
 
     /**
-     * This method is called when an entity dies.
-     * @see com.ykn.fmod.server.mixin.EntityDeathMixin
+     * Broadcasts the death message(s) of one dying entity.
+     *
+     * @param livingEntity the entity that died
+     * @param damageSource the killing damage source
+     * @return {@code false} when the handler was skipped (no server), in which case there is
+     *         nothing to report and the event is not dispatched either
+     * @see com.ykn.fmod.server.mixin.GameEventMixins.EntityDeath
      */
-    public void onEntityDeath() {
+    public static boolean onEntityDeath(LivingEntity livingEntity, DamageSource damageSource) {
         if (livingEntity.getServer() == null) {
-            return;
+            return false;
         }
 
         ServerData data = Util.getServerData(livingEntity.getServer());
@@ -64,13 +56,13 @@ public class EntityDeath {
         Component mainText = Component.empty().append(mainTextCoord).append(" ").append(mainTextDeath);
         Component otherText = livingEntity.getCombatTracker().getDeathMessage();
 
-        if (this.livingEntity.hasCustomName()) {
+        if (livingEntity.hasCustomName()) {
             ServerMessageType type = Util.getServerConfig().getNamedEntityDeathMessage();
             type.postMessage(livingEntity.getServer(), mainText, otherText);
             isMainBroadcasted.add(type.mainPlayerLocation);
             isOtherBroadcasted.add(type.otherPlayerLocation);
         }
-        if (this.livingEntity.getMaxHealth() > Util.getServerConfig().getBossMaxHealthThreshold()) {
+        if (livingEntity.getMaxHealth() > Util.getServerConfig().getBossMaxHealthThreshold()) {
             ServerMessageType type = Util.getServerConfig().getBossDeathMessage();
             if (!isMainBroadcasted.contains(type.mainPlayerLocation)) {
                 type.updateOther(ServerMessageType.Location.NONE).postMessage(livingEntity.getServer(), mainText, otherText);
@@ -111,46 +103,6 @@ public class EntityDeath {
             isOtherBroadcasted.add(type.otherPlayerLocation);
         }
 
-        runCustomRule(data);
-        runLogicFlow(data);
-    }
-
-    private void runCustomRule(ServerData data) {
-        List<RuleManager> deathEventRules = data.gatherRuleByEventType(EntityDeathEvent.class, true);
-        for (RuleManager rule : deathEventRules) {
-            Map<String, Object> eventVariables = new HashMap<>();
-            eventVariables.put("entity", this.livingEntity.getUUID());
-            eventVariables.put("cause", this.damageSource.getEntity() == null ? null : this.damageSource.getEntity().getUUID());
-            eventVariables.put("source", this.damageSource.getDirectEntity() == null ? null : this.damageSource.getDirectEntity().getUUID());
-            eventVariables.put("x", this.livingEntity.getX());
-            eventVariables.put("y", this.livingEntity.getY());
-            eventVariables.put("z", this.livingEntity.getZ());
-            eventVariables.put("position", this.livingEntity.position());
-            eventVariables.put("dimension", this.livingEntity.level().dimension().location());
-            eventVariables.put("biome", this.livingEntity.level().getBiome(this.livingEntity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
-            eventVariables.put("message", this.livingEntity.getCombatTracker().getDeathMessage().getString());
-            eventVariables.put("name", this.livingEntity.getDisplayName().getString());
-            eventVariables.put("__entity__", this.livingEntity);
-            eventVariables.put("__cause__", this.damageSource.getEntity());
-            eventVariables.put("__source__", this.damageSource.getDirectEntity());
-            eventVariables.put("__world__", this.livingEntity.level());
-            eventVariables.put("__message__", this.livingEntity.getCombatTracker().getDeathMessage());
-            eventVariables.put("__name__", this.livingEntity.getDisplayName());
-            rule.trigger(data, eventVariables);
-        }
-    }
-
-    private void runLogicFlow(ServerData data) {
-        List<FlowManager> deathEventFlow = data.gatherFlowByFirstNodeType("EntityDeathEventNode", true);
-        for (FlowManager flow : deathEventFlow) {
-            List<Object> eventOutput = new ArrayList<>();
-            eventOutput.add(this.livingEntity);
-            eventOutput.add(this.damageSource.type());
-            eventOutput.add(this.damageSource.getEntity());
-            eventOutput.add(this.damageSource.getDirectEntity());
-            eventOutput.add(this.damageSource.getSourcePosition());
-            eventOutput.add(this.livingEntity.getCombatTracker().getDeathMessage());
-            flow.execute(data, eventOutput, null);
-        }
+        return true;
     }
 }

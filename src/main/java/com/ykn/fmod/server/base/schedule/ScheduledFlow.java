@@ -91,10 +91,7 @@ public class ScheduledFlow extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (flowManager == null || server == null || !flowManager.isEnabled()) {
-            return true;
-        }
-        return false;
+        return flowManager == null || server == null || !flowManager.isEnabled();
     }
 
     @Override

@@ -41,9 +41,9 @@ public class FormulaSuggestionGenerator {
         if (!isValidFormula(existingContent) || !isValidStructure(existingContent)) {
             return new ArrayList<>();
         }
-        
+
         List<String> suggestions = new ArrayList<>();
-        
+
         // Handle empty input
         if (existingContent.isEmpty()) {
             suggestions.addAll(variableNames);
@@ -274,7 +274,7 @@ public class FormulaSuggestionGenerator {
             i--;
         }
         
-        if (i < 0) return "";
+        if (i < 0) { return ""; }
         
         int end = i;
         // Move back while we have "token characters"
@@ -313,19 +313,19 @@ public class FormulaSuggestionGenerator {
      * @return {@code true} if the token sequence is structurally valid
      */
     private static boolean isValidStructure(String expr) {
-        if (expr.isEmpty()) return true;
+        if (expr.isEmpty()) { return true; }
         String trimmed = expr.trim();
-        if (trimmed.isEmpty()) return true;
+        if (trimmed.isEmpty()) { return true; }
 
         List<String> tokens = tokenize(trimmed);
-        if (tokens.size() <= 1) return true;
+        if (tokens.size() <= 1) { return true; }
 
         boolean expectOperand = true;
 
         for (String token : tokens) {
             if (expectOperand) {
-                if (isOperator(token)) return false;
-                if (token.equals(")")) return false;
+                if (isOperator(token)) { return false; }
+                if (token.equals(")")) { return false; }
                 if (token.equals("(")) {
                     // still expect operand inside parens
                 } else if (token.equals("!")) {
@@ -335,8 +335,8 @@ public class FormulaSuggestionGenerator {
                     expectOperand = false;
                 }
             } else {
-                if (token.equals("(")) return false;
-                if (token.equals("!")) return false;
+                if (token.equals("(")) { return false; }
+                if (token.equals("!")) { return false; }
                 if (token.equals(")")) {
                     // after ), still expect operator
                 } else if (isOperator(token)) {
@@ -361,12 +361,12 @@ public class FormulaSuggestionGenerator {
         for (int i = 0; i < expr.length(); i++) {
             char c = expr.charAt(i);
             if (c == ' ') {
-                if (current.length() > 0) {
+                if (!current.isEmpty()) {
                     tokens.add(current.toString());
                     current = new StringBuilder();
                 }
             } else if (c == '(' || c == ')' || c == '!') {
-                if (current.length() > 0) {
+                if (!current.isEmpty()) {
                     tokens.add(current.toString());
                     current = new StringBuilder();
                 }
@@ -375,7 +375,7 @@ public class FormulaSuggestionGenerator {
                 current.append(c);
             }
         }
-        if (current.length() > 0) {
+        if (!current.isEmpty()) {
             tokens.add(current.toString());
         }
         return tokens;
@@ -400,7 +400,7 @@ public class FormulaSuggestionGenerator {
      * Check if a string is an operator ({@code |}, {@code &}, or {@code ^})
      */
     private static boolean isOperator(String s) {
-        return s.length() > 0 && s.matches("[|&^]+");
+        return !s.isEmpty() && s.matches("[|&^]+");
     }
     
     /**

@@ -660,7 +660,7 @@ public class FlowCommand {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
                 return 0;
             }
-            if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
+            if (index <= 0 || index > existingNode.getMetadata().inputNumber()) {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
                 return 0;
             }
@@ -669,7 +669,7 @@ public class FlowCommand {
             Object parsedValue = ref.getValue();
             String parsedValueStr = String.valueOf(parsedValue);
             targetFlow.setConstInput(name, index - 1, parsedValue);
-            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames.get(index - 1), parsedValueStr), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.const.success", name, existingNode.getMetadata().inputNames().get(index - 1), parsedValueStr), true);
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
@@ -689,7 +689,7 @@ public class FlowCommand {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
                 return 0;
             }
-            if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
+            if (index <= 0 || index > existingNode.getMetadata().inputNumber()) {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
                 return 0;
             }
@@ -698,12 +698,12 @@ public class FlowCommand {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.node.notexists", refNode, flowName));
                 return 0;
             }
-            if (refIndex <= 0 || refIndex > refExistingNode.getMetadata().outputNumber) {
+            if (refIndex <= 0 || refIndex > refExistingNode.getMetadata().outputNumber()) {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.edit.output.indexerror", refNode, String.valueOf(refIndex)));
                 return 0;
             }
             targetFlow.setReferenceInput(name, index - 1, refNode, refIndex - 1);
-            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames.get(index - 1), refNode, refExistingNode.getMetadata().outputNames.get(refIndex - 1)), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.ref.success", name, existingNode.getMetadata().inputNames().get(index - 1), refNode, refExistingNode.getMetadata().outputNames().get(refIndex - 1)), true);
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
@@ -723,12 +723,12 @@ public class FlowCommand {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
                 return 0;
             }
-            if (index <= 0 || index > existingNode.getMetadata().inputNumber) {
+            if (index <= 0 || index > existingNode.getMetadata().inputNumber()) {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.edit.input.indexerror", name, String.valueOf(index)));
                 return 0;
             }
             targetFlow.disconnectInput(name, index - 1);
-            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames.get(index - 1)), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.disconnect.success", name, existingNode.getMetadata().inputNames().get(index - 1)), true);
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
@@ -748,7 +748,7 @@ public class FlowCommand {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
                 return 0;
             }
-            if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
+            if (index <= 0 || index > existingNode.getMetadata().branchNumber()) {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
                 return 0;
             }
@@ -758,7 +758,7 @@ public class FlowCommand {
                 return 0;
             }
             targetFlow.setNextNode(name, index - 1, next);
-            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames.get(index - 1), next), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.next.success", name, existingNode.getMetadata().branchNames().get(index - 1), next), true);
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
@@ -778,12 +778,12 @@ public class FlowCommand {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.node.notexists", name, flowName));
                 return 0;
             }
-            if (index <= 0 || index > existingNode.getMetadata().branchNumber) {
+            if (index <= 0 || index > existingNode.getMetadata().branchNumber()) {
                 context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.flow.edit.branch.indexerror", name, String.valueOf(index)));
                 return 0;
             }
             targetFlow.disconnectNextNode(name, index - 1);
-            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames.get(index - 1)), true);
+            context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.flow.edit.final.success", name, existingNode.getMetadata().branchNames().get(index - 1)), true);
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Caught unexpected exception when executing command /f flow edit", e);
             context.getSource().sendFailure(Util.parseTranslatableText("fmod.command.unknownerror"));
@@ -842,13 +842,13 @@ public class FlowCommand {
                     .then(Commands.argument("event", StringArgumentType.string())
                         .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList(), true))
                         .then(Commands.argument("node", StringArgumentType.string())
-                            .executes(context -> {return runCreateFlowCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "event"), StringArgumentType.getString(context, "node"), context);})
+                            .executes(context -> runCreateFlowCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "event"), StringArgumentType.getString(context, "node"), context))
                         )
                     )
                 )
             )
             .then(Commands.literal("list")
-                .executes(context -> {return runListFlowCommand(context);})
+                .executes(FlowCommand::runListFlowCommand)
             )
             .then(Commands.literal("edit")
                 .then(Commands.argument("name", StringArgumentType.string())
@@ -857,21 +857,21 @@ public class FlowCommand {
                         .then(Commands.argument("type", StringArgumentType.string())
                             .suggests(StringSuggestion.suggest(NodeRegistry.getNodeList(), true))
                             .then(Commands.argument("node", StringArgumentType.string())
-                                .executes(context -> {return runEditFlowNewNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context);})
+                                .executes(context -> runEditFlowNewNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context))
                             )
                         )
                     )
                     .then(Commands.literal("remove")
                         .then(Commands.argument("node", StringArgumentType.string())
                             .suggests(FlowNodeSuggestion.suggest(true, 3))
-                            .executes(context -> {return runEditFlowRemoveNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), context);})
+                            .executes(context -> runEditFlowRemoveNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), context))
                         )
                     )
                     .then(Commands.literal("event")
                         .then(Commands.argument("type", StringArgumentType.string())
                             .suggests(StringSuggestion.suggest(NodeRegistry.getEventNodeList(), true))
                             .then(Commands.argument("node", StringArgumentType.string())
-                                .executes(context -> {return runEditFlowReplaceEventCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context);})
+                                .executes(context -> runEditFlowReplaceEventCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "type"), StringArgumentType.getString(context, "node"), context))
                             )
                         )
                     )
@@ -879,7 +879,7 @@ public class FlowCommand {
                         .then(Commands.argument("old", StringArgumentType.string())
                             .suggests(FlowNodeSuggestion.suggest(true, 3))
                             .then(Commands.argument("new", StringArgumentType.string())
-                                .executes(context -> {return runEditFlowRenameNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
+                                .executes(context -> runEditFlowRenameNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context))
                             )
                         )
                     )
@@ -888,7 +888,7 @@ public class FlowCommand {
                             .suggests(FlowNodeSuggestion.suggest(true, 3))
                             .then(Commands.argument("index", IntegerArgumentType.integer(1))
                                 .then(Commands.argument("value", StringArgumentType.string())
-                                    .executes(context -> {return runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context);})
+                                    .executes(context -> runEditFlowConstInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "value"), context))
                                 )
                             )
                         )
@@ -900,7 +900,7 @@ public class FlowCommand {
                                 .then(Commands.argument("refNode", StringArgumentType.string())
                                     .suggests(FlowNodeSuggestion.suggest(true, 3))
                                     .then(Commands.argument("refIndex", IntegerArgumentType.integer(1))
-                                        .executes(context -> {return runEditFlowRefInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "refNode"), IntegerArgumentType.getInteger(context, "refIndex"), context);})
+                                        .executes(context -> runEditFlowRefInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "refNode"), IntegerArgumentType.getInteger(context, "refIndex"), context))
                                     )
                                 )
                             )
@@ -910,7 +910,7 @@ public class FlowCommand {
                         .then(Commands.argument("node", StringArgumentType.string())
                             .suggests(FlowNodeSuggestion.suggest(true, 3))
                             .then(Commands.argument("index", IntegerArgumentType.integer(1))
-                                .executes(context -> {return runEditFlowDisconnectInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
+                                .executes(context -> runEditFlowDisconnectInputCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context))
                             )
                         )
                     )
@@ -920,7 +920,7 @@ public class FlowCommand {
                             .then(Commands.argument("index", IntegerArgumentType.integer(1))
                                 .then(Commands.argument("next", StringArgumentType.string())
                                     .suggests(FlowNodeSuggestion.suggest(true, 3))
-                                    .executes(context -> {return runEditFlowNextNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "next"), context);})
+                                    .executes(context -> runEditFlowNextNodeCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), StringArgumentType.getString(context, "next"), context))
                                 )
                             )
                         )
@@ -929,15 +929,15 @@ public class FlowCommand {
                         .then(Commands.argument("node", StringArgumentType.string())
                             .suggests(FlowNodeSuggestion.suggest(true, 3))
                             .then(Commands.argument("index", IntegerArgumentType.integer(1))
-                                .executes(context -> {return runEditFlowFinalBranchCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context);})
+                                .executes(context -> runEditFlowFinalBranchCommand(StringArgumentType.getString(context, "name"), StringArgumentType.getString(context, "node"), IntegerArgumentType.getInteger(context, "index"), context))
                             )
                         )
                     )
                     .then(Commands.literal("redo")
-                        .executes(context -> {return runEditFlowRedoCommand(StringArgumentType.getString(context, "name"), context);})
+                        .executes(context -> runEditFlowRedoCommand(StringArgumentType.getString(context, "name"), context))
                     )
                     .then(Commands.literal("undo")
-                        .executes(context -> {return runEditFlowUndoCommand(StringArgumentType.getString(context, "name"), context);})
+                        .executes(context -> runEditFlowUndoCommand(StringArgumentType.getString(context, "name"), context))
                     )
                 )
             )
@@ -945,7 +945,7 @@ public class FlowCommand {
                 .then(Commands.argument("old", StringArgumentType.string())
                     .suggests(LogicFlowSuggestion.suggest(true))
                     .then(Commands.argument("new", StringArgumentType.string())
-                        .executes(context -> {return runRenameFlowCommand(StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context);})
+                        .executes(context -> runRenameFlowCommand(StringArgumentType.getString(context, "old"), StringArgumentType.getString(context, "new"), context))
                     )
                 )
             )
@@ -953,58 +953,58 @@ public class FlowCommand {
                 .then(Commands.argument("flow", StringArgumentType.string())
                     .suggests(LogicFlowSuggestion.suggest(true))
                     .then(Commands.argument("name", StringArgumentType.string())
-                        .executes(context -> {return runCopyFlowCommand(StringArgumentType.getString(context, "flow"), StringArgumentType.getString(context, "name"), context);})
+                        .executes(context -> runCopyFlowCommand(StringArgumentType.getString(context, "flow"), StringArgumentType.getString(context, "name"), context))
                     )
                 )
             )
             .then(Commands.literal("save")
                 .then(Commands.argument("name", StringArgumentType.greedyString())
                     .suggests(LogicFlowSuggestion.suggestSave())
-                    .executes(context -> {return runSaveFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                    .executes(context -> runSaveFlowCommand(StringArgumentType.getString(context, "name"), context))
                 )
             )
             .then(Commands.literal("load")
                 .then(Commands.argument("name", StringArgumentType.greedyString())
                     .suggests(FlowFileSuggestion.suggest())
-                    .executes(context -> {return runLoadFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                    .executes(context -> runLoadFlowCommand(StringArgumentType.getString(context, "name"), context))
                 )
             )
             .then(Commands.literal("enable")
                 .then(Commands.argument("name", StringArgumentType.string())
                     .suggests(LogicFlowSuggestion.suggest(true))
                     .then(Commands.argument("enabled", BoolArgumentType.bool())
-                        .executes(context -> {return runSetEnableFlowCommand(StringArgumentType.getString(context, "name"), BoolArgumentType.getBool(context, "enabled"), context);})
+                        .executes(context -> runSetEnableFlowCommand(StringArgumentType.getString(context, "name"), BoolArgumentType.getBool(context, "enabled"), context))
                     )
-                    .executes(context -> {return runGetEnableFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                    .executes(context -> runGetEnableFlowCommand(StringArgumentType.getString(context, "name"), context))
                 )
             )
             .then(Commands.literal("execute")
                 .then(Commands.argument("name", StringArgumentType.string())
                     .suggests(LogicFlowSuggestion.suggest(true))
-                    .executes(context -> {return runExecuteFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                    .executes(context -> runExecuteFlowCommand(StringArgumentType.getString(context, "name"), context))
                 )
             )
             .then(Commands.literal("view")
                 .then(Commands.argument("name", StringArgumentType.string())
                     .suggests(LogicFlowSuggestion.suggest(true))
-                    .executes(context -> {return runViewFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                    .executes(context -> runViewFlowCommand(StringArgumentType.getString(context, "name"), context))
                 )
             )
             .then(Commands.literal("log")
                 .then(Commands.argument("index", IntegerArgumentType.integer(1))
-                    .executes(context -> {return runLogFlowCommand(IntegerArgumentType.getInteger(context, "index"), context);})
+                    .executes(context -> runLogFlowCommand(IntegerArgumentType.getInteger(context, "index"), context))
                 )
             )
             .then(Commands.literal("history")
                 .then(Commands.argument("page", IntegerArgumentType.integer(1))
-                    .executes(context -> {return runFlowHistoryCommand(IntegerArgumentType.getInteger(context, "page"), context);})
+                    .executes(context -> runFlowHistoryCommand(IntegerArgumentType.getInteger(context, "page"), context))
                 )
-                .executes(context -> {return runFlowHistoryCommand(0, context);})
+                .executes(context -> runFlowHistoryCommand(0, context))
             )
             .then(Commands.literal("delete")
                 .then(Commands.argument("name", StringArgumentType.string())
                     .suggests(LogicFlowSuggestion.suggest(true))
-                    .executes(context -> {return runDeleteFlowCommand(StringArgumentType.getString(context, "name"), context);})
+                    .executes(context -> runDeleteFlowCommand(StringArgumentType.getString(context, "name"), context))
                 )
             );
     }

@@ -23,17 +23,26 @@ import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
+import com.ykn.fmod.server.rule.tool.RuleNbt;
 import com.ykn.fmod.server.rule.tool.ThrowingBiFunction;
 
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.CompoundTagArgument;
 import net.minecraft.commands.arguments.DimensionArgument;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.NbtPathArgument;
+import net.minecraft.commands.arguments.NbtTagArgument;
 import net.minecraft.commands.arguments.ResourceLocationArgument;
+import net.minecraft.commands.arguments.coordinates.Coordinates;
+import net.minecraft.commands.arguments.coordinates.RotationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.commands.synchronization.SuggestionProviders;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -214,9 +223,7 @@ public final class ParamKind<T> {
      * <p>Has built-in coordinate suggestions.
      */
     public static final ParamKind<Vec3> POSITION = new ParamKind<>(
-        name -> Commands.argument(name, Vec3Argument.vec3()),
-        (ctx, name) -> Vec3Argument.getVec3(ctx, name),
-        true, Vec3.class,
+        name -> Commands.argument(name, Vec3Argument.vec3()), Vec3Argument::getVec3, true, Vec3.class,
         v -> {
             JsonObject obj = new JsonObject();
             obj.addProperty("x", v.x);
@@ -239,6 +246,46 @@ public final class ParamKind<T> {
     }
 
     /**
+     * An absolute vector, as used for velocities.
+     * Resolves to a {@link Vec3}, serialized as {@code x}/{@code y}/{@code z}.
+     *
+     * <p>Relative and local coordinates are rejected, because a velocity has no anchor to be
+     * relative to. Has built-in coordinate suggestions.
+     */
+    public static final ParamKind<Vec3> VECTOR = new ParamKind<>(
+        name -> Commands.argument(name, Vec3Argument.vec3(false)),
+        (ctx, name) -> {
+            Coordinates coordinates = Vec3Argument.getCoordinates(ctx, name);
+            if (coordinates.isXRelative() || coordinates.isYRelative() || coordinates.isZRelative()) {
+                throw new IllegalArgumentException("Vector components must be absolute");
+            }
+            return coordinates.getPosition(ctx.getSource());
+        },
+        true, Vec3.class, POSITION::toJson, POSITION::fromJson);
+
+    /**
+     * A rotation in degrees, stored as {@code Vec2(pitch, yaw)}.
+     * Resolves to a {@link Vec2}.
+     *
+     * <p>Vanilla command syntax is yaw then pitch, so the text is read in that order. Pitch is
+     * validated by the consuming action, which rejects values outside {@code [-90, 90]}.
+     */
+    public static final ParamKind<Vec2> ROTATION = new ParamKind<>(
+        name -> Commands.argument(name, RotationArgument.rotation()),
+        (ctx, name) -> RotationArgument.getRotation(ctx, name).getRotation(ctx.getSource()),
+        false, Vec2.class,
+        v -> {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("pitch", v.x);
+            obj.addProperty("yaw", v.y);
+            return obj;
+        },
+        e -> {
+            JsonObject obj = e.getAsJsonObject();
+            return new Vec2(obj.get("pitch").getAsFloat(), obj.get("yaw").getAsFloat());
+        });
+
+    /**
      * A dimension identifier (e.g. {@code minecraft:overworld}).
      * Resolves to the dimension's {@link ResourceLocation}.
      *
@@ -257,8 +304,7 @@ public final class ParamKind<T> {
      * <p>No built-in suggestions.
      */
     public static final ParamKind<ResourceLocation> BLOCK_ID = new ParamKind<>(
-        name -> Commands.argument(name, ResourceLocationArgument.id()),
-        (ctx, name) -> ResourceLocationArgument.getId(ctx, name),
+        name -> Commands.argument(name, ResourceLocationArgument.id()), ResourceLocationArgument::getId,
         false, ResourceLocation.class,
         v -> new JsonPrimitive(v.toString()), ParamKind::parseResourceLocation);
 
@@ -269,10 +315,55 @@ public final class ParamKind<T> {
      * <p>Has built-in suggestions from vanilla's summonable-entity list.
      */
     public static final ParamKind<ResourceLocation> ENTITY_TYPE_ID = new ParamKind<>(
-        name -> Commands.argument(name, ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES),
-        (ctx, name) -> ResourceLocationArgument.getId(ctx, name),
+        name -> Commands.argument(name, ResourceLocationArgument.id()).suggests(SuggestionProviders.SUMMONABLE_ENTITIES), ResourceLocationArgument::getId,
         true, ResourceLocation.class,
         v -> new JsonPrimitive(v.toString()), ParamKind::parseResourceLocation);
+
+    /**
+     * A resource identifier without registry-specific validation or suggestions
+     * (e.g. an item or biome id).
+     * Resolves to a {@link ResourceLocation}.
+     *
+     * <p>No built-in suggestions.
+     */
+    public static final ParamKind<ResourceLocation> RESOURCE_ID = new ParamKind<>(
+        name -> Commands.argument(name, ResourceLocationArgument.id()), ResourceLocationArgument::getId,
+        false, ResourceLocation.class,
+        v -> new JsonPrimitive(v.toString()), ParamKind::parseResourceLocation);
+
+    /**
+     * Any NBT value, written as SNBT.
+     * Resolves to a {@link Tag}.
+     *
+     * <p>No built-in suggestions. A resolved tag is borrowed: copy it before modifying it.
+     */
+    public static final ParamKind<Tag> NBT = new ParamKind<>(
+        name -> Commands.argument(name, NbtTagArgument.nbtTag()), NbtTagArgument::getNbtTag,
+        false, Tag.class,
+        v -> new JsonPrimitive(v.toString()), e -> RuleNbt.parse(e.getAsString()));
+
+    /**
+     * A compound-root NBT value, written as SNBT.
+     * Resolves to a {@link CompoundTag}.
+     *
+     * <p>No built-in suggestions. A resolved tag is borrowed: copy it before modifying it.
+     */
+    public static final ParamKind<CompoundTag> NBT_COMPOUND = new ParamKind<>(
+        name -> Commands.argument(name, CompoundTagArgument.compoundTag()), CompoundTagArgument::getCompoundTag,
+        false, CompoundTag.class,
+        v -> new JsonPrimitive(v.toString()), e -> RuleNbt.compound(e.getAsString()));
+
+    /**
+     * A vanilla NBT path, kept as text so a variable can supply it.
+     * Resolves to a {@link String}.
+     *
+     * <p>No built-in suggestions.
+     */
+    public static final ParamKind<String> NBT_PATH = new ParamKind<>(
+        name -> Commands.argument(name, NbtPathArgument.nbtPath()),
+        (ctx, name) -> NbtPathArgument.getPath(ctx, name).toString(),
+        false, String.class,
+        JsonPrimitive::new, e -> RuleNbt.pathText(e.getAsString()));
 
     /**
      * A boolean value ({@code true} or {@code false}).
@@ -281,8 +372,7 @@ public final class ParamKind<T> {
      * <p>Has built-in {@code true/false} suggestions.
      */
     public static final ParamKind<Boolean> BOOLEAN = new ParamKind<>(
-        name -> Commands.argument(name, BoolArgumentType.bool()),
-        (ctx, name) -> BoolArgumentType.getBool(ctx, name),
+        name -> Commands.argument(name, BoolArgumentType.bool()), BoolArgumentType::getBool,
         true, Boolean.class,
         JsonPrimitive::new, JsonElement::getAsBoolean);
 
@@ -293,8 +383,7 @@ public final class ParamKind<T> {
      * <p>No built-in suggestions. Use {@link #intAtLeast(int)} when a minimum value is required.
      */
     public static final ParamKind<Integer> INT = new ParamKind<>(
-        name -> Commands.argument(name, IntegerArgumentType.integer()),
-        (ctx, name) -> IntegerArgumentType.getInteger(ctx, name),
+        name -> Commands.argument(name, IntegerArgumentType.integer()), IntegerArgumentType::getInteger,
         false, Integer.class,
         JsonPrimitive::new, JsonElement::getAsInt);
 
@@ -309,8 +398,7 @@ public final class ParamKind<T> {
      */
     public static ParamKind<Integer> intAtLeast(int min) {
         return new ParamKind<>(
-            name -> Commands.argument(name, IntegerArgumentType.integer(min)),
-            (ctx, name) -> IntegerArgumentType.getInteger(ctx, name),
+            name -> Commands.argument(name, IntegerArgumentType.integer(min)), IntegerArgumentType::getInteger,
             false, Integer.class,
             JsonPrimitive::new, JsonElement::getAsInt);
     }
@@ -322,8 +410,7 @@ public final class ParamKind<T> {
      * <p>No built-in suggestions. Use {@link #doubleAtLeast(double)} when a minimum value is required.
      */
     public static final ParamKind<Double> DOUBLE = new ParamKind<>(
-        name -> Commands.argument(name, DoubleArgumentType.doubleArg()),
-        (ctx, name) -> DoubleArgumentType.getDouble(ctx, name),
+        name -> Commands.argument(name, DoubleArgumentType.doubleArg()), DoubleArgumentType::getDouble,
         false, Double.class,
         JsonPrimitive::new, JsonElement::getAsDouble);
 
@@ -338,8 +425,7 @@ public final class ParamKind<T> {
      */
     public static ParamKind<Double> doubleAtLeast(double min) {
         return new ParamKind<>(
-            name -> Commands.argument(name, DoubleArgumentType.doubleArg(min)),
-            (ctx, name) -> DoubleArgumentType.getDouble(ctx, name),
+            name -> Commands.argument(name, DoubleArgumentType.doubleArg(min)), DoubleArgumentType::getDouble,
             false, Double.class,
             JsonPrimitive::new, JsonElement::getAsDouble);
     }
@@ -351,8 +437,7 @@ public final class ParamKind<T> {
      * <p>No built-in suggestions. Use {@link #GREEDY_STRING} to consume the rest of the input.
      */
     public static final ParamKind<String> STRING = new ParamKind<>(
-        name -> Commands.argument(name, StringArgumentType.string()),
-        (ctx, name) -> StringArgumentType.getString(ctx, name),
+        name -> Commands.argument(name, StringArgumentType.string()), StringArgumentType::getString,
         false, String.class,
         JsonPrimitive::new, JsonElement::getAsString);
 
@@ -365,8 +450,7 @@ public final class ParamKind<T> {
      * ParamKind, com.mojang.brigadier.suggestion.SuggestionProvider)}.
      */
     public static final ParamKind<String> GREEDY_STRING = new ParamKind<>(
-        name -> Commands.argument(name, StringArgumentType.greedyString()),
-        (ctx, name) -> StringArgumentType.getString(ctx, name),
+        name -> Commands.argument(name, StringArgumentType.greedyString()), StringArgumentType::getString,
         false, String.class,
         JsonPrimitive::new, JsonElement::getAsString);
 
@@ -400,10 +484,61 @@ public final class ParamKind<T> {
      *
      * <p>Resolves to an {@link Object} - callers should use the actual runtime type
      * returned by {@link RuleParameter#resolve(RuleContext, Class)}. No built-in suggestions.
+     *
+     * <p>Persistence keeps the JSON scalar type (see {@link #autoToJson(Object)}), so a number
+     * stays a number across a save and reload instead of coming back as text.
      */
     public static final ParamKind<Object> AUTO = new ParamKind<>(
         name -> Commands.argument(name, StringArgumentType.string()),
         (ctx, name) -> TypeAdaptor.parse(StringArgumentType.getString(ctx, name)).autoCast(),
         false, Object.class,
-        v -> new JsonPrimitive(TypeAdaptor.parse(v).asString()), e -> TypeAdaptor.parse(e).autoCast());
+        ParamKind::autoToJson, ParamKind::autoFromJson);
+
+    /**
+     * Serializes an auto value, keeping its JSON scalar type.
+     *
+     * <p>Writing every value through {@link TypeAdaptor#asString()} turns {@code 3.5} into the JSON
+     * string {@code "3.5"}, and reading that back through {@link JsonElement#toString()} keeps the
+     * quotes Gson added, so the round trip degrades a number into text. Numbers and booleans are
+     * therefore written as their own JSON types; everything else (vectors, lists, text) keeps the
+     * text form it has always used.
+     *
+     * @param value the value to serialize, possibly null
+     * @return the JSON element to store
+     */
+    private static JsonElement autoToJson(Object value) {
+        if (value instanceof Number number) {
+            return new JsonPrimitive(number);
+        }
+        if (value instanceof Boolean bool) {
+            return new JsonPrimitive(bool);
+        }
+        return new JsonPrimitive(TypeAdaptor.parse(value).asString());
+    }
+
+    /**
+     * Reads an auto value written by {@link #autoToJson(Object)}.
+     *
+     * <p>Primitives are read through {@link JsonPrimitive#getAsString()} so a quoted JSON string
+     * loses its quotes before {@link TypeAdaptor#autoCast()} inspects it.
+     *
+     * @param element the stored JSON element, possibly null
+     * @return the value, or {@code null} for a JSON null
+     */
+    private static Object autoFromJson(JsonElement element) {
+        if (element == null || element.isJsonNull()) {
+            return null;
+        }
+        if (element.isJsonPrimitive()) {
+            JsonPrimitive primitive = element.getAsJsonPrimitive();
+            if (primitive.isNumber()) {
+                return primitive.getAsDouble();
+            }
+            if (primitive.isBoolean()) {
+                return primitive.getAsBoolean();
+            }
+            return TypeAdaptor.parse(primitive.getAsString()).autoCast();
+        }
+        return TypeAdaptor.parse(element.getAsString()).autoCast();
+    }
 }

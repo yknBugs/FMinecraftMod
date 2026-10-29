@@ -411,17 +411,18 @@ public class ServerData {
     }
 
     /**
-     * Gathers all RuleManager instances whose associated RuleEvent is an instance of the given type.
+     * Gathers all RuleManager instances whose rule is bound to the given event type.
      * Optionally filters to include only enabled rules.
-     * 
-     * @param type the RuleEvent class type to match
+     *
+     * @param type the event type id, as stored in the rule's {@code "event"} field
      * @param enableOnly if true, only include enabled rules; if false, include all rules
      * @return a list of matching RuleManager instances, never null
      */
-    public List<RuleManager> gatherRuleByEventType(Class<? extends RuleEvent> type, boolean enableOnly) {
+    public List<RuleManager> gatherRuleByEventType(String type, boolean enableOnly) {
         List<RuleManager> result = new ArrayList<>();
         for (RuleManager manager : customRules.values()) {
-            if (type.isInstance(manager.getRule().getEvent())) {
+            RuleEvent event = manager.getRule().getEvent();
+            if (event != null && type.equals(event.getType())) {
                 if (!enableOnly || manager.isEnabled()) {
                     result.add(manager);
                 }

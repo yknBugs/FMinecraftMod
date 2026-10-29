@@ -33,7 +33,7 @@ import java.util.List;
  *   <li>Be triggered by the appropriate event listener code</li>
  * </ul>
  * <p>
- * Example subclasses: EntityDeathEventNode, EntityDamageEventNode, ProjectileHitEntityEventNode
+ * Example subclass: {@link com.ykn.fmod.server.flow.node.GameEventNode}, one instance per event type
  * 
  * @see FlowNode
  * @see ExecutionContext#execute(List, java.util.Map)
@@ -56,6 +56,22 @@ public class EventNode extends FlowNode {
      */
     public EventNode(long id, String name, int inputNumber, int outputNumber, int branchNumber, String type) {
         super(id, name, inputNumber, outputNumber, branchNumber, type);
+    }
+
+    /**
+     * Creates an event node whose metadata is supplied by its caller.
+     * <p>
+     * Event nodes whose outputs come from a catalog use this constructor so the port schema does
+     * not have to be recomputed from the node's type name; see
+     * {@link com.ykn.fmod.server.flow.logic.FlowNode#FlowNode(long, String, String, NodeMetadata)}.
+     *
+     * @param id       The unique identifier for this node
+     * @param name     The user-defined name for this node
+     * @param type     The type name registered in NodeRegistry
+     * @param metadata The fully built metadata describing this event's outputs
+     */
+    protected EventNode(long id, String name, String type, NodeMetadata metadata) {
+        super(id, name, type, metadata);
     }
 
     /**

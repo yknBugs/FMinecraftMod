@@ -407,27 +407,19 @@ public class RuleRegistry {
     public static void registerDefault() {
         registerCore();
 
-        RuleRegistry.register(ServerTickEvent.TYPE, ServerTickEvent::getInstance);
-        RuleRegistry.register(EntityDamageEvent.TYPE, EntityDamageEvent::getInstance);
-        RuleRegistry.register(EntityDeathEvent.TYPE, EntityDeathEvent::getInstance);
-        RuleRegistry.register(PlayerJoinEvent.TYPE, PlayerJoinEvent::getInstance);
-        RuleRegistry.register(PlayerTickEvent.TYPE, PlayerTickEvent::getInstance);
-        RuleRegistry.register(ProjectileHitEntityEvent.TYPE, ProjectileHitEntityEvent::getInstance);
+        RuleEvents.register();
 
-        RuleRegistry.registerCondition(EntityPosition.TYPE, EntityPosition.PARAM_METADATA, EntityPosition::new);
-        RuleRegistry.registerCondition(CheckPermission.TYPE, CheckPermission.PARAM_METADATA, CheckPermission::new);
-        RuleRegistry.registerCondition(SmallerThan.TYPE, SmallerThan.PARAM_METADATA, SmallerThan::new);
-        RuleRegistry.registerCondition(EqualsTo.TYPE, EqualsTo.PARAM_METADATA, EqualsTo::new);
-        RuleRegistry.registerCondition(CheckBlockType.TYPE, CheckBlockType.PARAM_METADATA, CheckBlockType::new);
-        RuleRegistry.registerCondition(CheckEntityType.TYPE, CheckEntityType.PARAM_METADATA, CheckEntityType::new);
-        RuleRegistry.registerCondition(HasEntityType.TYPE, HasEntityType.PARAM_METADATA, HasEntityType::new);
-        RuleRegistry.registerCondition(ComputeAdd.TYPE, ComputeAdd.PARAM_METADATA, ComputeAdd::new);
+        ComparisonConditions.register();
+        NumericConditions.register();
+        CheckConditions.register();
+        StringConditions.register();
+        NbtConditions.register();
+        GetterConditions.register();
 
-        RuleRegistry.registerAction(BroadcastMessage.TYPE, BroadcastMessage.PARAM_METADATA, BroadcastMessage::new);
-        RuleRegistry.registerAction(SendMessage.TYPE, SendMessage.PARAM_METADATA, SendMessage::new);
-        RuleRegistry.registerAction(BroadcastActionbar.TYPE, BroadcastActionbar.PARAM_METADATA, BroadcastActionbar::new);
-        RuleRegistry.registerAction(SendActionbar.TYPE, SendActionbar.PARAM_METADATA, SendActionbar::new);
-        RuleRegistry.registerAction(RunFlowAction.TYPE, RunFlowAction.PARAM_METADATA, RunFlowAction::new);
+        MessageActions.register();
+        FlowActions.register();
+        GameActions.register();
+        StateActions.register();
 
         // ExecuteCommandAction has a privileged permissionLevel field that's never accepted as
         // parameter input (only ever derived from the issuing CommandSourceStack's own permission,

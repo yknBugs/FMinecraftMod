@@ -187,13 +187,11 @@ public class NoteBlockSong {
         }
         this.maxRealTick = Collections.max(this.realTickIndex.keySet()); 
         this.requirements = new HashSet<>();
-        this.notesMap.values().stream().distinct().forEach(notes -> {
-            notes.forEach(note -> {
-                if (note.instrument != null) {
-                    requirements.add(note);
-                }
-            });
-        });
+        this.notesMap.values().stream().distinct().forEach(notes -> notes.forEach(note -> {
+            if (note.instrument() != null) {
+                requirements.add(note);
+            }
+        }));
     }
 
     /**

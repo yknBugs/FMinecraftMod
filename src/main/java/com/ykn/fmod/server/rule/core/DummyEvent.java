@@ -53,7 +53,7 @@ public class DummyEvent implements RuleEvent {
     }
 
     @Override
-    public Map<String, Class<? extends Object>> variablesType() {
+    public Map<String, Class<?>> variablesType() {
         return Collections.emptyMap();
     }
     

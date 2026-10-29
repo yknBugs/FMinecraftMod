@@ -21,13 +21,15 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
+import com.ykn.fmod.server.flow.tool.FlowConvert;
+
 /**
- * A flow node that sends a message to players based on receiver settings.
+ * A flow node that sends a message to players according to receiver settings.
  * Inputs:
- * 1. ServerPlayer - The source player for audience filtering; null allows ALL, OP, or NONE only.
- * 2. PlayerMessageType.Receiver or String - Audience filter (null defaults to ALL).
- * 3. MessageType.Location or String - Display location (null defaults to CHAT).
- * 4. Component or Object - Message to send; other non-null values are converted to literal text.
+ * 1. Player - The main receiver.
+ * 2. String - Who will receive the message, e.g. all, op, self, team, etc.
+ * 3. String - Where to display the message, e.g. chat, action bar, etc.
+ * 4. Text - The content of the message to be sent.
  * Outputs: None
  * Branches: 1 (Next node)
  */
@@ -50,7 +52,7 @@ public class BroadcastMessageNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        ServerPlayer player = parsePlayer(resolvedInputs.get(0));
+        ServerPlayer player = parsePlayer(resolvedInputs.get(0), context);
         PlayerMessageType.Receiver receiver = parseReceiver(resolvedInputs.get(1));
         MessageType.Location messageType = parseMessageType(resolvedInputs.get(2));
         Component message = parseMessage(resolvedInputs.get(3));
@@ -70,21 +72,23 @@ public class BroadcastMessageNode extends FlowNode {
         }
     }
 
-    private ServerPlayer parsePlayer(Object playerObj) throws LogicException {
+    private ServerPlayer parsePlayer(Object playerObj, ExecutionContext context) throws LogicException {
+        if (playerObj != null) {
+            playerObj = FlowConvert.entity(playerObj, context.getServer());
+        }
         if (playerObj == null) {
             return null;
         } else if (playerObj instanceof ServerPlayer) {
             return (ServerPlayer) playerObj;
         } else {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(0), this.metadata.inputDataTypes().get(0)), null);
         }
     }
 
     private PlayerMessageType.Receiver parseReceiver(Object receiverObj) throws LogicException {
         if (receiverObj == null) {
             return PlayerMessageType.Receiver.ALL;
-        } else if (receiverObj instanceof PlayerMessageType.Receiver) {
-            PlayerMessageType.Receiver receiver = (PlayerMessageType.Receiver) receiverObj;
+        } else if (receiverObj instanceof PlayerMessageType.Receiver receiver) {
             return receiver;
         } else {
             String receiverStr = TypeAdaptor.parse(receiverObj).asString().strip();
@@ -103,7 +107,7 @@ public class BroadcastMessageNode extends FlowNode {
             } else if ("selfop".equalsIgnoreCase(receiverStr)) {
                 return PlayerMessageType.Receiver.SELFOP;
             } else {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(1), this.metadata.inputDataTypes().get(1)), null);
             }
         }
     }
@@ -120,14 +124,14 @@ public class BroadcastMessageNode extends FlowNode {
             } else if ("chat".equalsIgnoreCase(typeStr)) {
                 return MessageType.Location.CHAT;
             } else {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(2), this.metadata.inputDataTypes().get(2)), null);
             }
         }
     }
 
     private Component parseMessage(Object messageObj) throws LogicException {
         if (messageObj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(3)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(3)), null);
         } else if (messageObj instanceof Component) {
             return (Component) messageObj;
         } else {

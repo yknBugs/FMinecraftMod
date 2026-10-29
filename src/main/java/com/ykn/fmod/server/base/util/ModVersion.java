@@ -1,7 +1,5 @@
 package com.ykn.fmod.server.base.util;
 
-import java.util.Objects;
-
 /**
  * Represents an immutable version identifier for the mod, following the format
  * {@code major.release[.push][+b<build>]}.
@@ -16,40 +14,22 @@ import java.util.Objects;
  * <p>Version ordering: a stable version is always considered newer than an
  * unstable version with the same {@code major}, {@code release} and {@code push}
  * numbers. Among unstable versions, higher {@code build} numbers are newer.
+ *
+ * @param major   The major version component (the {@code 1} in {@code 1.x}).
+ *                Starts from {@code 0}.
+ * @param release The release version component (the {@code x} in {@code 1.x}).
+ *                Starts from {@code 0}.
+ * @param push    The push version component (the {@code x} in {@code x.x.1}).
+ *                Starts from {@code 1}; {@code 0} indicates it is omitted in the string
+ *                representation.
+ * @param stable  Whether this version is a stable release.
+ *                {@code true} means there is no {@code +b<build>} suffix.
+ * @param build   The build number for unstable versions (the {@code 1} in {@code +b1}).
+ *                Parsed build numbers are non-negative; parsing a stable version sets this to {@code 0}.
+ *                The explicit constructor stores the supplied value even for stable versions.
  */
-public final class ModVersion implements Comparable<ModVersion> {
-
-    /**
-     * The major version component (the {@code 1} in {@code 1.x}).
-     * Starts from {@code 0}.
-     */
-    public final int major;
-
-    /**
-     * The release version component (the {@code x} in {@code 1.x}).
-     * Starts from {@code 0}.
-     */
-    public final int release;
-
-    /**
-     * The push version component (the {@code x} in {@code x.x.1}).
-     * Starts from {@code 1}; {@code 0} indicates it is omitted in the string
-     * representation.
-     */
-    public final int push;
-
-    /**
-     * Whether this version is a stable release.
-     * {@code true} means there is no {@code +b<build>} suffix.
-     */
-    public final boolean stable;
-
-    /**
-     * The build number for unstable versions (the {@code 1} in {@code +b1}).
-     * Parsed build numbers are non-negative; parsing a stable version sets this to {@code 0}.
-     * The explicit constructor stores the supplied value even for stable versions.
-     */
-    public final int build;
+public record ModVersion(int major, int release, int push, boolean stable,
+                         int build) implements Comparable<ModVersion> {
 
     /**
      * Constructs a new {@code ModVersion} with all components explicitly specified.
@@ -60,12 +40,7 @@ public final class ModVersion implements Comparable<ModVersion> {
      * @param stable  {@code true} if this is a stable release
      * @param build   the build number stored in the instance; the suffix is omitted when stable
      */
-    public ModVersion(int major, int release, int push, boolean stable, int build) {
-        this.major = major;
-        this.release = release;
-        this.push = push;
-        this.stable = stable;
-        this.build = build;
+    public ModVersion {
     }
 
     /**
@@ -145,22 +120,26 @@ public final class ModVersion implements Comparable<ModVersion> {
      *
      * @param other the version to compare against; must not be {@code null}
      * @return a negative integer, zero, or a positive integer if this version is
-     *         less than, equal to, or greater than {@code other}, respectively
+     * less than, equal to, or greater than {@code other}, respectively
      */
     @Override
     public int compareTo(ModVersion other) {
-        if (this.major != other.major)
+        if (this.major != other.major) {
             return Integer.compare(this.major, other.major);
+        }
 
-        if (this.release != other.release)
+        if (this.release != other.release) {
             return Integer.compare(this.release, other.release);
+        }
 
-        if (this.push != other.push)
+        if (this.push != other.push) {
             return Integer.compare(this.push, other.push);
+        }
 
         // Stable (no +b) is newer than unstable
-        if (this.stable != other.stable)
+        if (this.stable != other.stable) {
             return this.stable ? 1 : -1;
+        }
 
         // If both unstable, compare build
         return Integer.compare(this.build, other.build);
@@ -175,32 +154,21 @@ public final class ModVersion implements Comparable<ModVersion> {
      *
      * @param obj the reference object with which to compare
      * @return {@code true} if {@code obj} is a {@code ModVersion} with the same
-     *         component values; {@code false} otherwise
+     * component values; {@code false} otherwise
      */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
             return true;
         }
-        if (!(obj instanceof ModVersion)) {
+        if (!(obj instanceof ModVersion other)) {
             return false;
         }
-        ModVersion other = (ModVersion) obj;
         return this.major == other.major
                 && this.release == other.release
                 && this.push == other.push
                 && this.stable == other.stable
                 && this.build == other.build;
-    }
-
-    /**
-     * Returns a hash code value consistent with {@link #equals(Object)}.
-     *
-     * @return the hash code computed from all five version components
-     */
-    @Override
-    public int hashCode() {
-        return Objects.hash(major, release, push, stable, build);
     }
 
     /**
@@ -210,7 +178,7 @@ public final class ModVersion implements Comparable<ModVersion> {
      * @param v1 the first version string; must not be {@code null}
      * @param v2 the second version string; must not be {@code null}
      * @return a negative integer, zero, or a positive integer if {@code v1} is
-     *         less than, equal to, or greater than {@code v2}
+     * less than, equal to, or greater than {@code v2}
      * @throws IllegalArgumentException if either string is not a valid version
      */
     public static int compare(String v1, String v2) {
@@ -224,10 +192,10 @@ public final class ModVersion implements Comparable<ModVersion> {
      * @param v1 the first version; must not be {@code null}
      * @param v2 the second version; must not be {@code null}
      * @return a negative integer, zero, or a positive integer if {@code v1} is
-     *         less than, equal to, or greater than {@code v2}
+     * less than, equal to, or greater than {@code v2}
      */
     public static int compare(ModVersion v1, ModVersion v2) {
         return v1.compareTo(v2);
     }
-    
+
 }

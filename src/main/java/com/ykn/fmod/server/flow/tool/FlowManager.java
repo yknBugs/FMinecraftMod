@@ -57,7 +57,7 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  * <p>
  * Example usage:
  * <pre>
- * FlowManager manager = new FlowManager("MyFlow", "EntityDeathEventNode", "OnDeath");
+ * FlowManager manager = new FlowManager("MyFlow", "PlayerJoinEventNode", "OnJoin");
  * manager.createNode("BinaryArithmeticNode", "AddOne");
  * manager.setConstInput("AddOne", 0, 1.0);
  * manager.setNextNode("OnDeath", 0, "AddOne");

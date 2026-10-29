@@ -20,7 +20,7 @@ import net.minecraft.network.chat.Component;
 /**
  * Generic reusable single text-field prompt, used by the flow editor for anything that needs a
  * free-form name (new flow/node name, rename, "save as", etc.) without a dedicated screen class.
- * The confirm callback is responsible for any follow-up screen transition.
+ * The confirmation callback is responsible for any follow-up screen transition.
  */
 public class TextPromptScreen extends Screen {
 

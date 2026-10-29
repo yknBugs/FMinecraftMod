@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.resources.ResourceKey;
 import org.jetbrains.annotations.Nullable;
 
 import com.mojang.brigadier.context.CommandContext;
@@ -176,7 +177,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
             this.y = entity.getY();
             this.z = entity.getZ();
             this.dimension = entity.level().dimension().location();
-            this.biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+            this.biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
             this.entityType = EntityType.getKey(entity.getType());
             this.entity = entity;
         }

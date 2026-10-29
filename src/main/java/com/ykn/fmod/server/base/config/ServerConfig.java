@@ -97,6 +97,22 @@ public class ServerConfig extends ConfigReader {
     )
     protected volatile int maxFlowRecursionDepth;
 
+    /** 
+     * Maximum intermediate list size built by flow nodes. Zero permits only empty lists. 
+     * Default: 32768. 
+     */
+    @ConfigEntry(
+        type = ConfigEntry.ConfigType.INTEGER,
+        codeEntry = "maxFlowListSize",
+        commandEntry = "maxFlowListSize",
+        i18nEntry = "flowlistsize",
+        minCommandInt = 0,
+        commandValueHint = "size",
+        toSliderValue = "logScaleToSlider",
+        fromSliderValue = "logScalefromSlider"
+    )
+    protected volatile int maxFlowListSize;
+
     /**
      * How many history records of flow executions to keep.
      * Default: 32767
@@ -859,6 +875,7 @@ public class ServerConfig extends ConfigReader {
         this.autoLoadFlowFiles = false;
         this.maxFlowLength = 32767;
         this.maxFlowRecursionDepth = 16;
+        this.maxFlowListSize = 32768;
         this.maxFlowHistorySize = 32767;
         this.maxRuleHistorySize = 32767;
         this.entityDeathMessage = ServerMessageType.empty();
@@ -936,63 +953,43 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getMaxFlowLength() {
-        if (maxFlowLength < 0) {
-            return 0;
-        }
-        return maxFlowLength;
+        return Math.max(0, maxFlowLength);
     }
 
     public void setMaxFlowLength(int maxFlowLength) {
-        if (maxFlowLength < 0) {
-            this.maxFlowLength = 0;
-        } else {
-            this.maxFlowLength = maxFlowLength;
-        }
+        this.maxFlowLength = Math.max(0, maxFlowLength);
     }
 
     public int getMaxFlowRecursionDepth() {
-        if (maxFlowRecursionDepth < 0) {
-            return 0;
-        }
-        return maxFlowRecursionDepth;
+        return Math.max(0, maxFlowRecursionDepth);
     }
 
     public void setMaxFlowRecursionDepth(int maxFlowRecursionDepth) {
-        if (maxFlowRecursionDepth < 0) {
-            this.maxFlowRecursionDepth = 0;
-        } else {
-            this.maxFlowRecursionDepth = maxFlowRecursionDepth;
-        }
+        this.maxFlowRecursionDepth = Math.max(0, maxFlowRecursionDepth);
+    }
+
+    public int getMaxFlowListSize() {
+        return Math.max(0, maxFlowListSize);
+    }
+
+    public void setMaxFlowListSize(int maxFlowListSize) {
+        this.maxFlowListSize = Math.max(0, maxFlowListSize);
     }
 
     public int getMaxFlowHistorySize() {
-        if (maxFlowHistorySize < 0) {
-            return 0;
-        }
-        return maxFlowHistorySize;
+        return Math.max(0, maxFlowHistorySize);
     }
 
     public void setMaxFlowHistorySize(int maxFlowHistorySize) {
-        if (maxFlowHistorySize < 0) {
-            this.maxFlowHistorySize = 0;
-        } else {
-            this.maxFlowHistorySize = maxFlowHistorySize;
-        }
+        this.maxFlowHistorySize = Math.max(0, maxFlowHistorySize);
     }
 
     public int getMaxRuleHistorySize() {
-        if (maxRuleHistorySize < 0) {
-            return 0;
-        }
-        return maxRuleHistorySize;
+        return Math.max(0, maxRuleHistorySize);
     }
 
     public void setMaxRuleHistorySize(int maxRuleHistorySize) {
-        if (maxRuleHistorySize < 0) {
-            this.maxRuleHistorySize = 0;
-        } else {
-            this.maxRuleHistorySize = maxRuleHistorySize;
-        }
+        this.maxRuleHistorySize = Math.max(0, maxRuleHistorySize);
     }
 
     public ServerMessageType getEntityDeathMessage() {
@@ -1044,18 +1041,11 @@ public class ServerConfig extends ConfigReader {
     }
 
     public double getBossMaxHealthThreshold() {
-        if (bossMaxHealthThreshold < 0) {
-            return 0;
-        }
-        return bossMaxHealthThreshold;
+        return Math.max(0, bossMaxHealthThreshold);
     }
 
     public void setBossMaxHealthThreshold(double bossMaxHpThreshold) {
-        if (bossMaxHpThreshold < 0) {
-            this.bossMaxHealthThreshold = 0;
-        } else {
-            this.bossMaxHealthThreshold = bossMaxHpThreshold;
-        }
+        this.bossMaxHealthThreshold = Math.max(0, bossMaxHpThreshold);
     }
 
     public PlayerMessageType getPlayerCanSleepMessage() {
@@ -1099,18 +1089,11 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getInformAfkThreshold() {
-        if (informAfkThreshold < 0) {
-            return 0;
-        }
-        return informAfkThreshold;
+        return Math.max(0, informAfkThreshold);
     }
 
     public void setInformAfkThreshold(int informAfkThreshold) {
-        if (informAfkThreshold < 0) {
-            this.informAfkThreshold = 0;
-        } else {
-            this.informAfkThreshold = informAfkThreshold;
-        }
+        this.informAfkThreshold = Math.max(0, informAfkThreshold);
     }
 
     public PlayerMessageType getBroadcastAfk() {
@@ -1122,18 +1105,11 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getBroadcastAfkThreshold() {
-        if (broadcastAfkThreshold < 0) {
-            return 0;
-        }
-        return broadcastAfkThreshold;
+        return Math.max(0, broadcastAfkThreshold);
     }
 
     public void setBroadcastAfkThreshold(int broadcastAfkThreshold) {
-        if (broadcastAfkThreshold < 0) {
-            this.broadcastAfkThreshold = 0;
-        } else {
-            this.broadcastAfkThreshold = broadcastAfkThreshold;
-        }
+        this.broadcastAfkThreshold = Math.max(0, broadcastAfkThreshold);
     }
 
     public PlayerMessageType getStopAfk() {
@@ -1153,18 +1129,11 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getChangeBiomeDelay() {
-        if (changeBiomeDelay < 0) {
-            return 0;
-        }
-        return changeBiomeDelay;
+        return Math.max(0, changeBiomeDelay);
     }
 
     public void setChangeBiomeDelay(int changeBiomeDelay) {
-        if (changeBiomeDelay < 0) {
-            this.changeBiomeDelay = 0;
-        } else {
-            this.changeBiomeDelay = changeBiomeDelay;
-        }
+        this.changeBiomeDelay = Math.max(0, changeBiomeDelay);
     }
 
     public PlayerMessageType getBossFightMessage() {
@@ -1176,18 +1145,11 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getBossFightInterval() {
-        if (bossFightInterval < 0) {
-            return 0;
-        }
-        return bossFightInterval;
+        return Math.max(0, bossFightInterval);
     }
 
     public void setBossFightInterval(int bossFightInterval) {
-        if (bossFightInterval < 0) {
-            this.bossFightInterval = 0;
-        } else {
-            this.bossFightInterval = bossFightInterval;
-        }
+        this.bossFightInterval = Math.max(0, bossFightInterval);
     }
 
     public PlayerMessageType getMonsterSurroundMessage() {
@@ -1199,48 +1161,27 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getMonsterSurroundInterval() {
-        if (monsterSurroundInterval < 0) {
-            return 0;
-        }
-        return monsterSurroundInterval;
+        return Math.max(0, monsterSurroundInterval);
     }
 
     public void setMonsterSurroundInterval(int monsterSurroundInterval) {
-        if (monsterSurroundInterval < 0) {
-            this.monsterSurroundInterval = 0;
-        } else {
-            this.monsterSurroundInterval = monsterSurroundInterval;
-        }
+        this.monsterSurroundInterval = Math.max(0, monsterSurroundInterval);
     }
 
     public int getMonsterNumberThreshold() {
-        if (monsterNumberThreshold < 1) {
-            return 1;
-        }
-        return monsterNumberThreshold;
+        return Math.max(1, monsterNumberThreshold);
     }
 
     public void setMonsterNumberThreshold(int monsterNumberThreshold) {
-        if (monsterNumberThreshold < 1) {
-            this.monsterNumberThreshold = 1;
-        } else {
-            this.monsterNumberThreshold = monsterNumberThreshold;
-        }
+        this.monsterNumberThreshold = Math.max(1, monsterNumberThreshold);
     }
 
     public double getMonsterDistanceThreshold() {
-        if (monsterDistanceThreshold < 0) {
-            return 0.0;
-        }
-        return monsterDistanceThreshold;
+        return Math.max(0.0, monsterDistanceThreshold);
     }
 
     public void setMonsterDistanceThreshold(double monsterDistanceThreshold) {
-        if (monsterDistanceThreshold < 0) {
-            this.monsterDistanceThreshold = 0;
-        } else {
-            this.monsterDistanceThreshold = monsterDistanceThreshold;
-        }
+        this.monsterDistanceThreshold = Math.max(0.0, monsterDistanceThreshold);
     }
 
     public ServerMessageType getEntityNumberWarning() {
@@ -1260,93 +1201,51 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getEntityNumberThreshold() {
-        if (entityNumberThreshold < 1) {
-            return 1;
-        }
-        return entityNumberThreshold;
+        return Math.max(1, entityNumberThreshold);
     }
 
     public void setEntityNumberThreshold(int entityNumberThreshold) {
-        if (entityNumberThreshold < 1) {
-            this.entityNumberThreshold = 1;
-        } else {
-            this.entityNumberThreshold = entityNumberThreshold;
-        }
+        this.entityNumberThreshold = Math.max(1, entityNumberThreshold);
     }
 
     public int getEntityDensityThreshold() {
-        if (entityDensityThreshold < 1) {
-            return 1;
-        }
-        return entityDensityThreshold;
+        return Math.max(1, entityDensityThreshold);
     }
 
     public void setEntityDensityThreshold(int entityDensityThreshold) {
-        if (entityDensityThreshold < 1) {
-            this.entityDensityThreshold = 1;
-        } else {
-            this.entityDensityThreshold = entityDensityThreshold;
-        }
+        this.entityDensityThreshold = Math.max(1, entityDensityThreshold);
     }
 
     public int getEntityDensityNumber() {
-        if (entityDensityNumber < 2) {
-            return 2;
-        }
-        return entityDensityNumber;
+        return Math.max(2, entityDensityNumber);
     }
 
     public void setEntityDensityNumber(int entityDensityNumber) {
-        if (entityDensityNumber < 2) {
-            this.entityDensityNumber = 2;
-        } else {
-            this.entityDensityNumber = entityDensityNumber;
-        }
+        this.entityDensityNumber = Math.max(2, entityDensityNumber);
     }
 
     public double getEntityDensityRadius() {
-        if (entityDensityRadius < 0) {
-            return 0.0;
-        }
-        return entityDensityRadius;
+        return Math.max(0.0, entityDensityRadius);
     }
 
     public void setEntityDensityRadius(double entityDensityRadius) {
-        if (entityDensityRadius < 0) {
-            this.entityDensityRadius = 0.0;
-        } else {
-            this.entityDensityRadius = entityDensityRadius;
-        }
+        this.entityDensityRadius = Math.max(0.0, entityDensityRadius);
     }
 
     public int getEntityNumberInterval() {
-        if (entityNumberInterval <= 0) {
-            return 1;
-        }
-        return entityNumberInterval;
+        return Math.max(1, entityNumberInterval);
     }
 
     public void setEntityNumberInterval(int entityNumberInterval) {
-        if (entityNumberInterval <= 0) {
-            this.entityNumberInterval = 1;
-        } else {
-            this.entityNumberInterval = entityNumberInterval;
-        }
+        this.entityNumberInterval = Math.max(1, entityNumberInterval);
     }
 
     public int getEntityDensityInterval() {
-        if (entityDensityInterval <= 0) {
-            return 1;
-        }
-        return entityDensityInterval;
+        return Math.max(1, entityDensityInterval);
     }
 
     public void setEntityDensityInterval(int entityDensityInterval) {
-        if (entityDensityInterval <= 0) {
-            this.entityDensityInterval = 1;
-        } else {
-            this.entityDensityInterval = entityDensityInterval;
-        }
+        this.entityDensityInterval = Math.max(1, entityDensityInterval);
     }
 
     public PlayerMessageType getPlayerHurtMessage() {
@@ -1358,23 +1257,11 @@ public class ServerConfig extends ConfigReader {
     }
 
     public double getPlayerHurtThreshold() {
-        if (playerHurtThreshold < 0) {
-            return 0;
-        }
-        if (playerHurtThreshold > 1) {
-            return 1;
-        }
-        return playerHurtThreshold;
+        return Math.min(1, Math.max(0, playerHurtThreshold));
     }
 
     public void setPlayerHurtThreshold(double playerHurtThreshold) {
-        if (playerHurtThreshold < 0) {
-            this.playerHurtThreshold = 0;
-        } else if (playerHurtThreshold > 1) {
-            this.playerHurtThreshold = 1;
-        } else {
-            this.playerHurtThreshold = playerHurtThreshold;
-        }
+        this.playerHurtThreshold = Math.min(1, Math.max(0, playerHurtThreshold));
     }
 
     public PlayerMessageType getTravelMessage() {
@@ -1386,93 +1273,51 @@ public class ServerConfig extends ConfigReader {
     }
 
     public int getTravelMessageInterval() {
-        if (travelMessageInterval <= 0) {
-            return 1;
-        }
-        return travelMessageInterval;
+        return Math.max(1, travelMessageInterval);
     }
 
     public void setTravelMessageInterval(int travelMessageInterval) {
-        if (travelMessageInterval <= 0) {
-            this.travelMessageInterval = 1;
-        } else {
-            this.travelMessageInterval = travelMessageInterval;
-        }
+        this.travelMessageInterval = Math.max(1, travelMessageInterval);
     }
 
     public int getTravelWindow() {
-        if (travelWindow <= 0) {
-            return 1;
-        }
-        return travelWindow;
+        return Math.max(1, travelWindow);
     }
 
     public void setTravelWindow(int travelWindow) {
-        if (travelWindow <= 0) {
-            this.travelWindow = 1;
-        } else {
-            this.travelWindow = travelWindow;
-        }
+        this.travelWindow = Math.max(1, travelWindow);
     }
 
     public double getTravelTotalDistanceThreshold() {
-        if (travelTotalDistanceThreshold < 0) {
-            return 0;
-        }
-        return travelTotalDistanceThreshold;
+        return Math.max(0, travelTotalDistanceThreshold);
     }
 
     public void setTravelTotalDistanceThreshold(double travelTotalDistanceThreshold) {
-        if (travelTotalDistanceThreshold < 0) {
-            this.travelTotalDistanceThreshold = 0;
-        } else {
-            this.travelTotalDistanceThreshold = travelTotalDistanceThreshold;
-        }
+        this.travelTotalDistanceThreshold = Math.max(0, travelTotalDistanceThreshold);
     }
 
     public int getTravelPartialInterval() {
-        if (travelPartialInterval <= 0) {
-            return 1;
-        }
-        return travelPartialInterval;
+        return Math.max(1, travelPartialInterval);
     }
 
     public void setTravelPartialInterval(int travelPartialInterval) {
-        if (travelPartialInterval <= 0) {
-            this.travelPartialInterval = 1;
-        } else {
-            this.travelPartialInterval = travelPartialInterval;
-        }
+        this.travelPartialInterval = Math.max(1, travelPartialInterval);
     }
 
     public double getTravelPartialDistanceThreshold() {
-        if (travelPartialDistanceThreshold < 0) {
-            return 0;
-        }
-        return travelPartialDistanceThreshold;
+        return Math.max(0, travelPartialDistanceThreshold);
     }
 
     public void setTravelPartialDistanceThreshold(double travelPartialDistanceThreshold) {
-        if (travelPartialDistanceThreshold < 0) {
-            this.travelPartialDistanceThreshold = 0;
-        } else {
-            this.travelPartialDistanceThreshold = travelPartialDistanceThreshold;
-        }
+        this.travelPartialDistanceThreshold = Math.max(0, travelPartialDistanceThreshold);
     }
 
     public double getTeleportThreshold() {
-        if (teleportThreshold < 0) {
-            return 0;
-        }
-        return teleportThreshold;
+        return Math.max(0, teleportThreshold);
     }
 
     public void setTeleportThreshold(double teleportThreshold) {
-        if (teleportThreshold < 0) {
-            this.teleportThreshold = 0;
-        } else {
-            this.teleportThreshold = teleportThreshold;
-        }
+        this.teleportThreshold = Math.max(0, teleportThreshold);
     }
 
     public PlayerMessageType getTeleportMessage() {
@@ -1516,33 +1361,19 @@ public class ServerConfig extends ConfigReader {
     }
 
     public double getGptTemperature() {
-        if (gptTemperature < 0) {
-            return 0;
-        }
-        return gptTemperature;
+        return Math.max(0, gptTemperature);
     }
 
     public void setGptTemperature(double gptTemperature) {
-        if (gptTemperature < 0) {
-            this.gptTemperature = 0;
-        } else {
-            this.gptTemperature = gptTemperature;
-        }
+        this.gptTemperature = Math.max(0, gptTemperature);
     }
 
     public int getGptServerTimeout() {
-        if (gptServerTimeout < 1000) {
-            return 1000;
-        }
-        return gptServerTimeout;
+        return Math.max(1000, gptServerTimeout);
     }
 
     public void setGptServerTimeout(int gptServerTimeout) {
-        if (gptServerTimeout < 1000) {
-            this.gptServerTimeout = 1000;
-        } else {
-            this.gptServerTimeout = gptServerTimeout;
-        }
+        this.gptServerTimeout = Math.max(1000, gptServerTimeout);
     }
 
     public double logScaleToSlider(Integer value) {

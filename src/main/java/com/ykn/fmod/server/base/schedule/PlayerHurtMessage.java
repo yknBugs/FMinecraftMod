@@ -35,10 +35,7 @@ public class PlayerHurtMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (player == null || player.hasDisconnected() || player.isRemoved() || player.isSpectator() || player.isCreative() || player.getHealth() <= 0) {
-            return true;
-        }
-        return false;
+        return player == null || player.hasDisconnected() || player.isRemoved() || player.isSpectator() || player.isCreative() || player.getHealth() <= 0;
     }
 
     @Override

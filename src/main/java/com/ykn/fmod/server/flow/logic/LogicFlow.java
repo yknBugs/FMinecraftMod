@@ -408,7 +408,7 @@ public class LogicFlow implements Cloneable {
                     } else if (referencedNode == node) {
                         passed = false;
                         Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with input referencing itself with node ID " + input.getReferenceId());
-                    } else if (input.getReferenceIndex() < 0 || input.getReferenceIndex() >= referencedNode.getMetadata().outputNumber) {
+                    } else if (input.getReferenceIndex() < 0 || input.getReferenceIndex() >= referencedNode.getMetadata().outputNumber()) {
                         passed = false;
                         Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with input referencing node ID " + input.getReferenceId() + " with invalid output index " + input.getReferenceIndex());
                     }

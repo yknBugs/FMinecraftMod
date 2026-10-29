@@ -33,6 +33,11 @@ public interface RuleAction extends RuleComponent {
     /**
      * Executes this action in the given rule execution context.
      *
+     * <p>Returning {@code false} aborts the remaining actions and is reserved for
+     * exception-level failures that make continuing unsafe (for example a security check).
+     * Ordinary failures such as a missing target or an invalid value must record a warning
+     * and return {@code true} so later actions still run.
+     *
      * @param context the current rule execution context, providing access to the
      *                {@link net.minecraft.server.MinecraftServer}, variables, and the rule itself
      * @return {@code true} if subsequent actions in the same list should continue executing;

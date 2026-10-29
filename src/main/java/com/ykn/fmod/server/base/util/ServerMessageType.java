@@ -223,22 +223,15 @@ public class ServerMessageType extends MessageType {
     public static ServerMessageType fromPlayerMessageType(PlayerMessageType playerMessageType) {
         MessageType.Location mainLocation = playerMessageType.mainPlayerLocation;
         MessageType.Location otherLocation = playerMessageType.otherPlayerLocation;
-        ServerMessageType.Receiver receiver;
-        switch (playerMessageType.receiver) {
-            case ALL:
-                receiver = ServerMessageType.Receiver.ALL;
-                break;
-            case OP:
-                receiver = ServerMessageType.Receiver.OP;
-                break;
-            case NONE:
-                receiver = ServerMessageType.Receiver.NONE;
-                break;
-            default:
+        ServerMessageType.Receiver receiver = switch (playerMessageType.receiver) {
+            case ALL -> Receiver.ALL;
+            case OP -> Receiver.OP;
+            case NONE -> Receiver.NONE;
+            default -> {
                 Util.LOGGER.error("FMinecraftMod: Invalid PlayerMessageType receiver: " + playerMessageType.receiver);
-                receiver = ServerMessageType.Receiver.NONE;
-                break;
-        }
+                yield Receiver.NONE;
+            }
+        };
         return new ServerMessageType(mainLocation, otherLocation, receiver);
     }
 
@@ -293,16 +286,12 @@ public class ServerMessageType extends MessageType {
      * @return a localized and formatted text representation of the message receiver type
      */
     public static MutableComponent getMessageReceiverI18n(ServerMessageType.Receiver method) {
-        switch (method) {
-            case ALL:
-                return Util.parseTranslatableText("fmod.message.type.toall").withStyle(ChatFormatting.YELLOW);
-            case OP:
-                return Util.parseTranslatableText("fmod.message.type.toop").withStyle(ChatFormatting.GOLD);
-            case NONE:
-                return Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
-            default:
-                return Component.literal(method.toString());
-        }
+        return switch (method) {
+            case ALL -> Util.parseTranslatableText("fmod.message.type.toall").withStyle(ChatFormatting.YELLOW);
+            case OP -> Util.parseTranslatableText("fmod.message.type.toop").withStyle(ChatFormatting.GOLD);
+            case NONE -> Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
+            default -> Component.literal(method.toString());
+        };
     }
 
     /**

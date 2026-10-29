@@ -26,14 +26,14 @@ import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.registries.BuiltInRegistries;
 
 /**
- * Get a block at a specified position
+ * A flow node that reads the block at a position.
  * Inputs:
- * 1. ServerLevel - The world to get the block from.
- * 2. Vec3 - The position of the block to get.
+ * 1. World - The world to get the block from.
+ * 2. Vec3d - The position of the block to get.
  * Outputs:
- * 1. ResourceLocation - The identifier of the block at the specified position.
+ * 1. Enum - The identifier of the block at the specified position.
  * 2. BlockState - The block state of the block at the specified position.
- * 3. BlockEntity - The block entity of the block at the specified position, if any.
+ * 3. BlockEntity - The block entity of the block at the specified position.
  * Branches: 1 (Next node)
  */
 public class GetBlockNode extends FlowNode {
@@ -60,7 +60,7 @@ public class GetBlockNode extends FlowNode {
         Vec3 position = parsePosition(resolvedInputs.get(1));
 
         BlockPos blockPos = BlockPos.containing(position);
-        if (world.isInWorldBounds(blockPos) == false || world.hasChunk(SectionPos.blockToSectionCoord(blockPos.getX()), SectionPos.blockToSectionCoord(blockPos.getZ())) == false) {
+        if (!world.isInWorldBounds(blockPos) || !world.hasChunk(SectionPos.blockToSectionCoord(blockPos.getX()), SectionPos.blockToSectionCoord(blockPos.getZ()))) {
             status.setOutput(0, null);
             status.setOutput(1, null);
             status.setOutput(2, null);
@@ -81,21 +81,21 @@ public class GetBlockNode extends FlowNode {
 
     private Level parseWorld(Object obj) throws LogicException {
         if (obj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(0)), null);
         } else if (obj instanceof Level) {
             return (Level) obj;
         } else {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(0), this.metadata.inputDataTypes.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(0), this.metadata.inputDataTypes().get(0)), null);
         }
     }
 
     private Vec3 parsePosition(Object obj) throws LogicException {
         if (obj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(1)), null);
         } else {
             Vec3 position = TypeAdaptor.parse(obj).asVec3d();
             if (position == null) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(1), this.metadata.inputDataTypes().get(1)), null);
             }
             return position;
         }

@@ -14,31 +14,30 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 
-public class PlayerDeath {
+/**
+ * The player death message.
+ *
+ * <p>This class is the existing feature only; the rule and flow events of the same moment are
+ * dispatched by {@link GameEventHandler}, which calls this method first. Players are excluded from
+ * the entity death hook, which is why their death reaches the shared death event through this path.
+ */
+public final class PlayerDeath {
 
-    private final ServerPlayer player;
-    private final DamageSource damageSource;
-
-    public PlayerDeath(ServerPlayer player, DamageSource damageSource) {
-        this.player = player;
-        this.damageSource = damageSource;
-    }
-
-    public ServerPlayer getPlayer() {
-        return player;
-    }
-
-    public DamageSource getDamageSource() {
-        return damageSource;
+    private PlayerDeath() {
     }
 
     /**
-     * This method is called when a player dies.
-     * @see com.ykn.fmod.server.mixin.PlayerDeathMixin
+     * Broadcasts the death message of one player.
+     *
+     * @param player       the player that died
+     * @param damageSource the killing damage source
+     * @return {@code false} when the handler was skipped (no server), in which case there is nothing
+     *         to report and the event is not dispatched either
+     * @see com.ykn.fmod.server.mixin.GameEventMixins.PlayerDeath
      */
-    public void onPlayerDeath() {
+    public static boolean onPlayerDeath(ServerPlayer player, DamageSource damageSource) {
         if (player.getServer() == null) {
-            return;
+            return false;
         }
 
         LivingEntity killer = player.getKillCredit();
@@ -54,6 +53,6 @@ public class PlayerDeath {
         MutableComponent otherText = Util.parseTranslatableText("fmod.message.playerdeath.other", playerName, deathBiome).withStyle(ChatFormatting.RED);
 
         Util.getServerConfig().getPlayerDeathCoord().postMessage(player, mainText, otherText);
+        return true;
     }
-
 }

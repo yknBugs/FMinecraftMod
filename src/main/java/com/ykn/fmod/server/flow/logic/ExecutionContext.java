@@ -208,7 +208,7 @@ public class ExecutionContext {
     public int getStartNodeOutputNumber() {
         FlowNode startNode = this.flow.getFirstNode();
         if (startNode != null) {
-            return startNode.getMetadata().outputNumber;
+            return startNode.getMetadata().outputNumber();
         }
         return 0;
     }
@@ -277,11 +277,7 @@ public class ExecutionContext {
      * @param maxAllowedNodes The maximum allowed node executions
      */
     public void setMaxAllowedNodes(int maxAllowedNodes) {
-        if (maxAllowedNodes < 0) {
-            this.maxAllowedNodes = 0;
-        } else {
-            this.maxAllowedNodes = maxAllowedNodes;
-        }
+        this.maxAllowedNodes = Math.max(maxAllowedNodes, 0);
     }
 
     /**
@@ -349,11 +345,7 @@ public class ExecutionContext {
      * @param maxAllowedRecursions The maximum allowed recursion depth
      */
     public void setMaxAllowedRecursions(int maxAllowedRecursions) {
-        if (maxAllowedRecursions < 0) {
-            this.maxAllowedRecursions = 0;
-        } else {
-            this.maxAllowedRecursions = maxAllowedRecursions;
-        }
+        this.maxAllowedRecursions = Math.max(maxAllowedRecursions, 0);
     }
 
     /**
@@ -403,11 +395,11 @@ public class ExecutionContext {
         if (startNodeOutputs != null) {
             NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.getStartNodeId());
             if (startNodeStatus != null) {
-                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.getNode().getMetadata().outputNumber; i++) {
+                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.getNode().getMetadata().outputNumber(); i++) {
                     startNodeStatus.setOutput(i, startNodeOutputs.get(i));
                 }
-                if (startNodeOutputs.size() != startNodeStatus.getNode().getMetadata().outputNumber) {
-                    Util.LOGGER.warn("FMinecraftMod: Provided " + startNodeOutputs.size() + " start node outputs for flow " + this.flow.getName() + ", but the start node has " + startNodeStatus.getNode().getMetadata().outputNumber + " outputs. Extra outputs will be ignored, and missing outputs will be set to null.");
+                if (startNodeOutputs.size() != startNodeStatus.getNode().getMetadata().outputNumber()) {
+                    Util.LOGGER.warn("FMinecraftMod: Provided " + startNodeOutputs.size() + " start node outputs for flow " + this.flow.getName() + ", but the start node has " + startNodeStatus.getNode().getMetadata().outputNumber() + " outputs. Extra outputs will be ignored, and missing outputs will be set to null.");
                 }
             } else {
                 Util.LOGGER.warn("FMinecraftMod: Provided start node outputs to flow " + this.flow.getName() + " that does not have a start node.");

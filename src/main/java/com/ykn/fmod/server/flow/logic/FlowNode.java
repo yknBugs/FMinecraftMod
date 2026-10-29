@@ -123,11 +123,52 @@ public class FlowNode implements Cloneable {
     }
 
     /**
+     * Constructs a node from an already-built {@link NodeMetadata}.
+     * <p>
+     * This is the constructor to use when the node's port schema is declared as data elsewhere -
+     * {@link com.ykn.fmod.server.flow.tool.FlowEvents}, for example, declares the outputs of every
+     * event node. Passing the metadata in avoids recovering the schema from {@link #getType()}: the
+     * type string identifies the node type in saved flows, it does not describe its shape, and
+     * deriving the shape from it breaks silently as soon as a type is renamed or an alias exists.
+     * <p>
+     * The port counts are taken from {@code metadata}, so they cannot disagree with the declared
+     * ports. Subclasses that use this constructor must not override {@link #createMetadata};
+     * it is never called for them.
+     *
+     * @param id The unique identifier for this node
+     * @param name The user-defined name for this node
+     * @param type The type name registered in NodeRegistry
+     * @param metadata The fully built metadata for this node type
+     * @throws IllegalArgumentException If {@code metadata} is null
+     */
+    protected FlowNode(long id, String name, String type, NodeMetadata metadata) {
+        if (metadata == null) {
+            throw new IllegalArgumentException("Node metadata must not be null");
+        }
+        this.id = id;
+        this.type = type;
+        this.name = name;
+        this.metadata = metadata;
+        this.inputs = new ArrayList<>();
+        for (int i = 0; i < metadata.inputNumber(); i++) {
+            this.inputs.add(DataReference.createEmptyReference());
+        }
+        this.nextNodeIds = new ArrayList<>();
+        for (int i = 0; i < metadata.branchNumber(); i++) {
+            this.nextNodeIds.add(-1L);
+        }
+    }
+
+    /**
      * Creates the metadata for this node type.
      * <p>
      * Subclasses should override this method to provide specific metadata for their node type,
      * including custom display names, descriptions, and input/output specifications.
      * The default implementation creates generic metadata with placeholder text.
+     * <p>
+     * Override this only when the node's shape is defined by the node class itself. When the shape
+     * comes from a catalog, use the {@link #FlowNode(long, String, String, NodeMetadata)}
+     * constructor instead.
      * 
      * @param inputNumber The number of inputs for this node
      * @param outputNumber The number of outputs for this node
@@ -316,7 +357,7 @@ public class FlowNode implements Cloneable {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullself", this.name), null);
         } else if (!status.isExecuted()) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.notexecuted", this.name), null);
-        } else if (index < 0 || index >= this.metadata.outputNumber) {
+        } else if (index < 0 || index >= this.metadata.outputNumber()) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.indexout", this.name, String.valueOf(index)), null);
         }
         return status.getOutputs().get(index);
@@ -337,7 +378,7 @@ public class FlowNode implements Cloneable {
         if (status == null) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.nullself", this.name), null);
         }
-        if (index < 0 || index >= this.metadata.outputNumber) {
+        if (index < 0 || index >= this.metadata.outputNumber()) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.indexout", this.name, String.valueOf(index)), null);
         }
         status.setOutput(index, value);
@@ -370,7 +411,7 @@ public class FlowNode implements Cloneable {
      */
     public long getNextNodeId(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
         // Should be overridden to return the correct next node ID based on the node logic
-        if (this.metadata.branchNumber == 0) {
+        if (this.metadata.branchNumber() == 0) {
             return -1L; // No branches, terminate the flow
         }
         return nextNodeIds.get(0);
@@ -432,7 +473,7 @@ public class FlowNode implements Cloneable {
         if (newNode == null) {
             throw new IllegalStateException("The Node " + this.name + " must be registered in NodeRegistry as " + this.type + " before copying.");
         }
-        for (int i = 0; i < this.metadata.inputNumber; i++) {
+        for (int i = 0; i < this.metadata.inputNumber(); i++) {
             DataReference inputRef = this.inputs.get(i);
             newNode.inputs.set(i, inputRef.copy());
         }
@@ -478,12 +519,12 @@ public class FlowNode implements Cloneable {
             passed = false;
         }
         passed = this.metadata.verifyIntegrity() && passed;
-        if (this.inputs.size() != this.metadata.inputNumber) {
-            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has " + this.inputs.size() + " inputs but metadata defines " + this.metadata.inputNumber);
+        if (this.inputs.size() != this.metadata.inputNumber()) {
+            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has " + this.inputs.size() + " inputs but metadata defines " + this.metadata.inputNumber());
             passed = false;
         }
-        if (this.nextNodeIds.size() != this.metadata.branchNumber) {
-            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has " + this.nextNodeIds.size() + " branches but metadata defines " + this.metadata.branchNumber);
+        if (this.nextNodeIds.size() != this.metadata.branchNumber()) {
+            Util.LOGGER.warn("FMinecraftMod: Node " + this.name + " has " + this.nextNodeIds.size() + " branches but metadata defines " + this.metadata.branchNumber());
             passed = false;
         }
         return passed;
@@ -508,12 +549,12 @@ public class FlowNode implements Cloneable {
      */
     public Component render(LogicFlow flow) {
         // Render title
-        MutableComponent text = Util.parseTranslatableText("fmod.flow.node.title", this.name, this.metadata.displayName, this.metadata.description);
+        MutableComponent text = Util.parseTranslatableText("fmod.flow.node.title", this.name, this.metadata.displayName(), this.metadata.description());
         text = text.append("\n");
         // Render inputs
-        for (int i = 0; i < this.metadata.inputNumber; i++) {
+        for (int i = 0; i < this.metadata.inputNumber(); i++) {
             DataReference inputRef = this.inputs.get(i);
-            MutableComponent inputLine = Util.parseTranslatableText("fmod.flow.node.input", this.metadata.inputNames.get(i), this.metadata.inputDescriptions.get(i));
+            MutableComponent inputLine = Util.parseTranslatableText("fmod.flow.node.input", this.metadata.inputNames().get(i), this.metadata.inputDescriptions().get(i));
             // Render optional info about the input source
             if (inputRef != null) {
                 if (inputRef.getType() == DataReference.ReferenceType.CONSTANT && inputRef.getValue() != null) {
@@ -522,9 +563,9 @@ public class FlowNode implements Cloneable {
                     inputLine = inputLine.append(")");
                 } else if (inputRef.getType() == DataReference.ReferenceType.NODE_OUTPUT) {
                     FlowNode refNode = flow.getNode(inputRef.getReferenceId());
-                    if (refNode != null && inputRef.getReferenceIndex() >= 0 && inputRef.getReferenceIndex() < refNode.metadata.outputNumber) {
+                    if (refNode != null && inputRef.getReferenceIndex() >= 0 && inputRef.getReferenceIndex() < refNode.metadata.outputNumber()) {
                         inputLine = inputLine.append(" (");
-                        inputLine = inputLine.append(Util.parseTranslatableText("fmod.flow.node.from", refNode.name, refNode.metadata.outputNames.get(inputRef.getReferenceIndex())));
+                        inputLine = inputLine.append(Util.parseTranslatableText("fmod.flow.node.from", refNode.name, refNode.metadata.outputNames().get(inputRef.getReferenceIndex())));
                         inputLine = inputLine.append(")");
                     }
                 }
@@ -532,12 +573,12 @@ public class FlowNode implements Cloneable {
             text = text.append(inputLine).append("\n");
         }
         // Render outputs
-        for (int i = 0; i < this.metadata.outputNumber; i++) {
-            MutableComponent outputLine = Util.parseTranslatableText("fmod.flow.node.output", this.metadata.outputNames.get(i), this.metadata.outputDescriptions.get(i));
+        for (int i = 0; i < this.metadata.outputNumber(); i++) {
+            MutableComponent outputLine = Util.parseTranslatableText("fmod.flow.node.output", this.metadata.outputNames().get(i), this.metadata.outputDescriptions().get(i));
             text = text.append(outputLine).append("\n");
         }
         // Render branches
-        if (this.metadata.branchNumber == 1) {
+        if (this.metadata.branchNumber() == 1) {
             // Directly show the next node
             long nextNodeId = this.nextNodeIds.get(0);
             FlowNode nextNode = flow.getNode(nextNodeId);
@@ -548,9 +589,9 @@ public class FlowNode implements Cloneable {
             }
         } else {
             // List all branches and show their next nodes
-            for (int i = 0; i < this.metadata.branchNumber; i++) {
+            for (int i = 0; i < this.metadata.branchNumber(); i++) {
                 long nextNodeId = this.nextNodeIds.get(i);
-                MutableComponent branchLine = Util.parseTranslatableText("fmod.flow.node.branch", this.metadata.branchNames.get(i), this.metadata.branchDescriptions.get(i));
+                MutableComponent branchLine = Util.parseTranslatableText("fmod.flow.node.branch", this.metadata.branchNames().get(i), this.metadata.branchDescriptions().get(i));
                 // Show optional info about the next node
                 FlowNode nextNode = flow.getNode(nextNodeId);
                 if (nextNode != null) {

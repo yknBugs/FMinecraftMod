@@ -3,10 +3,20 @@
 	"package": "com.ykn.fmod.server.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"EntityDeathMixin",
-		"PlayerDeathMixin",
-		"ProjectileHitEntityMixin",
-		"LivingEntityDamageMixin"
+		"GameEventMixins$Advancements",
+		"GameEventMixins$Craft",
+		"GameEventMixins$Enchant",
+		"GameEventMixins$EntityDeath",
+		"GameEventMixins$Explosions",
+		"GameEventMixins$LivingEntityDamage",
+		"GameEventMixins$Menus",
+		"GameEventMixins$Pickup",
+		"GameEventMixins$Placement",
+		"GameEventMixins$PlayerDeath",
+		"GameEventMixins$ProjectileHit",
+		"GameEventMixins$Trade",
+		"GameEventMixins$Vehicles",
+		"GameEventMixins$Weather"
 	],
 	"injectors": {
 		"defaultRequire": 1

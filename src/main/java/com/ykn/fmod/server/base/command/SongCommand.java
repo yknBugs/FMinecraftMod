@@ -66,8 +66,7 @@ public class SongCommand {
             }
             ServerData data = Util.getServerData(server);
             for (ScheduledTask scheduledTask : data.getScheduledTasks()) {
-                if (scheduledTask instanceof PlaySong) {
-                    PlaySong playSong = (PlaySong) scheduledTask;
+                if (scheduledTask instanceof PlaySong playSong) {
                     // if (players.contains(playSong.getTarget())) {
                     //     // The Entity class overrides the equals method using network id instead of uuid, which will change after reloading
                     //     // So, this method is not reliable
@@ -124,8 +123,7 @@ public class SongCommand {
                 return 0;
             }
             for (ScheduledTask scheduledTask : Util.getServerData(server).getScheduledTasks()) {
-                if (scheduledTask instanceof PlaySong) {
-                    PlaySong playSong = (PlaySong) scheduledTask;
+                if (scheduledTask instanceof PlaySong playSong) {
                     if (playSong.getTarget().getUUID().equals(player.getUUID())) {
                         isFound = true;
                         boolean isSuccess = true;
@@ -294,39 +292,39 @@ public class SongCommand {
                 .then(Commands.argument("player", EntityArgument.players())
                     .then(Commands.argument("song", StringArgumentType.greedyString())
                         .suggests(SongFileSuggestion.suggest())
-                        .executes(context -> {return runSongPlayCommand(EntityArgument.getPlayers(context, "player"), StringArgumentType.getString(context, "song"), context);})
+                        .executes(context -> runSongPlayCommand(EntityArgument.getPlayers(context, "player"), StringArgumentType.getString(context, "song"), context))
                     )
                 )
             )
             .then(Commands.literal("cancel")
                 .then(Commands.argument("player", EntityArgument.players())
-                    .executes(context -> {return runSongCancelCommand(EntityArgument.getPlayers(context, "player"), context);})
+                    .executes(context -> runSongCancelCommand(EntityArgument.getPlayers(context, "player"), context))
                 )
             )
             .then(Commands.literal("get")
                 .then(Commands.argument("player", EntityArgument.players())
-                    .executes(context -> {return runSongGetCommand(EntityArgument.getPlayers(context, "player"), context);})
+                    .executes(context -> runSongGetCommand(EntityArgument.getPlayers(context, "player"), context))
                 )
             )
             .then(Commands.literal("show")
                 .then(Commands.argument("player", EntityArgument.players())
                     .then(Commands.argument("enable", BoolArgumentType.bool())
-                        .executes(context -> {return runSongShowInfoCommand(EntityArgument.getPlayers(context, "player"), BoolArgumentType.getBool(context, "enable"), context);})
+                        .executes(context -> runSongShowInfoCommand(EntityArgument.getPlayers(context, "player"), BoolArgumentType.getBool(context, "enable"), context))
                     )
-                    .executes(context -> {return runSongShowInfoCommand(EntityArgument.getPlayers(context, "player"), context);})
+                    .executes(context -> runSongShowInfoCommand(EntityArgument.getPlayers(context, "player"), context))
                 )
             )
             .then(Commands.literal("seek")
                 .then(Commands.argument("player", EntityArgument.players())
                     .then(Commands.argument("timepoint", DoubleArgumentType.doubleArg(0.0))
-                        .executes(context -> {return runSongSeekCommand(EntityArgument.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "timepoint"), context);})
+                        .executes(context -> runSongSeekCommand(EntityArgument.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "timepoint"), context))
                     )
                 )
             )
             .then(Commands.literal("speed")
                 .then(Commands.argument("player", EntityArgument.players())
                     .then(Commands.argument("speed", DoubleArgumentType.doubleArg())
-                        .executes(context -> {return runSongSpeedCommand(EntityArgument.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "speed"), context);})
+                        .executes(context -> runSongSpeedCommand(EntityArgument.getPlayers(context, "player"), DoubleArgumentType.getDouble(context, "speed"), context))
                     )
                 )
             );

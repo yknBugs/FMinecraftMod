@@ -16,20 +16,22 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
+import com.ykn.fmod.server.flow.tool.FlowConvert;
+
 /**
- * A node to set an object at a specific index in a list.
+ * A flow node that writes an object at an index of a list.
  * Inputs:
- * 1. List - The list to set the object in, can be any type of list.
- * 2. Number - The index of the object to set, if negative, it will count from the end of the list.
- * 3. Object - The object to set at the specified index in the list, can be null.
- * 4. Boolean - If true, replace the existing element, if false, insert the object at the specified index. Default true.
- * 5. Boolean - If true and the Object input is also a list, flatten the Object input. Default true.
- * 6. Boolean - If true, strip all the leading and tailing null values. Default true.
+ * 1. List - The list to set the object in.
+ * 2. Integer - The index to set the object at, starting from 0. Negative values count from the end.
+ * 3. Object - The object to set at the specified index.
+ * 4. Boolean - If true, replace the element at the index. If false, insert and shift existing elements. Treat null as true.
+ * 5. Boolean - If true and Object is a list, expand its elements. If false, treat Object as a single element. Treat null as true.
+ * 6. Boolean - If true, remove null values from the beginning and end of the result. Treat null as true.
  * Outputs:
  * 1. List - The list after setting the object.
- * 2. Object - The original object at the specified index in the list before setting.
- * 3. Number - The number of elements in the list before setting the object.
- * 4. Number - The number of elements in the list after setting the object.
+ * 2. Object - The original object at the specified index before modification.
+ * 3. Integer - The number of elements in the list before setting the object.
+ * 4. Integer - The number of elements in the list after setting the object.
  * Branches: 1 (Next node)
  */
 public class SetObjectAtIndexNode extends FlowNode {
@@ -65,13 +67,13 @@ public class SetObjectAtIndexNode extends FlowNode {
             Object objectToSet = resolvedInputs.get(2);
             
             Boolean isReplaceBool = TypeAdaptor.parse(resolvedInputs.get(3)).asBoolean();
-            boolean isReplace = isReplaceBool == null ? true : isReplaceBool;
+            boolean isReplace = isReplaceBool == null || isReplaceBool;
 
             Boolean isFlattenBool = TypeAdaptor.parse(resolvedInputs.get(4)).asBoolean();
-            boolean isFlatten = isFlattenBool == null ? true : isFlattenBool;
+            boolean isFlatten = isFlattenBool == null || isFlattenBool;
 
             Boolean isStripBool = TypeAdaptor.parse(resolvedInputs.get(5)).asBoolean();
-            boolean isStrip = isStripBool == null ? true : isStripBool; 
+            boolean isStrip = isStripBool == null || isStripBool;
             
             int sizeBefore = inputList.size();
             
@@ -84,6 +86,14 @@ public class SetObjectAtIndexNode extends FlowNode {
                     // index can still be negative here
                 }
             }
+
+            // Validate the peak size before padding, copying insertion values, or publishing outputs.
+            // Use long arithmetic so extreme negative indices and flattened inserts cannot overflow.
+            long paddedSize = index < 0 ? (long) sizeBefore - index : Math.max((long) sizeBefore, index);
+            long start = Math.max(0, index);
+            long inserted = isFlatten && objectToSet instanceof List<?> list ? list.size() : 1;
+            long peakSize = isReplace ? Math.max(paddedSize, start + inserted) : paddedSize + inserted;
+            FlowConvert.checkListSize(peakSize);
 
             // Append nulls if index is negative and out of bounds
             if (index < 0) {
@@ -131,10 +141,8 @@ public class SetObjectAtIndexNode extends FlowNode {
                 // Set Output value
                 if (replacedObjects.isEmpty()) {
                     status.setOutput(1, null);
-                } else if (replacedObjects.size() == 1) {
-                    status.setOutput(1, replacedObjects.get(0));
                 } else {
-                    status.setOutput(1, replacedObjects);
+                    status.setOutput(1, FlowConvert.unwrapOutput(replacedObjects));
                 }
             } else {
                 // Set Output value
@@ -152,17 +160,17 @@ public class SetObjectAtIndexNode extends FlowNode {
 
             if (isStrip) {
                 // Strip nulls at the beginning
-                while (inputList.size() > 0 && inputList.get(0) == null) {
+                while (!inputList.isEmpty() && inputList.get(0) == null) {
                     inputList.remove(0);
                 }
                 // Strip nulls at the end
-                while (inputList.size() > 0 && inputList.get(inputList.size() - 1) == null) {
+                while (!inputList.isEmpty() && inputList.get(inputList.size() - 1) == null) {
                     inputList.remove(inputList.size() - 1);
                 }
             }
             
             // Set outputs
-            status.setOutput(0, inputList);
+            status.setOutput(0, FlowConvert.unwrapOutput(inputList));
             status.setOutput(2, sizeBefore);
             status.setOutput(3, inputList.size());
         } catch (OutOfMemoryError e) {
@@ -170,17 +178,7 @@ public class SetObjectAtIndexNode extends FlowNode {
         } 
     }
 
-    private List<Object> parseList(Object obj) {
-        // Return a copy of the original list
-        if (obj == null) {
-            return new ArrayList<Object>();
-        }
-        List<Object> tryCastList = TypeAdaptor.parse(obj).asList();
-        if (tryCastList == null) {
-            List<Object> singleItemList = new ArrayList<>();
-            singleItemList.add(obj);
-            return singleItemList;
-        }
-        return tryCastList;
+    private List<Object> parseList(Object obj) throws LogicException {
+        return FlowConvert.listInput(obj);
     }
 }

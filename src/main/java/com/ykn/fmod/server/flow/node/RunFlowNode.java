@@ -22,16 +22,13 @@ import com.ykn.fmod.server.flow.tool.FlowManager;
 import net.minecraft.server.MinecraftServer;
 
 /**
- * A flow node that triggers the execution of another flow.
+ * A flow node that starts another flow after a delay.
  * Inputs:
- * 1. String - The name of the flow to run.
- * 2. Number - The delay before running the flow (in ticks). Default is 0.
- * 3. Boolean - Whether to keep all the variables from the current flow. Default is true.
+ * 1. String - The name of the flow to be executed.
+ * 2. Integer - The delay in ticks before executing the flow.
+ * 3. Boolean - Whether to keep all variables in the current flow.
  * Outputs:
- * 1. ScheduledFlow - The pending task when delay is positive; null for immediate execution.
- * <p>Only enabled target flows can be run. Immediate calls inherit the parent execution
- * limits and propagate failures. Delayed calls copy the variable map when scheduled and
- * execute later with the configured limits; mutable values within the map are shared.
+ * 1. Scheduled Task - The scheduled task for the flow execution.
  * Branches: 1 (Next node)
  */
 public class RunFlowNode extends FlowNode {
@@ -75,8 +72,6 @@ public class RunFlowNode extends FlowNode {
                 }
             } catch (StackOverflowError e) {
                 throw new LogicException(null, Util.parseTranslatableText("fmod.flow.error.overflow"), null);
-            } catch (LogicException e) {
-                throw e;
             }
             status.setOutput(0, null);
         } else {
@@ -88,7 +83,7 @@ public class RunFlowNode extends FlowNode {
 
     private String parseFlowName(Object flowObj) throws LogicException {
         if (flowObj == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.inputnull", this.name, this.metadata.inputNames().get(0)), null);
         } else {
             return TypeAdaptor.parse(flowObj).asString();
         }
@@ -100,7 +95,7 @@ public class RunFlowNode extends FlowNode {
         }
         Double delay = TypeAdaptor.parse(delayObj).asDouble();
         if (delay == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(1), this.metadata.inputDataTypes.get(1)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(1), this.metadata.inputDataTypes().get(1)), null);
         }
         int delayInt = delay.intValue();
         if (delayInt < 0) {
@@ -115,7 +110,7 @@ public class RunFlowNode extends FlowNode {
         }
         Boolean keepVar = TypeAdaptor.parse(keepVarObj).asBoolean();
         if (keepVar == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames.get(2), this.metadata.inputDataTypes.get(2)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.classcast", this.name, this.metadata.inputNames().get(2), this.metadata.inputDataTypes().get(2)), null);
         }
         return keepVar;
     }

@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
+import net.minecraft.resources.ResourceKey;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -137,8 +138,7 @@ public class Util {
             return new ArrayList<>();
         }
         List<ServerPlayer> original = server.getPlayerList().getPlayers();
-        List<ServerPlayer> copy = new ArrayList<>(original);
-        return copy;
+        return new ArrayList<>(original);
     }
 
     /**
@@ -201,7 +201,7 @@ public class Util {
     @NotNull
     public static MutableComponent parseCoordText(@NotNull Entity entity) {
         ResourceLocation dimension = entity.level().dimension().location();
-        ResourceLocation biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        ResourceLocation biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
         double x = entity.getX();
         double y = entity.getY();
         double z = entity.getZ();
@@ -317,8 +317,7 @@ public class Util {
         if (entity instanceof Double) {
             return (Double) entity;
         }
-        if (entity instanceof LivingEntity) {
-            LivingEntity livingEntity = (LivingEntity) entity;
+        if (entity instanceof LivingEntity livingEntity) {
             if (livingEntity.isRemoved()) {
                 return 0.0;
             }
@@ -340,8 +339,7 @@ public class Util {
         if (entity instanceof Double) {
             return (Double) entity;
         }
-        if (entity instanceof LivingEntity) {
-            LivingEntity livingEntity = (LivingEntity) entity;
+        if (entity instanceof LivingEntity livingEntity) {
             if (livingEntity.isRemoved()) {
                 return 0.0;
             }
@@ -417,7 +415,7 @@ public class Util {
      */
     @NotNull
     public static MutableComponent getBiomeText(@NotNull Entity entity) {
-        ResourceLocation biomeId = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+        ResourceLocation biomeId = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
         return getBiomeText(biomeId);
     }
 

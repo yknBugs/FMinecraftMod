@@ -342,7 +342,7 @@ public final class ParamEditorScreen<T> extends Screen {
     private static final class ParamList extends ContainerObjectSelectionList<ParamEntry> {
         private final int rowWidth;
 
-        ParamList(net.minecraft.client.Minecraft client, int width, int height, int top, int bottom, int itemHeight, int rowWidth) {
+        ParamList(Minecraft client, int width, int height, int top, int bottom, int itemHeight, int rowWidth) {
             super(client, width, height, top, bottom, itemHeight);
             this.rowWidth = rowWidth;
         }

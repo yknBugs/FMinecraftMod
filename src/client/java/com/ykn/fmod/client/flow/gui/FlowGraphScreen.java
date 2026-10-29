@@ -149,7 +149,7 @@ public class FlowGraphScreen extends Screen {
 
     private static int bodyRows(FlowNode node) {
         NodeMetadata meta = node.getMetadata();
-        return meta.branchNumber + Math.max(meta.inputNumber, meta.outputNumber);
+        return meta.branchNumber() + Math.max(meta.inputNumber(), meta.outputNumber());
     }
 
     private static int nodeBoxHeight(FlowNode node) {
@@ -291,7 +291,7 @@ public class FlowGraphScreen extends Screen {
         int nameButtonWidth = 100;
 
         Button nameButton = Button.builder(Component.literal(node.getName()), b -> onNameClicked(id)).size(nameButtonWidth, 14).build();
-        nameButton.setTooltip(Tooltip.create(meta.description));
+        nameButton.setTooltip(Tooltip.create(meta.description()));
         int[] nameOffset = {PADDING, PADDING, nameButtonWidth, 14};
         Component typeText = Component.literal(this.font.plainSubstrByWidth(node.getType(), NODE_WIDTH - PADDING * 2 - nameButtonWidth - 6));
         int[] typeTextOffset = {PADDING + nameButtonWidth + 6, PADDING + 3};
@@ -306,10 +306,10 @@ public class FlowGraphScreen extends Screen {
         int branchButtonX = NODE_WIDTH - PADDING - branchButtonWidth;
         int branchValueX = PADDING;
         int branchValueWidth = branchButtonX - PADDING - 4;
-        for (int i = 0; i < meta.branchNumber; i++) {
+        for (int i = 0; i < meta.branchNumber(); i++) {
             int index = i;
-            Button branchButton = Button.builder(meta.branchNames.get(i), b -> onBranchClicked(id, index)).size(branchButtonWidth, ROW_HEIGHT - 2).build();
-            branchButton.setTooltip(Tooltip.create(meta.branchDescriptions.get(i)));
+            Button branchButton = Button.builder(meta.branchNames().get(i), b -> onBranchClicked(id, index)).size(branchButtonWidth, ROW_HEIGHT - 2).build();
+            branchButton.setTooltip(Tooltip.create(meta.branchDescriptions().get(i)));
             branchButtons.add(branchButton);
             int y = bodyTop + i * ROW_HEIGHT;
             branchOffsets.add(new int[]{branchButtonX, y, branchButtonWidth, ROW_HEIGHT - 2});
@@ -320,7 +320,7 @@ public class FlowGraphScreen extends Screen {
             branchValueOffsets.add(new int[]{branchValueX, y + 3});
         }
 
-        int rowOffset = meta.branchNumber;
+        int rowOffset = meta.branchNumber();
         List<Button> inputButtons = new ArrayList<>();
         List<int[]> inputOffsets = new ArrayList<>();
         List<Component> inputValueTexts = new ArrayList<>();
@@ -328,10 +328,10 @@ public class FlowGraphScreen extends Screen {
         int inputButtonWidth = NODE_INPUT_WIDTH;
         int inputValueX = PADDING + inputButtonWidth + 4;
         int inputValueWidth = NODE_INPUT_VALUE_WIDTH;
-        for (int i = 0; i < meta.inputNumber; i++) {
+        for (int i = 0; i < meta.inputNumber(); i++) {
             int index = i;
-            Button inputButton = Button.builder(meta.inputNames.get(i), b -> onInputClicked(id, index)).size(inputButtonWidth, ROW_HEIGHT - 2).build();
-            inputButton.setTooltip(Tooltip.create(combineTooltip(meta.inputDataTypes.get(i), meta.inputDescriptions.get(i))));
+            Button inputButton = Button.builder(meta.inputNames().get(i), b -> onInputClicked(id, index)).size(inputButtonWidth, ROW_HEIGHT - 2).build();
+            inputButton.setTooltip(Tooltip.create(combineTooltip(meta.inputDataTypes().get(i), meta.inputDescriptions().get(i))));
             inputButtons.add(inputButton);
             int y = bodyTop + (rowOffset + i) * ROW_HEIGHT;
             inputOffsets.add(new int[]{PADDING, y, inputButtonWidth, ROW_HEIGHT - 2});
@@ -340,8 +340,8 @@ public class FlowGraphScreen extends Screen {
             if (ref.getType() == DataReference.ReferenceType.NODE_OUTPUT) {
                 FlowNode source = flow.getNode(ref.getReferenceId());
                 String outputName = "?";
-                if (source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber) {
-                    outputName = source.getMetadata().outputNames.get(ref.getReferenceIndex()).getString();
+                if (source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber()) {
+                    outputName = source.getMetadata().outputNames().get(ref.getReferenceIndex()).getString();
                 }
                 valueText = (source == null ? "?" : source.getName()) + " " + outputName;
             } else if (ref.getValue() == null) {
@@ -355,10 +355,10 @@ public class FlowGraphScreen extends Screen {
 
         List<Button> outputButtons = new ArrayList<>();
         List<int[]> outputOffsets = new ArrayList<>();
-        for (int i = 0; i < meta.outputNumber; i++) {
+        for (int i = 0; i < meta.outputNumber(); i++) {
             int index = i;
-            Button outputButton = Button.builder(meta.outputNames.get(i), b -> onOutputClicked(id, index)).size(rightWidth, ROW_HEIGHT - 2).build();
-            outputButton.setTooltip(Tooltip.create(combineTooltip(meta.outputDataTypes.get(i), meta.outputDescriptions.get(i))));
+            Button outputButton = Button.builder(meta.outputNames().get(i), b -> onOutputClicked(id, index)).size(rightWidth, ROW_HEIGHT - 2).build();
+            outputButton.setTooltip(Tooltip.create(combineTooltip(meta.outputDataTypes().get(i), meta.outputDescriptions().get(i))));
             outputButtons.add(outputButton);
             int y = bodyTop + (rowOffset + i) * ROW_HEIGHT;
             outputOffsets.add(new int[]{rightX, y, rightWidth, ROW_HEIGHT - 2});
@@ -585,7 +585,7 @@ public class FlowGraphScreen extends Screen {
     private Component typeButtonLabel() {
         for (FlowEditorBridge.NodeTypeInfo info : FlowEditorBridge.nodeTypeCatalog()) {
             if (info.type.equals(this.pendingAddType)) {
-                return info.metadata.displayName;
+                return info.metadata.displayName();
             }
         }
         return Component.literal(this.pendingAddType == null ? "?" : this.pendingAddType);
@@ -652,8 +652,8 @@ public class FlowGraphScreen extends Screen {
                     canClear = false;
                 } else if (ref.getType() == DataReference.ReferenceType.NODE_OUTPUT) {
                     FlowNode source = getNode(ref.getReferenceId());
-                    String outputName = source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber
-                        ? source.getMetadata().outputNames.get(ref.getReferenceIndex()).getString() : "?";
+                    String outputName = source != null && ref.getReferenceIndex() >= 0 && ref.getReferenceIndex() < source.getMetadata().outputNumber()
+                        ? source.getMetadata().outputNames().get(ref.getReferenceIndex()).getString() : "?";
                     hint = Component.translatable("fmod.flowgui.graph.menu.input.connected", source == null ? "?" : source.getName(), outputName);
                     canClear = true;
                 } else {
@@ -702,12 +702,12 @@ public class FlowGraphScreen extends Screen {
             if (info.event) {
                 continue;
             }
-            Component label = Component.literal(info.type + " (").append(info.metadata.displayName).append(")");
-            options.add(new OptionPickerScreen.Option(label, info.metadata.description, () -> {
+            Component label = Component.literal(info.type + " (").append(info.metadata.displayName()).append(")");
+            options.add(new OptionPickerScreen.Option(label, info.metadata.description(), () -> {
                 this.pendingAddType = info.type;
                 this.minecraft.setScreen(this);
                 rebuildMenu();
-            }, info.type + " " + info.metadata.displayName.getString()));
+            }, info.type + " " + info.metadata.displayName().getString()));
         }
         this.minecraft.setScreen(new OptionPickerScreen(this, Component.translatable("fmod.flowgui.graph.addnode"), options));
     }

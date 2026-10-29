@@ -284,22 +284,15 @@ public class PlayerMessageType extends MessageType {
     public static PlayerMessageType fromServerMessageType(ServerMessageType serverMessageType) {
         MessageType.Location mainLocation = serverMessageType.mainPlayerLocation;
         MessageType.Location otherLocation = serverMessageType.otherPlayerLocation;
-        PlayerMessageType.Receiver receiver;
-        switch (serverMessageType.receiver) {
-            case ALL:
-                receiver = PlayerMessageType.Receiver.ALL;
-                break;
-            case OP:
-                receiver = PlayerMessageType.Receiver.OP;
-                break;
-            case NONE:
-                receiver = PlayerMessageType.Receiver.NONE;
-                break;
-            default:
+        PlayerMessageType.Receiver receiver = switch (serverMessageType.receiver) {
+            case ALL -> Receiver.ALL;
+            case OP -> Receiver.OP;
+            case NONE -> Receiver.NONE;
+            default -> {
                 Util.LOGGER.error("FMinecraftMod: Invalid ServerMessageType receiver: " + serverMessageType.receiver);
-                receiver = PlayerMessageType.Receiver.NONE;
-                break;
-        }
+                yield Receiver.NONE;
+            }
+        };
         return new PlayerMessageType(mainLocation, otherLocation, receiver);
     }
 
@@ -351,24 +344,16 @@ public class PlayerMessageType extends MessageType {
      * @return a localized and formatted text representation of the message receiver type
      */
     public static MutableComponent getMessageReceiverI18n(PlayerMessageType.Receiver method) {
-        switch (method) {
-            case ALL:
-                return Util.parseTranslatableText("fmod.message.type.toall").withStyle(ChatFormatting.YELLOW);
-            case OP:
-                return Util.parseTranslatableText("fmod.message.type.toop").withStyle(ChatFormatting.GOLD);
-            case SELFOP:
-                return Util.parseTranslatableText("fmod.message.type.toselfop").withStyle(ChatFormatting.YELLOW);
-            case TEAMOP:
-                return Util.parseTranslatableText("fmod.message.type.toteamop").withStyle(ChatFormatting.YELLOW);
-            case TEAM:
-                return Util.parseTranslatableText("fmod.message.type.toteam").withStyle(ChatFormatting.GREEN);
-            case SELF:
-                return Util.parseTranslatableText("fmod.message.type.toself").withStyle(ChatFormatting.GREEN);
-            case NONE:
-                return Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
-            default:
-                return Component.literal(method.toString());
-        }
+        return switch (method) {
+            case ALL -> Util.parseTranslatableText("fmod.message.type.toall").withStyle(ChatFormatting.YELLOW);
+            case OP -> Util.parseTranslatableText("fmod.message.type.toop").withStyle(ChatFormatting.GOLD);
+            case SELFOP -> Util.parseTranslatableText("fmod.message.type.toselfop").withStyle(ChatFormatting.YELLOW);
+            case TEAMOP -> Util.parseTranslatableText("fmod.message.type.toteamop").withStyle(ChatFormatting.YELLOW);
+            case TEAM -> Util.parseTranslatableText("fmod.message.type.toteam").withStyle(ChatFormatting.GREEN);
+            case SELF -> Util.parseTranslatableText("fmod.message.type.toself").withStyle(ChatFormatting.GREEN);
+            case NONE -> Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
+            default -> Component.literal(method.toString());
+        };
     }
 
     /**

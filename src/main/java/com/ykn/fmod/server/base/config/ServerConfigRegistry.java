@@ -165,8 +165,8 @@ public class ServerConfigRegistry {
                     double min = configAnnotation.minCommandDouble();
                     double max = configAnnotation.maxCommandDouble();
                     commandNode = commandNode.then(Commands.argument(commandValueHint, DoubleArgumentType.doubleArg(min, max))
-                        .executes(context -> {return runOptionsCommand(codeEntry, DoubleArgumentType.getDouble(context, commandValueHint), context);})
-                    ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
+                        .executes(context -> runOptionsCommand(codeEntry, DoubleArgumentType.getDouble(context, commandValueHint), context))
+                    ).executes(context -> runOptionsCommand(codeEntry, null, context));
                 }
                 break;
             case INTEGER:
@@ -174,60 +174,60 @@ public class ServerConfigRegistry {
                     int min = configAnnotation.minCommandInt();
                     int max = configAnnotation.maxCommandInt();
                     commandNode = commandNode.then(Commands.argument(commandValueHint, IntegerArgumentType.integer(min, max))
-                        .executes(context -> {return runOptionsCommand(codeEntry, IntegerArgumentType.getInteger(context, commandValueHint), context);})
-                    ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
+                        .executes(context -> runOptionsCommand(codeEntry, IntegerArgumentType.getInteger(context, commandValueHint), context))
+                    ).executes(context -> runOptionsCommand(codeEntry, null, context));
                 }
                 break;
             case STRING:
                 {
                     commandNode = commandNode.then(Commands.argument(commandValueHint, StringArgumentType.greedyString())
-                        .executes(context -> {return runOptionsCommand(codeEntry, StringArgumentType.getString(context, commandValueHint), context);})
-                    ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
+                        .executes(context -> runOptionsCommand(codeEntry, StringArgumentType.getString(context, commandValueHint), context))
+                    ).executes(context -> runOptionsCommand(codeEntry, null, context));
                 }
                 break;
             case BOOLEAN:
                 {
                     commandNode = commandNode.then(Commands.argument(commandValueHint, BoolArgumentType.bool())
-                        .executes(context -> {return runOptionsCommand(codeEntry, BoolArgumentType.getBool(context, commandValueHint), context);})
-                    ).executes(context -> {return runOptionsCommand(codeEntry, null, context);});
+                        .executes(context -> runOptionsCommand(codeEntry, BoolArgumentType.getBool(context, commandValueHint), context))
+                    ).executes(context -> runOptionsCommand(codeEntry, null, context));
                 }
                 break;
             case SERVERMESSAGE:
                 {
                     commandNode = commandNode.then(Commands.literal("main")
-                        .then(Commands.literal("off").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.NONE, context);}))
-                        .then(Commands.literal("chat").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.CHAT, context);}))
-                        .then(Commands.literal("actionbar").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.ACTIONBAR, context);}))
+                        .then(Commands.literal("off").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.NONE, context)))
+                        .then(Commands.literal("chat").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.CHAT, context)))
+                        .then(Commands.literal("actionbar").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "main", ServerMessageType.Location.ACTIONBAR, context)))
                     ).then(Commands.literal("other")
-                        .then(Commands.literal("off").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.NONE, context);}))
-                        .then(Commands.literal("chat").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.CHAT, context);}))
-                        .then(Commands.literal("actionbar").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.ACTIONBAR, context);}))
+                        .then(Commands.literal("off").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.NONE, context)))
+                        .then(Commands.literal("chat").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.CHAT, context)))
+                        .then(Commands.literal("actionbar").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "other", ServerMessageType.Location.ACTIONBAR, context)))
                     ).then(Commands.literal("receiver")
-                        .then(Commands.literal("all").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.ALL, context);}))
-                        .then(Commands.literal("op").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.OP, context);}))
-                        .then(Commands.literal("none").executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.NONE, context);}))
-                    ).executes(context -> {return runServerMessageTypeOptionsCommand(codeEntry, null, null, context);});
+                        .then(Commands.literal("all").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.ALL, context)))
+                        .then(Commands.literal("op").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.OP, context)))
+                        .then(Commands.literal("none").executes(context -> runServerMessageTypeOptionsCommand(codeEntry, "receiver", ServerMessageType.Receiver.NONE, context)))
+                    ).executes(context -> runServerMessageTypeOptionsCommand(codeEntry, null, null, context));
                 }
                 break;
             case PLAYERMESSAGE:
                 {
                     commandNode = commandNode.then(Commands.literal("main")
-                        .then(Commands.literal("off").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.NONE, context);}))
-                        .then(Commands.literal("chat").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.CHAT, context);}))
-                        .then(Commands.literal("actionbar").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.ACTIONBAR, context);}))
+                        .then(Commands.literal("off").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.NONE, context)))
+                        .then(Commands.literal("chat").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.CHAT, context)))
+                        .then(Commands.literal("actionbar").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "main", PlayerMessageType.Location.ACTIONBAR, context)))
                     ).then(Commands.literal("other")
-                        .then(Commands.literal("off").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.NONE, context);}))
-                        .then(Commands.literal("chat").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.CHAT, context);}))
-                        .then(Commands.literal("actionbar").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.ACTIONBAR, context);}))
+                        .then(Commands.literal("off").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.NONE, context)))
+                        .then(Commands.literal("chat").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.CHAT, context)))
+                        .then(Commands.literal("actionbar").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "other", PlayerMessageType.Location.ACTIONBAR, context)))
                     ).then(Commands.literal("receiver")
-                        .then(Commands.literal("all").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.ALL, context);}))
-                        .then(Commands.literal("op").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.OP, context);}))
-                        .then(Commands.literal("selfop").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELFOP, context);}))
-                        .then(Commands.literal("teamop").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAMOP, context);}))
-                        .then(Commands.literal("team").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAM, context);}))
-                        .then(Commands.literal("self").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELF, context);}))
-                        .then(Commands.literal("none").executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.NONE, context);}))
-                    ).executes(context -> {return runPlayerMessageTypeOptionsCommand(codeEntry, null, null, context);});
+                        .then(Commands.literal("all").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.ALL, context)))
+                        .then(Commands.literal("op").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.OP, context)))
+                        .then(Commands.literal("selfop").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELFOP, context)))
+                        .then(Commands.literal("teamop").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAMOP, context)))
+                        .then(Commands.literal("team").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.TEAM, context)))
+                        .then(Commands.literal("self").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.SELF, context)))
+                        .then(Commands.literal("none").executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, "receiver", PlayerMessageType.Receiver.NONE, context)))
+                    ).executes(context -> runPlayerMessageTypeOptionsCommand(codeEntry, null, null, context));
                 }
                 break;
             default:

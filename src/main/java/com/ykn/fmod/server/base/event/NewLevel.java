@@ -21,28 +21,34 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 
-public class NewLevel {
+/**
+ * The world load feature: auto-loading the rule and flow files once per server start.
+ *
+ * <p>This class is the existing feature only; it is invoked by {@link GameEventHandler}, which is
+ * the single entry point the loader layer registers.
+ */
+public final class NewLevel {
 
-    private final MinecraftServer server;
-    private final ServerLevel world;
-
-    public NewLevel(MinecraftServer server, ServerLevel world) {
-        this.server = server;
-        this.world = world;
+    private NewLevel() {
     }
 
     /**
-     * This method is called when a world is loaded.
+     * Runs the once-per-startup auto load.
+     *
+     * @param server the server that just started
+     * @param world  the world that finished loading
+     * @see com.ykn.fmod.server.FMod
      */
-    public void onNewLevel() {
-        if (server != null && world != null) {
-            ServerData data = Util.getServerData(server);
-            // ServerWorldEvents.LOAD fires once per dimension, so make sure the auto load
-            // below only ever runs once per server startup / save load.
-            if (data.tryMarkAutoLoadPerformed()) {
-                autoLoadRuleFiles(data);
-                autoLoadFlowFiles(data);
-            }
+    public static void onNewLevel(MinecraftServer server, ServerLevel world) {
+        if (server == null || world == null) {
+            return;
+        }
+        ServerData data = Util.getServerData(server);
+        // ServerWorldEvents.LOAD fires once per dimension, so make sure the auto load
+        // below only ever runs once per server startup / save load.
+        if (data.tryMarkAutoLoadPerformed()) {
+            autoLoadRuleFiles(server, data);
+            autoLoadFlowFiles(server, data);
         }
     }
 
@@ -52,9 +58,10 @@ public class NewLevel {
      * Reports how many rules were loaded via a console log, or a chat message if the server
      * is a singleplayer integrated server.
      *
-     * @param data the {@link ServerData} of the server that just started
+     * @param server the server that just started
+     * @param data   the {@link ServerData} of that server
      */
-    private void autoLoadRuleFiles(ServerData data) {
+    private static void autoLoadRuleFiles(MinecraftServer server, ServerData data) {
         if (!Util.getServerConfig().getAutoLoadRuleFiles()) {
             return;
         }
@@ -99,9 +106,10 @@ public class NewLevel {
      * Reports how many flows were loaded via a console log, or a chat message if the server
      * is a singleplayer integrated server.
      *
-     * @param data the {@link ServerData} of the server that just started
+     * @param server the server that just started
+     * @param data   the {@link ServerData} of that server
      */
-    private void autoLoadFlowFiles(ServerData data) {
+    private static void autoLoadFlowFiles(MinecraftServer server, ServerData data) {
         if (!Util.getServerConfig().getAutoLoadFlowFiles()) {
             return;
         }
@@ -139,5 +147,4 @@ public class NewLevel {
             }
         }));
     }
-
 }

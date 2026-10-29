@@ -15,11 +15,11 @@ import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
 /**
- * A flow node that retrieves the value of a variable from the execution context.
+ * A flow node that reads a variable from the execution context.
  * Inputs:
- * 1. String - The name of the variable to retrieve.
+ * 1. String - The name of this variable.
  * Outputs:
- * 1. Object - The value of the variable.
+ * 1. Object - The value of this variable.
  * Branches: 1 (Next node)
  */
 public class GetVariableNode extends FlowNode {
