@@ -10,8 +10,11 @@ import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.ykn.fmod.server.base.util.Util;
+import com.ykn.fmod.server.rule.tool.RuleNbt;
 
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -205,6 +208,11 @@ public final class ComponentCall {
     }
 
     @Nullable
+    public DataComponentPatch components(int index) {
+        return this.get(index, DataComponentPatch.class);
+    }
+
+    @Nullable
     public CompoundTag compound(int index) {
         return this.get(index, CompoundTag.class);
     }
@@ -310,7 +318,20 @@ public final class ComponentCall {
                 ? null
                 : this.context.getVariable(parameter.getVariableName());
         Object resolved = coerce(fromVariable, type);
-        return resolved != null ? resolved : coerce(parameter.getConstantValue(), type);
+        if (resolved != null) {
+            return resolved;
+        }
+        if (this.parameters.get(index).kind == ParamKind.ITEM_COMPONENTS
+                && parameter.getConstantValue() instanceof ItemComponents.Constant constant) {
+            try {
+                return ItemComponents.decode(RuleNbt.compound(constant.snbt()),
+                        this.context.getServer().registryAccess());
+            } catch (IllegalArgumentException exception) {
+                this.fail(Util.parseTranslatableText("fmod.rule.warning.itemcomponents"));
+                return null;
+            }
+        }
+        return coerce(parameter.getConstantValue(), type);
     }
 
     /**

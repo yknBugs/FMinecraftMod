@@ -11,6 +11,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -38,6 +39,7 @@ import net.minecraft.commands.arguments.coordinates.Coordinates;
 import net.minecraft.commands.arguments.coordinates.RotationArgument;
 import net.minecraft.commands.arguments.coordinates.Vec3Argument;
 import net.minecraft.commands.synchronization.SuggestionProviders;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
@@ -162,8 +164,8 @@ public final class ParamKind<T> {
      *
      * @return the value type
      */
-    public Class<T> valueType() {
-        return valueType;
+    public Class<?> valueType() {
+        return this == ITEM_COMPONENTS ? DataComponentPatch.class : valueType;
     }
 
     /**
@@ -352,6 +354,19 @@ public final class ParamKind<T> {
         name -> Commands.argument(name, CompoundTagArgument.compoundTag()), CompoundTagArgument::getCompoundTag,
         false, CompoundTag.class,
         v -> new JsonPrimitive(v.toString()), e -> RuleNbt.compound(e.getAsString()));
+
+    /**
+     * Item component constants retain their SNBT until evaluation supplies the world's registries.
+     * Resolved variables and node outputs use native {@link DataComponentPatch} values.
+     *
+     * <p>No built-in suggestions.
+     */
+    public static final ParamKind<Object> ITEM_COMPONENTS = new ParamKind<>(
+        name -> Commands.argument(name, CompoundTagArgument.compoundTag()),
+        (ctx, name) -> new ItemComponents.Constant(CompoundTagArgument.getCompoundTag(ctx, name).toString()),
+        false, Object.class,
+        v -> new JsonPrimitive(((ItemComponents.Constant) v).snbt()),
+        e -> new ItemComponents.Constant(e.getAsString()));
 
     /**
      * A vanilla NBT path, kept as text so a variable can supply it.

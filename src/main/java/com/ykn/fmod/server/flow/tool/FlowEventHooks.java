@@ -13,11 +13,14 @@ import java.util.List;
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -114,7 +117,9 @@ public final class FlowEventHooks {
     }
 
     public static Runnable playerTrade(ServerPlayer player, Merchant merchant, ItemStack stack, CompoundTag offer) {
-        return prepare("PlayerTradeEvent", player.getServer(), player, merchant, stack.copy(), new MerchantOffer(offer.copy()));
+        RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, player.registryAccess());
+        MerchantOffer parsedOffer = MerchantOffer.CODEC.parse(ops, offer.copy()).getOrThrow(IllegalArgumentException::new);
+        return prepare("PlayerTradeEvent", player.getServer(), player, merchant, stack.copy(), parsedOffer);
     }
 
     public static Runnable playerSleep(ServerPlayer player, BlockPos bed) {
@@ -129,7 +134,7 @@ public final class FlowEventHooks {
         return prepare("PlayerVehicleLeaveEvent", player.getServer(), player, vehicle);
     }
 
-    public static Runnable playerAdvancement(ServerPlayer player, Advancement advancement, String criterion) {
+    public static Runnable playerAdvancement(ServerPlayer player, AdvancementHolder advancement, String criterion) {
         return prepare("PlayerAdvancementEvent", player.getServer(), player, advancement, criterion);
     }
 

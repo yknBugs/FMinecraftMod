@@ -1133,10 +1133,10 @@ public class FlowGraphScreen extends Screen {
         Matrix4f pose = context.pose().last().pose();
         VertexConsumer vertices = context.bufferSource().getBuffer(RenderType.gui());
         // Match GUI quad winding, with a one-pixel width in GUI coordinates.
-        vertices.vertex(pose, x1 + 0.5F + nx, y1 + 0.5F + ny, 0).color(color).endVertex();
-        vertices.vertex(pose, x2 + 0.5F + nx, y2 + 0.5F + ny, 0).color(color).endVertex();
-        vertices.vertex(pose, x2 + 0.5F - nx, y2 + 0.5F - ny, 0).color(color).endVertex();
-        vertices.vertex(pose, x1 + 0.5F - nx, y1 + 0.5F - ny, 0).color(color).endVertex();
+        vertices.addVertex(pose, x1 + 0.5F + nx, y1 + 0.5F + ny, 0).setColor(color);
+        vertices.addVertex(pose, x2 + 0.5F + nx, y2 + 0.5F + ny, 0).setColor(color);
+        vertices.addVertex(pose, x2 + 0.5F - nx, y2 + 0.5F - ny, 0).setColor(color);
+        vertices.addVertex(pose, x1 + 0.5F - nx, y1 + 0.5F - ny, 0).setColor(color);
     }
 
     private void drawNodeBoxes(GuiGraphics context) {

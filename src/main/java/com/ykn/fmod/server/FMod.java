@@ -11,27 +11,24 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.EntityHitResult;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
-import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
-import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.RegisterCommandsEvent;
+import net.neoforged.neoforge.event.entity.EntityJoinLevelEvent;
+import net.neoforged.neoforge.event.entity.ProjectileImpactEvent;
+import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
+import net.neoforged.neoforge.event.level.ChunkEvent;
+import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import com.ykn.fmod.server.base.command.CommandRegistrater;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
-import com.ykn.fmod.server.base.event.EntityDeath;
-import com.ykn.fmod.server.base.event.LivingEntityDamage;
-import com.ykn.fmod.server.base.event.NewLevel;
-import com.ykn.fmod.server.base.event.PlayerDeath;
-import com.ykn.fmod.server.base.event.PlayerJoin;
-import com.ykn.fmod.server.base.event.ProjectileHitEntity;
-import com.ykn.fmod.server.base.event.WorldTick;
+import com.ykn.fmod.server.base.event.GameEventHandler;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
 import com.ykn.fmod.server.rule.tool.RuleRegistry;
@@ -70,21 +67,19 @@ public class FMod {
 		LevelAccessor level = event.getLevel();
 		if (level instanceof ServerLevel) {
 			ServerLevel world = (ServerLevel) level;
-			NewLevel newLevel = new NewLevel(world.getServer(), world);
-			newLevel.onNewLevel();
+			GameEventHandler.worldLoadEventDispatcher(world.getServer(), world);
 		}
 	}
 
 	@SubscribeEvent
 	public void onWorldTick(ServerTickEvent.Post event) {
-        WorldTick.onWorldTick(event.getServer());
+        GameEventHandler.serverTickEventDispatcher(event.getServer());
 	}
 
 	@SubscribeEvent
 	public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
 		if (event.getEntity() instanceof ServerPlayer player) {
-			PlayerJoin playerJoin = new PlayerJoin(player);
-			playerJoin.onPlayerJoin();
+			GameEventHandler.playerJoinEventDispatcher(player);
 		}
 	}
 
@@ -93,25 +88,13 @@ public class FMod {
 		LivingEntity entity = event.getEntity();
 
 		if (!entity.isRemoved() && !entity.isAlwaysTicking()) {
-			EntityDeath entityDeath = new EntityDeath(entity, event.getSource());
-			entityDeath.onEntityDeath();
+			GameEventHandler.entityDeathEventDispatcher(entity, event.getSource());
 		}
 
 		if (entity instanceof ServerPlayer player && entity.isAlwaysTicking()) {
 			if (!player.isRemoved()) {
-				PlayerDeath playerDeath = new PlayerDeath(player, event.getSource());
-				playerDeath.onPlayerDeath();
+				GameEventHandler.playerDeathEventDispatcher(player, event.getSource());
 			}
-		}
-	}
-
-	@SubscribeEvent
-	public void onLivingHurt(LivingDamageEvent.Pre event) {
-		LivingEntity entity = event.getEntity();
-
-		if (!entity.isRemoved()) {
-			LivingEntityDamage livingEntityDamage = new LivingEntityDamage(entity, event.getSource(), event.getNewDamage());
-			livingEntityDamage.onDamage();
 		}
 	}
 
@@ -119,8 +102,63 @@ public class FMod {
 	public void onProjectileImpact(ProjectileImpactEvent event) {
 		if (event.getRayTraceResult() instanceof EntityHitResult ehr) {
 			Projectile projectile = event.getProjectile();
-			ProjectileHitEntity projectileHitEntity = new ProjectileHitEntity(projectile, ehr);
-			projectileHitEntity.onProjectileHitEntity();
-		}	
+			GameEventHandler.projectileHitEntityEventDispatcher(projectile, ehr);
+		}
+	}
+
+	@SubscribeEvent
+	public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+		if (event.getEntity() instanceof ServerPlayer player) {
+			GameEventHandler.playerLeaveEventDispatcher(player);
+		}
+	}
+
+	@SubscribeEvent
+	public void onPlayerInteractBlock(PlayerInteractEvent.RightClickBlock event) {
+		GameEventHandler.playerInteractBlockEventDispatcher(event.getEntity(), event.getHand(), event.getHitVec());
+	}
+
+	@SubscribeEvent
+	public void onPlayerInteractEntity(PlayerInteractEvent.EntityInteract event) {
+		GameEventHandler.playerInteractEntityEventDispatcher(event.getEntity(), event.getHand(), event.getTarget(), null);
+	}
+
+	@SubscribeEvent
+	public void onPlayerInteractEntitySpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+		GameEventHandler.playerInteractEntityEventDispatcher(event.getEntity(), event.getHand(), event.getTarget(),
+				new EntityHitResult(event.getTarget(), event.getTarget().position().add(event.getLocalPos())));
+	}
+
+	@SubscribeEvent
+	public void onPlayerItemUse(PlayerInteractEvent.RightClickItem event) {
+		GameEventHandler.playerItemUseEventDispatcher(event.getEntity(), event.getHand());
+	}
+
+	@SubscribeEvent
+	public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+		if (event.getEntity() instanceof ServerPlayer player) {
+			GameEventHandler.playerDimensionChangeEventDispatcher(player, player.getServer().getLevel(event.getFrom()), player.getServer().getLevel(event.getTo()));
+		}
+	}
+
+	@SubscribeEvent
+	public void onEntityLoad(EntityJoinLevelEvent event) {
+		if (event.getLevel() instanceof ServerLevel world) {
+			GameEventHandler.entityLoadEventDispatcher(event.getEntity(), world);
+		}
+	}
+
+	@SubscribeEvent
+	public void onChunkLoad(ChunkEvent.Load event) {
+		if (event.getLevel() instanceof ServerLevel world && event.getChunk() instanceof LevelChunk chunk) {
+			GameEventHandler.chunkLoadEventDispatcher(world, chunk);
+		}
+	}
+
+	@SubscribeEvent
+	public void onChunkUnload(ChunkEvent.Unload event) {
+		if (event.getLevel() instanceof ServerLevel world && event.getChunk() instanceof LevelChunk chunk) {
+			GameEventHandler.chunkUnloadEventDispatcher(world, chunk);
+		}
 	}
 }

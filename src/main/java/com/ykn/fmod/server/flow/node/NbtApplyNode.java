@@ -8,12 +8,11 @@ import java.util.List;
 import java.util.HashSet;
 
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.server.commands.data.EntityDataAccessor;
 
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.component.DataComponentPatch;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
@@ -32,10 +31,10 @@ import com.ykn.fmod.server.base.util.Util;
 
 /**
  * A flow node that writes NBT back to a live target and returns its previous NBT.
- * An item stack keeps its item and receives only the fields that apply to it.
+ * Item component values can be serialized into the replacement NBT.
  * Inputs:
- * 1. Entity/UUID/BlockEntity/ItemStack/Tag/String - Mutable NBT or live Entity/BlockEntity/ItemStack. Immutable SNBT/tags require an upstream output binding; GetVariableNode also updates its variable.
- * 2. Entity/UUID/BlockEntity/ItemStack/Tag/String - Complete replacement NBT from a native source, Tag or SNBT. Never merged; later edits to this value do not affect the source. For an item stack only Count and tag are applied.
+ * 1. Entity/UUID/BlockEntity/Tag/String - Mutable NBT or live Entity/BlockEntity. Immutable SNBT/tags require an upstream output binding; GetVariableNode also updates its variable.
+ * 2. Entity/UUID/BlockEntity/Tag/String - Complete replacement NBT from a native source, Tag or SNBT. Never merged; later edits to this value do not affect the source.
  * Outputs:
  * 1. Tag - Detached source NBT snapshot taken before replacement.
  * Branches: 1 (Next node)
@@ -58,9 +57,13 @@ public class NbtApplyNode extends FlowNode {
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> inputs) throws LogicException {
         Object source = FlowConvert.source(inputs.get(0), context == null ? null : context.getServer());
+        if (source instanceof DataComponentPatch) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.nbtvalue", "DataComponentPatch"), null);
+        }
         Object value = FlowConvert.source(inputs.get(1), context == null ? null : context.getServer());
-        Tag old = FlowConvert.snapshotNbt(source);
-        Tag replacement = FlowConvert.snapshotNbt(value);
+        HolderLookup.Provider registries = context == null ? null : context.getServer().registryAccess();
+        Tag old = FlowConvert.snapshotNbt(source, registries);
+        Tag replacement = FlowConvert.snapshotNbt(value, registries);
         if (source instanceof CompoundTag compound && replacement instanceof CompoundTag next) {
             for (String key : new HashSet<>(compound.getAllKeys())) {
                 compound.remove(key);
@@ -74,17 +77,6 @@ public class NbtApplyNode extends FlowNode {
             collection.clear();
             for (Tag entry : next) {
                 collection.addTag(collection.size(), entry);
-            }
-        } else if (source instanceof ItemStack stack) {
-            if (!(replacement instanceof CompoundTag next)) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.nbtapply.error.itemnbt"), null);
-            }
-            // Identity check on purpose: only the shared EMPTY singleton has nothing to
-            // write into, and writing into it would change that global instance.
-            if (stack == ItemStack.EMPTY) {
-                rebind(context, stackFromNbt(next));
-            } else {
-                applyToStack(stack, next);
             }
         } else if (source instanceof Entity entity) {
             if (entity instanceof Player) {
@@ -123,7 +115,7 @@ public class NbtApplyNode extends FlowNode {
             if (fresh == null || block.getLevel() == null) {
                 throw new LogicException(null, Util.parseTranslatableText("fmod.node.nbtapply.error.blocklevel"), null);
             }
-            fresh.load(next);
+            fresh.loadWithComponents(next, block.getLevel().registryAccess());
             block.getLevel().setBlockEntity(fresh);
             fresh.setChanged();
             block.getLevel().sendBlockUpdated(block.getBlockPos(), block.getBlockState(), block.getBlockState(), 3);
@@ -135,52 +127,6 @@ public class NbtApplyNode extends FlowNode {
             rebind(context, source instanceof String ? replacement.toString() : replacement);
         }
         status.setOutput(0, old);
-    }
-
-    /**
-     * Applies the applicable parts of a serialized stack to an existing stack, in
-     * place.
-     *
-     * <p>
-     * The item identity is not applicable: like the item argument of {@code /give},
-     * it wins over
-     * whatever {@code id} the NBT carries, so a different or unknown id is ignored
-     * instead of
-     * failing the whole write. {@code Count} and {@code tag} are applied when
-     * present; a missing
-     * field leaves the stack as it is. The tag is copied, so changes to the source
-     * NBT afterwards
-     * cannot reach the live stack.
-     *
-     * @param stack the live stack to write into
-     * @param nbt   the serialized replacement
-     */
-    private static void applyToStack(ItemStack stack, CompoundTag nbt) {
-        if (nbt.contains("Count", Tag.TAG_ANY_NUMERIC)) {
-            stack.setCount(Math.max(0, nbt.getInt("Count")));
-        }
-        if (nbt.contains("tag", Tag.TAG_COMPOUND)) {
-            stack.setTag(nbt.getCompound("tag").copy());
-        }
-    }
-
-    /**
-     * Builds the stack a serialized stack describes, for the cases where there is
-     * no live instance
-     * to write into.
-     *
-     * @param nbt the serialized stack
-     * @return the new stack
-     */
-    private static ItemStack stackFromNbt(CompoundTag nbt) throws LogicException {
-        ResourceLocation itemId = ResourceLocation.tryParse(nbt.getString("id"));
-        if (itemId == null || !BuiltInRegistries.ITEM.containsKey(itemId)) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.identifier", itemId), null);
-        }
-        if (!nbt.contains("id", Tag.TAG_STRING) || !nbt.contains("Count", Tag.TAG_ANY_NUMERIC)) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.nbtapply.error.itemkeys"), null);
-        }
-        return ItemStack.of(nbt);
     }
 
     private void rebind(ExecutionContext context, Object value) throws LogicException {

@@ -13,9 +13,10 @@ import java.util.UUID;
 
 import com.ykn.fmod.server.base.data.PlayerData;
 import com.ykn.fmod.server.base.data.ServerData;
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.ykn.fmod.server.base.util.Util;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
@@ -218,7 +219,7 @@ public final class RuleEventHooks {
     public static Runnable playerPlaceBlock(ServerPlayer player, BlockPos position, ItemStack stack) {
         Map<String, Object> variables = player(player);
         block(variables, position, player.level().getBlockState(position), player.level().getBlockEntity(position));
-        item(variables, stack);
+        item(variables, stack, player);
         variables.put("hand", hand(player, stack).name());
         return prepare("PlayerPlaceBlockEvent", player.serverLevel(), variables);
     }
@@ -227,7 +228,7 @@ public final class RuleEventHooks {
         BlockPos position = hit.getBlockPos();
         Map<String, Object> variables = player(player);
         block(variables, position, player.level().getBlockState(position), player.level().getBlockEntity(position));
-        item(variables, player.getItemInHand(hand));
+        item(variables, player.getItemInHand(hand), player);
         variables.put("hand", hand.name());
         variables.put("face", hit.getDirection().getName());
         variables.put("hitposition", hit.getLocation());
@@ -236,7 +237,7 @@ public final class RuleEventHooks {
 
     public static Runnable playerInteractEntity(ServerPlayer player, InteractionHand hand, Entity target, EntityHitResult hit) {
         Map<String, Object> variables = player(player);
-        item(variables, player.getItemInHand(hand));
+        item(variables, player.getItemInHand(hand), player);
         variables.put("entity", target.getUUID());
         variables.put("ex", target.getX());
         variables.put("ey", target.getY());
@@ -293,14 +294,14 @@ public final class RuleEventHooks {
 
     public static Runnable playerItemUse(ServerPlayer player, InteractionHand hand) {
         Map<String, Object> variables = player(player);
-        item(variables, player.getItemInHand(hand));
+        item(variables, player.getItemInHand(hand), player);
         variables.put("hand", hand.name());
         return prepare("PlayerItemUseEvent", player.serverLevel(), variables);
     }
 
     public static Runnable playerItemPickup(ServerPlayer player, ItemStack stack, ItemEntity itemEntity) {
         Map<String, Object> variables = player(player);
-        item(variables, stack);
+        item(variables, stack, player);
         variables.put("itementity", itemEntity.getUUID());
         variables.put("__itementity__", itemEntity);
         return prepare("PlayerItemPickupEvent", player.serverLevel(), variables);
@@ -308,20 +309,20 @@ public final class RuleEventHooks {
 
     public static Runnable playerCraft(ServerPlayer player, ItemStack stack) {
         Map<String, Object> variables = player(player);
-        item(variables, stack);
+        item(variables, stack, player);
         return prepare("PlayerCraftEvent", player.serverLevel(), variables);
     }
 
     public static Runnable playerEnchant(ServerPlayer player, ItemStack stack, int cost) {
         Map<String, Object> variables = player(player);
-        item(variables, stack);
+        item(variables, stack, player);
         variables.put("cost", cost);
         return prepare("PlayerEnchantEvent", player.serverLevel(), variables);
     }
 
     public static Runnable playerTrade(ServerPlayer player, Merchant merchant, ItemStack stack, CompoundTag offer) {
         Map<String, Object> variables = player(player);
-        item(variables, stack);
+        item(variables, stack, player);
         Entity merchantEntity = merchant instanceof Entity entity ? entity : null;
         variables.put("merchant", merchantEntity == null ? null : merchantEntity.getUUID());
         variables.put("offer", offer.copy());
@@ -354,9 +355,9 @@ public final class RuleEventHooks {
         return prepare("PlayerVehicleLeaveEvent", player.serverLevel(), variables);
     }
 
-    public static Runnable playerAdvancement(ServerPlayer player, Advancement advancement, String criterion) {
+    public static Runnable playerAdvancement(ServerPlayer player, AdvancementHolder advancement, String criterion) {
         Map<String, Object> variables = player(player);
-        variables.put("advancement", advancement.getId());
+        variables.put("advancement", advancement.id());
         variables.put("criterion", criterion);
         return prepare("PlayerAdvancementEvent", player.serverLevel(), variables);
     }
@@ -516,10 +517,10 @@ public final class RuleEventHooks {
         }
         return null;
     }
-    private static void item(Map<String, Object> variables, ItemStack stack) {
+    private static void item(Map<String, Object> variables, ItemStack stack, ServerPlayer player) {
         variables.put("item", BuiltInRegistries.ITEM.getKey(stack.getItem()));
         variables.put("count", stack.getCount());
-        variables.put("itemnbt", stack.hasTag() ? stack.getTag().copy() : new CompoundTag());
+        variables.put("itemnbt", ItemComponents.copy(stack.getComponentsPatch(), player.registryAccess()));
         variables.put("__item__", stack.copy());
     }
 
@@ -529,7 +530,7 @@ public final class RuleEventHooks {
         variables.put("bx", (double) position.getX());
         variables.put("by", (double) position.getY());
         variables.put("bz", (double) position.getZ());
-        variables.put("blocknbt", blockEntity == null ? new CompoundTag() : blockEntity.saveWithFullMetadata());
+        variables.put("blocknbt", blockEntity == null ? new CompoundTag() : blockEntity.saveWithFullMetadata(blockEntity.getLevel().registryAccess()));
         variables.put("__blockpos__", position.immutable());
         variables.put("__blockstate__", state);
     }

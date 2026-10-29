@@ -7,9 +7,11 @@ package com.ykn.fmod.server.rule.tool;
 
 import java.util.UUID;
 
+import com.ykn.fmod.server.base.util.ItemComponents;
 import com.ykn.fmod.server.rule.core.RuleContext;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
@@ -92,18 +94,18 @@ public final class RuleGameAccess {
     }
 
     /**
-     * Returns a detached copy of an entity's main-hand item tag.
+     * Returns a detached copy of an entity's main-hand item components.
      *
      * @param context the current rule context
      * @param id      the entity UUID
-     * @return a copy of the tag, an empty compound for an untagged item, or {@code null} for an empty hand
+     * @return a component patch, empty for an unmodified item, or {@code null} for an empty hand
      */
-    public static CompoundTag mainHandNbt(RuleContext context, Object id) {
+    public static DataComponentPatch mainHandComponents(RuleContext context, Object id) {
         ItemStack stack = mainHand(context, id);
         if (stack.isEmpty()) {
             return null;
         }
-        return stack.getTag() == null ? new CompoundTag() : stack.getTag().copy();
+        return ItemComponents.copy(stack.getComponentsPatch(), context.getServer().registryAccess());
     }
 
     /**

@@ -12,8 +12,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.core.Vec3i;
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
@@ -94,7 +95,7 @@ public final class ValueRenderers {
                 + " [" + BuiltInRegistries.ENTITY_TYPE.getKey(value.getType()) + ", " + value.getUUID() + "]");
         register(ItemStack.class, value -> {
             String base = BuiltInRegistries.ITEM.getKey(value.getItem()) + " × " + value.getCount();
-            return value.hasTag() ? base + " " + value.getTag() : base;
+            return value.getComponentsPatch().isEmpty() ? base : base + " " + value.getComponentsPatch();
         });
         register(Level.class, value -> value.dimension().location().toString());
         register(BlockEntity.class, value -> BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(value.getType())
@@ -104,10 +105,11 @@ public final class ValueRenderers {
         register(BlockHitResult.class, value -> value.getType() + " @ " + value.getBlockPos().toShortString()
                 + " face = " + value.getDirection() + " hit = " + value.getLocation());
         register(HitResult.class, value -> value.getType() + " @ " + value.getLocation());
-        register(Advancement.class, value -> value.getId().toString());
+        register(AdvancementHolder.class, value -> value.id().toString());
         register(AbstractContainerMenu.class, value -> value.getClass().getSimpleName()
                 + " #" + value.containerId + " slots = " + value.slots.size());
-        register(MerchantOffer.class, value -> String.valueOf(value.createTag()));
+        register(MerchantOffer.class, value -> ValueRenderers.render(value.getResult()) + " uses = " + value.getUses());
+        register(DataComponentPatch.class, Object::toString);
         register(DamageSource.class, value -> value.getMsgId()
                 + " source = " + ValueRenderers.render(value.getEntity()));
         register(Explosion.class, value -> "Explosion blocks = " + value.getToBlow().size());

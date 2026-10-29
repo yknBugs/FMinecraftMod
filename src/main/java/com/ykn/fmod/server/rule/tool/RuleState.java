@@ -14,6 +14,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.Property;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.scores.Objective;
+import net.minecraft.world.scores.ReadOnlyScoreInfo;
+import net.minecraft.world.scores.ScoreHolder;
 import net.minecraft.world.scores.Scoreboard;
 
 /**
@@ -79,10 +81,11 @@ public final class RuleState {
      */
     public static Integer score(Scoreboard board, String objective, String holder) {
         Objective target = board.getObjective(objective);
-        if (target == null || !board.hasPlayerScore(holder, target)) {
+        if (target == null) {
             return null;
         }
-        return board.getPlayerScores(holder).get(target).getScore();
+        ReadOnlyScoreInfo score = board.getPlayerScoreInfo(ScoreHolder.forNameOnly(holder), target);
+        return score == null ? null : score.value();
     }
 
     /**
@@ -104,7 +107,7 @@ public final class RuleState {
         }
         Integer previous = score(board, objective, holder);
         int result = add ? Math.addExact(previous == null ? 0 : previous, value) : value;
-        board.getOrCreatePlayerScore(holder, target).setScore(result);
+        board.getOrCreatePlayerScore(ScoreHolder.forNameOnly(holder), target).set(result);
         return true;
     }
 

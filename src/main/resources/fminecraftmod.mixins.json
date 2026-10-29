@@ -1,8 +1,22 @@
 {
   "required": true,
-  "package": "com.ykn.fmod.mixin",
+  "package": "com.ykn.fmod.server.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
+  "mixins": [
+    "GameEventMixins$Advancements",
+    "GameEventMixins$BlockBreak",
+    "GameEventMixins$Craft",
+    "GameEventMixins$Enchant",
+    "GameEventMixins$Explosions",
+    "GameEventMixins$LivingEntityDamage",
+    "GameEventMixins$Menus",
+    "GameEventMixins$Pickup",
+    "GameEventMixins$Placement",
+    "GameEventMixins$Sleep",
+    "GameEventMixins$Trade",
+    "GameEventMixins$Vehicles",
+    "GameEventMixins$Weather"
+  ],
   "injectors": {
     "defaultRequire": 1
   },

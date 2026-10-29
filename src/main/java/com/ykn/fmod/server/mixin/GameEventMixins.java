@@ -20,15 +20,19 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.ykn.fmod.server.base.event.GameEventHandler;
 import com.ykn.fmod.server.base.event.ProjectileHitEntity;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.CriteriaTriggers;
 import net.minecraft.advancements.critereon.EnchantedItemTrigger;
 import net.minecraft.advancements.critereon.ItemUsedOnLocationTrigger;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.RegistryOps;
 import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.level.ServerPlayerGameMode;
 import net.minecraft.world.Container;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.damagesource.DamageSource;
@@ -45,6 +49,9 @@ import net.minecraft.world.item.trading.Merchant;
 import net.minecraft.world.item.trading.MerchantOffer;
 import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -71,6 +78,43 @@ import net.minecraft.world.phys.Vec3;
 public final class GameEventMixins {
 
     private GameEventMixins() {
+    }
+
+    /**
+     * Successful block removal, before the block's destroy callback and drops, like Fabric AFTER.
+     */
+    @Mixin(ServerPlayerGameMode.class)
+    public static class BlockBreak {
+
+        @Redirect(
+            method = "removeBlock",
+            at = @At(
+                value = "INVOKE",
+                target = "Lnet/minecraft/world/level/block/state/BlockState;onDestroyedByPlayer(Lnet/minecraft/world/level/Level;Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/entity/player/Player;ZLnet/minecraft/world/level/material/FluidState;)Z",
+                remap = false
+            ),
+            remap = false
+        )
+        private boolean fmod$blockRemoved(BlockState state, Level level, BlockPos pos, Player player, boolean canHarvest, FluidState fluid) {
+            BlockEntity blockEntity = level.getBlockEntity(pos);
+            boolean removed = state.onDestroyedByPlayer(level, pos, player, canHarvest, fluid);
+            if (removed && player instanceof ServerPlayer serverPlayer) {
+                GameEventHandler.playerBreakBlockEventDispatcher(serverPlayer, pos, state, blockEntity);
+            }
+            return removed;
+        }
+    }
+
+    /**
+     * Actual sleep start, after the sleeping position and pose are set, like Fabric START_SLEEPING.
+     */
+    @Mixin(LivingEntity.class)
+    public static class Sleep {
+
+        @Inject(method = "startSleeping(Lnet/minecraft/core/BlockPos;)V", at = @At("RETURN"))
+        private void fmod$sleepStarted(BlockPos pos, CallbackInfo info) {
+            GameEventHandler.playerSleepEventDispatcher((LivingEntity) (Object) this, pos);
+        }
     }
 
     /**
@@ -252,7 +296,8 @@ public final class GameEventMixins {
             if (this.player instanceof ServerPlayer) {
                 fmod$merchant = merchant;
                 fmod$tradeItem = offer.getResult().copy();
-                fmod$tradeOffer = offer.createTag().copy();
+                RegistryOps<Tag> ops = RegistryOps.create(NbtOps.INSTANCE, this.player.registryAccess());
+                fmod$tradeOffer = (CompoundTag) MerchantOffer.CODEC.encodeStart(ops, offer).getOrThrow(IllegalArgumentException::new);
             }
         }
 
@@ -341,7 +386,7 @@ public final class GameEventMixins {
         private ServerPlayer player;
 
         @Inject(method = "award", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancements/AdvancementRewards;grant(Lnet/minecraft/server/level/ServerPlayer;)V", shift = At.Shift.AFTER))
-        private void fmod$advancementAwarded(Advancement advancement, String criterion, CallbackInfoReturnable<Boolean> info) {
+        private void fmod$advancementAwarded(AdvancementHolder advancement, String criterion, CallbackInfoReturnable<Boolean> info) {
             GameEventHandler.playerAdvancementEventDispatcher(player, advancement, criterion);
         }
     }

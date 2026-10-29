@@ -14,7 +14,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-import net.minecraft.advancements.Advancement;
+import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -171,7 +171,7 @@ public final class FlowEvents {
                 output("vehicle", Entity.class));
         define("PlayerAdvancementEvent",
                 output("player", ServerPlayer.class),
-                output("advancement", Advancement.class),
+                output("advancement", AdvancementHolder.class),
                 output("criterion", String.class));
         define("PlayerLevelUpEvent",
                 output("player", ServerPlayer.class),

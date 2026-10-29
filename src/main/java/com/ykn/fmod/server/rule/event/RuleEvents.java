@@ -21,6 +21,7 @@ import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.rule.core.RuleEvent;
 import com.ykn.fmod.server.rule.tool.RuleRegistry;
 
+import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -278,26 +279,26 @@ public final class RuleEvents {
         playerEvent("PlayerItemUseEvent",
                 field("item", ResourceLocation.class),
                 field("count", Integer.class),
-                field("itemnbt", CompoundTag.class),
+                field("itemnbt", DataComponentPatch.class),
                 field("hand", String.class));
         playerEvent("PlayerItemPickupEvent",
                 field("item", ResourceLocation.class),
                 field("count", Integer.class),
-                field("itemnbt", CompoundTag.class),
+                field("itemnbt", DataComponentPatch.class),
                 field("itementity", UUID.class));
         playerEvent("PlayerCraftEvent",
                 field("item", ResourceLocation.class),
                 field("count", Integer.class),
-                field("itemnbt", CompoundTag.class));
+                field("itemnbt", DataComponentPatch.class));
         playerEvent("PlayerEnchantEvent",
                 field("item", ResourceLocation.class),
                 field("count", Integer.class),
-                field("itemnbt", CompoundTag.class),
+                field("itemnbt", DataComponentPatch.class),
                 field("cost", Integer.class));
         playerEvent("PlayerTradeEvent",
                 field("item", ResourceLocation.class),
                 field("count", Integer.class),
-                field("itemnbt", CompoundTag.class),
+                field("itemnbt", DataComponentPatch.class),
                 optional("merchant", UUID.class),
                 field("offer", CompoundTag.class));
         playerEvent("PlayerSleepEvent",
@@ -382,7 +383,7 @@ public final class RuleEvents {
         return new Field[] {
             field("item", ResourceLocation.class),
             field("count", Integer.class),
-            field("itemnbt", CompoundTag.class)
+            field("itemnbt", DataComponentPatch.class)
         };
     }
 

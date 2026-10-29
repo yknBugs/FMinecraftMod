@@ -7,6 +7,7 @@ package com.ykn.fmod.server.flow.node;
 
 import java.util.List;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.FlowConvert;
 
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
@@ -15,10 +16,12 @@ import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
 
+import net.minecraft.core.component.DataComponentPatch;
+
 /**
  * A flow node that edits a detached NBT copy and returns it; the target is never changed.
  * Inputs:
- * 1. Entity/UUID/BlockEntity/ItemStack/Tag/String/Map/List - Entity, BlockEntity, full ItemStack, NBT or SNBT. Null starts an empty compound. UUID objects/canonical UUID strings resolve as entity references first.
+ * 1. Entity/UUID/BlockEntity/Tag/String/Map/List - Entity, BlockEntity, NBT or SNBT. Null starts an empty compound. UUID objects/canonical UUID strings resolve as entity references first.
  * 2. String - Vanilla NBT path; null selects the entire tree. Supports multiple matches.
  * 3. Object - Null deletes; otherwise replace matches or create missing paths. Accepts NBT, SNBT, numbers, booleans, maps and homogeneous lists.
  * Outputs:
@@ -50,9 +53,13 @@ public class NbtPatchNode extends FlowNode {
 
     @Override
     protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> inputs) throws LogicException {
+        if (inputs.get(0) instanceof DataComponentPatch) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.nbtvalue", "DataComponentPatch"), null);
+        }
         FlowConvert.NbtEdit result = FlowConvert.editNbt(
             FlowConvert.source(inputs.get(0), context == null ? null : context.getServer()),
-            inputs.get(1) == null ? null : TypeAdaptor.parse(inputs.get(1)).asString(), inputs.get(2)
+            inputs.get(1) == null ? null : TypeAdaptor.parse(inputs.get(1)).asString(), inputs.get(2),
+            context.getServer().registryAccess()
         );
         status.setOutput(0, result.nbt());
         status.setOutput(1, FlowConvert.unwrapOutput(result.oldValue()));

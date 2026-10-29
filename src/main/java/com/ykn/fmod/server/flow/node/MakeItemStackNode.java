@@ -6,30 +6,30 @@
 package com.ykn.fmod.server.flow.node;
 
 import java.util.List;
-import com.ykn.fmod.server.flow.tool.FlowConvert;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.item.ItemStack;
+import com.ykn.fmod.server.base.util.ItemComponents;
+import com.ykn.fmod.server.base.util.TypeAdaptor;
+import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.logic.ExecutionContext;
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
-import com.ykn.fmod.server.base.util.TypeAdaptor;
-import com.ykn.fmod.server.base.util.Util;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 
 /**
- * A flow node that builds an item stack from an identifier, a count, an optional name and NBT.
+ * A flow node that builds an item stack from an identifier, a count, an optional name and item components.
  * Inputs:
  * 1. ResourceLocation/String/ItemStack/Item/Block/Entity - Required registered item identifier, as ResourceLocation or string. Native objects automatically supply registry identifiers; dimension ports use an entity’s current world.
  * 2. Number - Default 1. Nonnegative whole number up to Integer.MAX_VALUE; zero makes an empty stack. Oversized stacks are allowed.
- * 3. Component/String - Optional Component/string; overrides the NBT name. Null preserves the NBT name or default item name.
- * 4. CompoundTag/String - Optional copied custom compound or full stack NBT/SNBT (id and Count). Explicit id/count inputs take precedence.
+ * 3. Component/String - Optional Component/string; overrides the custom-name component. Null preserves the existing name or the default item name.
+ * 4. DataComponentPatch - Optional component overrides and removals. Explicit id/count inputs take precedence.
  * Outputs:
- * 1. ItemStack - New detached ItemStack. Later input NBT changes do not affect it.
+ * 1. ItemStack - New detached ItemStack. Later input component changes do not affect it.
  * Branches: 1 (Next node)
  */
 public class MakeItemStackNode extends FlowNode {
@@ -60,29 +60,21 @@ public class MakeItemStackNode extends FlowNode {
         if (count == null || !Double.isFinite(count) || count < 0 || count > Integer.MAX_VALUE || count != Math.rint(count)) {
             throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.count", count), null);
         }
-        CompoundTag custom = null;
-        if (inputs.get(3) != null) {
-            Tag parsed = FlowConvert.snapshotNbt(inputs.get(3));
-            if (!(parsed instanceof CompoundTag compound)) {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.makeitem.error.nbt", inputs.get(3)), null);
-            }
-            if (compound.contains("id", Tag.TAG_STRING) && compound.contains("Count", Tag.TAG_ANY_NUMERIC)) {
-                if (compound.contains("tag") && !(compound.get("tag") instanceof CompoundTag)) {
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.makeitem.error.tag"), null);
-                }
-                custom = compound.contains("tag") ? compound.getCompound("tag") : null;
-            } else {
-                custom = compound;
-            }
+        if (inputs.get(3) != null && !(inputs.get(3) instanceof DataComponentPatch)) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.error.itemcomponents"), null);
         }
         ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(id), count.intValue());
-        if (custom != null) {
-            stack.setTag(custom);
+        if (inputs.get(3) instanceof DataComponentPatch components && !stack.isEmpty()) {
+            try {
+                ItemComponents.apply(stack, components, context.getServer().registryAccess());
+            } catch (IllegalArgumentException exception) {
+                throw new LogicException(exception, Util.parseTranslatableText("fmod.node.error.itemcomponents"), null);
+            }
         }
         if (inputs.get(2) != null) {
             Component displayName = inputs.get(2) instanceof Component component ? 
                 component.copy() : Component.literal(TypeAdaptor.parse(inputs.get(2)).asString());
-            stack.setHoverName(displayName);
+            stack.set(DataComponents.CUSTOM_NAME, displayName);
         }
         status.setOutput(0, stack);
     }

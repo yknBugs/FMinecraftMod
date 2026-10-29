@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.node.*;
@@ -166,6 +166,8 @@ public class NodeRegistry {
         NodeRegistry.register("GetPlayerInventoryNode", GetPlayerInventoryNode::new);
         NodeRegistry.register("UpdateEntityNode", UpdateEntityNode::new);
         NodeRegistry.register("NbtApplyNode", NbtApplyNode::new);
+        NodeRegistry.register("ItemComponentsApplyNode", ItemComponentsApplyNode::new);
+        NodeRegistry.register("ItemComponentsPatchNode", ItemComponentsPatchNode::new);
         NodeRegistry.register("NbtPatchNode", NbtPatchNode::new);
         NodeRegistry.register("RandomNode", RandomNode::new);
         NodeRegistry.register("AddVariableToScheduledFlowNode", AddVariableToScheduledFlowNode::new);
