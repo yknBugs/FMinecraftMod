@@ -145,7 +145,7 @@ public class OptionScreen extends Screen {
             ));
             // Config entries
             this.buildConfigEntry();
-        };
+        }
 
         @Override
         public int getRowWidth() {
@@ -425,7 +425,7 @@ public class OptionScreen extends Screen {
                             }
                             buildNumericSliderEntry(
                                 configCodeEntry, configAnnotation, configInstance,
-                                i18nTitleKey, i18nHintKey, isEditable, Double.valueOf(configValue),
+                                i18nTitleKey, i18nHintKey, isEditable, configValue,
                                 min, max, configValue,
                                 v -> v * (max - min) + min
                             );
@@ -445,7 +445,7 @@ public class OptionScreen extends Screen {
                             }
                             buildNumericSliderEntry(
                                 configCodeEntry, configAnnotation, configInstance,
-                                i18nTitleKey, i18nHintKey, isEditable, Integer.valueOf(configValue),
+                                i18nTitleKey, i18nHintKey, isEditable, configValue,
                                 min, max, configValue,
                                 v -> (int) Math.round(v * (max - min) + min)
                             );

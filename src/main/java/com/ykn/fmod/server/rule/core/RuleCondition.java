@@ -79,7 +79,7 @@ public interface RuleCondition extends RuleComponent {
         boolean result = this.onEvaluate(context);
         context.removeTestingConditions(this);
         return result;
-    };
+    }
 
     /**
      * Performs the actual condition evaluation logic.

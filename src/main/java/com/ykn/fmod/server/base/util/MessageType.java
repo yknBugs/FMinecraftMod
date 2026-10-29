@@ -127,7 +127,7 @@ public class MessageType {
      * Broadcasts a message to players on the server based on the specified message location type.
      *
      * @param server The Minecraft server instance. Can be null if no server is available.
-     * @param type   The location type where the message should be broadcasted. Must not be null.
+     * @param location The location type where the message should be broadcasted. Must not be null.
      * @param message The message to broadcast. Must not be null.
      */
     public static void broadcastMessage(@Nullable MinecraftServer server, @NotNull MessageType.Location location, @NotNull Component message) {
@@ -210,7 +210,7 @@ public class MessageType {
      * @return a new {@code MessageType} instance with the updated main player location
      */
     public MessageType updateMain(MessageType.Location newMainLocation) {
-        throw new UnsupportedOperationException("Only subclasses of MessageType suuport updating the main player location.");
+        throw new UnsupportedOperationException("Only subclasses of MessageType support updating the main player location.");
     }
 
     /**
@@ -221,7 +221,7 @@ public class MessageType {
      * @return a new {@code MessageType} instance with the updated other player location
      */
     public MessageType updateOther(MessageType.Location newOtherLocation) {
-        throw new UnsupportedOperationException("Only subclasses of MessageType suuport updating the other player location.");
+        throw new UnsupportedOperationException("Only subclasses of MessageType support updating the other player location.");
     }
 
 
@@ -258,16 +258,13 @@ public class MessageType {
      * @return a {@link MutableComponent} containing the localized name of the message location type, formatted with colors for better readability
      */
     public static MutableComponent getMessageLocationI18n(MessageType.Location type) {
-        switch (type) {
-            case NONE:
-                return Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
-            case CHAT:
-                return Util.parseTranslatableText("fmod.message.type.chat").withStyle(ChatFormatting.GREEN);
-            case ACTIONBAR:
-                return Util.parseTranslatableText("fmod.message.type.actionbar").withStyle(ChatFormatting.YELLOW);
-            default:
-                return Component.literal(type.toString());
-        }
+        return switch (type) {
+            case NONE -> Util.parseTranslatableText("fmod.message.type.none").withStyle(ChatFormatting.RED);
+            case CHAT -> Util.parseTranslatableText("fmod.message.type.chat").withStyle(ChatFormatting.GREEN);
+            case ACTIONBAR ->
+                    Util.parseTranslatableText("fmod.message.type.actionbar").withStyle(ChatFormatting.YELLOW);
+            default -> Component.literal(type.toString());
+        };
     }
 
     /**

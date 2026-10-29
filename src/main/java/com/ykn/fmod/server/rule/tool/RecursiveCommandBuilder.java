@@ -36,7 +36,7 @@ import net.minecraft.network.chat.MutableComponent;
 /**
  * Recursively constructs nested Brigadier command trees for rule component parameters.
  *
- * <h3>Problem</h3>
+ * <h2>Problem</h2>
  * <p>Each {@link com.ykn.fmod.server.rule.core.RuleParameter} in a condition or action can be
  * specified in three modes:
  * <ul>
@@ -48,7 +48,7 @@ import net.minecraft.network.chat.MutableComponent;
  * {@code RecursiveCommandBuilder} handles this combinatorial explosion by building the command
  * tree dynamically through recursion.
  *
- * <h3>Usage</h3>
+ * <h2>Usage</h2>
  * <pre>{@code
  * RecursiveCommandBuilder builder = RecursiveCommandBuilder.builder();
  * builder.executes((arguments, ctx) -> {
@@ -114,7 +114,7 @@ public class RecursiveCommandBuilder {
 
     private RequiredArgumentBuilder<CommandSourceStack, ?> addTailAfterArgument(RequiredArgumentBuilder<CommandSourceStack, ?> parentArgument, int index, Set<String> branchHasArgument) {
         if (index >= arguments.size()) {
-            return parentArgument.executes(ctx -> {return commandExecutor.apply(branchHasArgument, ctx);});
+            return parentArgument.executes(ctx -> commandExecutor.apply(branchHasArgument, ctx));
         }
         return parentArgument.then(addTailAfterConstLiteral(Commands.literal("const"), index, branchHasArgument))
             .then(addTailAfterVariableLiteral(Commands.literal("var"), index, branchHasArgument))
@@ -222,10 +222,7 @@ public class RecursiveCommandBuilder {
      * @return {@code this}, for method chaining
      */
     public <T> RecursiveCommandBuilder add(String constArgumentName, String variableArgumentName, String nameKey, String descKey, ParamKind<T> kind) {
-        Supplier<RequiredArgumentBuilder<CommandSourceStack, ?>> nodeSupplier = () -> {
-            RequiredArgumentBuilder<CommandSourceStack, ?> node = kind.buildNode(constArgumentName);
-            return node;
-        };
+        Supplier<RequiredArgumentBuilder<CommandSourceStack, ?>> nodeSupplier = () -> kind.buildNode(constArgumentName);
         this.arguments.add(new RuleComponentArgument(constArgumentName, variableArgumentName, nameKey, descKey, nodeSupplier, kind));
         return this;
     }
@@ -363,7 +360,7 @@ public class RecursiveCommandBuilder {
      */
     public LiteralArgumentBuilder<CommandSourceStack> build(LiteralArgumentBuilder<CommandSourceStack> commandNode) {
         if (arguments.isEmpty()) {
-            return commandNode.executes(ctx -> {return commandExecutor.apply(new HashSet<>(), ctx);});
+            return commandNode.executes(ctx -> commandExecutor.apply(new HashSet<>(), ctx));
         }
         return commandNode.then(addTailAfterConstLiteral(Commands.literal("const"), 0, new HashSet<>()))
             .then(addTailAfterVariableLiteral(Commands.literal("var"), 0, new HashSet<>()))

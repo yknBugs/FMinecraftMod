@@ -25,7 +25,7 @@ import net.minecraft.server.MinecraftServer;
 /**
  * Represents a single execution instance of a {@link LogicFlow}.
  * <p>
- * Since a LogicFlow can be executed multiple times simultaneously (potentially with different
+ * Since a LogicFlow can be invoked repeatedly or recursively (potentially with different
  * parameters or states), each execution requires its own context to track:
  * <ul>
  *   <li>Node execution states and output values</li>
@@ -34,14 +34,14 @@ import net.minecraft.server.MinecraftServer;
  *   <li>Any exceptions that occur during execution</li>
  * </ul>
  * <p>
- * The ExecutionContext creates a deep copy of the LogicFlow at construction time,
- * ensuring that the original flow remains unmodified. It manages the execution loop,
+ * The ExecutionContext copies the flow structure at construction time; mutable constant
+ * values are shared. If copying fails, it logs the failure and uses the original flow. It manages the execution loop,
  * tracks node execution to prevent infinite loops, and provides access to the
  * Minecraft server for nodes that need to interact with the game world.
  * <p>
  * Typical usage:
  * <pre>
- * ExecutionContext context = new ExecutionContext(flow, server, 1000);
+ * ExecutionContext context = new ExecutionContext(flow, server, 1000, 32);
  * context.execute(startOutputs, initialVariables);
  * if (context.getException() != null) {
  *     // Handle execution error
@@ -56,7 +56,7 @@ public class ExecutionContext {
 
     /**
      * The logic flow being executed in this context.
-     * This is a deep copy of the original flow to ensure isolation between executions.
+     * Normally a structural copy of the original flow; falls back to the original if copying fails.
      */
     private LogicFlow flow;
 
@@ -121,13 +121,13 @@ public class ExecutionContext {
      * <p>
      * This constructor:
      * <ul>
-     *   <li>Creates a deep copy of the flow to ensure isolation</li>
+     *   <li>Copies the flow structure, falling back to the original on copy failure</li>
      *   <li>Initializes a NodeStatus for each node in the flow</li>
      *   <li>Initializes empty variable storage</li>
      *   <li>Resets all counters and state tracking</li>
      * </ul>
      * 
-     * @param flow The logic flow to execute (will be copied)
+     * @param flow The logic flow to execute (its structure is copied when possible)
      * @param server The Minecraft server instance for game world interaction
      * @param maxAllowedNodes The maximum number of node executions allowed to prevent infinite loops
      * @param maxAllowedRecursions The maximum allowed recursion depth for flow executions
@@ -159,7 +159,7 @@ public class ExecutionContext {
     /**
      * Gets the logic flow being executed in this context.
      * 
-     * @return The (copied) LogicFlow for this execution
+     * @return The structural copy for this execution, or the original if copying failed
      */
     @NotNull
     public LogicFlow getFlow() {
@@ -208,7 +208,7 @@ public class ExecutionContext {
     public int getStartNodeOutputNumber() {
         FlowNode startNode = this.flow.getFirstNode();
         if (startNode != null) {
-            return startNode.getMetadata().outputNumber;
+            return startNode.getMetadata().outputNumber();
         }
         return 0;
     }
@@ -252,7 +252,7 @@ public class ExecutionContext {
     /**
      * Gets all variables in this execution context.
      * 
-     * @return A map of all variable names to their values
+     * @return An unmodifiable live view of all variables; value objects are not copied
      */
     public Map<String, Object> getVariables() {
         return Collections.unmodifiableMap(this.variables);
@@ -277,11 +277,7 @@ public class ExecutionContext {
      * @param maxAllowedNodes The maximum allowed node executions
      */
     public void setMaxAllowedNodes(int maxAllowedNodes) {
-        if (maxAllowedNodes < 0) {
-            this.maxAllowedNodes = 0;
-        } else {
-            this.maxAllowedNodes = maxAllowedNodes;
-        }
+        this.maxAllowedNodes = Math.max(maxAllowedNodes, 0);
     }
 
     /**
@@ -349,11 +345,7 @@ public class ExecutionContext {
      * @param maxAllowedRecursions The maximum allowed recursion depth
      */
     public void setMaxAllowedRecursions(int maxAllowedRecursions) {
-        if (maxAllowedRecursions < 0) {
-            this.maxAllowedRecursions = 0;
-        } else {
-            this.maxAllowedRecursions = maxAllowedRecursions;
-        }
+        this.maxAllowedRecursions = Math.max(maxAllowedRecursions, 0);
     }
 
     /**
@@ -376,6 +368,7 @@ public class ExecutionContext {
      *   <li>Resets the execution counter to 0</li>
      *   <li>Clears the execution sequence</li>
      *   <li>Clears any stored exception</li>
+     *   <li>Preserves the flow, server, execution limits, and parent context chain</li>
      * </ul>
      * <p>
      * Note: It is strongly recommended to create a new ExecutionContext for each execution
@@ -402,11 +395,11 @@ public class ExecutionContext {
         if (startNodeOutputs != null) {
             NodeStatus startNodeStatus = this.nodeStatuses.get(this.flow.getStartNodeId());
             if (startNodeStatus != null) {
-                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.getNode().getMetadata().outputNumber; i++) {
+                for (int i = 0; i < startNodeOutputs.size() && i < startNodeStatus.getNode().getMetadata().outputNumber(); i++) {
                     startNodeStatus.setOutput(i, startNodeOutputs.get(i));
                 }
-                if (startNodeOutputs.size() != startNodeStatus.getNode().getMetadata().outputNumber) {
-                    Util.LOGGER.warn("FMinecraftMod: Provided " + startNodeOutputs.size() + " start node outputs for flow " + this.flow.getName() + ", but the start node has " + startNodeStatus.getNode().getMetadata().outputNumber + " outputs. Extra outputs will be ignored, and missing outputs will be set to null.");
+                if (startNodeOutputs.size() != startNodeStatus.getNode().getMetadata().outputNumber()) {
+                    Util.LOGGER.warn("FMinecraftMod: Provided " + startNodeOutputs.size() + " start node outputs for flow " + this.flow.getName() + ", but the start node has " + startNodeStatus.getNode().getMetadata().outputNumber() + " outputs. Extra outputs will be ignored, and missing outputs will be set to null.");
                 }
             } else {
                 Util.LOGGER.warn("FMinecraftMod: Provided start node outputs to flow " + this.flow.getName() + " that does not have a start node.");
@@ -474,11 +467,10 @@ public class ExecutionContext {
     }
 
     /**
-     * Executes the logic flow in this context within the context of a parent execution.
+     * Executes the logic flow as a child of a parent execution, replacing the parent chain.
      * <p>
-     * If any node throws a {@link LogicException}, execution terminates and the exception
-     * is stored in this context. After execution, check {@link #getException()} to determine
-     * if the flow completed successfully.
+     * Execution failures are stored in this context and rethrown as {@link LogicException}
+     * so the parent flow can stop and report the same failure.
      * 
      * @param parentContext The parent execution context invoking this flow
      * @param startNodeOutputs Optional list of output values to pre-populate for the start node
@@ -522,7 +514,7 @@ public class ExecutionContext {
      * Note: This renders dynamic execution state. To render static flow information,
      * use {@link LogicFlow#render()} instead.
      * 
-     * @return A Text object suitable for display in Minecraft with hover events
+     * @return A Component object suitable for display in Minecraft with hover events
      */
     public Component render() {
         MutableComponent title = Component.literal(this.flow.getName()).append(" ");

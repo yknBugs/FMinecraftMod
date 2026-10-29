@@ -32,14 +32,12 @@ public class ProjectileMessage extends ScheduledTask {
         double shooterHealth = Util.getHealth(shooter);
         Component mainText = Util.parseTranslatableText("fmod.message.projectile.onhit.main", shooterName, String.format("%.1f", shooterHealth), String.format("%.1f", distance), victimName, String.format("%.1f", victimHealth));
         Component otherText = Util.parseTranslatableText("fmod.message.projectile.onhit.other", shooterName, victimName);
-        if (victim.isAlwaysTicking() && victim instanceof ServerPlayer) {
-            ServerPlayer playerVictim = (ServerPlayer) victim;
+        if (victim.isAlwaysTicking() && victim instanceof ServerPlayer playerVictim) {
             if (!playerVictim.isRemoved() && !playerVictim.hasDisconnected() && playerVictim.getHealth() > 0) {
                 Util.getServerConfig().getProjectileBeingHit().postMessage(playerVictim, mainText, otherText);
             }
         }
-        if (shooter.isAlwaysTicking() && shooter instanceof ServerPlayer) {
-            ServerPlayer playerShooter = (ServerPlayer) shooter;
+        if (shooter.isAlwaysTicking() && shooter instanceof ServerPlayer playerShooter) {
             if (!playerShooter.isRemoved() && !playerShooter.hasDisconnected() && playerShooter.getHealth() > 0) {
                 Util.getServerConfig().getProjectileHitOthers().postMessage(playerShooter, mainText, otherText);
             }
@@ -48,10 +46,7 @@ public class ProjectileMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (shooter == null || victim == null) {
-            return true;
-        }
-        return false;
+        return shooter == null || victim == null;
     }
 
     @Override

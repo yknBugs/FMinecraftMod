@@ -37,7 +37,7 @@ import net.minecraft.network.chat.MutableComponent;
  * </ul>
  * <p>
  * Nodes in the flow are connected through their branch outputs, forming a potentially
- * cyclic graph. The flow can be executed multiple times simultaneously using separate
+ * cyclic graph. The flow can be invoked repeatedly or through nested calls using separate
  * {@link ExecutionContext} instances.
  * <p>
  * Note: Since flows need to access Minecraft mutable objects, all flows and nodes are designed 
@@ -52,7 +52,7 @@ import net.minecraft.network.chat.MutableComponent;
  * flow.addNode(node1);
  * flow.addNode(node2);
  * node1.setNextNodeId(0, node2.getId());
- * flow.startNodeId = node1.getId();
+ * flow.setStartNodeId(node1.getId());
  * </pre>
  * 
  * @see FlowNode
@@ -107,7 +107,7 @@ public class LogicFlow implements Cloneable {
     /**
      * Gets all nodes in this logic flow.
      * 
-     * @return A collection of all FlowNodes in this flow
+     * @return An unmodifiable live view of the nodes in this flow; the nodes remain mutable
      */
     public Collection<FlowNode> getNodes() {
         return Collections.unmodifiableCollection(this.nodes.values());
@@ -160,9 +160,11 @@ public class LogicFlow implements Cloneable {
      *   <li>Starts from the designated start node and performs depth-first traversal</li>
      *   <li>After exhausting reachable nodes, picks remaining nodes with zero in-degree</li>
      *   <li>If cycles exist, picks any remaining unvisited node</li>
-     *   <li>All choices use ID-based sorting for determinism</li>
+     *   <li>Starting points are chosen by ascending ID; branches are visited in port order</li>
      * </ol>
      * <p>
+     * Only branch connections to existing nodes contribute to in-degree; terminal and
+     * dangling targets are ignored. Data references do not contribute to this ordering.
      * This ordering is primarily used for rendering and display purposes,
      * ensuring consistent output across multiple calls.
      * 
@@ -181,10 +183,8 @@ public class LogicFlow implements Cloneable {
         for (FlowNode node : nodeList) {
             nodeInDegrees.putIfAbsent(node.getId(), 0);
             for (long neighborId : node.getNextNodeIds()) {
-                if (!this.nodes.containsKey(neighborId)) {
-                    nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(-1, 0) + 1);
-                } else {
-                    nodeInDegrees.put(neighborId, nodeInDegrees.getOrDefault(neighborId, 0) + 1);
+                if (this.nodes.containsKey(neighborId)) {
+                    nodeInDegrees.merge(neighborId, 1, Integer::sum);
                 }
             }
         }
@@ -284,7 +284,7 @@ public class LogicFlow implements Cloneable {
     }
 
     /**
-     * Creates a deep copy of this logic flow.
+     * Copies this logic flow's nodes, input references, and branch connections.
      * <p>
      * The copy includes:
      * <ul>
@@ -294,7 +294,8 @@ public class LogicFlow implements Cloneable {
      *   <li>The flow name</li>
      * </ul>
      * <p>
-     * The copy is completely independent - modifying the copy does not affect the original.
+     * The graph structure is independent. Mutable constant input values are shared
+     * through {@link DataReference#copy()} and are not deep-copied.
      * 
      * @return A new LogicFlow instance with copied nodes and configuration
      */
@@ -407,7 +408,7 @@ public class LogicFlow implements Cloneable {
                     } else if (referencedNode == node) {
                         passed = false;
                         Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with input referencing itself with node ID " + input.getReferenceId());
-                    } else if (input.getReferenceIndex() < 0 || input.getReferenceIndex() >= referencedNode.getMetadata().outputNumber) {
+                    } else if (input.getReferenceIndex() < 0 || input.getReferenceIndex() >= referencedNode.getMetadata().outputNumber()) {
                         passed = false;
                         Util.LOGGER.warn("FMinecraftMod: Flow " + this.name + " has node " + node.name + " with input referencing node ID " + input.getReferenceId() + " with invalid output index " + input.getReferenceIndex());
                     }
@@ -442,7 +443,7 @@ public class LogicFlow implements Cloneable {
      * Note: This renders static flow structure. To render dynamic execution status,
      * use {@link ExecutionContext#render()} instead.
      * 
-     * @return A Text object suitable for display in Minecraft with hover events
+     * @return A Component object suitable for display in Minecraft with hover events
      */
     public Component render() {
         MutableComponent title = Component.literal(this.name).append(" ");

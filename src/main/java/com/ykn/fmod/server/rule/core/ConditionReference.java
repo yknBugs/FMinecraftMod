@@ -26,7 +26,7 @@ import net.minecraft.network.chat.Component;
  * {@link CustomRule#getExtra() extra} condition list.
  *
  * <p>During {@link CustomRule#optimize()}, unresolvable references are left as-is, while
- * resolvable ones are inlined ({@link #optimize(CustomRule)}) to avoid repeated list
+ * resolvable ones are inlined ({@link #optimize(CustomRule, java.util.HashSet)}) to avoid repeated list
  * traversals at evaluation time.
  *
  * <p>JSON representation uses a {@code "require"} field (not {@code "value"}) to store the name:
@@ -135,8 +135,7 @@ public class ConditionReference implements RuleCondition {
         }
         HashSet<RuleCondition> visitedNode = new HashSet<>();
         visitedNode.add(this);
-        while (condition instanceof ConditionReference) {
-            ConditionReference reference = (ConditionReference) condition;
+        while (condition instanceof ConditionReference reference) {
             if (visitedNode.contains(reference)) {
                 // Circular reference detected; bail out to prevent infinite recursion.
                 return null;

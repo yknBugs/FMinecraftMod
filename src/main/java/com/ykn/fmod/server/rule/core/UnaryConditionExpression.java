@@ -19,7 +19,7 @@ import com.ykn.fmod.server.rule.tool.ConditionFormulaParser;
  *
  * <p>The only meaningful runtime operator is {@link ConditionRelationship#NOT} ({@code !}).
  * {@link ConditionRelationship#TRUE} and {@link ConditionRelationship#FALSE} are constant
- * sentinels that are folded away during {@link RuleCondition#optimize(CustomRule)}.
+ * sentinels that are folded away during {@link RuleCondition#optimize(CustomRule, java.util.HashSet)}.
  *
  * <p>Instances are created programmatically via {@link RuleCondition#not()} or by
  * deserializing from a formula string through
@@ -83,21 +83,12 @@ public class UnaryConditionExpression implements IterableCondition {
 
     @Override
     public boolean onEvaluate(RuleContext context) {
-        switch (relationship) {
-            case NOT:
-                return !operand.evaluate(context);
-            case TRUE:
-                return true;
-            case FALSE:
-                return false;
-            case AND:
-            case OR:
-            case XOR:
-            case BITAND:
-            case BITOR:
-            default:
-                throw new IllegalArgumentException("Unsupported unary condition relationship: " + relationship);
-        }
+        return switch (relationship) {
+            case NOT -> !operand.evaluate(context);
+            case TRUE -> true;
+            case FALSE -> false;
+            default -> throw new IllegalArgumentException("Unsupported unary condition relationship: " + relationship);
+        };
     }
     
     @Override
@@ -105,17 +96,13 @@ public class UnaryConditionExpression implements IterableCondition {
         switch (relationship) {
             case NOT:
                 {
-                    if (operand instanceof IterableCondition) {
-                        IterableCondition nestedIterableCondition = (IterableCondition) operand;
+                    if (operand instanceof IterableCondition nestedIterableCondition) {
                         return "!(" + nestedIterableCondition.toFormula() + ")";
-                    } else if (operand instanceof SourceCondition) {
-                        SourceCondition sourceCondition = (SourceCondition) operand;
+                    } else if (operand instanceof SourceCondition sourceCondition) {
                         return "!" + sourceCondition.getName();
-                    } else if (operand instanceof ConditionReference) {
-                        ConditionReference conditionReference = (ConditionReference) operand;
+                    } else if (operand instanceof ConditionReference conditionReference) {
                         return "!" + conditionReference.getReferenceName();
-                    } else if (operand instanceof ConstCondition) {
-                        ConstCondition constCondition = (ConstCondition) operand;
+                    } else if (operand instanceof ConstCondition constCondition) {
                         return "!" + String.valueOf(constCondition.getValue());
                     } else {
                         Util.LOGGER.error("FMinecraftMod: Unknown condition type " + operand.getClass().getName() + ", defaulting to condition type name");
@@ -153,8 +140,7 @@ public class UnaryConditionExpression implements IterableCondition {
 
     @Override
     public List<RuleCondition> visit() {
-        if (operand instanceof IterableCondition) {
-            IterableCondition iterableOperand = (IterableCondition) operand;
+        if (operand instanceof IterableCondition iterableOperand) {
             return iterableOperand.visit();
         } else {
             List<RuleCondition> children = new ArrayList<>();
@@ -221,8 +207,7 @@ public class UnaryConditionExpression implements IterableCondition {
             String name = json.has("name") ? json.get("name").getAsString() : "";
             String formula = json.has("value") ? json.get("value").getAsString() : "";
             RuleCondition condition = ConditionFormulaParser.parse(formula);
-            if (condition instanceof UnaryConditionExpression) {
-                UnaryConditionExpression unaryCondition = (UnaryConditionExpression) condition;
+            if (condition instanceof UnaryConditionExpression unaryCondition) {
                 return new UnaryConditionExpression(name, unaryCondition.getOperand(), unaryCondition.getRelationship());
             } else {
                 throw new IllegalArgumentException("JSON does not represent a valid UnaryConditionExpression, but represent " + condition.getType() + " instead.");

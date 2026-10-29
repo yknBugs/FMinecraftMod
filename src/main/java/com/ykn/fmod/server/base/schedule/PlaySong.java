@@ -99,7 +99,7 @@ public class PlaySong extends ScheduledTask {
         List<NoteBlockNote> notes = song.getNotes(this.tick);
         for (NoteBlockNote note : notes) {
             // target.playSound(note.instrument.getSound().value(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0));
-            target.connection.send(new ClientboundSoundPacket(note.instrument.getSoundEvent(), target.getSoundSource(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel - 12) / 12.0), 0));
+            target.connection.send(new ClientboundSoundPacket(note.instrument().getSoundEvent(), target.getSoundSource(), target.getX(), target.getY(), target.getZ(), 2f, (float) Math.pow(2.0, (note.noteLevel() - 12) / 12.0), 0));
         }
         int currentSeconds = (int) (this.song.getVirtualTick(this.tick) / 20.0);
         if (this.showInfo) {

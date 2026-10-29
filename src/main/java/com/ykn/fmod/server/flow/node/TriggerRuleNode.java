@@ -21,14 +21,14 @@ import com.ykn.fmod.server.rule.core.RuleContext;
 import com.ykn.fmod.server.rule.tool.RuleManager;
 
 /**
- * A flow node that triggers a custom rule from the rule system.
+ * A flow node that triggers a custom rule immediately.
  * Inputs:
- * 1. String - The name of the rule to trigger.
- * 2. Boolean - Whether to run rule actions if the condition passes. Default is true.
- * 3. Boolean - Whether to pass current flow variables to the rule context. Default is true.
+ * 1. String - The name of the custom rule to trigger.
+ * 2. Boolean - Whether to run the rule's actions if the condition passes.
+ * 3. Boolean - Whether to pass current flow variables to the rule context.
  * Outputs:
  * 1. Boolean - Whether the rule condition passed.
- * 2. Text - The error message set by the rule, or null if none.
+ * 2. Text - The error message set by the rule, can be null.
  * Branches: 1 (Next node)
  */
 public class TriggerRuleNode extends FlowNode {
@@ -54,8 +54,8 @@ public class TriggerRuleNode extends FlowNode {
         String ruleName = TypeAdaptor.parse(resolvedInputs.get(0)).asString();
         Boolean runActionsValue = TypeAdaptor.parse(resolvedInputs.get(1)).asBoolean();
         Boolean keepVariablesValue = TypeAdaptor.parse(resolvedInputs.get(2)).asBoolean();
-        boolean runActions = runActionsValue == null ? true : runActionsValue.booleanValue();
-        boolean keepVariables = keepVariablesValue == null ? true : keepVariablesValue.booleanValue();
+        boolean runActions = runActionsValue == null || runActionsValue.booleanValue();
+        boolean keepVariables = keepVariablesValue == null || keepVariablesValue.booleanValue();
 
         ServerData data = Util.getServerData(context.getServer());
         RuleManager ruleManager = data.getCustomRules().get(ruleName);

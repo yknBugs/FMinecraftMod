@@ -5,8 +5,6 @@
 
 package com.ykn.fmod.server.base.event;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,9 +13,6 @@ import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.schedule.FightMessage;
 import com.ykn.fmod.server.base.schedule.PlayerHurtMessage;
 import com.ykn.fmod.server.base.util.Util;
-import com.ykn.fmod.server.flow.tool.FlowManager;
-import com.ykn.fmod.server.rule.event.EntityDamageEvent;
-import com.ykn.fmod.server.rule.tool.RuleManager;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
@@ -28,28 +23,33 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.phys.AABB;
 
-public class LivingEntityDamage {
+/**
+ * The damage messages: boss fight prompts and monster-surround warnings.
+ *
+ * <p>This class is the existing feature only; the rule and flow events of the same moment are
+ * dispatched by {@link GameEventHandler}, which calls this method first.
+ */
+public final class LivingEntityDamage {
 
-    private final LivingEntity entity;
-    private final DamageSource damageSource;
-    private final float amount;
-
-    public LivingEntityDamage(LivingEntity entity, DamageSource damageSource, float amount) {
-        this.entity = entity;
-        this.damageSource = damageSource;
-        this.amount = amount;
+    private LivingEntityDamage() {
     }
 
     /**
-     * This method is called when a living entity is damaged.
-     * @see com.ykn.fmod.mixin.LivingEntityDamageMixin
+     * Sends the damage-related messages for one hit.
+     *
+     * @param entity       the entity that took damage
+     * @param damageSource the damage source
+     * @param amount       the damage amount
+     * @return {@code false} when the handler was skipped (no server or no damage source), in which
+     *         case there is nothing to report and the event is not dispatched either
+     * @see com.ykn.fmod.server.mixin.GameEventMixins.LivingEntityDamage
      */
-    public void onDamage() {
+    public static boolean onDamage(LivingEntity entity, DamageSource damageSource, float amount) {
         if (entity.getServer() == null) {
-            return;
+            return false;
         }
         if (damageSource == null) {
-            return;
+            return false;
         }
 
         MinecraftServer server = entity.getServer();
@@ -95,52 +95,6 @@ public class LivingEntityDamage {
             serverData.submitScheduledTask(new PlayerHurtMessage(player, player.getHealth()));
         }
 
-        runCustomRule(serverData);
-        runLogicFlow(serverData);
+        return true;
     }
-
-    private void runCustomRule(ServerData serverData) {
-        List<RuleManager> damageEventRules = serverData.gatherRuleByEventType(EntityDamageEvent.class, true);
-        for (RuleManager rule : damageEventRules) {
-            Map<String, Object> eventVariables = new HashMap<>();
-            eventVariables.put("entity", this.entity.getUUID());
-            eventVariables.put("damage", Double.valueOf(amount));
-            eventVariables.put("cause", this.damageSource.getEntity() == null ? null : this.damageSource.getEntity().getUUID());
-            eventVariables.put("source", this.damageSource.getDirectEntity() == null ? null : this.damageSource.getDirectEntity().getUUID());
-            eventVariables.put("x", this.entity.getX());
-            eventVariables.put("y", this.entity.getY());
-            eventVariables.put("z", this.entity.getZ());
-            eventVariables.put("position", this.entity.position());
-            eventVariables.put("dimension", this.entity.level().dimension().location());
-            eventVariables.put("biome", this.entity.level().getBiome(this.entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null));
-            eventVariables.put("pitch", Double.valueOf(this.entity.getXRot()));
-            eventVariables.put("yaw", Double.valueOf(this.entity.getYRot()));
-            eventVariables.put("rotation", this.entity.getRotationVector());
-            eventVariables.put("message", this.damageSource.getMsgId());
-            eventVariables.put("exhaustion", Double.valueOf(this.damageSource.getFoodExhaustion()));
-            eventVariables.put("health", Double.valueOf(this.entity.getHealth()));
-            eventVariables.put("name", this.entity.getDisplayName().getString());
-            eventVariables.put("__entity__", this.entity);
-            eventVariables.put("__cause__", this.damageSource.getEntity());
-            eventVariables.put("__source__", this.damageSource.getDirectEntity());
-            eventVariables.put("__world__", this.entity.level());
-            eventVariables.put("__name__", this.entity.getDisplayName());
-            rule.trigger(serverData, eventVariables);
-        }
-    }
-
-    private void runLogicFlow(ServerData serverData) {
-        List<FlowManager> damageEventFlow = serverData.gatherFlowByFirstNodeType("EntityDamageEventNode", true);
-        for (FlowManager flow : damageEventFlow) {
-            List<Object> eventOutput = new ArrayList<>();
-            eventOutput.add(this.entity);
-            eventOutput.add(this.amount);
-            eventOutput.add(this.damageSource.type());
-            eventOutput.add(this.damageSource.getEntity());
-            eventOutput.add(this.damageSource.getDirectEntity());
-            eventOutput.add(this.damageSource.getSourcePosition());
-            flow.execute(serverData, eventOutput, null);
-        }
-    }
-
 }

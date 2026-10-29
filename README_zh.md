@@ -101,6 +101,8 @@
 - `${suggest:command}`  - 点击时建议命令
 - `${markdown}`         - 将内容解析为 Markdown
 
+`${hint:}` 的悬停文本可以继续嵌套占位符和样式（例如 `${hint:&c${player}}`、`${hint:血量 ${health}}`）。`${markdown}` 之后的全部内容会作为一个 Markdown 文档整体解析。
+
 **玩家占位符：**
 
 - `${player}`                   - 玩家显示名称
@@ -121,6 +123,7 @@
 - `/f say ${color:FF5733}警告！${player} 在 ${coord}`
 - `/f say 看看这个：${link:https://example.com}${hint:点击打开}点击这里！`
 - `/f say ${suggest:/tp @s yourName}${hint:点击传送}点击传送到我的位置`
+- `/f say ${hint:&c${player}} 把鼠标放上来看看是谁`
 
 ### GPT 命令
 
@@ -268,7 +271,14 @@ org.gradle.java.home=<你的_JDK17_路径>
 
 ## 更新日志
 
-### 版本 0.3.8 （测试版本）
+### 版本 0.3.9 （测试版本）
+
+- 新增 ComputeAdd 规则组件，现在规则系统也支持保存临时运算结果到变量了。
+- 样式占位符现在部分支持嵌套，`${markdown}` 之后的全部内容会作为一个 Markdown 文档整体解析。
+- 修复延迟执行的流程图在变量表不可修改时，AddVariableToScheduledFlowNode 会抛出 UnsupportedOperationException 的问题。
+- 优化流程图编辑器渲染性能。
+
+### 版本 0.3.8
 
 规则可视化编辑器
 

@@ -39,10 +39,7 @@ public class FightMessage extends ScheduledTask {
 
     @Override
     public boolean shouldCancel() {
-        if (entity == null || player == null || entity.isRemoved() || player.hasDisconnected() || player.getHealth() <= 0) {
-            return true;
-        }
-        return false;
+        return entity == null || player == null || entity.isRemoved() || player.hasDisconnected() || player.getHealth() <= 0;
     }
 
     @Override

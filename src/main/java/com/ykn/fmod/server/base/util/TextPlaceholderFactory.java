@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -36,13 +36,15 @@ import net.minecraft.world.item.ItemStack;
  * </ul>
  * <p>
  * Placeholders are defined as key-value pairs where the key is a string pattern
- * and the value is a function that generates Text based on the context object.
+ * and the value is a function that generates Component based on the context object.
  * Custom styles use regex patterns to match style markers and apply formatting.
+ * Placeholder keys must be non-null and nonempty. Factory registrations are mutable and
+ * must not be modified concurrently with parsing.
  * <p>
  * Example usage:
  * <pre>{@code
- * TextPlaceholderFactory<ServerPlayerEntity> factory = TextPlaceholderFactory.ofDefault();
- * MutableText result = factory.parse("Hello ${player}! Your health is ${health}.", player);
+ * TextPlaceholderFactory<ServerPlayer> factory = TextPlaceholderFactory.ofDefault();
+ * MutableComponent result = factory.parse("Hello ${player}! Your health is ${health}.", player);
  * }</pre>
  *
  * @param <T> The type of context object used for placeholder resolution
@@ -52,12 +54,27 @@ public class TextPlaceholderFactory<T> {
     /**
      * Map of placeholder keys to their corresponding text generation functions.
      */
-    private Map<String, Function<T, Component>> placeholders;
+    private final Map<String, Function<T, Component>> placeholders;
 
     /**
      * Map of custom style regex patterns to their corresponding style application functions.
      */
-    private Map<String, BiFunction<String, MutableComponent, MutableComponent>> customStyles;
+    private final Map<String, StyleDefinition> customStyles;
+
+    private static final int MAX_NESTING = 32;
+
+    /** Immutable definitions can be shared; matchers and active styles belong to each parse. */
+    private record StyleDefinition(Pattern pattern, String prefix, boolean richHint, boolean consumesRemainder,
+            BiFunction<String, MutableComponent, MutableComponent> function) {}
+
+    private record StyleMatch(String key, StyleDefinition definition, int start, int end, String parameter) {}
+
+    private record ActiveStyle(StyleDefinition definition, String parameter, Component hoverText) {}
+
+    /** Lazily initializes defaults once, while each public factory keeps independent maps. */
+    private static final class Defaults {
+        private static final TextPlaceholderFactory<ServerPlayer> FACTORY = createDefault();
+    }
 
     /**
      * Constructs a new empty TextPlaceholderFactory with no placeholders or custom styles.
@@ -69,12 +86,13 @@ public class TextPlaceholderFactory<T> {
     }
 
     /**
-     * Constructs a new TextPlaceholderFactory with the specified placeholders.
+     * Constructs a new TextPlaceholderFactory with a shallow copy of the specified placeholders.
      *
      * @param placeholders A map of placeholder keys to their corresponding text generation functions
      */
     public TextPlaceholderFactory(Map<String, Function<T, Component>> placeholders) {
-        this.placeholders = placeholders;
+        placeholders.keySet().forEach(TextPlaceholderFactory::requireKey);
+        this.placeholders = new HashMap<>(placeholders);
         this.customStyles = new LinkedHashMap<>();
     }
 
@@ -82,23 +100,23 @@ public class TextPlaceholderFactory<T> {
      * Adds a placeholder with a dynamic value function.
      *
      * @param key The placeholder key (e.g., "${player}")
-     * @param value A function that generates Text based on the context object
+     * @param value A function that generates Component based on the context object
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> add(String key, Function<T, Component> value) {
-        this.placeholders.put(key, value);
+        this.placeholders.put(requireKey(key), value);
         return this;
     }
 
     /**
-     * Adds a placeholder with a static Text value.
+     * Adds a placeholder with a static Component value.
      *
      * @param key The placeholder key (e.g., "${greeting}")
-     * @param value The static Text value to use for this placeholder
+     * @param value The static Component value to use for this placeholder
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> add(String key, Component value) {
-        this.placeholders.put(key, t -> value);
+        this.placeholders.put(requireKey(key), t -> value);
         return this;
     }
 
@@ -110,26 +128,30 @@ public class TextPlaceholderFactory<T> {
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> add(String key, String value) {
-        this.placeholders.put(key, t -> Component.literal(value));
+        this.placeholders.put(requireKey(key), t -> Component.literal(value));
         return this;
     }
 
     /**
      * Adds a custom style pattern that can be applied to text.
      * <p>
-     * The style pattern is a regex that matches style markers in the text.
+     * The style pattern is compiled at registration and reused for subsequent parses.
+     * Invalid patterns fail at registration. The regex matches atomic style markers in the text.
      * When matched, the style function is applied to transform the text.
      * The first capturing group in the regex (if present) is passed as the
      * parameter to the style function.
      * <p>
-     * Example: {@code .style("\\$\\{color:([0-9A-Fa-f]+)\\}", (color, text) -> text.styled(s -> s.withColor(Integer.parseInt(color, 16))))}
+     * Example: {@code .style("\\$\\{color:([0-9A-Fa-f]+)\\}", (color, text) -> text.withStyle(s -> s.withColor(Integer.parseInt(color, 16))))}
      *
      * @param styleRegex A regex pattern to match style markers in the text
      * @param styleFunction A function that applies the style, taking the captured parameter and the text to style
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> style(String styleRegex, BiFunction<String, MutableComponent, MutableComponent> styleFunction) {
-        this.customStyles.put(styleRegex, styleFunction);
+        Objects.requireNonNull(styleFunction, "styleFunction");
+        StyleDefinition existing = this.customStyles.get(styleRegex);
+        Pattern pattern = existing == null ? Pattern.compile(styleRegex) : existing.pattern();
+        this.customStyles.put(styleRegex, new StyleDefinition(pattern, null, false, false, styleFunction));
         return this;
     }
 
@@ -141,6 +163,7 @@ public class TextPlaceholderFactory<T> {
      * @return This factory instance for method chaining
      */
     public TextPlaceholderFactory<T> append(Map<String, Function<T, Component>> placeholders) {
+        placeholders.keySet().forEach(TextPlaceholderFactory::requireKey);
         this.placeholders.putAll(placeholders);
         return this;
     }
@@ -179,7 +202,7 @@ public class TextPlaceholderFactory<T> {
         this.placeholders.remove(key);
         return this;
     }
-    
+
     /**
      * Removes a custom style with the specified regex key.
      *
@@ -191,273 +214,197 @@ public class TextPlaceholderFactory<T> {
         return this;
     }
 
-    /**
-     * Replaces the element at the specified index in the given list with the elements from the newElements list.
-     * @param <U> The type of elements in the list.
-     * @param list The original list.
-     * @param index The index of the element to be replaced.
-     * @param newElements The list of new elements to insert at the specified index.
-     * @return A new list with the element at the specified index replaced by the new elements.
-     */
-    private static <U> List<U> replaceElementToList(List<U> list, int index, List<U> newElements) {
-        List<U> result = new ArrayList<>();
-        for (int i = 0; i < list.size(); i++) {
-            if (i == index) {
-                result.addAll(newElements);
-            } else {
-                result.add(list.get(i));
-            }
+    private static String requireKey(String key) {
+        if (Objects.requireNonNull(key, "key").isEmpty()) {
+            throw new IllegalArgumentException("Placeholder keys must not be empty");
         }
-        return result;
+        return key;
     }
 
-    /**
-     * Expands the inner list at the given index by producing one result per element in
-     * {@code newElements}. For each element {@code e} in {@code newElements}, the method
-     * creates a shallow copy of {@code list.get(index)} with {@code e} appended and
-     * includes it in the returned outer list. All other inner lists are included as
-     * shallow copies in their original order.
-     *
-     * @param list the outer list containing inner lists to copy/expand (must not be null)
-     * @param index the position of the inner list to expand; if out of range no expansion occurs
-     * @param newElements elements to append to the selected inner list to create expanded variants (must not be null)
-     * @param <U> the element type of the inner lists
-     * @return a new outer list containing shallow-copied inner lists with the specified expansions applied
-     */
-    private static <U> List<List<U>> expandElementToList(List<List<U>> list, int index, List<U> newElements) {
-        List<List<U>> result = new ArrayList<>();
-        for (int i = 0; i < list.size(); i++) {
-            if (i == index) {
-                List<U> current = list.get(i);
-                for (U element : newElements) {
-                    List<U> copiedCurrent = new ArrayList<>(current);
-                    if (element != null) {
-                        copiedCurrent.add(element);
-                    }
-                    result.add(copiedCurrent);
-                }
-            } else {
-                result.add(new ArrayList<>(list.get(i)));
-            }
-        }
-        return result;
+    /** Registers a default expression whose parameter may contain balanced ${...} expressions. */
+    private TextPlaceholderFactory<T> expression(String regex, String prefix, boolean richHint,
+            BiFunction<String, MutableComponent, MutableComponent> function) {
+        style(regex, function);
+        StyleDefinition definition = customStyles.get(regex);
+        customStyles.put(regex, new StyleDefinition(definition.pattern(), prefix, richHint, false, function));
+        return this;
     }
 
-    /**
-     * Tokenizes the given text by splitting it based on custom style patterns.
-     * <p>
-     * This method splits the input text wherever a custom style pattern matches,
-     * creating text tokens and tracking which styles apply to each token.
-     * The results are accumulated into the provided lists.
-     *
-     * @param text The text to tokenize
-     * @param textTokens Output list to receive the text fragments
-     * @param styleTokens Output list to receive the style regex patterns applicable to each text fragment
-     * @param styleParams Output list to receive the captured parameters from each style pattern match
-     */
-    private void tokenizeText(String text, List<String> textTokens, List<List<String>> styleTokens, List<List<String>> styleParams) {
-        Set<String> keys = this.customStyles.keySet();
-        List<String> splitText = new ArrayList<>();
-        List<List<String>> splitStyles = new ArrayList<>();
-        List<List<String>> splitParams = new ArrayList<>();
-        splitText.add(text);
-        splitStyles.add(new ArrayList<>());
-        splitParams.add(new ArrayList<>());
-        for (String styleRegex : keys) {
-            Pattern pattern = Pattern.compile(styleRegex);
-            for (int i = 0; i < splitText.size(); i++) {
-                String part = splitText.get(i);
-                Matcher matcher = pattern.matcher(part);
-                int lastIndex = 0;
-
-                // Split the part by the pattern
-                List<String> splittedParts = new ArrayList<>();
-                List<String> fullMatchedParts = new ArrayList<>();
-                List<String> firstMatchingGroups = new ArrayList<>();
-                // Make sure splittedParts and fullMatchedParts have the same length
-                fullMatchedParts.add(null);
-                firstMatchingGroups.add(null);
-                while (matcher.find()) {
-                    splittedParts.add(part.substring(lastIndex, matcher.start()));
-                    fullMatchedParts.add(styleRegex);
-                    firstMatchingGroups.add(matcher.groupCount() < 1 ? "" : matcher.group(1));
-                    lastIndex = matcher.end();
-                }
-                splittedParts.add(part.substring(lastIndex));
-
-                // Write back to splitText and splitStyles and update the index accordingly
-                int indexOffset = splittedParts.size() - 1;
-                splitText = replaceElementToList(splitText, i, splittedParts);
-                splitStyles = expandElementToList(splitStyles, i, fullMatchedParts);
-                splitParams = expandElementToList(splitParams, i, firstMatchingGroups);
-                i += indexOffset;
-            }
-        }
-        textTokens.addAll(splitText);
-        styleTokens.addAll(splitStyles);
-        styleParams.addAll(splitParams);
+    /** Markdown owns the remainder so its code spans, links and block structure stay intact. */
+    private TextPlaceholderFactory<T> markdownStyle() {
+        String regex = "\\$\\{markdown\\}";
+        style(regex, (param, text) -> Component.empty()
+            .append(MarkdownToTextConverter.parseMarkdownToText(text.getString())).setStyle(text.getStyle()));
+        StyleDefinition definition = customStyles.get(regex);
+        customStyles.put(regex, new StyleDefinition(definition.pattern(), null, false, true, definition.function()));
+        return this;
     }
 
-    /**
-     * Splits the given text using the specified delimiter and appends the resulting parts
-     * to the provided list. Optionally, the delimiter can be retained between the parts.
-     *
-     * @param list          The initial list to which the split parts will be appended.
-     * @param text          The text to be split using the delimiter.
-     * @param delimiter     The delimiter used to split the text.
-     * @param keepDelimiter If true, the delimiter will be included between the split parts
-     *                      in the resulting list.
-     * @return A new list containing the original list elements followed by the split parts
-     *         of the text, with or without the delimiter based on the keepDelimiter flag.
-     */
-    private static List<String> splitAndAppend(List<String> list, String text, String delimiter, boolean keepDelimiter) {
-        List<String> result = new ArrayList<>(list);
-        // We need to escape the delimiter for regex, so we use Pattern.quote
-        String pattern = Pattern.quote(delimiter);
-        // We need to preserve the last empty string if the text ends with the delimiter
-        String[] parts = text.split(pattern, -1);
-        for (int i = 0; i < parts.length; i++) {
-            if (keepDelimiter && i > 0) {
-                result.add(delimiter);
+    /** Returns the exclusive end of a balanced expression, or -1 if it is unterminated. */
+    private static int expressionEnd(String text, int start) {
+        int depth = 1;
+        for (int i = start + 2; i < text.length(); i++) {
+            if (text.startsWith("${", i)) {
+                depth++;
+                i++;
+            } else if (text.charAt(i) == '}' && --depth == 0) {
+                return i + 1;
             }
-            result.add(parts[i]);
         }
-        return result;
+        return -1;
     }
 
-    /**
-     * Parses and replaces all placeholders in the given text.
-     * <p>
-     * This method splits the text by placeholder keys and replaces each placeholder
-     * with the result of its associated function. Placeholders are processed in order
-     * of decreasing key length to avoid replacing smaller keys that are part of larger keys.
-     * <p>
-     * Note: This method does not apply custom styles. Use {@link #parse(String, Object)}
-     * for full parsing with both placeholders and styles.
-     *
-     * @param text The text containing placeholders to replace
-     * @param t The context object passed to placeholder functions
-     * @return The parsed text with all placeholders replaced
-     */
-    public MutableComponent parsePlaceholders(String text, T t) {
-        List<String> keys = new ArrayList<>(this.placeholders.keySet());
-        // We must sort the keys by length in descending order to avoid replacing smaller keys first
-        keys.sort((a, b) -> Integer.compare(b.length(), a.length()));
-        List<String> splitText = new ArrayList<>();
-        splitText.add(text);
-        for (String key : keys) {
-            List<String> currentParts = new ArrayList<>();
-            int index = 0;
-            for (String part : splitText) {
-                if (index % 2 == 0) {
-                    // We keep the delimiter here, so the even indexes are the strings that should be splited
-                    // and the odd indexes are the delimiters that should be kept
-                    currentParts = splitAndAppend(currentParts, part, key, true);
-                } else {
-                    currentParts.add(part);
-                }
-                index++;
-            }
-            splitText = currentParts;
-        }
-
-        List<Component> finalText = new ArrayList<>();
-        for (int i = 0; i < splitText.size(); i++) {
-            String part = splitText.get(i);
-            if (i % 2 == 0) {
-                // Even indexes are the strings that should be splited
-                finalText.add(Component.literal(part));
-            } else {
-                // Odd indexes are the delimiters that should be kept
-                Function<T, Component> placeholderFunction = this.placeholders.get(part);
-                if (placeholderFunction == null) {
-                    // Unlikely to happen
-                    Util.LOGGER.error("FMinecraftMod: Missing placeholder: " + part);
-                    finalText.add(Component.literal(part));
-                } else {
-                    try {
-                        finalText.add(placeholderFunction.apply(t));
-                    } catch (Exception e) {
-                        Util.LOGGER.error("FMinecraftMod: Error while parsing placeholder: " + part, e);
-                        finalText.add(Component.literal(part));
-                    }
-                }
-            }
-        }
-        
-        MutableComponent result = Component.empty();
-        for (Component part : finalText) {
-            result.append(part);
-        }
-        return result;
-    }
-
-    /**
-     * Parses the given text by applying both custom styles and placeholder replacements.
-     * <p>
-     * This is the main parsing method that performs a two-step process:
-     * <ol>
-     *   <li>Tokenizes the text based on custom style patterns</li>
-     *   <li>For each token, replaces placeholders and applies accumulated styles</li>
-     * </ol>
-     * <p>
-     * Styles are applied in the order they appear in the text and accumulate from left to right.
-     * Once a style is applied, it remains active for all subsequent text until the end.
-     *
-     * @param text The text to parse, containing both style markers and placeholders
-     * @param t The context object passed to placeholder functions
-     * @return The fully parsed and styled text
-     */
-    public MutableComponent parse(String text, T t) {
-        // Tokenize the text first based on custom styles
-        List<MutableComponent> finalTexts = new ArrayList<>();
-        List<String> textTokens = new ArrayList<>();
-        List<List<String>> styleTokens = new ArrayList<>();
-        List<List<String>> styleParams = new ArrayList<>();
-        this.tokenizeText(text, textTokens, styleTokens, styleParams);
-        // Broadcast the styles from left to the end of the text
-        HashMap<String, String> activeStyles = new LinkedHashMap<>();
-        for (int i = 0; i < textTokens.size(); i++) {
-            String currentText = textTokens.get(i);
-            List<String> styles = styleTokens.get(i);
-            List<String> params = styleParams.get(i);
-            // Get the last style and param for this text token
-            // Only the last style matters, because the previous styles are already saved in activeStyles
-            String lastStyle = styles.size() > 0 ? styles.get(styles.size() - 1) : null;
-            String lastParam = params.size() > 0 ? params.get(params.size() - 1) : null;
-            if (lastStyle != null && lastParam != null) {
-                if (activeStyles.containsKey(lastStyle)) {
-                    // Remove the style if it is already active, to make sure the latest style is always at the end of the LinkedHashMap
-                    activeStyles.remove(lastStyle);
-                }
-                activeStyles.put(lastStyle, lastParam);
-            }
-            
-            // Apply the active styles to the text token
-            MutableComponent textToken = parsePlaceholders(currentText, t);
-            Set<String> styleKeys = activeStyles.keySet();
-            for (String styleKey : styleKeys) {
-                BiFunction<String, MutableComponent, MutableComponent> styleFunction = this.customStyles.get(styleKey);
-                if (styleFunction == null) {
-                    // Unlikely to happen
-                    Util.LOGGER.error("FMinecraftMod: Missing custom style: " + styleKey);
+    /** Finds the earliest nonempty marker; registration order breaks ties. */
+    private StyleMatch nextStyle(String text, int offset) {
+        StyleMatch best = null;
+        for (Map.Entry<String, StyleDefinition> entry : customStyles.entrySet()) {
+            StyleDefinition definition = entry.getValue();
+            int start;
+            int end;
+            String parameter;
+            if (definition.prefix() != null) {
+                start = text.indexOf(definition.prefix(), offset);
+                if (start < 0) {
                     continue;
                 }
-                String param = activeStyles.get(styleKey);
-                try {
-                    textToken = styleFunction.apply(param, textToken);
-                } catch (Exception e) {
-                    Util.LOGGER.error("FMinecraftMod: Error while applying custom style: " + styleKey + " with param: " + param, e);
+                end = expressionEnd(text, start);
+                // Keep an unterminated default expression literal, including formatting codes.
+                if (end < 0) {
+                    if (best == null || start < best.start()) {
+                        best = new StyleMatch(entry.getKey(), null, start, text.length(), "");
+                    }
+                    continue;
+                }
+                parameter = text.substring(start + definition.prefix().length(), end - 1);
+            } else {
+                Matcher matcher = definition.pattern().matcher(text);
+                boolean found = matcher.find(offset);
+                while (found && matcher.start() == matcher.end()) {
+                    found = matcher.find();
+                }
+                if (!found) {
+                    continue;
+                }
+                start = matcher.start();
+                end = matcher.end();
+                parameter = matcher.groupCount() == 0 ? "" : matcher.group(1);
+            }
+            if (best == null || start < best.start()) {
+                best = new StyleMatch(entry.getKey(), definition, start, end, parameter);
+            }
+        }
+        return best;
+    }
+
+    /**
+     * Replaces literal placeholder keys without interpreting replacement components as markup.
+     * At each position the longest matching key wins. Exceptions from a resolver leave its key
+     * literal. The context is passed through unchanged and may be null if resolvers support it.
+     *
+     * @param text non-null input
+     * @param t placeholder context
+     * @return a new component containing resolved placeholders and literal text
+     */
+    public MutableComponent parsePlaceholders(String text, T t) {
+        List<String> keys = new ArrayList<>(placeholders.keySet());
+        keys.sort((a, b) -> Integer.compare(b.length(), a.length()));
+        MutableComponent result = Component.empty();
+        int offset = 0;
+        while (offset < text.length()) {
+            int next = text.length();
+            String matched = null;
+            for (String key : keys) {
+                int position = text.indexOf(key, offset);
+                if (position >= 0 && (matched == null || position < next)) {
+                    next = position;
+                    matched = key;
                 }
             }
-            finalTexts.add(textToken);
-        }
-        // Combine all final texts
-        MutableComponent result = Component.empty();
-        for (Component part : finalTexts) {
-            result.append(part);
+            if (next > offset) {
+                result.append(Component.literal(text.substring(offset, next)));
+            }
+            if (matched == null) {
+                break;
+            }
+            try {
+                result.append(Objects.requireNonNull(placeholders.get(matched).apply(t)));
+            } catch (Exception e) {
+                Util.LOGGER.error("FMinecraftMod: Error while parsing placeholder: " + matched, e);
+                result.append(Component.literal(matched));
+            }
+            offset = next + matched.length();
         }
         return result;
+    }
+
+    /**
+     * Parses atomic style markers from left to right, resolving placeholders in visible text.
+     * Styles accumulate in occurrence order; repeating a style replaces its parameter and moves
+     * it to the end of the active order. Registration order breaks matches at the same position.
+     * Empty regex matches are ignored. Custom regex parameters are passed through unchanged
+     * (an unmatched optional first group is null).
+     * <p>
+     * Default link, copy and suggest parameters are literal. Default hints recursively parse
+     * their balanced payload with independent style state, up to 32 nested hints; deeper content
+     * remains literal. Unterminated default parameter expressions remain literal.
+     * The default ${markdown} marker renders the remaining text as one Markdown document,
+     * after placeholder substitution. Further fmod style markers are literal Markdown input.
+     *
+     * @param text non-null text containing markers and placeholders
+     * @param t context passed unchanged to placeholder functions
+     * @return a new component containing the parsed text
+     */
+    public MutableComponent parse(String text, T t) {
+        return parse(text, t, 0);
+    }
+
+    private MutableComponent parse(String text, T t, int depth) {
+        MutableComponent result = Component.empty();
+        Map<String, ActiveStyle> active = new LinkedHashMap<>();
+        int offset = 0;
+        while (offset < text.length()) {
+            StyleMatch match = nextStyle(text, offset);
+            int end = match == null ? text.length() : match.start();
+            if (end > offset) {
+                result.append(applyStyles(parsePlaceholders(text.substring(offset, end), t), active));
+            }
+            if (match == null) {
+                break;
+            }
+            if (match.definition() == null) {
+                result.append(applyStyles(Component.literal(text.substring(match.start(), match.end())), active));
+            } else {
+                Component hover = null;
+                if (match.definition().richHint()) {
+                    String parameter = match.parameter().strip();
+                    hover = depth < MAX_NESTING ? parse(parameter, t, depth + 1) : Component.literal(parameter);
+                }
+                active.remove(match.key());
+                active.put(match.key(), new ActiveStyle(match.definition(), match.parameter(), hover));
+                if (match.definition().consumesRemainder()) {
+                    result.append(applyStyles(parsePlaceholders(text.substring(match.end()), t), active));
+                    break;
+                }
+            }
+            offset = match.end();
+        }
+        return result;
+    }
+
+    private MutableComponent applyStyles(MutableComponent text, Map<String, ActiveStyle> active) {
+        for (Map.Entry<String, ActiveStyle> entry : active.entrySet()) {
+            ActiveStyle style = entry.getValue();
+            try {
+                if (style.definition().richHint()) {
+                    text = text.withStyle(s -> s.withHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, style.hoverText())));
+                } else {
+                    text = style.definition().function().apply(style.parameter(), text);
+                }
+            } catch (Exception e) {
+                Util.LOGGER.error("FMinecraftMod: Error while applying custom style: " + entry.getKey(), e);
+            }
+        }
+        return text;
     }
 
     /**
@@ -486,7 +433,7 @@ public class TextPlaceholderFactory<T> {
      *
      * @param <U> The type of context object for placeholder resolution
      * @param key The placeholder key
-     * @param value A function that generates Text based on the context object
+     * @param value A function that generates Component based on the context object
      * @return A new factory instance with the single placeholder
      */
     public static <U> TextPlaceholderFactory<U> of(String key, Function<U, Component> value) {
@@ -494,11 +441,11 @@ public class TextPlaceholderFactory<T> {
     }
 
     /**
-     * Creates a new TextPlaceholderFactory with a single static Text placeholder.
+     * Creates a new TextPlaceholderFactory with a single static Component placeholder.
      *
      * @param <U> The type of context object for placeholder resolution
      * @param key The placeholder key
-     * @param value The static Text value for this placeholder
+     * @param value The static Component value for this placeholder
      * @return A new factory instance with the single placeholder
      */
     public static <U> TextPlaceholderFactory<U> of(String key, Component value) {
@@ -518,7 +465,7 @@ public class TextPlaceholderFactory<T> {
     }
 
     /**
-     * Creates a pre-configured TextPlaceholderFactory for ServerPlayerEntity with common placeholders and styles.
+     * Creates a pre-configured TextPlaceholderFactory for ServerPlayer with common placeholders and styles.
      * <p>
      * Includes the following style patterns:
      * <ul>
@@ -546,9 +493,13 @@ public class TextPlaceholderFactory<T> {
      *   <li>{@code ${mainhand}, ${offhand}} - Item in hand</li>
      * </ul>
      *
-     * @return A pre-configured factory for ServerPlayerEntity context
+     * @return A new factory with independent registration maps and shared immutable style definitions
      */
     public static TextPlaceholderFactory<ServerPlayer> ofDefault() {
+        return new TextPlaceholderFactory<ServerPlayer>().append(Defaults.FACTORY);
+    }
+
+    private static TextPlaceholderFactory<ServerPlayer> createDefault() {
         return new TextPlaceholderFactory<ServerPlayer>()
             .style("&0", (param, text) -> text.withStyle(ChatFormatting.BLACK))
             .style("&1", (param, text) -> text.withStyle(ChatFormatting.DARK_BLUE))
@@ -557,9 +508,9 @@ public class TextPlaceholderFactory<T> {
             .style("&4", (param, text) -> text.withStyle(ChatFormatting.DARK_RED))
             .style("&5", (param, text) -> text.withStyle(ChatFormatting.DARK_PURPLE))
             .style("&6", (param, text) -> text.withStyle(ChatFormatting.GOLD))
-            .style("&7", (param, text) -> text.withStyle(ChatFormatting.GRAY))  
+            .style("&7", (param, text) -> text.withStyle(ChatFormatting.GRAY))
             .style("&8", (param, text) -> text.withStyle(ChatFormatting.DARK_GRAY))
-            .style("&9", (param, text) -> text.withStyle(ChatFormatting.BLUE))  
+            .style("&9", (param, text) -> text.withStyle(ChatFormatting.BLUE))
             .style("&[aA]", (param, text) -> text.withStyle(ChatFormatting.GREEN))
             .style("&[bB]", (param, text) -> text.withStyle(ChatFormatting.AQUA))
             .style("&[cC]", (param, text) -> text.withStyle(ChatFormatting.RED))
@@ -572,7 +523,7 @@ public class TextPlaceholderFactory<T> {
             .style("&[nN]", (param, text) -> text.withStyle(ChatFormatting.UNDERLINE))
             .style("&[mM]", (param, text) -> text.withStyle(ChatFormatting.STRIKETHROUGH))
             .style("&[rR]", (param, text) -> text.setStyle(Style.EMPTY))
-            .style("\\$\\{markdown\\}", (param, text) -> Component.empty().append(MarkdownToTextConverter.parseMarkdownToText(text.getString())))
+            .markdownStyle()
             .style("\\$\\{color:([0-9A-Fa-f]{1,8})\\}", (param, text) -> {
                 try {
                     int colorInt = Integer.parseInt(param.strip(), 16);
@@ -582,26 +533,26 @@ public class TextPlaceholderFactory<T> {
                     return text;
                 }
             })
-            .style("\\$\\{link:([^}]*)\\}", (param, text) -> 
+            .expression("\\$\\{link:([^}]*)\\}", "${link:", false, (param, text) ->
                 text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.OPEN_URL, param.strip())
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.openurl", Component.literal(param.strip()).withStyle(ChatFormatting.YELLOW)).withStyle(ChatFormatting.GREEN))
                 ))
             )
-            .style("\\$\\{copy:([^}]*)\\}", (param, text) -> 
+            .expression("\\$\\{copy:([^}]*)\\}", "${copy:", false, (param, text) ->
                 text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, param.strip())
                 ).withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Util.parseTranslatableText("fmod.misc.copyto", param.strip()).withStyle(ChatFormatting.GREEN))
                 ))
             )
-            .style("\\$\\{hint:([^}]*)\\}", (param, text) -> 
+            .expression("\\$\\{hint:([^}]*)\\}", "${hint:", true, (param, text) ->
                 text.withStyle(style -> style.withHoverEvent(
                     new HoverEvent(HoverEvent.Action.SHOW_TEXT, Component.literal(param.strip()))
                 ))
             )
-            .style("\\$\\{suggest:([^}]*)\\}", (param, text) -> 
+            .expression("\\$\\{suggest:([^}]*)\\}", "${suggest:", false, (param, text) ->
                 text.withStyle(style -> style.withClickEvent(
                     new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, param.strip())
                 ))

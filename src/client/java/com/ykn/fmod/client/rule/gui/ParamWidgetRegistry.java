@@ -14,10 +14,12 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import com.google.gson.JsonPrimitive;
 import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.rule.core.ParamKind;
 import com.ykn.fmod.server.rule.core.RequiredParamMetadata;
+import com.ykn.fmod.server.rule.core.RuleCondition;
 import com.ykn.fmod.server.rule.core.RuleParameter;
 
 import net.minecraft.ChatFormatting;
@@ -27,8 +29,11 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -36,32 +41,37 @@ import net.minecraft.world.phys.Vec3;
  * {@link com.ykn.fmod.server.rule.tool.RuleRegistry} for the one thing the server can't drive
  * itself: building a widget for a parameter, since server code can't invoke client code.
  *
- * <p>Every built-in {@link ParamKind} is registered by {@link #registerDefault()}, called once
- * from {@link com.ykn.fmod.client.FMod#onInitializeClient()}. Third-party code that declares a
- * custom {@link ParamKind} on the server should register a matching widget builder here (in its
- * own client entrypoint) via {@link #registerByKind}/{@link #registerByValueType} - otherwise
- * {@link #isSupported} reports the kind as unsupported and the rule editor GUI refuses to open an
- * editor for any condition/action that uses it (falling back to command-line/JSON editing
- * instead), rather than guessing with a widget that doesn't actually understand the value.
- *
- * <p>Lookup has two tiers, mirroring the dispatch {@link ParamWidgetFactory} used to do inline:
+ * <p>Every built-in kind is registered twice:
  * <ul>
- *   <li>{@link #registerByKind} - for kinds that need a distinct editor despite sharing a
- *       {@link ParamKind#valueType()} with another kind (e.g. {@code DIMENSION} vs {@code BLOCK_ID},
- *       both {@link ResourceLocation}-valued).</li>
- *   <li>{@link #registerByValueType} - the fallback used by every kind that doesn't need its own
- *       entry, keyed by {@link ParamKind#valueType()}. This is also what makes
- *       {@link ParamKind#intAtLeast(int)}/{@link ParamKind#doubleAtLeast(double)} work without
- *       per-call registration: each call mints a distinct {@code ParamKind} instance, so an
- *       identity-keyed map alone would never match them.</li>
+ *   <li>{@link #registerByKind} - the editor that kind deserves. Kinds sharing a value type can
+ *       differ here (e.g. {@link ParamKind#DIMENSION} gets a dimension picker while
+ *       {@link ParamKind#RESOURCE_ID} is a plain id box, although both are
+ *       {@link ResourceLocation}-valued).</li>
+ *   <li>{@link #registerByValueType} - the fallback used by any kind that has no own entry, keyed
+ *       by {@link ParamKind#valueType()}. Built-in kinds use it for kinds that share their value
+ *       type, and third-party kinds get an editor for free as soon as they reuse a built-in value
+ *       type. It is also what makes {@link ParamKind#intAtLeast(int)} /
+ *       {@link ParamKind#doubleAtLeast(double)} work without per-call registration: each call
+ *       mints a distinct {@code ParamKind} instance, so an identity-keyed map alone would never
+ *       match them.</li>
  * </ul>
+ *
+ * <p>Only value types that can be edited unambiguously have a fallback: every built-in value type
+ * except {@link Object} is registered, and {@code Object} (the value type of
+ * {@link ParamKind#AUTO}) is deliberately left out - as a fallback it would claim every kind and
+ * turn "no editor registered" into a silently wrong editor.
+ *
+ * <p>Third-party code that declares a custom {@link ParamKind} on the server should register a
+ * matching widget builder here (in its own client entrypoint); without one,
+ * {@link #isSupported} reports the kind as unsupported and the rule editor GUI refuses to open an
+ * editor for any condition/action that uses it (falling back to command-line/JSON editing instead),
+ * rather than guessing with a widget that doesn't actually understand the value.
  */
 public final class ParamWidgetRegistry {
 
     /**
      * Builds the constant-value widget(s) for one parameter row, returning a supplier that reads
-     * the current constant value back out. Same shape {@link ParamWidgetFactory} used to switch
-     * on inline before this became a registry.
+     * the current constant value back out.
      */
     @FunctionalInterface
     public interface WidgetBuilder {
@@ -86,8 +96,8 @@ public final class ParamWidgetRegistry {
     }
 
     /**
-     * Registers a widget builder for every {@link ParamKind} whose {@link ParamKind#valueType()}
-     * equals {@code valueType} and has no more specific {@link #registerByKind} entry.
+     * Registers the fallback builder for every {@link ParamKind} whose {@link ParamKind#valueType()}
+     * equals {@code valueType} and that has no {@link #registerByKind} entry.
      *
      * @param valueType the value type to register a builder for
      * @param builder   the widget builder
@@ -142,49 +152,57 @@ public final class ParamWidgetRegistry {
     }
 
     private static final int PICK_WIDTH = 50;
+
     private static final int GAP = 4;
 
-    /** 
-     * Registers every built-in {@link ParamKind}'s widget builder. 
+    /**
+     * Registers every built-in {@link ParamKind}'s widget builder, by kind and by value type.
      */
     public static void registerDefault() {
-        registerByKind(ParamKind.DIMENSION, (owner, index, entry, initialConstant, x, y, width, sink) -> {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.dimension");
-            sink.accept(box);
-            sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                RuleEditorBridge.onClient(RuleEditorBridge.dimensionCatalog(), locations -> openResourceLocationPicker(owner, index, locations));
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> ResourceLocation.tryParse(box.getValue().trim());
-        });
+        // Rotation is a pitch/yaw pair; the same editor is the fallback for any Vec2 parameter.
+        WidgetBuilder vec2 = (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            int fieldWidth = (width - GAP) / 2;
+            Vec2 value = initialConstant instanceof Vec2 constant ? constant : null;
+            EditBox pitch = numberBox(x, y, fieldWidth, value == null ? "" : String.valueOf(value.x), "fmod.rulegui.param.hint.pitch");
+            EditBox yaw = numberBox(x + fieldWidth + GAP, y, fieldWidth, value == null ? "" : String.valueOf(value.y), "fmod.rulegui.param.hint.yaw");
+            sink.accept(pitch);
+            sink.accept(yaw);
+            return () -> {
+                try {
+                    float pitchValue = Float.parseFloat(pitch.getValue().trim());
+                    float yawValue = Float.parseFloat(yaw.getValue().trim());
+                    return Float.isFinite(pitchValue) && Float.isFinite(yawValue)
+                        ? new Vec2(pitchValue, yawValue) : null;
+                } catch (NumberFormatException exception) {
+                    return null;
+                }
+            };
+        };
 
-        registerByKind(ParamKind.BLOCK_ID, (owner, index, entry, initialConstant, x, y, width, sink) -> {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.block");
+        // NBT and NBT paths both parse through the kind's own fromJson, so one SNBT box serves
+        // all three kinds and the two NBT value types.
+        WidgetBuilder snbt = (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            EditBox box = textBox(x, y, width, null, "fmod.rulegui.param.hint.constant");
+            box.setMaxLength(32767);
+            box.setValue(initialConstant == null ? "" : initialConstant.toString());
             sink.accept(box);
-            sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                openResourceLocationPicker(owner, index, BuiltInRegistries.BLOCK.keySet());
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> ResourceLocation.tryParse(box.getValue().trim());
-        });
+            return () -> {
+                try {
+                    return entry.kind.fromJson(new JsonPrimitive(box.getValue()));
+                } catch (IllegalArgumentException exception) {
+                    return null;
+                }
+            };
+        };
 
-        registerByKind(ParamKind.ENTITY_TYPE_ID, (owner, index, entry, initialConstant, x, y, width, sink) -> {
-            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.entitytype");
-            sink.accept(box);
-            sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
-                owner.captureWorkingValues();
-                openResourceLocationPicker(owner, index, BuiltInRegistries.ENTITY_TYPE.keySet());
-            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
-            return () -> ResourceLocation.tryParse(box.getValue().trim());
-        });
-
-        registerByKind(ParamKind.AUTO, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+        // A plain id box: usable for any ResourceLocation-valued kind that has no picker of its own.
+        WidgetBuilder resourceId = (owner, index, entry, initialConstant, x, y, width, sink) -> {
             EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
             sink.accept(box);
-            return () -> box.getValue().isEmpty() ? null : TypeAdaptor.parse(box.getValue()).autoCast();
-        });
+            return () -> ResourceLocation.tryParse(box.getValue().trim());
+        };
 
-        registerByValueType(UUID.class, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+        WidgetBuilder uuid = (owner, index, entry, initialConstant, x, y, width, sink) -> {
             EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.player");
             sink.accept(box);
             sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
@@ -194,13 +212,13 @@ public final class ParamWidgetRegistry {
             return () -> {
                 try {
                     return UUID.fromString(box.getValue().trim());
-                } catch (IllegalArgumentException e) {
+                } catch (IllegalArgumentException exception) {
                     return null;
                 }
             };
-        });
+        };
 
-        registerByValueType(List.class, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+        WidgetBuilder uuidList = (owner, index, entry, initialConstant, x, y, width, sink) -> {
             EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.players");
             sink.accept(box);
             sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
@@ -221,62 +239,122 @@ public final class ParamWidgetRegistry {
                 }
                 return uuids;
             };
-        });
+        };
 
-        registerByValueType(Vec3.class, (owner, index, entry, initialConstant, x, y, width, sink) -> {
-            int fieldWidth = (width - 8) / 3;
+        WidgetBuilder vec3 = (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            int fieldWidth = (width - 2 * GAP) / 3;
             EditBox xBox = numberBox(x, y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.x) : "", "fmod.rulegui.param.hint.x");
-            EditBox yBox = numberBox(x + fieldWidth + 4, y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.y) : "", "fmod.rulegui.param.hint.y");
-            EditBox zBox = numberBox(x + 2 * (fieldWidth + 4), y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.z) : "", "fmod.rulegui.param.hint.z");
+            EditBox yBox = numberBox(x + fieldWidth + GAP, y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.y) : "", "fmod.rulegui.param.hint.y");
+            EditBox zBox = numberBox(x + 2 * (fieldWidth + GAP), y, fieldWidth, initialConstant instanceof Vec3 v ? String.valueOf(v.z) : "", "fmod.rulegui.param.hint.z");
             sink.accept(xBox);
             sink.accept(yBox);
             sink.accept(zBox);
             return () -> {
                 try {
                     return new Vec3(Double.parseDouble(xBox.getValue().trim()), Double.parseDouble(yBox.getValue().trim()), Double.parseDouble(zBox.getValue().trim()));
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException exception) {
                     return null;
                 }
             };
-        });
+        };
 
-        registerByValueType(Boolean.class, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+        WidgetBuilder bool = (owner, index, entry, initialConstant, x, y, width, sink) -> {
             CycleButton<Boolean> box = CycleButton.onOffBuilder(initialConstant instanceof Boolean b && b)
                 .create(x, y, width, 18, Component.empty());
             sink.accept(box);
             return box::getValue;
-        });
+        };
 
-        registerByValueType(Integer.class, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+        WidgetBuilder integer = (owner, index, entry, initialConstant, x, y, width, sink) -> {
             EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
             sink.accept(box);
             return () -> {
                 try {
                     return Integer.parseInt(box.getValue().trim());
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException exception) {
                     return null;
                 }
             };
-        });
+        };
 
-        registerByValueType(Double.class, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+        WidgetBuilder decimal = (owner, index, entry, initialConstant, x, y, width, sink) -> {
             EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
             sink.accept(box);
             return () -> {
                 try {
                     return Double.parseDouble(box.getValue().trim());
-                } catch (NumberFormatException e) {
+                } catch (NumberFormatException exception) {
                     return null;
                 }
             };
-        });
+        };
 
-        // STRING / GREEDY_STRING - a plain textbox is a correct editor for any string-valued kind.
-        registerByValueType(String.class, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+        WidgetBuilder text = (owner, index, entry, initialConstant, x, y, width, sink) -> {
             EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
             sink.accept(box);
             return box::getValue;
+        };
+
+        // Kinds that need an editor their value type can't express.
+        registerByKind(ParamKind.ROTATION, vec2);
+        registerByKind(ParamKind.NBT, snbt);
+        registerByKind(ParamKind.NBT_COMPOUND, snbt);
+        registerByKind(ParamKind.NBT_PATH, snbt);
+        registerByKind(ParamKind.RESOURCE_ID, resourceId);
+        registerByKind(ParamKind.VARIABLE_NAME, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.varname");
+            sink.accept(box);
+            return () -> {
+                String value = box.getValue().trim();
+                return RuleCondition.NAME_PATTERN.matcher(value).matches() ? value : null;
+            };
         });
+        registerByKind(ParamKind.DIMENSION, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.dimension");
+            sink.accept(box);
+            sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
+                owner.captureWorkingValues();
+                RuleEditorBridge.onClient(RuleEditorBridge.dimensionCatalog(), locations -> openResourceLocationPicker(owner, index, locations));
+            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
+            return () -> ResourceLocation.tryParse(box.getValue().trim());
+        });
+        registerByKind(ParamKind.BLOCK_ID, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.block");
+            sink.accept(box);
+            sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
+                owner.captureWorkingValues();
+                openResourceLocationPicker(owner, index, BuiltInRegistries.BLOCK.keySet());
+            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
+            return () -> ResourceLocation.tryParse(box.getValue().trim());
+        });
+        registerByKind(ParamKind.ENTITY_TYPE_ID, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            EditBox box = textBox(x, y, width - PICK_WIDTH - GAP, initialConstant, "fmod.rulegui.param.hint.entitytype");
+            sink.accept(box);
+            sink.accept(Button.builder(Component.translatable("fmod.rulegui.param.pick"), b -> {
+                owner.captureWorkingValues();
+                openResourceLocationPicker(owner, index, BuiltInRegistries.ENTITY_TYPE.keySet());
+            }).pos(x + width - PICK_WIDTH, y).size(PICK_WIDTH, 18).build());
+            return () -> ResourceLocation.tryParse(box.getValue().trim());
+        });
+        registerByKind(ParamKind.AUTO, (owner, index, entry, initialConstant, x, y, width, sink) -> {
+            EditBox box = textBox(x, y, width, initialConstant, "fmod.rulegui.param.hint.constant");
+            sink.accept(box);
+            return () -> box.getValue().isEmpty() ? null : TypeAdaptor.parse(box.getValue()).autoCast();
+        });
+
+        // One fallback per built-in value type. Object is skipped on purpose: it would claim
+        // every unregistered kind instead of letting isSupported report it.
+        registerByValueType(Vec2.class, vec2);
+        registerByValueType(Tag.class, snbt);
+        registerByValueType(CompoundTag.class, snbt);
+        registerByValueType(ResourceLocation.class, resourceId);
+        registerByValueType(UUID.class, uuid);
+        registerByValueType(List.class, uuidList);
+        registerByValueType(Vec3.class, vec3);
+        registerByValueType(Boolean.class, bool);
+        registerByValueType(Integer.class, integer);
+        registerByValueType(Double.class, decimal);
+        registerByValueType(String.class, text);
     }
 
     private static EditBox textBox(int x, int y, int width, Object initialValue, String hintI18nKey) {
@@ -316,8 +394,7 @@ public final class ParamWidgetRegistry {
      * @param append if {@code true} (the {@code List<UUID>} / "players" kind), the picked UUID is
      *               comma-appended to whatever constant text is already present; otherwise (the
      *               single {@code UUID} / "player" kind) it replaces the constant outright.
-     * @see ParamWidgetFactory
-     */ 
+     */
     private static void openPlayerPicker(ParamEditorScreen<?> owner, int index, List<RuleEditorBridge.PlayerInfo> players, boolean append) {
         List<OptionPickerScreen.Option> options = new ArrayList<>();
         for (RuleEditorBridge.PlayerInfo player : players) {
@@ -334,11 +411,11 @@ public final class ParamWidgetRegistry {
         Minecraft.getInstance().setScreen(new OptionPickerScreen(owner, Component.translatable("fmod.rulegui.param.pickplayer"), options));
     }
 
-    /** 
-     * Replaces the row's constant value, preserving its variable half (if bound) unchanged. 
-     * 
-     * @param owner   the parent screen to return to after picking
-     * @param index   the parameter row index to update with the picked constant
+    /**
+     * Replaces the row's constant value, preserving its variable half (if bound) unchanged.
+     *
+     * @param owner    the parent screen to return to after picking
+     * @param index    the parameter row index to update with the picked constant
      * @param constant the new constant value to set
      */
     private static void applyPickedConstant(ParamEditorScreen<?> owner, int index, Object constant) {

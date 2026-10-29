@@ -42,11 +42,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 /**
- * Thread-safe bridge between the client-side rule editor GUI and the live {@link RuleManager}/
- * {@link ServerData} state of the local integrated server.
+ * Connects the client-side rule editor to the local integrated server's {@link RuleManager}/
+ * {@link ServerData} state, dispatching live-state operations to the server thread.
  *
- * <p>Mirrors {@link com.ykn.fmod.client.flow.gui.FlowEditorBridge}'s detached-deep-copy editing
- * pattern: {@link #beginEdit} hops onto the server thread once to deep-copy the live
+ * <p>Mirrors {@link com.ykn.fmod.client.flow.gui.FlowEditorBridge}'s detached-copy editing
+ * pattern: {@link #beginEdit} hops onto the server thread once to copy the structure of the live
  * {@link CustomRule} ({@link CustomRule#copy()}) and hands the resulting orphan {@link RuleManager}
  * back to the client. That copy is registered nowhere and touched by no other thread, so the GUI
  * is free to mutate it directly and synchronously on the client thread for the rest of the editing
@@ -54,8 +54,9 @@ import net.minecraft.server.level.ServerPlayer;
  *
  * <p>The live rule registered in {@link ServerData} is only touched again when the user explicitly
  * commits: {@link #commitEdit} hops back to the server thread to replace the registered rule with a
- * (re-copied, so still never shared across threads) snapshot of the edited copy, disabling it in the
- * process. Closing the editor without committing leaves the live rule completely untouched.</p>
+ * snapshot copied by the caller before submission, disabling it in the process. The copy isolates 
+ * list edits; component instances and mutable constant values remain shared and must not be mutated 
+ * in place by the editor. Closing without committing discards the edited structure.</p>
  *
  * <p>No packets, no registered channels - see {@link com.ykn.fmod.client.flow.gui.FlowEditorBridge}
  * for the full rationale, which applies identically here.</p>
@@ -210,7 +211,7 @@ public final class RuleEditorBridge {
 
     /**
      * An in-progress edit of one rule: {@code originalName} identifies the live rule this session
-     * was started from, and {@code manager} is a fully detached, client-thread-owned copy that the
+     * was started from, and {@code manager} is a structurally detached, client-thread-owned copy that the
      * GUI can freely mutate until it is discarded or committed back with {@link #commitEdit}.
      */
     public static final class EditSession {
@@ -385,7 +386,7 @@ public final class RuleEditorBridge {
     }
 
     /**
-     * Deep-copies the live rule {@code ruleName} and hands back an orphan {@link RuleManager}
+     * Copies the structure of the live rule {@code ruleName} and hands back an orphan {@link RuleManager}
      * wrapping the copy, ready for the client thread to edit freely. Fails if the rule no longer
      * exists (e.g. deleted concurrently).
      */
@@ -405,6 +406,8 @@ public final class RuleEditorBridge {
      * registered under {@code originalName} (or under the copy's own name, if it was renamed
      * since the session started) and disabling it. Optionally also persists it to disk.
      *
+     * @param originalName the live definition name captured when the edit session began
+     * @param saveToDisk whether to save the committed definition to its config file
      * @param editedRuleCopy a copy of the edited rule, freshly taken on the client thread right
      *                       before calling this method so the caller's own working copy is never
      *                       shared with the server thread

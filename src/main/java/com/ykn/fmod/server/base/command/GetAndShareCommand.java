@@ -305,8 +305,8 @@ public class GetAndShareCommand {
         // [x] [x] [x] [x] [-] [-] [S] [+] [1]   (x: Armor, -: Placeholder, +: Offhand, 1: Current Chosen Slot Index)
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, S: Survival Gamemode [S: Survival, C: Creative, A: Adventure, V: Spectator])
         // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '+' symbol formatting: [Has Item: Formatting.AQUA, Empty Slot: Formatting.GRAY])
-        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formmating: Formatting.GREEN)
-        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formmating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
+        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Inventory, '[]' bracket formating: Formatting.GREEN)
+        // [+] [+] [+] [+] [+] [+] [+] [+] [+]   (+: Hotbar, '[]' bracket formating: [Selected: Formatting.GOLD, Other: Formatting.LIGHT_PURPLE])
         MutableComponent armorText = Component.empty();
         for (int i = 0; i < 4; i++) {
             ItemStack item = inventory.getArmor(i);
@@ -426,12 +426,11 @@ public class GetAndShareCommand {
         int result = 0;
         try {
             for (Entity entity : entities) {
-                if (!(entity instanceof LivingEntity)) {
+                if (!(entity instanceof LivingEntity livingEntity)) {
                     final Component name = entity.getDisplayName();
                     context.getSource().sendSuccess(() -> Util.parseTranslatableText("fmod.command.get.noitem", name), false);
                     continue;
                 }
-                LivingEntity livingEntity = (LivingEntity) entity;
                 Iterable<ItemStack> items = List.of(livingEntity.getItemBySlot(EquipmentSlot.MAINHAND), livingEntity.getItemBySlot(EquipmentSlot.OFFHAND));
                 if (items == null || !items.iterator().hasNext()) {
                     final Component name = entity.getDisplayName();
@@ -596,63 +595,63 @@ public class GetAndShareCommand {
             .requires(source -> source.hasPermission(2))
             .then(Commands.literal("coord")
                 .then(Commands.argument("entity", EntityArgument.entities())
-                    .executes(context -> {return runGetCoordCommand(EntityArgument.getEntities(context, "entity"), context);})
+                    .executes(context -> runGetCoordCommand(EntityArgument.getEntities(context, "entity"), context))
                 )
             )
             .then(Commands.literal("distance")
                 .then(Commands.argument("entity", EntityArgument.entities())
-                    .executes(context -> {return runGetDistanceCommand(EntityArgument.getEntities(context, "entity"), context);})
+                    .executes(context -> runGetDistanceCommand(EntityArgument.getEntities(context, "entity"), context))
                 )
             )
             .then(Commands.literal("health")
                 .then(Commands.argument("entity", EntityArgument.entities())
-                    .executes(context -> {return runGetHealthCommand(EntityArgument.getEntities(context, "entity"), context);})
+                    .executes(context -> runGetHealthCommand(EntityArgument.getEntities(context, "entity"), context))
                 )
             )
             .then(Commands.literal("status")
                 .then(Commands.argument("player", EntityArgument.players())
-                    .executes(context -> {return runGetStatusCommand(EntityArgument.getPlayers(context, "player"), context);})
+                    .executes(context -> runGetStatusCommand(EntityArgument.getPlayers(context, "player"), context))
                 )
             )
             .then(Commands.literal("inventory")
                 .then(Commands.argument("player", EntityArgument.player())
-                    .executes(context -> {return runGetInventoryCommand(EntityArgument.getPlayer(context, "player"), context);})
+                    .executes(context -> runGetInventoryCommand(EntityArgument.getPlayer(context, "player"), context))
                 )
             )
             .then(Commands.literal("item")
                 .then(Commands.argument("entity", EntityArgument.entities())
-                    .executes(context -> {return runGetItemCommand(EntityArgument.getEntities(context, "entity"), context);})
+                    .executes(context -> runGetItemCommand(EntityArgument.getEntities(context, "entity"), context))
                 )
             )
             .then(Commands.literal("afk")
                 .then(Commands.argument("player", EntityArgument.players())
-                    .executes(context -> {return runGetAfkTimeCommand(EntityArgument.getPlayers(context, "player"), context);})
+                    .executes(context -> runGetAfkTimeCommand(EntityArgument.getPlayers(context, "player"), context))
                 )
             )
             .then(Commands.literal("travel")
                 .then(Commands.argument("player", EntityArgument.players())
-                    .executes(context -> {return runGetTravelRecordCommand(EntityArgument.getPlayers(context, "player"), context);})
+                    .executes(context -> runGetTravelRecordCommand(EntityArgument.getPlayers(context, "player"), context))
                 )
             )
             .then(Commands.literal("crowd")
                 .then(Commands.argument("number", IntegerArgumentType.integer(1))
                     .then(Commands.argument("radius", DoubleArgumentType.doubleArg(0.0))
-                        .executes(context -> {return runGetCrowdedPlaceCommand(IntegerArgumentType.getInteger(context, "number"), DoubleArgumentType.getDouble(context, "radius"), context);})
+                        .executes(context -> runGetCrowdedPlaceCommand(IntegerArgumentType.getInteger(context, "number"), DoubleArgumentType.getDouble(context, "radius"), context))
                     )
                 )
-                .executes(context -> {return runGetCrowdedPlaceCommand(Util.getServerConfig().getEntityDensityNumber(), Util.getServerConfig().getEntityDensityRadius(), context);})
+                .executes(context -> runGetCrowdedPlaceCommand(Util.getServerConfig().getEntityDensityNumber(), Util.getServerConfig().getEntityDensityRadius(), context))
             );
     }
 
     public static LiteralArgumentBuilder<CommandSourceStack> buildShareCommand() {
         return Commands.literal("share")
             .requires(source -> source.hasPermission(0))
-            .then(Commands.literal("coord").executes(context -> {return runShareCoordCommand(context);}))
-            .then(Commands.literal("distance").executes(context -> {return runShareDistanceCommand(context);}))
-            .then(Commands.literal("health").executes(context -> {return runShareHealthCommand(context);}))
-            .then(Commands.literal("status").executes(context -> {return runShareStatusCommand(context);}))
-            .then(Commands.literal("inventory").executes(context -> {return runShareInventoryCommand(context);}))
-            .then(Commands.literal("item").executes(context -> {return runShareItemCommand(context);}));
+            .then(Commands.literal("coord").executes(GetAndShareCommand::runShareCoordCommand))
+            .then(Commands.literal("distance").executes(GetAndShareCommand::runShareDistanceCommand))
+            .then(Commands.literal("health").executes(GetAndShareCommand::runShareHealthCommand))
+            .then(Commands.literal("status").executes(GetAndShareCommand::runShareStatusCommand))
+            .then(Commands.literal("inventory").executes(GetAndShareCommand::runShareInventoryCommand))
+            .then(Commands.literal("item").executes(GetAndShareCommand::runShareItemCommand));
     }
     
 }

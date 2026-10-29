@@ -55,9 +55,7 @@ public class FlowFileSuggestion implements SuggestionProvider<CommandSourceStack
                 Files.createDirectories(absPath);
             }
             try (Stream<Path> stream = Files.list(absPath)) {
-                stream.filter(path -> path.toString().endsWith(".flow")).forEach(path -> {
-                    newList.add(path.getFileName().toString());
-                });
+                stream.filter(path -> path.toString().endsWith(".flow")).forEach(path -> newList.add(path.getFileName().toString()));
             }
         } catch (Exception e) {
             Util.LOGGER.error("FMinecraftMod: Error while getting .flow file list", e);

@@ -52,6 +52,8 @@ public class LogicFlowSuggestion implements SuggestionProvider<CommandSourceStac
      *
      * @param needQuote whether to wrap suggestions in double quotes
      * @param allowAll whether to allow "*" as a wildcard suggestion
+     * @param filter the required start-node type, or null for any type
+     * @param enabledOnly whether to include only enabled flows
      */
     public LogicFlowSuggestion(boolean needQuote, boolean allowAll, String filter, boolean enabledOnly) {
         this.needQuote = needQuote;
@@ -133,7 +135,7 @@ public class LogicFlowSuggestion implements SuggestionProvider<CommandSourceStac
 
     /**
      * Creates a new LogicFlowSuggestion instance for trigger operations.
-     * Quote wrapping and wildcard "*" suggestion are both disabled.
+     * Quote wrapping is enabled; wildcard "*" suggestion is disabled.
      * There is a filter applied for "TriggerNode" and only enabled flows are suggested.
      * 
      * @return a new LogicFlowSuggestion instance for trigger operations

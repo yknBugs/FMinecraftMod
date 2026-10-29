@@ -22,7 +22,7 @@ import net.minecraft.network.chat.Component;
  *       for the {@code true} and {@code false} keywords.</li>
  *   <li><b>Optimisation result</b> – {@link ConditionRelationship#TRUE}/{@link ConditionRelationship#FALSE}
  *       sentinels are folded into {@code ConstCondition} by
- *       {@link BinaryConditionExpression#optimize(CustomRule)}.</li>
+ *       {@link BinaryConditionExpression#optimize(CustomRule, java.util.HashSet)}.</li>
  * </ul>
  *
  * <p>This class is immutable; {@link #setName(String)} returns a new instance.

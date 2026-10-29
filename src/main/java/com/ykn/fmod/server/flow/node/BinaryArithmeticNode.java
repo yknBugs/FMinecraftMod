@@ -5,9 +5,7 @@
 
 package com.ykn.fmod.server.flow.node;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import com.ykn.fmod.server.base.util.TypeAdaptor;
 import com.ykn.fmod.server.base.util.Util;
@@ -16,20 +14,28 @@ import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
+import com.ykn.fmod.server.flow.tool.FlowConvert;
 
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
+import java.util.ArrayList;
 
 /**
- * A flow node that performs binary arithmetic operations on two numeric inputs.
+ * A flow node that performs a binary operation on two values.
+ * Numbers, vectors, texts, booleans and lists are supported; unsupported combinations fail.
  * Inputs:
- * 1. Number - The first operand.
- * 2. Number - The second operand.
- * 3. String - The operation to perform (e.g., "+", "-", "*", "/").
+ * 1. Number - The first operand for the arithmetic operation.
+ * 2. Number - The second operand for the arithmetic operation.
+ * 3. String - The arithmetic operation to perform (e.g., +, -, *, /).
  * Outputs:
- * 1. Number - The result of the operation.
+ * 1. Number - The result of the arithmetic operation.
  * Branches: 1 (Next node)
  */
 public class BinaryArithmeticNode extends FlowNode {
@@ -50,353 +56,296 @@ public class BinaryArithmeticNode extends FlowNode {
     }
 
     @Override
-    protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-        Object num1Obj = resolvedInputs.get(0);
-        Object num2Obj = resolvedInputs.get(1);
-        Object opObj = resolvedInputs.get(2);
-        String operation = TypeAdaptor.parse(opObj).asString().strip().toLowerCase();
+    protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> inputs) throws LogicException {
+        String operation = TypeAdaptor.parse(inputs.get(2)).asString().strip().toLowerCase(Locale.ROOT);
+        status.setOutput(0, FlowConvert.unwrapOutput(apply(inputs.get(0), inputs.get(1), operation)));
+    }
 
-        // Special handling for "==" operator
-        if ("=".equals(operation) || "==".equals(operation)) {
-            if (num1Obj == null && num2Obj == null) {
-                status.setOutput(0, true);
-            } else if (num1Obj == null || num2Obj == null) {
-                status.setOutput(0, false);
-            } else {
-                status.setOutput(0, num1Obj.equals(num2Obj));
+    /**
+     * Applies an operation after type inference in the documented priority order.
+     */
+    private static Object apply(Object a, Object b, String operation) throws LogicException {
+        String op = operation.strip().toLowerCase(Locale.ROOT);
+        // Collection operations retain their port roles: b is a delimiter or a single sought value.
+        if (op.equals("join")) {
+            List<Object> values = FlowConvert.listInput(a);
+            FlowConvert.checkListSize(values.size());
+            String separator = TypeAdaptor.parse(b).asString();
+            return values.stream().map(value -> TypeAdaptor.parse(value).asString()).collect(Collectors.joining(separator));
+        }
+        if (op.equals("contains") && !(a instanceof Tag)) {
+            List<Object> values = a == null ? List.of() : FlowConvert.listCopy(a);
+            if (values != null) {
+                return values.contains(b);
             }
-            return;
         }
-
-        if ("!=".equals(operation)) {
-            if (num1Obj == null && num2Obj == null) {
-                status.setOutput(0, false);
-            } else if (num1Obj == null || num2Obj == null) {
-                status.setOutput(0, true);
-            } else {
-                status.setOutput(0, !num1Obj.equals(num2Obj));
+        if (a == null || b == null) {
+            if (eq(op)) {
+                return a == b;
             }
-            return;
-        }
-        
-        // Special handling for null inputs
-        if (num1Obj == null && num2Obj == null) {
-            status.setOutput(0, null);
-            return;
-        } else if (num1Obj == null && num2Obj != null) {
-            status.setOutput(0, num2Obj);
-            return;
-        } else if (num1Obj != null && num2Obj == null) {
-            status.setOutput(0, num1Obj);
-            return;
-        }
-
-        // Hanlding Unique cases for some specific data types
-        Double tryDoubleNum1 = TypeAdaptor.parse(num1Obj).asDouble();
-        Double tryDoubleNum2 = TypeAdaptor.parse(num2Obj).asDouble();
-
-        // Try Vec3d operations
-        Vec3 tryVec3dNum1 = TypeAdaptor.parse(num1Obj).asVec3d();
-        Vec3 tryVec3dNum2 = TypeAdaptor.parse(num2Obj).asVec3d();
-        if (tryVec3dNum1 != null && tryVec3dNum2 != null) {
-            Vec3 result;
-            switch (operation) {
-                case "+":
-                    result = tryVec3dNum1.add(tryVec3dNum2);
-                    break;
-                case "-":
-                    result = tryVec3dNum1.subtract(tryVec3dNum2);
-                    break;
-                case "*":
-                case "x":
-                    result = new Vec3(tryVec3dNum1.x * tryVec3dNum2.x, tryVec3dNum1.y * tryVec3dNum2.y, tryVec3dNum1.z * tryVec3dNum2.z);
-                    break;
-                case "/":
-                    // NaN is valid here to represent division by zero
-                    result = new Vec3(tryVec3dNum1.x / tryVec3dNum2.x, tryVec3dNum1.y / tryVec3dNum2.y, tryVec3dNum1.z / tryVec3dNum2.z);
-                    break;
-                case "@":
-                    // dot product
-                    status.setOutput(0, tryVec3dNum1.dot(tryVec3dNum2));
-                    return;
-                case "#":
-                    // cross product
-                    result = tryVec3dNum1.cross(tryVec3dNum2);
-                    break;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            if (op.equals("!=")) {
+                return a != b;
             }
-            status.setOutput(0, result);
-            return;
+            return a == null ? b : a;
         }
-
-        if (tryVec3dNum1 != null && tryDoubleNum2 != null) {
-            Vec3 result;
-            switch (operation) {
-                case "+":
-                    result = new Vec3(tryVec3dNum1.x + tryDoubleNum2, tryVec3dNum1.y + tryDoubleNum2, tryVec3dNum1.z + tryDoubleNum2);
-                    break;
-                case "-":
-                    result = new Vec3(tryVec3dNum1.x - tryDoubleNum2, tryVec3dNum1.y - tryDoubleNum2, tryVec3dNum1.z - tryDoubleNum2);
-                    break;
-                case "*":
-                case "x":
-                    result = new Vec3(tryVec3dNum1.x * tryDoubleNum2, tryVec3dNum1.y * tryDoubleNum2, tryVec3dNum1.z * tryDoubleNum2);
-                    break;
-                case "/":
-                    // NaN is valid here to represent division by zero
-                    result = new Vec3(tryVec3dNum1.x / tryDoubleNum2, tryVec3dNum1.y / tryDoubleNum2, tryVec3dNum1.z / tryDoubleNum2);
-                    break;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+        // Tags must bypass iterable/numeric inference, even ListTag and NumericTag.
+        boolean nbt = a instanceof Tag || b instanceof Tag;
+        if (!nbt) {
+            Vec3 av = TypeAdaptor.parse(a).asVec3d();
+            Vec3 bv = TypeAdaptor.parse(b).asVec3d();
+            if (av != null || bv != null) {
+                return vector(av, bv, a, b, op, false);
             }
-            status.setOutput(0, result);
-            return;
-        }
-        if (tryDoubleNum1 != null && tryVec3dNum2 != null) {
-            Vec3 result;
-            switch (operation) {
-                case "+":
-                    result = new Vec3(tryDoubleNum1 + tryVec3dNum2.x, tryDoubleNum1 + tryVec3dNum2.y, tryDoubleNum1 + tryVec3dNum2.z);
-                    break;
-                case "-":
-                    result = new Vec3(tryDoubleNum1 - tryVec3dNum2.x, tryDoubleNum1 - tryVec3dNum2.y, tryDoubleNum1 - tryVec3dNum2.z);
-                    break;
-                case "*":
-                case "x":
-                    result = new Vec3(tryDoubleNum1 * tryVec3dNum2.x, tryDoubleNum1 * tryVec3dNum2.y, tryDoubleNum1 * tryVec3dNum2.z);
-                    break;
-                case "/":
-                    // NaN is valid here to represent division by zero
-                    result = new Vec3(tryDoubleNum1 / tryVec3dNum2.x, tryDoubleNum1 / tryVec3dNum2.y, tryDoubleNum1 / tryVec3dNum2.z);
-                    break;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            Vec2 a2 = TypeAdaptor.parse(a).asVec2f();
+            Vec2 b2 = TypeAdaptor.parse(b).asVec2f();
+            if (a2 != null || b2 != null) {
+                return vector(a2 == null ? null : new Vec3(a2.x, a2.y, 0),
+                        b2 == null ? null : new Vec3(b2.x, b2.y, 0), a, b, op, true);
             }
-            status.setOutput(0, result);
-            return;
-        }
-
-        // Try Vec2f operations
-        Vec2 tryVec2fNum1 = TypeAdaptor.parse(num1Obj).asVec2f();
-        Vec2 tryVec2fNum2 = TypeAdaptor.parse(num2Obj).asVec2f();
-
-        if (tryVec2fNum1 != null && tryVec2fNum2 != null) {
-            Vec2 result;
-            switch (operation) {
-                case "+":
-                    result = tryVec2fNum1.add(tryVec2fNum2);
-                    break;
-                case "-":
-                    result = new Vec2(tryVec2fNum1.x - tryVec2fNum2.x, tryVec2fNum1.y - tryVec2fNum2.y);
-                    break;
-                case "*":
-                case "x":
-                    result = new Vec2(tryVec2fNum1.x * tryVec2fNum2.x, tryVec2fNum1.y * tryVec2fNum2.y);
-                    break;
-                case "/":
-                    result = new Vec2(tryVec2fNum1.x / tryVec2fNum2.x, tryVec2fNum1.y / tryVec2fNum2.y);
-                    break;
-                case "@":
-                    // dot product
-                    status.setOutput(0, tryVec2fNum1.dot(tryVec2fNum2));
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            List<Object> al = FlowConvert.listCopy(a);
+            List<Object> bl = FlowConvert.listCopy(b);
+            if (al != null || bl != null) {
+                return lists(al == null ? List.of(a) : al, bl == null ? List.of(b) : bl, op);
             }
-            status.setOutput(0, result);
-            return;
-        }
-
-        if (tryVec2fNum1 != null && tryDoubleNum2 != null) {
-            float scalarF = tryDoubleNum2.floatValue();
-            Vec2 result;
-            switch (operation) {
-                case "+":
-                    result = new Vec2(tryVec2fNum1.x + scalarF, tryVec2fNum1.y + scalarF);
-                    break;
-                case "-":
-                    result = new Vec2(tryVec2fNum1.x - scalarF, tryVec2fNum1.y - scalarF);
-                    break;
-                case "*":
-                case "x":
-                    result = new Vec2(tryVec2fNum1.x * scalarF, tryVec2fNum1.y * scalarF);
-                    break;
-                case "/":
-                    result = new Vec2(tryVec2fNum1.x / scalarF, tryVec2fNum1.y / scalarF);
-                    break;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            Double ad = TypeAdaptor.parse(a).asDouble();
+            Double bd = TypeAdaptor.parse(b).asDouble();
+            if (ad != null && bd != null) {
+                return numbers(ad, bd, op);
             }
-            status.setOutput(0, result);
-            return;
-        }
-        if (tryDoubleNum1 != null && tryVec2fNum2 != null) {
-            float scalarF = tryDoubleNum1.floatValue();
-            Vec2 result;
-            switch (operation) {
-                case "+":
-                    result = new Vec2(scalarF + tryVec2fNum2.x, scalarF + tryVec2fNum2.y);
-                    break;
-                case "-":
-                    result = new Vec2(scalarF - tryVec2fNum2.x, scalarF - tryVec2fNum2.y);
-                    break;
-                case "*":
-                case "x":
-                    result = new Vec2(scalarF * tryVec2fNum2.x, scalarF * tryVec2fNum2.y);
-                    break;
-                case "/":
-                    result = new Vec2(scalarF / tryVec2fNum2.x, scalarF / tryVec2fNum2.y);
-                    break;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+            Boolean ab = TypeAdaptor.parse(a).asBoolean();
+            Boolean bb = TypeAdaptor.parse(b).asBoolean();
+            if (ab != null && bb != null) {
+                return switch (op) {
+                    case "=", "==", "equals" -> ab.equals(bb);
+                    case "!=" -> !ab.equals(bb);
+                    case "and", "&&" -> ab && bb;
+                    case "or", "||" -> ab || bb;
+                    case "xor", "^" -> ab ^ bb;
+                    case "nand" -> !(ab && bb);
+                    case "nor" -> !(ab || bb);
+                    case "implies" -> !ab || bb;
+                    default -> throw unsupported(op);
+                };
             }
-            status.setOutput(0, result);
-            return;
         }
+        boolean text = a instanceof Component || b instanceof Component;
+        if (text && (op.equals("+") || op.equals("append") || op.equals("concat"))) {
+            return Component.empty().append(a instanceof Component c ? c.copy() : Component.literal(string(a)))
+                    .append(b instanceof Component c ? c.copy() : Component.literal(string(b)));
+        }
+        Object result = strings(string(a), b, op);
+        return text && result instanceof String s ? Component.literal(s) : result;
+    }
 
-        // Double operations
-        if (tryDoubleNum1 != null && tryDoubleNum2 != null) {
-            try {
-                switch (operation) {
-                    case "+":
-                        status.setOutput(0, tryDoubleNum1 + tryDoubleNum2);
-                        return;
-                    case "-":
-                        status.setOutput(0, tryDoubleNum1 - tryDoubleNum2);
-                        return;
-                    case "*":
-                    case "x":
-                        status.setOutput(0, tryDoubleNum1 * tryDoubleNum2);
-                        return;
-                    case "/":
-                        // NaN is valid here to represent division by zero
-                        status.setOutput(0, tryDoubleNum1 / tryDoubleNum2);
-                        return;
-                    case "%":
-                        if (tryDoubleNum2 == 0) {
-                            throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.divzero", this.name), null);
-                        }
-                        status.setOutput(0, tryDoubleNum1 % tryDoubleNum2);
-                        return;
-                    case ">":
-                        status.setOutput(0, tryDoubleNum1 > tryDoubleNum2);
-                        return;
-                    case "<":
-                        status.setOutput(0, tryDoubleNum1 < tryDoubleNum2);
-                        return;
-                    case ">=":
-                        status.setOutput(0, tryDoubleNum1 >= tryDoubleNum2);
-                        return;
-                    case "<=":
-                        status.setOutput(0, tryDoubleNum1 <= tryDoubleNum2);
-                        return;
-                    case "^":
-                        status.setOutput(0, Math.pow(tryDoubleNum1, tryDoubleNum2));
-                        return;
-                    case "max":
-                        status.setOutput(0, Math.max(tryDoubleNum1, tryDoubleNum2));
-                        return;
-                    case "min":
-                        status.setOutput(0, Math.min(tryDoubleNum1, tryDoubleNum2));
-                        return;
-                    case "log":
-                        status.setOutput(0, Math.log(tryDoubleNum2) / Math.log(tryDoubleNum1));
-                        return;
-                    case "atan2":
-                        status.setOutput(0, Math.atan2(tryDoubleNum1, tryDoubleNum2));
-                        return;
-                    case "hypot":
-                        status.setOutput(0, Math.hypot(tryDoubleNum1, tryDoubleNum2));
-                        return;
-                    default:
-                        throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+    private static boolean eq(String op) {
+        return op.equals("=") || op.equals("==") || op.equals("equals");
+    }
+
+    private static LogicException unsupported(String op) {
+        return new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", op), null);
+    }
+
+    private static String string(Object value) {
+        return value instanceof Tag tag ? tag.toString() : TypeAdaptor.parse(value).asString();
+    }
+
+    private static Object numbers(double a, double b, String op) throws LogicException {
+        return switch (op) {
+            case "=", "==", "equals" -> a == b;
+            case "!=" -> a != b;
+            case "+", "add" -> a + b;
+            case "-", "subtract" -> a - b;
+            case "*", "x", "multiply", "scale", "scale by", "scaleby" -> a * b;
+            case "/", "divide" -> a / b;
+            case "%", "mod" -> {
+                if (b == 0) {
+                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.modzero"), null);
                 }
-            } catch (ArithmeticException ex) {
-                throw new LogicException(ex, Util.parseTranslatableText("fmod.node.bialu.error.arithmetic", this.name), null);
+                yield a % b;
+            }
+            case ">" -> a > b;
+            case "<" -> a < b;
+            case ">=" -> a >= b;
+            case "<=" -> a <= b;
+            case "^", "pow" -> Math.pow(a, b);
+            case "min" -> Math.min(a, b);
+            case "max" -> Math.max(a, b);
+            case "log" -> Math.log(b) / Math.log(a);
+            case "atan2" -> Math.atan2(a, b);
+            case "hypot" -> Math.hypot(a, b);
+            case "copysign" -> Math.copySign(a, b);
+            case "ieeeremainder" -> Math.IEEEremainder(a, b);
+            case "distance", "absdiff" -> Math.abs(a - b);
+            default -> throw unsupported(op);
+        };
+    }
+
+    private static Object vector(Vec3 av, Vec3 bv, Object a, Object b, String op, boolean two) throws LogicException {
+        Double ad = av == null ? TypeAdaptor.parse(a).asDouble() : null;
+        Double bd = bv == null ? TypeAdaptor.parse(b).asDouble() : null;
+        if ((av == null && ad == null) || (bv == null && bd == null)) {
+            throw unsupported(op);
+        }
+        if (av != null && bd != null && (op.equals("norm") || op.equals("pnorm"))) {
+            if (bd < 1 || Double.isNaN(bd)) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.norm"), null);
+            }
+            double max = Math.max(Math.abs(av.x), Math.max(Math.abs(av.y), Math.abs(av.z)));
+            if (max == 0 || Double.isInfinite(max) || Double.isInfinite(bd)) {
+                return max;
+            }
+            return max * Math.pow(Math.pow(Math.abs(av.x) / max, bd) + Math.pow(Math.abs(av.y) / max, bd)
+                    + (two ? 0 : Math.pow(Math.abs(av.z) / max, bd)), 1 / bd);
+        }
+        if (av != null && bd != null && (op.equals("normalize") || op.equals("setlength"))) {
+            double length = Math.hypot(Math.hypot(av.x, av.y), av.z);
+            return output(length == 0 ? Vec3.ZERO : av.scale(1 / length).scale(bd), two);
+        }
+        if (av != null && bv != null) {
+            Vec3 delta = av.subtract(bv);
+            switch (op) {
+                case "distance":
+                    return Math.hypot(Math.hypot(delta.x, delta.y), delta.z);
+                case "distancesquared":
+                    return delta.lengthSqr();
+                case "manhattan":
+                    return Math.abs(delta.x) + Math.abs(delta.y) + Math.abs(delta.z);
+                case "chebyshev":
+                    return Math.max(Math.abs(delta.x), Math.max(Math.abs(delta.y), Math.abs(delta.z)));
+                case "@", "dot":
+                    return av.dot(bv);
+                case "#", "cross":
+                    return two ? av.x * bv.y - av.y * bv.x : av.cross(bv);
+                case "angle": {
+                    double denominator = av.length() * bv.length();
+                    return denominator == 0 ? Double.NaN
+                            : Math.acos(Math.max(-1, Math.min(1, av.dot(bv) / denominator)));
+                }
+                case "project":
+                    return output(bv.lengthSqr() == 0 ? Vec3.ZERO : bv.scale(av.dot(bv) / bv.lengthSqr()), two);
+                case "=", "==", "equals":
+                    return av.equals(bv);
+                case "!=":
+                    return !av.equals(bv);
             }
         }
+        Vec3 left = av == null ? new Vec3(ad, ad, two ? 0 : ad) : av;
+        Vec3 right = bv == null ? new Vec3(bd, bd, two ? 0 : bd) : bv;
+        return output(new Vec3(component(left.x, right.x, op), component(left.y, right.y, op),
+                two ? 0 : component(left.z, right.z, op)), two);
+    }
 
-        // Logic expressions for boolean inputs
-        Boolean tryBoolNum1 = TypeAdaptor.parse(num1Obj).asBoolean();
-        Boolean tryBoolNum2 = TypeAdaptor.parse(num2Obj).asBoolean();
-
-        if (tryBoolNum1 != null && tryBoolNum2 != null) {
-            switch (operation) {
-                case "and":
-                case "&&":
-                    status.setOutput(0, tryBoolNum1 && tryBoolNum2);
-                    return;
-                case "or":
-                case "||":
-                    status.setOutput(0, tryBoolNum1 || tryBoolNum2);
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
-            }
+    private static double component(double a, double b, String op) throws LogicException {
+        Object result = numbers(a, b, op);
+        if (!(result instanceof Double d)) {
+            throw unsupported(op);
         }
+        return d;
+    }
 
-        // String and Text support append operation
-        if (num1Obj instanceof Component && num2Obj instanceof Component) {
-            Component text1 = (Component) num1Obj;
-            Component text2 = (Component) num2Obj;
-            MutableComponent result = Component.empty();
-            if ("+".equals(operation)) {
-                result = result.append(text1).append(text2);
-                status.setOutput(0, result);
-                return;
-            } else {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
-            }
-        } else if (num1Obj instanceof Component) {
-            String str2 = TypeAdaptor.parse(num2Obj).asString();
-            Component text1 = (Component) num1Obj;
-            MutableComponent result = Component.empty();
-            if ("+".equals(operation)) {
-                result = result.append(text1).append(str2);
-                status.setOutput(0, result);
-                return;
-            } else {
-                throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
-            }
+    private static Object output(Vec3 v, boolean two) {
+        return two ? new Vec2((float) v.x, (float) v.y) : v;
+    }
+
+    private static Object lists(List<Object> a, List<Object> b, String op) throws LogicException {
+        if (eq(op)) {
+            return a.equals(b);
         }
-
-        String str1 = TypeAdaptor.parse(num1Obj).asString();
-        String str2 = TypeAdaptor.parse(num2Obj).asString();
-        switch (operation) {
-            case "+":
-            case "append":
-                status.setOutput(0, str1 + str2);
-                return;
-            case "contains":
-                status.setOutput(0, str1.contains(str2));
-                return;
-            case "startswith":
-                status.setOutput(0, str1.startsWith(str2));
-                return;
-            case "endswith":
-                status.setOutput(0, str1.endsWith(str2));
-                return;
-            case "split":
-                try {
-                    String[] parts = str1.split(Pattern.quote(str2));
-                    List<String> listResult = new ArrayList<>();
-                    for (String part : parts) {
-                        listResult.add(part);
+        if (op.equals("!=")) {
+            return !a.equals(b);
+        }
+        if (op.equals("contains") || op.equals("containsall")) {
+            return a.containsAll(b);
+        }
+        if (op.equals("intersects")) {
+            return a.stream().anyMatch(b::contains);
+        }
+        List<Object> result = new ArrayList<>();
+        switch (op) {
+            case "+", "append", "concat":
+                FlowConvert.checkListSize((long) a.size() + b.size());
+                result.addAll(a);
+                result.addAll(b);
+                break;
+            case "-", "difference", "remove":
+                for (Object item : a) {
+                    if (!b.contains(item)) {
+                        add(result, item);
                     }
-                    status.setOutput(0, listResult);
-                } catch (Exception ex) {
-                    throw new LogicException(ex, Util.parseTranslatableText("fmod.node.bialu.error.arithmetic", this.name), null);
                 }
-                return;
-            case "indexof":
-                status.setOutput(0, str1.indexOf(str2));
-                return;
-            case "lastindexof":
-                status.setOutput(0, str1.lastIndexOf(str2));
-                return;
+                break;
+            case "intersection":
+                for (Object item : a) {
+                    if (b.contains(item) && !result.contains(item)) {
+                        add(result, item);
+                    }
+                }
+                break;
+            case "union":
+                for (Object item : a) {
+                    if (!result.contains(item)) {
+                        add(result, item);
+                    }
+                }
+                for (Object item : b) {
+                    if (!result.contains(item)) {
+                        add(result, item);
+                    }
+                }
+                break;
             default:
-                 throw new LogicException(null, Util.parseTranslatableText("fmod.node.bialu.error.unsupported", this.name, operation), null);
+                throw unsupported(op);
+        }
+        return result;
+    }
+
+    private static void add(List<Object> result, Object item) throws LogicException {
+        FlowConvert.checkListSize((long) result.size() + 1);
+        result.add(item);
+    }
+
+    private static Object strings(String a, Object b, String op) throws LogicException {
+        String s = string(b);
+        return switch (op) {
+            case "=", "==", "equals" -> a.equals(s);
+            case "!=" -> !a.equals(s);
+            case "equalsignorecase" -> a.equalsIgnoreCase(s);
+            case "+", "append", "concat" -> a + s;
+            case "contains" -> a.contains(s);
+            case "startswith" -> a.startsWith(s);
+            case "endswith" -> a.endsWith(s);
+            case "split" -> FlowConvert.split(a, s);
+            case "indexof" -> (double) a.indexOf(s);
+            case "lastindexof" -> (double) a.lastIndexOf(s);
+            case "compare" -> (double) a.compareTo(s);
+            case "compareignorecase" -> (double) a.compareToIgnoreCase(s);
+            case "regex-match", "regexmatch", "matches" -> regex(a, s, false);
+            case "regex-find", "regexfind" -> regex(a, s, true);
+            case "remove" -> a.replace(s, "");
+            default -> throw unsupported(op);
+        };
+    }
+
+    /**
+     * Tests {@code input} against {@code pattern}, either as a full match or as a search.
+     *
+     * <p>A malformed pattern is bad user input, not a crash: the compiler's exception is reported as
+     * a {@link LogicException} carrying the offending text, so the flow shows a readable message
+     * instead of the empty one the executor's catch-all would produce.
+     *
+     * @param input   the text to test
+     * @param pattern the regular expression, as typed by the flow author
+     * @param find    {@code true} for a search, {@code false} for a full match
+     * @return whether the text matched
+     * @throws LogicException when the pattern cannot be compiled
+     */
+    private static boolean regex(String input, String pattern, boolean find) throws LogicException {
+        try {
+            Matcher matcher = Pattern.compile(pattern).matcher(input);
+            return find ? matcher.find() : matcher.matches();
+        } catch (PatternSyntaxException exception) {
+            throw new LogicException(exception,
+                    Util.parseTranslatableText("fmod.node.bialu.error.regex", pattern), null);
         }
     }
 }
