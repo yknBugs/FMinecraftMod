@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import net.minecraft.resources.ResourceKey;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 
 import com.mojang.brigadier.context.CommandContext;
 import com.ykn.fmod.server.base.util.Util;

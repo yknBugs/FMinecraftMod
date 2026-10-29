@@ -10,7 +10,7 @@ import java.util.Deque;
 import java.util.UUID;
 
 import net.minecraft.resources.ResourceKey;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nullable;
 
 import com.ykn.fmod.server.base.util.Util;
 

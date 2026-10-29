@@ -308,7 +308,7 @@ public class RuleContext {
      *
      * @return a non-null, unmodifiable list, in the order the warnings were added
      */
-    @NotNull
+    @Nonnull
     public List<Component> getWarnings() {
         return Collections.unmodifiableList(warnings);
     }

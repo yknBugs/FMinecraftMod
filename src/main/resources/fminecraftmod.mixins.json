@@ -1,8 +1,24 @@
 {
 	"required": true,
+	"minVersion": "0.8",
 	"package": "com.ykn.fmod.server.mixin",
 	"compatibilityLevel": "JAVA_17",
-	"mixins": [],
+	"refmap": "fminecraftmod.refmap.json",
+	"mixins": [
+		"GameEventMixins$Advancements",
+		"GameEventMixins$BlockBreak",
+		"GameEventMixins$Craft",
+		"GameEventMixins$Enchant",
+		"GameEventMixins$Explosions",
+		"GameEventMixins$LivingEntityDamage",
+		"GameEventMixins$Menus",
+		"GameEventMixins$Pickup",
+		"GameEventMixins$Placement",
+		"GameEventMixins$Sleep",
+		"GameEventMixins$Trade",
+		"GameEventMixins$Vehicles",
+		"GameEventMixins$Weather"
+	],
 	"injectors": {
 		"defaultRequire": 1
 	}

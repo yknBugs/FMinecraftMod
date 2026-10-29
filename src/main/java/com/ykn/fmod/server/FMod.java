@@ -11,33 +11,27 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.ConfigScreenHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.TickEvent.ServerTickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.event.entity.ProjectileImpactEvent;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerInteractEvent;
+import net.minecraftforge.event.level.ChunkEvent;
 import net.minecraftforge.event.level.LevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.DistExecutor;
-import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 
-import com.ykn.fmod.client.base.gui.OptionScreen;
-import com.ykn.fmod.client.rule.gui.ParamWidgetRegistry;
+import com.ykn.fmod.client.FModClient;
 import com.ykn.fmod.server.base.command.CommandRegistrater;
 import com.ykn.fmod.server.base.config.ServerConfigRegistry;
-import com.ykn.fmod.server.base.event.EntityDeath;
-import com.ykn.fmod.server.base.event.LivingEntityDamage;
-import com.ykn.fmod.server.base.event.NewLevel;
-import com.ykn.fmod.server.base.event.PlayerDeath;
-import com.ykn.fmod.server.base.event.PlayerJoin;
-import com.ykn.fmod.server.base.event.ProjectileHitEntity;
-import com.ykn.fmod.server.base.event.WorldTick;
+import com.ykn.fmod.server.base.event.GameEventHandler;
 import com.ykn.fmod.server.base.util.Util;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
 import com.ykn.fmod.server.rule.tool.RuleRegistry;
@@ -62,13 +56,8 @@ public class FMod {
 		// Register events
 		MinecraftForge.EVENT_BUS.register(this);
 
-		// Register client config screen
-		ModLoadingContext.get().registerExtensionPoint(ConfigScreenHandler.ConfigScreenFactory.class,
-			() -> new ConfigScreenHandler.ConfigScreenFactory((minecraft, screen) -> new OptionScreen(screen)));
-
-		// Only touches client-only classes (widget factories) - never run this on a dedicated
-		// server, which this mod must support (see mods.toml side=SERVER).
-		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> ParamWidgetRegistry::registerDefault);
+		// Keep all client class references behind the physical-side check.
+		DistExecutor.unsafeRunWhenOn(Dist.CLIENT, () -> FModClient::initialize);
 
 		// Finish initialization
 		Util.LOGGER.info("FMinecraftMod: Server side initialized successfully.");
@@ -84,8 +73,7 @@ public class FMod {
 		LevelAccessor level = event.getLevel();
 		if (level instanceof ServerLevel) {
 			ServerLevel world = (ServerLevel) level;
-			NewLevel newLevel = new NewLevel(world.getServer(), world);
-			newLevel.onNewLevel();
+			GameEventHandler.worldLoadEventDispatcher(world.getServer(), world);
 		}
 	}
 
@@ -94,14 +82,13 @@ public class FMod {
 		if (event.phase != ServerTickEvent.Phase.END) {
 			return;
 		}
-        WorldTick.onWorldTick(event.getServer());
+        GameEventHandler.serverTickEventDispatcher(event.getServer());
 	}
 
 	@SubscribeEvent
 	public void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
 		if (event.getEntity() instanceof ServerPlayer player) {
-			PlayerJoin playerJoin = new PlayerJoin(player);
-			playerJoin.onPlayerJoin();
+			GameEventHandler.playerJoinEventDispatcher(player);
 		}
 	}
 
@@ -110,25 +97,13 @@ public class FMod {
 		LivingEntity entity = event.getEntity();
 
 		if (!entity.isRemoved() && !entity.isAlwaysTicking()) {
-			EntityDeath entityDeath = new EntityDeath(entity, event.getSource());
-			entityDeath.onEntityDeath();
+			GameEventHandler.entityDeathEventDispatcher(entity, event.getSource());
 		}
 
 		if (entity instanceof ServerPlayer player && entity.isAlwaysTicking()) {
 			if (!player.isRemoved()) {
-				PlayerDeath playerDeath = new PlayerDeath(player, event.getSource());
-				playerDeath.onPlayerDeath();
+				GameEventHandler.playerDeathEventDispatcher(player, event.getSource());
 			}
-		}
-	}
-
-	@SubscribeEvent
-	public void onLivingHurt(LivingHurtEvent event) {
-		LivingEntity entity = event.getEntity();
-
-		if (!entity.isRemoved()) {
-			LivingEntityDamage livingEntityDamage = new LivingEntityDamage(entity, event.getSource(), event.getAmount());
-			livingEntityDamage.onDamage();
 		}
 	}
 
@@ -136,8 +111,62 @@ public class FMod {
 	public void onProjectileImpact(ProjectileImpactEvent event) {
 		if (event.getRayTraceResult() instanceof EntityHitResult ehr) {
 			Projectile projectile = event.getProjectile();
-			ProjectileHitEntity projectileHitEntity = new ProjectileHitEntity(projectile, ehr);
-			projectileHitEntity.onProjectileHitEntity();
-		}	
+			GameEventHandler.projectileHitEntityEventDispatcher(projectile, ehr);
+		}
+	}
+
+	@SubscribeEvent
+	public void onPlayerLoggedOut(PlayerEvent.PlayerLoggedOutEvent event) {
+		if (event.getEntity() instanceof ServerPlayer player) {
+			GameEventHandler.playerLeaveEventDispatcher(player);
+		}
+	}
+
+	@SubscribeEvent
+	public void onPlayerInteractBlock(PlayerInteractEvent.RightClickBlock event) {
+		GameEventHandler.playerInteractBlockEventDispatcher(event.getEntity(), event.getHand(), event.getHitVec());
+	}
+
+	@SubscribeEvent
+	public void onPlayerInteractEntity(PlayerInteractEvent.EntityInteract event) {
+		GameEventHandler.playerInteractEntityEventDispatcher(event.getEntity(), event.getHand(), event.getTarget(), null);
+	}
+
+	@SubscribeEvent
+	public void onPlayerInteractEntitySpecific(PlayerInteractEvent.EntityInteractSpecific event) {
+		GameEventHandler.playerInteractEntityEventDispatcher(event.getEntity(), event.getHand(), event.getTarget(), new EntityHitResult(event.getTarget(), event.getTarget().position().add(event.getLocalPos())));
+	}
+
+	@SubscribeEvent
+	public void onPlayerItemUse(PlayerInteractEvent.RightClickItem event) {
+		GameEventHandler.playerItemUseEventDispatcher(event.getEntity(), event.getHand());
+	}
+
+	@SubscribeEvent
+	public void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+		if (event.getEntity() instanceof ServerPlayer player) {
+			GameEventHandler.playerDimensionChangeEventDispatcher(player, player.getServer().getLevel(event.getFrom()), player.getServer().getLevel(event.getTo()));
+		}
+	}
+
+	@SubscribeEvent
+	public void onEntityLoad(EntityJoinLevelEvent event) {
+		if (event.getLevel() instanceof ServerLevel world) {
+			GameEventHandler.entityLoadEventDispatcher(event.getEntity(), world);
+		}
+	}
+
+	@SubscribeEvent
+	public void onChunkLoad(ChunkEvent.Load event) {
+		if (event.getLevel() instanceof ServerLevel world && event.getChunk() instanceof LevelChunk chunk) {
+			GameEventHandler.chunkLoadEventDispatcher(world, chunk);
+		}
+	}
+
+	@SubscribeEvent
+	public void onChunkUnload(ChunkEvent.Unload event) {
+		if (event.getLevel() instanceof ServerLevel world && event.getChunk() instanceof LevelChunk chunk) {
+			GameEventHandler.chunkUnloadEventDispatcher(world, chunk);
+		}
 	}
 }

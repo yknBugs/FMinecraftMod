@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Copyright (c) ykn
  * This file is under the MIT License
  */
@@ -9,8 +9,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import com.ykn.fmod.server.base.data.ServerData;
 import com.ykn.fmod.server.base.util.Util;
@@ -42,7 +42,7 @@ public class ScheduledFlow extends ScheduledTask {
      * @param server The server on which the flow will run
      * @param delay Positive delay in server ticks; zero does not invoke onTrigger automatically
      */
-    public ScheduledFlow(@NotNull FlowManager flowManager, @Nullable List<Object> eventNodeOutputs, @Nullable Map<String, Object> contextVariables, @NotNull MinecraftServer server, int delay) {
+    public ScheduledFlow(@Nonnull FlowManager flowManager, @Nullable List<Object> eventNodeOutputs, @Nullable Map<String, Object> contextVariables, @Nonnull MinecraftServer server, int delay) {
         super(delay, 0);
         this.flowManager = flowManager;
         this.eventNodeOutputs = eventNodeOutputs;
@@ -69,7 +69,7 @@ public class ScheduledFlow extends ScheduledTask {
      *
      * @return The task-owned map, including variables added after scheduling
      */
-    @NotNull
+    @Nonnull
     public Map<String, Object> getContextVariables() {
         if (this.contextVariables == null) {
             this.contextVariables = new HashMap<>();
@@ -78,7 +78,7 @@ public class ScheduledFlow extends ScheduledTask {
         return this.contextVariables;
     }
 
-    @NotNull
+    @Nonnull
     public FlowManager getFlowManager() {
         return this.flowManager;
     }
