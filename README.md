@@ -65,6 +65,26 @@ Build custom automation with an in-game node-based flowchart engine. Create, edi
 - Event triggers (player actions, entity events, scheduled tasks, etc.)
 - Arithmetic, conditional, and data manipulation nodes
 - Save and load flows as `.flow` files
+- Auto-load flows on server start
+
+### Custom Rule System
+
+Create rules from game events, evaluate conditions, and run actions automatically.
+
+- Create, edit, enable, and delete rules with `/f rule`
+- Event -> condition -> actions pipeline, with separate actions for satisfied and violated conditions
+- Save and load rules as `.rule` files
+- Parameterized rule components with tab completion and formula conditions
+- Rule trigger history, execution logs, and test/trigger commands
+- Auto-load rules on server start
+
+### Visual Editors
+
+Edit flows and rules in the client (requires Mod Menu, singleplayer only).
+
+- Rule editor with an event picker, condition/action sections, a formula box, and generated parameter widgets
+- Flow editor with draggable nodes, connections, and undo/redo
+- Client-side undo/redo in both editors
 
 ## Usage Guide
 
@@ -200,6 +220,42 @@ Trigger and execution:
 - `/f flow log <index>`                 - View detailed execution log
 - `/f trigger <trigger_name> [args]`    - Execute trigger node (no OP required)
 
+### Rule Commands
+
+Create and manage custom rules:
+
+- `/f rule create <name> <event>`               - Create a rule
+- `/f rule copy <rule> <name>`                  - Copy a rule
+- `/f rule list`                                - List all rules
+- `/f rule enable <name> [true|false]`          - Enable/disable or query a rule
+- `/f rule rename <old> <new>`                  - Rename a rule
+- `/f rule delete <name>`                       - Delete a rule
+
+Edit rules:
+
+- `/f rule edit <rule> event <event>`                         - Change the event type
+- `/f rule edit <rule> condition add <type> ...`              - Add a condition
+- `/f rule edit <rule> condition set <formula>`               - Set the main condition formula
+- `/f rule edit <rule> condition remove <condition>`          - Remove a condition
+- `/f rule edit <rule> condition rename <old> <new>`          - Rename a condition
+- `/f rule edit <rule> action add <type> ...`                 - Add an action (condition met)
+- `/f rule edit <rule> action remove <action>`                - Remove an action
+- `/f rule edit <rule> action rename <old> <new>`             - Rename an action
+- `/f rule edit <rule> punish add <type> ...`                 - Add a punishment (condition violated)
+- `/f rule edit <rule> punish remove <action>`                - Remove a punishment
+- `/f rule edit <rule> punish rename <old> <new>`             - Rename a punishment
+
+Save, load, and debug:
+
+- `/f rule save <name>`        - Save a rule to `config/fminecraftmod/`
+- `/f rule save *`             - Save all rules
+- `/f rule load <filename>`    - Load a rule file, `*` for all
+- `/f rule view <name>`        - Show a rule's definition
+- `/f rule history [page]`     - View rule trigger history
+- `/f rule log <index>`        - View a detailed trigger log
+- `/f rule test <name>`        - Evaluate the condition without running actions
+- `/f rule trigger <name>`     - Trigger the rule and run its actions
+
 ### Configuration Examples
 
 Enable features using `/f options`:
@@ -210,6 +266,8 @@ Enable features using `/f options`:
 - `/f options hostileDeathMessage [location]`           - Hostile entity deaths
 - `/f options playerDeathCoordLocation [location]`      - Player death coordinates
 - `/f options gptUrl [url]`                             - GPT API endpoint
+- `/f options autoLoadRuleFiles [true|false]`            - Auto-load `.rule` files on startup
+- `/f options autoLoadFlowFiles [true|false]`            - Auto-load `.flow` files on startup
 - etc.
 
 Hint: Use Tab to auto complete the command.
@@ -218,7 +276,7 @@ Hint: Use Tab to auto complete the command.
 
 ### For Players
 
-1. Download the mod JAR file from releases.
+1. Download the JAR file that matches your mod loader and Minecraft version from releases.
 2. Place it in your Minecraft `mods` folder.
 3. Launch the game
 
@@ -240,8 +298,10 @@ cd FMinecraftMod
 If you encounter an error, add the following line to `gradle.properties`:
 
 ```text
-org.gradle.java.home=<path_to_your_JDK17>
+org.gradle.java.home=<path_to_your_JDK>
 ```
+
+Use JDK 17 for Minecraft 1.20.1 builds and JDK 21 for Minecraft 1.21.1 builds.
 
 #### Step 3: Install
 
@@ -255,12 +315,14 @@ You can edit this file directly or use `/f options` commands in-game.
 
 You can use `/f reload` command to reload the config from file.
 
-**Note:** Place `.nbs` song files and `.flow` automation files in the `config/fminecraftmod/` folder.
+**Note:** Place `.nbs` song files, `.flow` automation files, and `.rule` rule files in the `config/fminecraftmod/` folder.
 
 ## Supported Version
 
 - Minecraft 1.20.1 Fabric
 - Minecraft 1.20.1 Forge (Beta)
+- Minecraft 1.21.1 Fabric (Beta)
+- Minecraft 1.21.1 NeoForge (Beta)
 
 ## Known Issues
 
@@ -268,7 +330,59 @@ You can use `/f reload` command to reload the config from file.
 
 ## Changelog
 
-### Version 0.3 (Current)
+### Version 0.4 (Current)
+
+**Major Features:**
+
+- Custom rule system
+  - Create, edit, and manage rules with `/f rule`
+  - Event -> condition -> actions pipeline, with separate actions for satisfied and violated conditions
+  - Save rules to `.rule` files and load them back, with optional auto-load on server start
+  - Parameterized rule components with typed parameters, parameter help, and tab completion
+  - Formula conditions for combining conditions
+  - Compute component for storing temporary computation results in variables
+- Visual editors (client-side, requires Mod Menu, singleplayer only)
+  - Rule editor with event, condition, and action editors plus generated parameter widgets
+  - Flow editor with draggable nodes, connections, and undo/redo
+- Flow system
+  - Auto-load `.flow` files on startup
+  - `/f flow load *` and `/f rule load *` run asynchronously
+  - Missing config values are repaired on load
+- Text placeholders
+  - Nested styles inside `${hint:...}`, for example `${hint:&c${player}}`
+  - `${markdown}` parses the rest of the message as a single Markdown document
+
+**Improvements:**
+
+- Config system rewritten with annotations; every message can now configure its location and receivers
+- Messages can fall back to a redacted version for players who are not the intended recipient
+- Migrated from Fabric mappings to Mojang official mappings
+- Additional validity checks for rules and flows
+
+**Bug Fixes:**
+
+- Fixed TEAM broadcasts incorrectly falling through to the SELF branch
+- Fixed binary arithmetic nodes failing to enter the string branch because inputs were lowercased before comparison
+- Fixed the get-block node rounding block coordinates instead of flooring them
+- Fixed `.nbs` playback speed changes affecting every player when one song was played to multiple players
+- Fixed a NullPointerException when other mods add unregistered biomes during biome change checks
+- Fixed a thread race between network and main threads in command tab completion
+- Fixed resources not being closed when reading data from files or the network
+- Fixed all-space flow names being accepted
+- Fixed variables being dropped when added later to scheduled flows
+- Fixed user-caused flow exceptions being logged as errors
+- Fixed `/f get distance` pitch/yaw calculation
+- Fixed a NullPointerException when console executed `/f say` with player placeholders
+- Fixed colored text rendering in the say command
+- Fixed `UnsupportedOperationException` in `AddVariableToScheduledFlowNode` when the variable table is read-only
+
+**Compatibility:**
+
+- The config format changed after 0.3. The old file is not compatible and your settings need to be re-applied.
+- Flows saved by 0.3 trigger a compatibility warning and should be backed up and tested after upgrading.
+- Place `.rule` files in `config/fminecraftmod/` together with `.nbs` and `.flow` files.
+
+### Version 0.3
 
 **Major Features:**
 
