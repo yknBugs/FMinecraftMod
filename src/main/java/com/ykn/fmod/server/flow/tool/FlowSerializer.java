@@ -75,7 +75,7 @@ import com.ykn.fmod.server.flow.logic.LogicFlow;
  * }
  * </pre>
  * <p>
- * The serializer supports various value types including Vec3d, Vec2f, Double,
+ * The serializer supports various value types including Vec3, Vec2, Double,
  * Boolean, and String. Values are automatically parsed during deserialization.
  * <p>
  * File operations use atomic writes (via temporary files) when replacing existing
@@ -94,10 +94,10 @@ public class FlowSerializer {
     private static final Gson GSON = buildGson();
 
     /**
-     * The last compatible mod version for logic flows. Flows created with versions
-     * newer than this may not be loadable in older versions of the mod.
+     * The oldest mod version treated as compatible with the current flow format.
+     * Loading older files logs a warning; it does not reject them solely for their version.
      */
-    public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.4+b3");
+    public static final ModVersion LAST_COMPATIBLE_MOD_VERSION = ModVersion.fromString("0.3.10+b14");
 
     /**
      * Builds a Gson instance with pretty printing enabled.
@@ -195,8 +195,8 @@ public class FlowSerializer {
      * This method attempts to parse the string as various types in order:
      * <ol>
      *   <li>null (if string is "null" or null)</li>
-     *   <li>Vec3d (3D vector)</li>
-     *   <li>Vec2f (2D float vector)</li>
+     *   <li>Vec3 (3D vector)</li>
+     *   <li>Vec2 (2D float vector)</li>
      *   <li>List (comma-separated values in square brackets)</li>
      *   <li>Double (numeric value)</li>
      *   <li>Boolean (true/false)</li>
@@ -288,14 +288,14 @@ public class FlowSerializer {
         json.addProperty("type", node.getType());
         json.addProperty("name", node.getName());
         JsonArray inputsArray = new JsonArray();
-        for (int i = 0; i < node.getMetadata().inputNumber; i++) {
+        for (int i = 0; i < node.getMetadata().inputNumber(); i++) {
             DataReference ref = node.getInput(i);
             JsonObject refJson = serializeDataReference(ref);
             inputsArray.add(refJson);
         }
         json.add("inputs", inputsArray);
         JsonArray nextNodeArray = new JsonArray();
-        for (int i = 0; i < node.getMetadata().branchNumber; i++) {
+        for (int i = 0; i < node.getMetadata().branchNumber(); i++) {
             long nextNodeId = node.getNextNodeIds().get(i);
             nextNodeArray.add(nextNodeId);
         }
@@ -331,7 +331,7 @@ public class FlowSerializer {
             throw new IllegalStateException("Unknown node type: " + type + " for node " + name + " (Malformed Json).");
         }
         JsonArray inputsArray = getArrayOrEmpty(json, "inputs");
-        for (int i = 0; i < node.getMetadata().inputNumber; i++) {
+        for (int i = 0; i < node.getMetadata().inputNumber(); i++) {
             if (i < inputsArray.size()) {
                 JsonObject refJson = inputsArray.get(i).getAsJsonObject();
                 DataReference ref = deserializeDataReference(refJson);
@@ -341,11 +341,11 @@ public class FlowSerializer {
                 node.setInput(i, DataReference.createEmptyReference());
             }
         }
-        if (inputsArray.size() > node.getMetadata().inputNumber) {
-            Util.LOGGER.warn("FMinecraftMod: Extra input references found for node " + name + ". Expected " + node.getMetadata().inputNumber + " but found " + inputsArray.size() + ". Extra references will be ignored.");
+        if (inputsArray.size() > node.getMetadata().inputNumber()) {
+            Util.LOGGER.warn("FMinecraftMod: Extra input references found for node " + name + ". Expected " + node.getMetadata().inputNumber() + " but found " + inputsArray.size() + ". Extra references will be ignored.");
         }
         JsonArray nextNodeArray = getArrayOrEmpty(json, "nextNodes");
-        for (int i = 0; i < node.getMetadata().branchNumber; i++) {
+        for (int i = 0; i < node.getMetadata().branchNumber(); i++) {
             if (i < nextNodeArray.size()) {
                 long nextNodeId = nextNodeArray.get(i).getAsLong();
                 node.setNextNodeId(i, nextNodeId);
@@ -354,8 +354,8 @@ public class FlowSerializer {
                 node.setNextNodeId(i, -1L);
             }
         }
-        if (nextNodeArray.size() > node.getMetadata().branchNumber) {
-            Util.LOGGER.warn("FMinecraftMod: Extra next node IDs found for node " + name + ". Expected " + node.getMetadata().branchNumber + " but found " + nextNodeArray.size() + ". Extra IDs will be ignored.");
+        if (nextNodeArray.size() > node.getMetadata().branchNumber()) {
+            Util.LOGGER.warn("FMinecraftMod: Extra next node IDs found for node " + name + ". Expected " + node.getMetadata().branchNumber() + " but found " + nextNodeArray.size() + ". Extra IDs will be ignored.");
         }
         return node;
     }

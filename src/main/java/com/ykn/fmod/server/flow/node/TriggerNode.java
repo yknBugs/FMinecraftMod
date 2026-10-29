@@ -9,11 +9,11 @@ import com.ykn.fmod.server.flow.logic.EventNode;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 
 /**
- * This node can be triggered by a dedicated command by players without OP permission.
+ * An event node that only a user can trigger, through its dedicated command.
  * Inputs: None
- * Outputs: 
+ * Outputs:
  * 1. Player - The player who triggered this node.
- * 2. String - The parameter provided by the player. Empty String if not provided.
+ * 2. String - Optional parameter provided by the player.
  * Branches: 1 (Next node)
  */
 public class TriggerNode extends EventNode {

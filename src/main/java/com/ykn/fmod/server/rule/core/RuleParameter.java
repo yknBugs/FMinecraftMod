@@ -51,7 +51,7 @@ import net.minecraft.network.chat.MutableComponent;
  * {"variable": "targetPos", "constant": {"x":0,"y":64,"z":0}}  // both
  * }</pre>
  *
- * @param <T> the value type (e.g. {@link java.util.UUID}, {@link net.minecraft.util.math.Vec3d})
+ * @param <T> the value type (e.g. {@link java.util.UUID}, {@link net.minecraft.world.phys.Vec3})
  * @see SourceCondition
  * @see RuleAction
  */

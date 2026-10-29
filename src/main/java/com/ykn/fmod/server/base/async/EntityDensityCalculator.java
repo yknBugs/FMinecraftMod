@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import net.minecraft.resources.ResourceKey;
 import javax.annotation.Nullable;
 
 import com.mojang.brigadier.context.CommandContext;
@@ -30,7 +31,8 @@ import net.minecraft.world.entity.EntityType;
  * <ul>
  *   <li>Minimum radius constraint for the search sphere</li>
  *   <li>Minimum number of entities required within the sphere</li>
- *   <li>Entities must be in the same dimension</li>
+ *   <li>Normal sphere searches stay within one dimension; NaN-radius and
+ *       unachievable-count fallbacks report global statistics</li>
  * </ul>
  * <p>
  * The calculation is performed asynchronously to avoid blocking the main server thread,
@@ -47,7 +49,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
     
     /**
      * The minimum radius (in blocks) for the search sphere.
-     * Entities must be at least this distance apart to satisfy the density constraint.
+     * Candidate sphere radii must be at least this large; entities may be closer together.
      * Special values:
      * <ul>
      *   <li>NaN: Consider all entities regardless of distance</li>
@@ -137,7 +139,8 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      * Immutable snapshot of an entity's state at a point in time.
      * <p>
      * This class captures all relevant information about an entity for spatial analysis
-     * without retaining references to non-thread-safe Minecraft objects like World.
+     * using copied position and identifier fields. The original entity reference is retained
+     * for main-thread result retrieval and must not be dereferenced by background work.
      * The snapshot includes:
      * <ul>
      *   <li>3D position coordinates (x, y, z)</li>
@@ -174,7 +177,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
             this.y = entity.getY();
             this.z = entity.getZ();
             this.dimension = entity.level().dimension().location();
-            this.biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(key -> key.location()).orElse(null);
+            this.biome = entity.level().getBiome(entity.blockPosition()).unwrapKey().map(ResourceKey::location).orElse(null);
             this.entityType = EntityType.getKey(entity.getType());
             this.entity = entity;
         }
@@ -186,7 +189,7 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
          * comparison operations. The actual distance can be obtained by taking the
          * square root of this value if needed.
          * <p>
-         * Entities in different dimensions are considered infinitely far apart.
+         * Entities in different dimensions produce NaN and are excluded from distance comparisons.
          *
          * @param other The other entity snapshot to measure distance to.
          * @return The squared distance in blocks², or NaN if the entities are in
@@ -207,7 +210,8 @@ public class EntityDensityCalculator extends AsyncTaskExecutor {
      * Constructs a new entity density calculator with the specified parameters.
      * <p>
      * This constructor creates immutable snapshots of all provided entities to ensure
-     * thread-safe processing. The actual calculation is performed asynchronously when
+     * thread-safe processing. Construct it on the server thread, where entity state can
+     * be read safely. The actual calculation is performed asynchronously when
      * the task is executed.
      *
      * @param context The command context for sending feedback messages. May be null if

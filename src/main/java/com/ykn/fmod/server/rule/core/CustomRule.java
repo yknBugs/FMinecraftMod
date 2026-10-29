@@ -35,9 +35,9 @@ import net.minecraft.network.chat.MutableComponent;
  * <p><b>Lifecycle:</b>
  * <pre>{@code
  * CustomRule rule = CustomRule.build("warn", TickEvent.getInstance())
- *     .addCondition(new EntityPosition("inZone", ...))
+ *     .addCondition(RuleRegistry.createCondition("EntityPosition", "inZone", values))
  *     .setCondition(ConditionFormulaParser.parse("inZone"))
- *     .addAction(new BroadcastMessage("bc", ...))
+ *     .addAction(RuleRegistry.createRuleAction("BroadcastMessage", "bc", values))
  *     .optimize();          // inlines ConditionReference nodes for faster evaluation
  *
  * RuleContext ctx = new RuleContext(server, rule, variables);

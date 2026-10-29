@@ -18,11 +18,11 @@ import com.ykn.fmod.server.flow.logic.NodeStatus;
 /**
  * A flow node that evaluates a boolean condition and branches accordingly.
  * Inputs:
- * 1. Boolean - The condition to evaluate.
+ * 1. Boolean - Condition to be evaluated.
  * Outputs: None
  * Branches:
- * 1. True branch
- * 2. False branch
+ * 1. True branch - The branch to be executed if the condition is true.
+ * 2. False branch - The branch to be executed if the condition is false.
  */
 public class IfConditionNode extends FlowNode {
 
@@ -44,7 +44,7 @@ public class IfConditionNode extends FlowNode {
         Object conditionObj = resolvedInputs.get(0);
         Boolean condition = TypeAdaptor.parse(conditionObj).asBoolean();
         if (condition == null) {
-            throw new LogicException(null, Util.parseTranslatableText("fmod.node.if.error.classcast", this.name, this.metadata.inputNames.get(0)), null);
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.if.error.classcast", this.name, this.metadata.inputNames().get(0)), null);
         } else if (condition == true) {
             return this.getNextNodeIds().get(0); // True branch
         } else {

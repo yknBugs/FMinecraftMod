@@ -16,7 +16,9 @@ import com.ykn.fmod.server.base.util.Util;
 import net.minecraft.network.chat.Component;
 
 /**
- * Most functions in this class are thread-safe.
+ * Stores conversation history and one pending GPT request. Public operations acquire
+ * a read or write lock; multi-call reads are not an atomic snapshot. Returned Components
+ * are shared references and are not protected against mutation by callers.
  */
 public class GptData {
 
@@ -58,7 +60,7 @@ public class GptData {
      * @param message The message to be received.
      * @param text The text object associated with the message.
      * @param responseJson The JSON response associated with the message.
-     * @return true if the message was successfully received and stored, false if a response has already been received.
+     * @return true if the pending request's response was stored, false if no response is currently awaited.
      */
     public boolean receiveMessage(String message, Component text, String responseJson) {
         boolean result = false;
@@ -85,7 +87,7 @@ public class GptData {
      * Attempts to cancel the current operation if a response has not been received yet.
      * 
      * This method acquires a write lock to ensure thread safety. If the response has not 
-     * been received (`hasReceivedResponse` is false), it sets `hasReceivedResponse` to true 
+     * been received ({@code hasReceivedResponse} is false), it sets {@code hasReceivedResponse} to true
      * and returns true, indicating that the operation was successfully canceled. If the 
      * response has already been received, it returns false.
      * 
@@ -173,7 +175,7 @@ public class GptData {
      * @param url The URL endpoint to which the message will be sent.
      * @param gptModel The GPT model to be used for generating the response.
      * @param responseTemperature The temperature setting for the response generation, affecting randomness.
-     * @return true if the message was successfully stored, false if a response has already been received.
+     * @return true if the message was successfully stored, false if another request is still awaiting a response.
      */
     public boolean reply(String message, URL url, String gptModel, double responseTemperature) {
         boolean result = false;
@@ -194,7 +196,7 @@ public class GptData {
     }
 
     /**
-     * Initiates a new conversation by clearing the history and sending a new message.
+     * Clears the history and stages a new message; the executor performs the HTTP request.
      *
      * @param message The message to be sent in the new conversation.
      * @param url The URL endpoint to which the message will be sent.
@@ -300,7 +302,7 @@ public class GptData {
 
     /**
      * Edits the history at the specified index with the provided message, URL, GPT model, and response temperature.
-     * It will remove all history entries after the specified index.
+     * It removes the specified entry and all later entries, then stages its replacement as a pending request.
      * 
      * @param index The index of the history entry to edit.
      * @param message The new message to replace the existing one.
@@ -448,12 +450,13 @@ public class GptData {
     /**
      * Retrieves a list of chat messages, alternating between user and assistant messages.
      * 
-     * This method constructs a list of `ChatMessage` objects by iterating through the 
-     * `postMessages` and `responseMessages` lists. For each entry in these lists, it adds 
-     * a `ChatMessage` for the user and a corresponding `ChatMessage` for the assistant.
-     * Finally, it adds a `ChatMessage` for the cached post message from the user.
+     * This method constructs a list of {@code ChatMessage} objects by iterating through the
+     * {@code postMessages} and {@code responseMessages} lists. For each entry in these lists, it adds
+     * a {@code ChatMessage} for the user and a corresponding {@code ChatMessage} for the assistant.
+     * A configured system prompt is prepended, and the cached pending user message is appended.
+     * The caller must hold this instance's read or write lock.
      * 
-     * @return An array of `ChatMessage` objects representing the conversation history.
+     * @return An array of {@code ChatMessage} objects representing the conversation history.
      */
     private ChatMessage[] getChatMessageList() {
         ArrayList<ChatMessage> messages = new ArrayList<>();

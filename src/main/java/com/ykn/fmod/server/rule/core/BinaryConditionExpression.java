@@ -25,7 +25,7 @@ import com.ykn.fmod.server.rule.tool.ConditionFormulaParser;
  *   <li>{@link ConditionRelationship#BITOR}  – non-short-circuit bitwise OR ({@code |})</li>
  *   <li>{@link ConditionRelationship#XOR}    – XOR ({@code ^})</li>
  *   <li>{@link ConditionRelationship#TRUE} / {@link ConditionRelationship#FALSE} – constant sentinels,
- *       folded away by {@link RuleCondition#optimize(CustomRule)}</li>
+ *       folded away by {@link RuleCondition#optimize(CustomRule, java.util.HashSet)}</li>
  * </ul>
  *
  * <p>Instances are created either programmatically via {@link RuleCondition#and(RuleCondition)},
@@ -74,17 +74,13 @@ public class BinaryConditionExpression implements IterableCondition {
     }
 
     private static String conditionToFormula(RuleCondition condition) {
-        if (condition instanceof IterableCondition) {
-            IterableCondition nestedIterableCondition = (IterableCondition) condition;
+        if (condition instanceof IterableCondition nestedIterableCondition) {
             return "(" + nestedIterableCondition.toFormula() + ")";
-        } else if (condition instanceof SourceCondition) {
-            SourceCondition sourceCondition = (SourceCondition) condition;
+        } else if (condition instanceof SourceCondition sourceCondition) {
             return sourceCondition.getName();
-        } else if (condition instanceof ConditionReference) {
-            ConditionReference conditionReference = (ConditionReference) condition;
+        } else if (condition instanceof ConditionReference conditionReference) {
             return conditionReference.getReferenceName();
-        } else if (condition instanceof ConstCondition) {
-            ConstCondition constCondition = (ConstCondition) condition;
+        } else if (condition instanceof ConstCondition constCondition) {
             return String.valueOf(constCondition.getValue());
         } else {
             Util.LOGGER.error("FMinecraftMod: Unknown condition type " + condition.getClass().getName() + ", defaulting to condition type name");
@@ -93,8 +89,7 @@ public class BinaryConditionExpression implements IterableCondition {
     }
 
     private static List<RuleCondition> conditionToChildren(RuleCondition condition) {
-        if (condition instanceof IterableCondition) {
-            IterableCondition iterableCondition = (IterableCondition) condition;
+        if (condition instanceof IterableCondition iterableCondition) {
             return iterableCondition.visit();
         } else {
             List<RuleCondition> children = new ArrayList<>();
@@ -128,50 +123,36 @@ public class BinaryConditionExpression implements IterableCondition {
 
     @Override
     public boolean onEvaluate(RuleContext context) {
-        switch (relationship) {
-            case AND:
-                return leftOperand.evaluate(context) && rightOperand.evaluate(context);
-            case OR:
-                return leftOperand.evaluate(context) || rightOperand.evaluate(context);
-            case BITAND:
-                return leftOperand.evaluate(context) & rightOperand.evaluate(context);
-            case BITOR:
-                return leftOperand.evaluate(context) | rightOperand.evaluate(context);
-            case XOR:
-                return leftOperand.evaluate(context) ^ rightOperand.evaluate(context);
-            case FALSE:
-                return false;
-            case TRUE:
-                return true;
-            case NOT:
-            default:
+        return switch (relationship) {
+            case AND -> leftOperand.evaluate(context) && rightOperand.evaluate(context);
+            case OR -> leftOperand.evaluate(context) || rightOperand.evaluate(context);
+            case BITAND -> leftOperand.evaluate(context) & rightOperand.evaluate(context);
+            case BITOR -> leftOperand.evaluate(context) | rightOperand.evaluate(context);
+            case XOR -> leftOperand.evaluate(context) ^ rightOperand.evaluate(context);
+            case FALSE -> false;
+            case TRUE -> true;
+            default -> {
                 Util.LOGGER.error("FMinecraftMod: Unsupported or invalid condition relationship " + relationship + ", defaulting to false");
-                return false;
-        }
+                yield false;
+            }
+        };
     }
 
     @Override
     public String toFormula() {
-        switch (relationship) {
-            case AND:
-                return conditionToFormula(leftOperand) + " && " + conditionToFormula(rightOperand);
-            case OR:
-                return conditionToFormula(leftOperand) + " || " + conditionToFormula(rightOperand);
-            case BITAND:
-                return conditionToFormula(leftOperand) + " & " + conditionToFormula(rightOperand);
-            case BITOR:
-                return conditionToFormula(leftOperand) + " | " + conditionToFormula(rightOperand);
-            case XOR:
-                return conditionToFormula(leftOperand) + " ^ " + conditionToFormula(rightOperand);
-            case FALSE:
-                return "false";
-            case TRUE:
-                return "true";
-            case NOT:
-            default:
+        return switch (relationship) {
+            case AND -> conditionToFormula(leftOperand) + " && " + conditionToFormula(rightOperand);
+            case OR -> conditionToFormula(leftOperand) + " || " + conditionToFormula(rightOperand);
+            case BITAND -> conditionToFormula(leftOperand) + " & " + conditionToFormula(rightOperand);
+            case BITOR -> conditionToFormula(leftOperand) + " | " + conditionToFormula(rightOperand);
+            case XOR -> conditionToFormula(leftOperand) + " ^ " + conditionToFormula(rightOperand);
+            case FALSE -> "false";
+            case TRUE -> "true";
+            default -> {
                 Util.LOGGER.error("FMinecraftMod: Unsupported or invalid condition relationship " + relationship + ", defaulting to false");
-                return "";
-        }
+                yield "";
+            }
+        };
     }
 
     @Override
@@ -265,8 +246,7 @@ public class BinaryConditionExpression implements IterableCondition {
             String name = json.has("name") ? json.get("name").getAsString() : "";
             String formula = json.has("value") ? json.get("value").getAsString() : "";
             RuleCondition condition = ConditionFormulaParser.parse(formula);
-            if (condition instanceof BinaryConditionExpression) {
-                BinaryConditionExpression binaryCondition = (BinaryConditionExpression) condition;
+            if (condition instanceof BinaryConditionExpression binaryCondition) {
                 return new BinaryConditionExpression(name, binaryCondition.getLeftOperand(), binaryCondition.getRightOperand(), binaryCondition.getRelationship());
             } else {
                 throw new IllegalArgumentException("JSON does not represent a valid BinaryConditionExpression, but represent " + condition.getType() + " instead.");

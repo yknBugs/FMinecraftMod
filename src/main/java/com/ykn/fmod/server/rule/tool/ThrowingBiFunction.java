@@ -9,7 +9,7 @@ package com.ykn.fmod.server.rule.tool;
  * A functional interface like {@link java.util.function.BiFunction} but whose
  * {@link #apply(Object, Object)} method is allowed to throw a checked exception of type {@code E}.
  *
- * <p>Used by {@link ParamKind} so that Brigadier {@code CommandSyntaxException}s can propagate
+ * <p>Used by {@link com.ykn.fmod.server.rule.core.ParamKind} so that Brigadier {@code CommandSyntaxException}s can propagate
  * out of a parameter's value extractor without being wrapped in a runtime exception.
  *
  * @param <T> the type of the first argument

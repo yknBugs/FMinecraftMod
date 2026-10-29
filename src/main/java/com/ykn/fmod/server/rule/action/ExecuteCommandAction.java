@@ -38,7 +38,7 @@ import net.minecraft.world.entity.Entity;
  *
  * <p>The {@code entity} parameter identifies a single entity (by UUID) that acts as the
  * command source. The {@code permissionLevel} field is hidden from interactive command
- * creation - it is always captured from the {@link CommandSourceStack#getPermissionLevel()}
+ * creation - it is always captured from the {@link CommandSourceStack#hasPermission(int)} checks
  * of the operator who created the action. The {@code command} parameter is the raw command
  * string to execute.
  *
@@ -116,7 +116,12 @@ public class ExecuteCommandAction implements RuleAction {
         UUID entityId = this.entity.resolve(context, UUID.class);
         String command = this.command.resolve(context, String.class);
 
-        if (entityId == null || command == null) {
+        if (entityId == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
+            return true;
+        }
+        if (command == null) {
+            warnNullInput(context, PARAM_METADATA.get(1));
             return true;
         }
 
@@ -128,6 +133,7 @@ public class ExecuteCommandAction implements RuleAction {
             }
         }
         if (sourceEntity == null) {
+            warnNullInput(context, PARAM_METADATA.get(0));
             return true;
         }
 

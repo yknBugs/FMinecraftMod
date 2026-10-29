@@ -28,7 +28,7 @@ import com.ykn.fmod.server.base.util.Util;
 /**
  * The ConfigReader class provides utility methods for reading and writing configuration files
  * in a structured and safe manner. It uses Gson for JSON serialization and deserialization.
- * The configuration files are stored in a specific directory determined by the NeoForge loader.
+ * The configuration directory is obtained through {@link Util#getConfigDir()}.
  * 
  * <p>Key Features:
  * <ul>
@@ -36,7 +36,7 @@ import com.ykn.fmod.server.base.util.Util;
  *   <li>Supports reading and writing JSON configuration files.</li>
  *   <li>Automatically creates directories if they do not exist.</li>
  * </ul>
- * </p>
+ *
  * 
  * <p>Usage:
  * <ul>
@@ -45,7 +45,7 @@ import com.ykn.fmod.server.base.util.Util;
  *   <li>Use {@link #loadConfig(Class, Supplier, String)} to load a configuration with a fallback instance.</li>
  *   <li>Call {@link #saveFile()} to save the current instance to its associated file.</li>
  * </ul>
- * </p>
+ *
  * 
  * <p>Note: This class is designed to be extended for specific configuration types.</p>
  * 
@@ -64,7 +64,7 @@ import com.ykn.fmod.server.base.util.Util;
  * config.saveFile();
  * }
  * </pre>
- * </p>
+ *
  */
 public class ConfigReader {
 
@@ -160,7 +160,7 @@ public class ConfigReader {
     /**
      * Loads a configuration object of the specified type from a file. If the file does not exist
      * or cannot be read, a fresh instance of the configuration object is created using the provided
-     * supplier.
+     * supplier. Loaded instances have null declared reference fields repaired from fresh defaults.
      *
      * @param <T>          The type of the configuration object, which must extend {@code ConfigReader}.
      * @param configClass  The {@code Class} object representing the type of the configuration object.

@@ -188,7 +188,7 @@ public class RuleComponentSuggestion implements SuggestionProvider<CommandSource
                         break;
                     case VARIABLE:
                         {
-                            Map<String, Class<? extends Object>> variableTypes = ruleManager.getRule().getEvent().variablesType();
+                            Map<String, Class<?>> variableTypes = ruleManager.getRule().getEvent().variablesType();
                             for (String variable : variableTypes.keySet()) {
                                 if (expectedVariableType != null) {
                                     Class<?> declaredType = variableTypes.get(variable);

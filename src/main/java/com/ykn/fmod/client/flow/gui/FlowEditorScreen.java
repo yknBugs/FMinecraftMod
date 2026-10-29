@@ -11,6 +11,7 @@ import java.util.Objects;
 
 import com.ykn.fmod.client.base.gui.OptionPickerScreen;
 import com.ykn.fmod.client.base.gui.TextPromptScreen;
+import com.ykn.fmod.server.flow.tool.FlowEvents;
 import com.ykn.fmod.server.flow.tool.NodeRegistry;
 
 import net.minecraft.ChatFormatting;
@@ -27,7 +28,7 @@ import net.minecraft.network.chat.Component;
  * Top-level flow editor entry screen: lists every flow currently loaded on the (local, singleplayer)
  * server. Click a row to select it, then New / Edit / Delete act on the selection.
  *
- * <p>"Edit" opens {@link FlowGraphScreen} on a detached deep copy of the flow - see
+ * <p>"Edit" opens {@link FlowGraphScreen} on a detached structural copy of the flow - see
  * {@link FlowEditorBridge} for why nothing here is written back to the live flow until the user
  * explicitly commits from that screen.</p>
  */
@@ -137,11 +138,28 @@ public class FlowEditorScreen extends Screen {
                     }
                     List<OptionPickerScreen.Option> options = new ArrayList<>();
                     for (String eventType : NodeRegistry.getEventNodeList()) {
-                        options.add(new OptionPickerScreen.Option(Component.literal(eventType), null, () -> createFlow(name, eventType)));
+                        // The picker shows what each event fires on, the same text the node title shows in the graph.
+                        options.add(new OptionPickerScreen.Option(Component.literal(eventType), eventDescription(eventType), () -> createFlow(name, eventType)));
                     }
                     this.minecraft.setScreen(new OptionPickerScreen(this, Component.translatable("fmod.flowgui.editor.new.event"), options));
                 });
             }));
+    }
+
+    /**
+     * The "when does this fire" line for an event node type, or {@code null} when the type is not a
+     * game event (the dummy and trigger entry points), so the picker shows no tooltip for those.
+     *
+     * @param nodeType the registered event node type
+     * @return the event description, or {@code null}
+     */
+    private static Component eventDescription(String nodeType) {
+        for (FlowEvents.Definition event : FlowEvents.all()) {
+            if (event.nodeType().equals(nodeType)) {
+                return Component.translatable(event.key() + ".desc");
+            }
+        }
+        return null;
     }
 
     private void createFlow(String name, String eventType) {

@@ -17,7 +17,7 @@ import net.minecraft.network.chat.MutableComponent;
 /**
  * A {@link CommandSource} implementation that redirects and stores command messages
  * instead of sending them to the standard output. This class captures all messages
- * sent through the {@link #sendMessage(Component)} method for later retrieval.
+ * sent through the {@link #sendSystemMessage(Component)} method for later retrieval.
  */
 public class RedirectedCommandOutput implements CommandSource {
 

@@ -17,74 +17,27 @@ import net.minecraft.network.chat.Component;
  * Metadata about a node type.
  * Users are not allowed to modify the metadata.
  * The data like {@code name} and {@code inputs} can be modified by users, so they should be in the {@link FlowNode} class, not here.
+ *
+ * @param inputNumber        The number of inputs this node has.
+ * @param outputNumber       The number of outputs this node has.
+ * @param branchNumber       The branch number of this node.
+ *                           Usually 1 for most nodes. 2 for simple if nodes (true/false).
+ * @param displayName        The official name of this node type.
+ * @param description        The description about the functionality of this node type.
+ * @param inputNames         The official name of the inputs
+ * @param inputDescriptions  The description about the inputs
+ * @param inputDataTypes     The data types of the inputs
+ * @param outputNames        The official name of the outputs
+ * @param outputDescriptions The description about the outputs
+ * @param outputDataTypes    The data types of the outputs
+ * @param branchNames        The official name of the branches
+ * @param branchDescriptions The description about the branches
  */
-public class NodeMetadata {
-
-    /**
-     * The number of inputs this node has.
-     */
-    public final int inputNumber;
-
-    /**
-     * The number of outputs this node has.
-     */
-    public final int outputNumber;
-
-    /**
-     * The branch number of this node.
-     * Usually 1 for most nodes. 2 for simple if nodes (true/false).
-     */
-    public final int branchNumber;
-
-    /**
-     * The official name of this node type.
-     */
-    public final Component displayName;
-
-    /**
-     * The description about the functionality of this node type.
-     */
-    public final Component description;
-
-    /**
-     * The official name of the inputs
-     */
-    public final List<Component> inputNames;
-
-    /**
-     * The description about the inputs
-     */
-    public final List<Component> inputDescriptions;
-
-    /**
-     * The data types of the inputs
-     */
-    public final List<Component> inputDataTypes;
-
-    /**
-     * The official name of the outputs
-     */
-    public final List<Component> outputNames;
-
-    /**
-     * The description about the outputs
-     */
-    public final List<Component> outputDescriptions;
-
-    /**
-     * The data types of the outputs
-     */
-    public final List<Component> outputDataTypes;
-
-    /**
-     * The official name of the branches
-     */
-    public final List<Component> branchNames;
-    
-    /**
-     * The description about the branches
-     */
-    public final List<Component> branchDescriptions;
+public record NodeMetadata(int inputNumber, int outputNumber, int branchNumber, Component displayName,
+                           Component description, List<Component> inputNames, List<Component> inputDescriptions,
+                           List<Component> inputDataTypes, List<Component> outputNames,
+                           List<Component> outputDescriptions, List<Component> outputDataTypes,
+                           List<Component> branchNames, List<Component> branchDescriptions) {
 
     public NodeMetadata(int inputNumber, int outputNumber, int branchNumber,
                         Component displayName, Component description,
@@ -167,13 +120,13 @@ public class NodeMetadata {
 
         private final Component displayName;
         private final Component description;
-        private final List<Component> inputNames         = new ArrayList<>();
-        private final List<Component> inputDescriptions  = new ArrayList<>();
-        private final List<Component> inputDataTypes     = new ArrayList<>();
-        private final List<Component> outputNames        = new ArrayList<>();
+        private final List<Component> inputNames = new ArrayList<>();
+        private final List<Component> inputDescriptions = new ArrayList<>();
+        private final List<Component> inputDataTypes = new ArrayList<>();
+        private final List<Component> outputNames = new ArrayList<>();
         private final List<Component> outputDescriptions = new ArrayList<>();
-        private final List<Component> outputDataTypes    = new ArrayList<>();
-        private final List<Component> branchNames        = new ArrayList<>();
+        private final List<Component> outputDataTypes = new ArrayList<>();
+        private final List<Component> branchNames = new ArrayList<>();
         private final List<Component> branchDescriptions = new ArrayList<>();
 
         private Builder(String displayNameKey, String descriptionKey) {

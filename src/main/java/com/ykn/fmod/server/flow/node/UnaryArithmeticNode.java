@@ -14,18 +14,29 @@ import com.ykn.fmod.server.flow.logic.FlowNode;
 import com.ykn.fmod.server.flow.logic.LogicException;
 import com.ykn.fmod.server.flow.logic.NodeMetadata;
 import com.ykn.fmod.server.flow.logic.NodeStatus;
+import com.ykn.fmod.server.flow.tool.FlowConvert;
 
-import net.minecraft.network.chat.Component;
+import com.ykn.fmod.server.base.util.GameMath;
+import net.minecraft.nbt.Tag;
 import net.minecraft.world.phys.Vec2;
 import net.minecraft.world.phys.Vec3;
+import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.Iterator;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Collections;
+import java.util.Set;
+import java.util.Arrays;
 
 /**
- * A flow node that performs unary arithmetic operations on one numeric input.
+ * A flow node that performs a unary operation on one value.
  * Inputs:
- * 1. Number - The operand.
- * 2. String - The operation to perform (e.g., "-", "!", "abs", "sin").
+ * 1. Number - The operand for the unary operation.
+ * 2. String - The unary operation to perform (e.g., -, abs, sqrt).
  * Outputs:
- * 1. Number - The result of the operation.
+ * 1. Number - The result of the unary operation.
  * Branches: 1 (Next node)
  */
 public class UnaryArithmeticNode extends FlowNode {
@@ -43,211 +54,254 @@ public class UnaryArithmeticNode extends FlowNode {
             .build(inputNumber, outputNumber, branchNumber);
 	}
 
-	@Override
-	protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> resolvedInputs) throws LogicException {
-		Object numObj = resolvedInputs.get(0);
-		Object opObj = resolvedInputs.get(1);
-		String operation = TypeAdaptor.parse(opObj).asString().strip().toLowerCase();
+    @Override
+    protected void onExecute(ExecutionContext context, NodeStatus status, List<Object> inputs) throws LogicException {
+        String op = TypeAdaptor.parse(inputs.get(1)).asString().strip().toLowerCase(Locale.ROOT);
+        status.setOutput(0, FlowConvert.unwrapOutput(apply(inputs.get(0), op)));
+    }
 
-        // Special handling for null inputs
-		if (numObj == null) {
-			status.setOutput(0, null);
-			return;
-		}
-
-        Double tryDouble = TypeAdaptor.parse(numObj).asDouble();
-
-        // Try Vec3d operations
-        Vec3 tryVec3d = TypeAdaptor.parse(numObj).asVec3d();
-        if (tryVec3d != null) {
-            switch (operation) {
-                case "length":
-                case "len":
-                    status.setOutput(0, tryVec3d.length());
-                    return;
-                case "normalize":
-                case "norm":
-                    status.setOutput(0, tryVec3d.normalize());
-                    return;
-                case "-":
-                    status.setOutput(0, tryVec3d.scale(-1));
-                    return;
-                case "x":
-                    status.setOutput(0, tryVec3d.x);
-                    return;
-                case "y":
-                    status.setOutput(0, tryVec3d.y);
-                    return;
-                case "z":
-                    status.setOutput(0, tryVec3d.z);    
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
-            }
+    /**
+     * Infers null, Vec3, Vec2, List, Double, Boolean, then text/string. NBT is string data.
+     */
+    private static Object apply(Object value, String operation) throws LogicException {
+        if (value == null) {
+            return null;
         }
 
-        // Try Vec2f operations
-        Vec2 tryVec2f = TypeAdaptor.parse(numObj).asVec2f();
-        if (tryVec2f != null) {
-            switch (operation) {
-                case "length":
-                case "len":
-                    status.setOutput(0, tryVec2f.length());
-                    return;
-                case "normalize":
-                case "norm":
-                    status.setOutput(0, tryVec2f.normalized());
-                    return;
-                case "-":
-                    status.setOutput(0, new Vec2(-tryVec2f.x, -tryVec2f.y));
-                    return;
-                case "x":
-                    status.setOutput(0, tryVec2f.x);
-                    return;
-                case "y":
-                    status.setOutput(0, tryVec2f.y);
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
+        String op = operation.strip().toLowerCase(Locale.ROOT);
+        if (!(value instanceof Tag)) {
+            Vec3 v = TypeAdaptor.parse(value).asVec3d();
+            if (v != null) {
+                return vector(v, op, false);
+            }
+            Vec2 v2 = TypeAdaptor.parse(value).asVec2f();
+            if (v2 != null) {
+                if (Set.of("direction", "todirection", "tovec3").contains(op)) {
+                    // Inverse of GameMath.getPitch/getYaw (the older direction helper reverses Z).
+                    double pitch = Math.toRadians(v2.x);
+                    double yaw = Math.toRadians(v2.y);
+                    return new Vec3(-Math.sin(yaw) * Math.cos(pitch), Math.sin(pitch), Math.cos(yaw) * Math.cos(pitch));
+                }
+                return vector(new Vec3(v2.x, v2.y, 0), op, true);
+            }
+            List<Object> elements = FlowConvert.listCopy(value);
+            if (elements != null) {
+                return list(elements, op);
+            }
+            Double numeric = TypeAdaptor.parse(value).asDouble();
+            if (numeric != null) {
+                return number(numeric, op);
+            }
+            Boolean bool = TypeAdaptor.parse(value).asBoolean();
+            if (bool != null) {
+                if (op.equals("!") || op.equals("not")) {
+                    return !bool;
+                }
+                throw unsupported(op);
             }
         }
+        
+        // As in the original unary node, text transformations return plain strings.
+        String text = value instanceof Tag tag ? tag.toString() : TypeAdaptor.parse(value).asString();
+        return switch (op) {
+            case "length", "len", "size" -> (double) text.length();
+            case "upper", "uppercase" -> text.toUpperCase(Locale.ROOT);
+            case "lower", "lowercase" -> text.toLowerCase(Locale.ROOT);
+            case "trim", "strip" -> text.strip();
+            case "stripstart" -> text.stripLeading();
+            case "stripend" -> text.stripTrailing();
+            case "isempty" -> text.isEmpty();
+            case "isblank" -> text.isBlank();
+            case "reverse" -> new StringBuilder(text).reverse().toString();
+            case "split", "words" -> words(text);
+            case "lines" -> collect(text.lines().iterator());
+            default -> throw unsupported(op);
+        };
+    }
 
-        // Try double operations
-        if (tryDouble != null) {
-            switch (operation) {
-                case "-":
-                    status.setOutput(0, -tryDouble);
-                    return;
-                case "~":
-                    status.setOutput(0, (double) ~tryDouble.longValue());
-                    return;
-                case "abs":
-                    status.setOutput(0, Math.abs(tryDouble));
-                    return;
-                case "sqrt":
-                    status.setOutput(0, Math.sqrt(tryDouble));
-                    return;
-                case "cbrt":
-                    status.setOutput(0, Math.cbrt(tryDouble));
-                    return;
-                case "exp":
-                    status.setOutput(0, Math.exp(tryDouble));
-                    return;
-                case "ln":
-                    status.setOutput(0, Math.log(tryDouble));
-                    return;
-                case "lg":
-                    status.setOutput(0, Math.log10(tryDouble));
-                    return;
-                case "sin":
-                    status.setOutput(0, Math.sin(tryDouble));
-                    return;
-                case "cos":
-                    status.setOutput(0, Math.cos(tryDouble));
-                    return;
-                case "tan":
-                    status.setOutput(0, Math.tan(tryDouble));
-                    return;
-                case "asin":
-                    status.setOutput(0, Math.asin(tryDouble));
-                    return;
-                case "acos":
-                    status.setOutput(0, Math.acos(tryDouble));
-                    return;
-                case "atan":
-                    status.setOutput(0, Math.atan(tryDouble));
-                    return;
-                case "sinh":
-                    status.setOutput(0, Math.sinh(tryDouble));
-                    return;
-                case "cosh":
-                    status.setOutput(0, Math.cosh(tryDouble));
-                    return;
-                case "tanh":
-                    status.setOutput(0, Math.tanh(tryDouble));
-                    return;
-                case "ceil":
-                    status.setOutput(0, Math.ceil(tryDouble));
-                    return;
-                case "floor":
-                    status.setOutput(0, Math.floor(tryDouble));
-                    return;
-                case "round":
-                    status.setOutput(0, (double) Math.round(tryDouble));
-                    return;
-                case "rad":
-                    status.setOutput(0, Math.toRadians(tryDouble));
-                    return;
-                case "deg":
-                    status.setOutput(0, Math.toDegrees(tryDouble));
-                    return;
-                case "sgn":
-                    status.setOutput(0, Math.signum(tryDouble));
-                    return;
-                case "erf":
-                    // Java's Math class does not have an erf function
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
-                    // status.setOutput(0, Math.erf(tryDouble));
-                    // return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
+    private static LogicException unsupported(String op) {
+        return new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", op), null);
+    }
+
+    private static Object vector(Vec3 v, String op, boolean two) throws LogicException {
+        double length = Math.hypot(Math.hypot(v.x, v.y), v.z);
+        return switch (op) {
+            case "length", "len" -> length;
+            case "lengthsquared", "lensquared" -> v.lengthSqr();
+            case "x" -> v.x;
+            case "y" -> v.y;
+            case "z" -> {
+                if (two) {
+                    throw unsupported(op);
+                }
+                yield v.z;
             }
-        }
-
-        // Try boolean operations
-        Boolean tryBool = TypeAdaptor.parse(numObj).asBoolean();
-        if (tryBool != null) {
-            switch (operation) {
-                case "!":
-                case "not":
-                    status.setOutput(0, !tryBool);
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
+            case "pitch" -> {
+                if (two) {
+                    throw unsupported(op);
+                }
+                yield GameMath.getPitch(v);
             }
-        }
-
-        // Special Use case for String and Text
-        if (numObj instanceof Component) {
-            Component text = (Component) numObj;
-            switch (operation) {
-                case "length":
-                case "len":
-                    status.setOutput(0, text.getString().length());
-                    return;
-                case "lower":
-                    status.setOutput(0, text.getString().toLowerCase());
-                    return;
-                case "isempty":
-                    status.setOutput(0, text.getString().isEmpty());
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
+            case "yaw" -> {
+                if (two) {
+                    throw unsupported(op);
+                }
+                yield GameMath.getYaw(v);
             }
-        }
-
-        String tryString = TypeAdaptor.parse(numObj).asString();
-        if (tryString != null) {
-            switch (operation) {
-                case "length":
-                case "len":
-                    status.setOutput(0, tryString.length());
-                    return;
-                case "lower":
-                    status.setOutput(0, tryString.toLowerCase());
-                    return;
-                case "isempty":
-                    status.setOutput(0, tryString.isEmpty());
-                    return;
-                case "strip":
-                    status.setOutput(0, tryString.strip());
-                    return;
-                default:
-                    throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
+            case "rotation", "torotation", "tovec2" -> {
+                if (two) {
+                    throw unsupported(op);
+                }
+                yield new Vec2((float) GameMath.getPitch(v), (float) GameMath.getYaw(v));
             }
-        }
+            case "normalize", "norm" -> {
+                double scale = Math.max(Math.abs(v.x), Math.max(Math.abs(v.y), Math.abs(v.z)));
+                if (scale == 0) {
+                    yield output(Vec3.ZERO, two);
+                }
+                Vec3 scaled = new Vec3(v.x / scale, v.y / scale, v.z / scale);
+                double magnitude = Math.hypot(Math.hypot(scaled.x, scaled.y), scaled.z);
+                yield output(new Vec3(scaled.x / magnitude, scaled.y / magnitude, scaled.z / magnitude), two);
+            }
+            case "-", "negate" -> output(v.scale(-1), two);
+            case "abs" -> output(new Vec3(Math.abs(v.x), Math.abs(v.y), Math.abs(v.z)), two);
+            case "floor", "ceil", "round" ->
+                output(new Vec3((Double) number(v.x, op), (Double) number(v.y, op), (Double) number(v.z, op)), two);
+            default -> throw unsupported(op);
+        };
+    }
 
-        // If we reach here, the input type is unsupported
-        throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.unsupported", this.name, operation), null);
-	}
+    private static Object output(Vec3 v, boolean two) {
+        return two ? new Vec2((float) v.x, (float) v.y) : v;
+    }
+
+    private static Object number(double n, String op) throws LogicException {
+        return switch (op) {
+            case "-", "negate" -> -n;
+            case "~" -> (double) ~(long) n;
+            case "abs" -> Math.abs(n);
+            case "sqrt" -> Math.sqrt(n);
+            case "cbrt" -> Math.cbrt(n);
+            case "square" -> n * n;
+            case "reciprocal" -> 1 / n;
+            case "exp" -> Math.exp(n);
+            case "expm1" -> Math.expm1(n);
+            case "ln", "log" -> Math.log(n);
+            case "lg", "log10" -> Math.log10(n);
+            case "log1p" -> Math.log1p(n);
+            case "sin" -> Math.sin(n);
+            case "cos" -> Math.cos(n);
+            case "tan" -> Math.tan(n);
+            case "asin" -> Math.asin(n);
+            case "acos" -> Math.acos(n);
+            case "atan" -> Math.atan(n);
+            case "sinh" -> Math.sinh(n);
+            case "cosh" -> Math.cosh(n);
+            case "tanh" -> Math.tanh(n);
+            case "ceil" -> Math.ceil(n);
+            case "floor" -> Math.floor(n);
+            case "round" -> (double) Math.round(n);
+            case "rint" -> Math.rint(n);
+            case "trunc" -> n < 0 ? Math.ceil(n) : Math.floor(n);
+            case "rad", "degtorad" -> Math.toRadians(n);
+            case "deg", "radtodeg" -> Math.toDegrees(n);
+            case "sgn", "sign", "signum" -> Math.signum(n);
+            case "isfinite" -> Double.isFinite(n);
+            case "isnan" -> Double.isNaN(n);
+            case "isinfinite" -> Double.isInfinite(n);
+            default -> throw unsupported(op);
+        };
+    }
+
+    private static Object list(List<Object> values, String op) throws LogicException {
+        switch (op) {
+            case "size", "length", "len":
+                return (double) values.size();
+            case "isempty":
+                return values.isEmpty();
+            case "reverse":
+                Collections.reverse(values);
+                return values;
+            case "distinct", "unique":
+                return new ArrayList<>(new LinkedHashSet<>(values));
+            case "first":
+                return values.isEmpty() ? null : values.get(0);
+            case "last":
+                return values.isEmpty() ? null : values.get(values.size() - 1);
+        }
+        if (!Set.of("sum", "min", "max", "mean", "avg", "median", "std", "variance", "samplestd", "samplevariance",
+                "sort").contains(op)) {
+            throw unsupported(op);
+        }
+        double[] numbers = new double[values.size()];
+        double scale = 0;
+        for (int i = 0; i < numbers.length; i++) {
+            if (!(values.get(i) instanceof Number n) || !Double.isFinite(n.doubleValue())) {
+                throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.elements"), null);
+            }
+            numbers[i] = n.doubleValue();
+            scale = Math.max(scale, Math.abs(numbers[i]));
+        }
+        if (op.equals("sort")) {
+            Arrays.sort(numbers);
+            return Arrays.stream(numbers).boxed().toList();
+        }
+        if (numbers.length == 0) {
+            if (op.equals("sum")) {
+                return 0.0;
+            }
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.empty"), null);
+        }
+        if (op.equals("min")) {
+            return Arrays.stream(numbers).min().orElseThrow();
+        }
+        if (op.equals("max")) {
+            return Arrays.stream(numbers).max().orElseThrow();
+        }
+        if (op.equals("median")) {
+            Arrays.sort(numbers);
+            int middle = numbers.length / 2;
+            return numbers.length % 2 == 1 ? numbers[middle] : numbers[middle - 1] / 2 + numbers[middle] / 2;
+        }
+        if (op.equals("sum")) {
+            return Arrays.stream(numbers).sum();
+        }
+        // Scale before online variance to avoid overflow in deltas for large finite inputs.
+        double mean = 0, m2 = 0;
+        int count = 0;
+        for (double n : numbers) {
+            double scaled = scale == 0 ? 0 : n / scale;
+            double delta = scaled - mean;
+            mean += delta / ++count;
+            m2 += delta * (scaled - mean);
+        }
+        if (op.equals("mean") || op.equals("avg")) {
+            return mean * scale;
+        }
+        boolean sample = op.startsWith("sample");
+        if (sample && count < 2) {
+            throw new LogicException(null, Util.parseTranslatableText("fmod.node.unalu.error.sample"), null);
+        }
+        double std = Math.sqrt(Math.max(0, m2 / (sample ? count - 1 : count))) * scale;
+        return op.equals("std") || op.equals("samplestd") ? std : std * std;
+    }
+
+    private static List<Object> words(String text) throws LogicException {
+        Matcher matcher = Pattern.compile("\\S+", Pattern.UNICODE_CHARACTER_CLASS).matcher(text);
+        List<Object> result = new ArrayList<>();
+        while (matcher.find()) {
+            FlowConvert.checkListSize((long) result.size() + 1);
+            result.add(matcher.group());
+        }
+        return result;
+    }
+
+    private static List<Object> collect(Iterator<String> iterator) throws LogicException {
+        List<Object> result = new ArrayList<>();
+        while (iterator.hasNext()) {
+            FlowConvert.checkListSize((long) result.size() + 1);
+            result.add(iterator.next());
+        }
+        return result;
+    }
 }

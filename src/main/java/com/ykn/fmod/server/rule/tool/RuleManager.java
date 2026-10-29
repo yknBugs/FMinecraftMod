@@ -50,7 +50,7 @@ public class RuleManager {
     private CustomRule rule;
 
     /** 
-     * The immutable, optimised copy of {@link #rule} used for evaluation, rebuilt on {@link #setEnabled(boolean)}. 
+     * The structurally copied, optimised rule of {@link #rule} used for evaluation, rebuilt on {@link #setEnabled(boolean)}.
      */
     private volatile CustomRule optimizedRule;
 

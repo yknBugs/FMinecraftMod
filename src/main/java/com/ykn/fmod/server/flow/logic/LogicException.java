@@ -22,9 +22,9 @@ import net.minecraft.network.chat.Component;
  * Key features:
  * <ul>
  *   <li>Stores the underlying exception cause for debugging</li>
- *   <li>Provides a Minecraft Text object for localized user messages</li>
+ *   <li>Provides a Minecraft Component object for localized user messages</li>
  *   <li>Can be used with or without an underlying exception</li>
- *   <li>Automatically converts Text to string for standard exception handling</li>
+ *   <li>Automatically converts Component to string for standard exception handling</li>
  * </ul>
  * <p>
  * Example usage:
@@ -50,7 +50,7 @@ public class LogicException extends Exception {
     private final Exception reason;
 
     /**
-     * The user-facing message text in Minecraft's Text format.
+     * The user-facing message text in Minecraft's Component format.
      * <p>
      * This should be a translatable text object that can be displayed to players
      * in their preferred language. May be null if only a plain string message is needed.
@@ -62,12 +62,12 @@ public class LogicException extends Exception {
      * <p>
      * The message parameter will attempt to extract a string message in the following order:
      * 1. Direct string message parameter
-     * 2. Text component converted to string
+     * 2. Component component converted to string
      * 3. Exception message from the reason throwable
      * 4. null if none of the above are available
      * 
      * @param reason the underlying exception that caused this error, may be null
-     * @param messageText the user-facing message as a Text object, may be null
+     * @param messageText the user-facing message as a Component object, may be null
      * @param message the string message for standard exception handling, may be null
      */
     public LogicException(@Nullable Exception reason, @Nullable Component messageText, @Nullable String message) {
@@ -81,7 +81,7 @@ public class LogicException extends Exception {
      * <p>
      * This method attempts to retrieve a message in the following priority order:
      * 1. Direct string message parameter
-     * 2. Text component converted to string
+     * 2. Component component converted to string
      * 3. Exception message from the reason throwable
      * 4. null if none of the above are available
      * 
@@ -115,13 +115,13 @@ public class LogicException extends Exception {
     }
 
     /**
-     * Gets the user-facing message as a Minecraft Text object.
+     * Gets the user-facing message as a Minecraft Component object.
      * <p>
      * This message is intended to be displayed to players in a localized format.
-     * If no Text message was provided, it attempts to convert the string message
-     * or the reason's message into a Text object.
+     * If no Component message was provided, it attempts to convert the string message
+     * or the reason's message into a Component object.
      * 
-     * @return The user-facing message as Text.
+     * @return The user-facing message as Component.
      */
     @NotNull
     public Component getMessageText() {
